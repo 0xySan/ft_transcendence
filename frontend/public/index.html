@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Example</title>
+	<link href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+	<script defer type="module" src="/js/dynamicLoader.js"></script>
+	<script>
+			const listeners = [];
+			function addListener(element, type, callback, options = false) {
+				element.addEventListener(type, callback, options);
+				listeners.push({ element, type, callback, options });
+			}
+	</script>
+	<!-- Flag to indicate full page load completion -> see dupChecker -->
+	<script>
+		window.isFullPageLoaded = true;
+	</script>
+</head>
+<body class="flex flex-col min-h-screen">
+	<header class="bg-gray-800 text-white p-4">
+		<nav>
+			<a href="/" class="mr-4">Home</a>
+			<a href="/users" class="mr-4">Users</a>
+			<a href="/register">Register</a>
+		</nav>
+	</header>
+
+	<div id="content" class="flex-1 p-4">
+		<!-- Dynamic content goes here -->
+	</div>
+
+	<footer class="bg-gray-200 p-4 text-center">
+		<p>© 2025 Copyrights</p>
+	</footer>
+</body>
+</html>

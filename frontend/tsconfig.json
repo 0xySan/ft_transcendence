@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+	"target": "es2020",
+	"module": "esnext",
+	"outDir": "dist/js",
+	"strict": true,
+	"removeComments": true
+  },
+  "include": ["src/js"]
+}

@@ -1,0 +1,7 @@
+<h1 class="text-xl font-bold mb-2">Register</h1>
+<form id="registerForm" action="/api/users" method="POST" class="space-y-2">
+	<input name="username" placeholder="Username" class="border p-2 w-full">
+	<button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit</button>
+</form>
+<span id="usernameError" class="text-red-600 block mt-1"></span>
+<script type="module" src="/js/usernameValidator.js"></script>
