@@ -2,7 +2,7 @@
 name: Bug Report
 about: Report a bug encountered in the project
 title: ''
-labels: bug, "Priority: Urgent"
+labels: bug
 assignees: ''
 ---
 
