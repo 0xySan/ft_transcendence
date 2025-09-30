@@ -2,7 +2,7 @@
 -- Stores list of countries for user profile selection.
 CREATE TABLE countries (
     country_id INTEGER PRIMARY KEY AUTOINCREMENT,             -- Unique identifier
-    country_code TEXT UNIQUE NOT NULL CHECK(length(country_code) = 3), -- ISO 3166-1 alpha-2 code (e.g., 'US', 'FR') + alpha-3 code for custom use
+    country_code TEXT UNIQUE NOT NULL CHECK(length(country_code) BETWEEN 2 AND 6), -- ISO 3166-1 alpha-2 code (e.g., 'US', 'FR') + alpha-3 code for custom use
     country_name TEXT UNIQUE NOT NULL CHECK(length(country_name) <= 100), -- Full country name
     flag_svg_path TEXT CHECK(length(flag_svg_path) <= 255)   -- Path to SVG flag file (e.g., '/flags/us.svg')
 );
