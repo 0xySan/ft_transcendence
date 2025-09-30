@@ -3,7 +3,6 @@
  * Uses the 'svg-country-flags' module for SVG files and 'i18n-iso-countries' for country names.
  */
 
-
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";

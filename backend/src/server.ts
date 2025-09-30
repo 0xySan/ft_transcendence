@@ -1,5 +1,7 @@
 import Fastify from "fastify";
-import dbPlugin from "./plugins/db.js";
+
+// Initialize db
+import { db } from "./db/index.js";
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
@@ -8,10 +10,6 @@ async function buildServer() {
   const app = Fastify({
     logger: true,
   });
-
-  // Register the SQLite plugin first so routes can use app.db
-  await app.register(dbPlugin);
-
   // Register users routes under /api/users
 
   // A simple health-check endpoint
