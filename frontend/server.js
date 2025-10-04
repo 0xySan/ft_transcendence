@@ -2,6 +2,7 @@
 import Fastify from "fastify";
 import path from "path";
 import fs from "fs";
+import fastifyStatic from "@fastify/static";
 
 const app = Fastify({ logger: true });
 
@@ -19,9 +20,10 @@ const publicResourcesDir = path.join(publicDir, "resources");
 	 - dist/js/main.js → /js/main.js
 */
 if (fs.existsSync(jsDir)) {
-	app.register(import("@fastify/static"), {
+	app.register(fastifyStatic, {
 		root: jsDir,
 		prefix: "/js/",
+		decorateReply: false
 	});
 }
 
@@ -32,9 +34,10 @@ if (fs.existsSync(jsDir)) {
 	 - public/resources/audio/song.mp3  → /resources/audio/song.mp3
 */
 if (fs.existsSync(publicResourcesDir)) {
-	app.register(import("@fastify/static"), {
+	app.register(fastifyStatic, {
 		root: publicResourcesDir,
 		prefix: "/resources/",
+		decorateReply: false
 	});
 }
 
@@ -103,7 +106,6 @@ app.get("/*", async (req, reply) => {
 			const dupCheckerScript = fs.readFileSync(dupCheckerPath, "utf8");
 			html += `\n<script type="module">\n${dupCheckerScript}\n</script>`;
 		}
-
 
 		reply.type("text/html").send(html);
 	} else {
