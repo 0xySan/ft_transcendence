@@ -18,9 +18,13 @@ const __dirname = path.dirname(__filename);
 countries.registerLocale(enLocale);
 
 // --- Function to populate countries table ---
-export function populateCountries(db: Database.Database) {
+export function populateCountries(db: Database.Database, url?: string) {
 	// --- Resolve svg-country-flags module path in ESM ---
-	const pkgUrl = new URL("../../node_modules/svg-country-flags/package.json", import.meta.url);
+	let pkgUrl: URL;
+	if (url)
+		pkgUrl = new URL(url, import.meta.url);
+	else
+		pkgUrl = new URL("../../node_modules/svg-country-flags/package.json", import.meta.url);
 	const pkgPath = fileURLToPath(pkgUrl);
 	const moduleDir = path.dirname(pkgPath);
 	const svgCountryFlagsPath = path.join(moduleDir, "svg");
