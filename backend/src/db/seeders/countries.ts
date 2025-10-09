@@ -19,15 +19,9 @@ countries.registerLocale(enLocale);
 
 // --- Function to populate countries table ---
 export function populateCountries(db: Database.Database, url?: string) {
-	// --- Resolve svg-country-flags module path in ESM ---
-	let pkgUrl: URL;
-	if (url)
-		pkgUrl = new URL(url, import.meta.url);
-	else
-		pkgUrl = new URL("../../node_modules/svg-country-flags/package.json", import.meta.url);
-	const pkgPath = fileURLToPath(pkgUrl);
-	const moduleDir = path.dirname(pkgPath);
-	const svgCountryFlagsPath = path.join(moduleDir, "svg");
+	// --- Base directory = dossier backend ---
+	const backendDir = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
+	const svgCountryFlagsPath = path.join(backendDir, "node_modules", "svg-country-flags", "svg");
 
 	// Read SVG files
 	const files = fs.readdirSync(svgCountryFlagsPath).filter(f => f.endsWith(".svg"));

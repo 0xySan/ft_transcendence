@@ -25,7 +25,7 @@ export function initDb(): Database.Database {
 	}
 
 	// --- Run seeders ---
-	populateCountries(dbInstance, "../../../node_modules/svg-country-flags/package.json");
+	populateCountries(dbInstance);
 
 	return dbInstance;
 }

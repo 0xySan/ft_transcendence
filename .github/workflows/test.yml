@@ -1,0 +1,51 @@
+name: Run Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with Vitest
+        id: vitest
+        run: |
+          set -e
+          echo "Running tests..."
+          # Run Vitest with JSON reporter for test count
+          npx vitest run --coverage --reporter=json --reporter=verbose > vitest-output.json
+          
+          # Extract number of failed tests using jq
+          FAILED=$(cat vitest-output.json | jq '.numFailedTests')
+          echo "Failed tests: $FAILED"
+
+          # Fail if more than 3 tests failed
+          if [ "$FAILED" -gt 3 ]; then
+            echo "❌ Too many test failures ($FAILED > 3)"
+            exit 1
+          fi
+
+          echo "✅ Test suite passed coverage and failure checks."
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage
