@@ -7,7 +7,7 @@ import { db, insertRow, getRow } from "../index.js";
 
 /** --- Types --- */
 export interface Country {
-	id: number;
+	country_id: number;
 	country_code: string;
 	country_name: string;
 	flag_svg_path: string;
@@ -19,7 +19,7 @@ export interface Country {
  * @returns The country object if found, otherwise undefined
  */
 export function getCountryById(id: number): Country | undefined {
-	return getRow<Country>("countries", "id", id);
+	return getRow<Country>("countries", "country_id", id);
 }
 
 /**

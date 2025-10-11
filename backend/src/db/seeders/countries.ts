@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 countries.registerLocale(enLocale);
 
 // --- Function to populate countries table ---
-export function populateCountries(db: Database.Database, url?: string) {
+export function populateCountries(db: Database.Database): void {
 	// --- Base directory = dossier backend ---
 	const backendDir = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 	const svgCountryFlagsPath = path.join(backendDir, "node_modules", "svg-country-flags", "svg");
@@ -54,7 +54,6 @@ export function populateCountries(db: Database.Database, url?: string) {
 		const svgPath = `/resources/imgs/svg/flags/${svgFile}`;
 		insertStmt.run(code, name, svgPath);
 	}
-
 	console.log(
 		`Inserted ${files.filter(f => countries.isValid(path.basename(f, ".svg").toUpperCase())).length + Object.keys(customMap).length} countries and custom entries.`
 	);
