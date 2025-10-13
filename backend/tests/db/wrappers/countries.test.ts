@@ -78,6 +78,17 @@ describe("Countries wrapper", () => {
 
 	it("should create a new country with provided values", () => {
 		const newCountry = createCountry({
+			country_code: "MOO",
+			country_name: "Moon",
+			flag_svg_path: "/flags/moon.svg",
+		});
+		expect(newCountry).toBeDefined();
+		expect(newCountry?.country_code).toBe("MOO");
+		expect(newCountry?.country_name).toBe("Moon");
+	});
+
+	it("should do nothing and return the already existing country", () => {
+		const newCountry = createCountry({
 			country_code: "CA",
 			country_name: "Canada",
 			flag_svg_path: "/flags/ca.svg",

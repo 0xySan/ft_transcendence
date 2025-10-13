@@ -48,11 +48,21 @@ export function createUser(
 	passwordHash: string,
 	roleId = 1
 ): User | undefined {
-	return insertRow<User>("users", {
+	const user = insertRow<User>("users", {
 		email,
 		password_hash: passwordHash,
 		role_id: roleId,
 	});
+
+	if (!user) {
+		const isExisting = getUserByEmail(email);
+		if (isExisting) return isExisting;
+		return undefined;
+	}
+
+	if (user.last_login === null) user.last_login = undefined;
+
+	return user;
 }
 
 /**

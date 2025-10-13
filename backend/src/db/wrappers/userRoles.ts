@@ -37,9 +37,17 @@ export function getRoleByName(name: string): UserRole | undefined {
  * @returns The created or existing UserRole, or undefined if failed
  */
 export function createRole(name: string): UserRole | undefined {
-	return insertRow<UserRole>("user_roles", {
+	const role =  insertRow<UserRole>("user_roles", {
 		role_name: name,
 	});
+
+	if (!role) {
+		const isExisting = getRoleByName(name);
+		if (isExisting) return isExisting;
+		return undefined;
+	}
+	
+	return role;
 }
 
 /**

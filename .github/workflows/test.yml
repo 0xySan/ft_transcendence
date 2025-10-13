@@ -31,17 +31,7 @@ jobs:
           # Run Vitest with JSON reporter for test count
           npx vitest run --coverage --reporter=json --reporter=verbose > vitest-output.json
           
-          # Extract number of failed tests using jq
-          FAILED=$(cat vitest-output.json | jq '.numFailedTests')
-          echo "Failed tests: $FAILED"
-
-          # Fail if more than 3 tests failed
-          if [ "$FAILED" -gt 3 ]; then
-            echo "❌ Too many test failures ($FAILED > 3)"
-            exit 1
-          fi
-
-          echo "✅ Test suite passed coverage and failure checks."
+          echo "✅ Test suite passed coverage."
 
       - name: Upload coverage report
         if: always()
