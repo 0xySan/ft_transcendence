@@ -1,149 +1,117 @@
-/**
- * @file oauthProviders.test.ts
- * @description Unit tests for the OAuthProviders database wrapper.
- * These tests verify that all CRUD-like operations on the `oauth_providers` table
- * behave as expected.
- */
-
 import { describe, it, expect, beforeAll } from "vitest";
 import {
-	getOAuthProviderById,
-	getOAuthProviderByName,
-	getOAuthProviderByDiscoveryUrl,
-	createOAuthProvider,
-	getAllOAuthProviders
+	getOauthProvidersById,
+	getOauthProvidersByName,
+	createOauthProviders,
+	updateOauthProviders
 } from "../../../../src/db/wrappers/auth/oauthProviders.js";
 
-/**
- * Test suite for the OAuthProviders wrapper.
- * Uses a seeded SQLite database (in-memory for tests).
- */
-describe("OAuthProviders wrapper", () => {
+describe("oauthProviders wrapper", () => {
+	let createdProviderId: number | undefined;
 
-	let defaultProvidersCount = 0;
-
-	// --- Insert default providers before all tests --------------------------
-	beforeAll(() => {
-		const defaults = [
-			{
-				name: "provider1",
-				discovery_url: "https://example.com/provider1/.well-known/openid-configuration",
-				client_id: "client1",
-				client_secret_encrypted: Buffer.from("secret1"),
-				is_enabled: true
-			},
-			{
-				name: "provider2",
-				discovery_url: "https://example.com/provider2/.well-known/openid-configuration",
-				client_id: "client2",
-				client_secret_encrypted: Buffer.from("secret2"),
-				is_enabled: true
-			}
-		];
-
-		for (const provider of defaults) {
-			createOAuthProvider(provider);
-		}
-
-		const all = getAllOAuthProviders();
-		defaultProvidersCount = all.length;
+	it("should create a new oauthProvider with provided values", () => {
+		const newProvider = createOauthProviders({
+			name: "TestProvider",
+			discovery_url: "https://testprovider.com/.well-known/openid-configuration",
+			client_id: "test-client-id",
+			client_secret_encrypted: Buffer.from("secret"),
+			is_enabled: true,
+		});
+		expect(newProvider).toBeDefined();
+		expect(newProvider?.name).toBe("TestProvider");
+		expect(newProvider?.client_id).toBe("test-client-id");
+		createdProviderId = newProvider?.provider_id;
 	});
 
-	// --- Seeder verification (skip until seeder is ready) -------------------
-
-	it.skip("should have seeded the oauth_providers table with data", () => {
-		const all = getAllOAuthProviders();
-		expect(all.length).toBeGreaterThan(defaultProvidersCount);
+	it("should create a new oauthProvider with default values when missing data", () => {
+		const result = createOauthProviders({ name: "test" });
+		expect(result).toBeDefined();
+		expect(result?.name).toBe("test");
+		expect(result?.is_enabled).toBe(1);
 	});
 
-	// --- Tests for retrieval by ID ------------------------------------------
+	it("should store is_enabled as 0 when false on creation", () => {
+		const result = createOauthProviders({ is_enabled: false });
+		expect(result).toBeDefined();
+		expect(result?.is_enabled).toBe(0);
+	});
 
-	it("should return a provider by ID", () => {
-		const all = getAllOAuthProviders();
-		const firstId = all[0]?.provider_id;
-		const provider = getOAuthProviderById(firstId);
+    it("must refuse the name because it is unique", () => {
+		const result = createOauthProviders({});
+		expect(result).toBeUndefined();
+	});
+
+	it("should return undefined when trying to create with duplicate unique name", () => {
+		const first = createOauthProviders({ name: "UniqueProvider" });
+		expect(first).toBeDefined();
+
+		const second = createOauthProviders({ name: "UniqueProvider" });
+		expect(second).toBeUndefined();
+	});
+
+	it("should return an oauthProvider by ID", () => {
+		if (!createdProviderId) return;
+		const provider = getOauthProvidersById(createdProviderId);
 		expect(provider).toBeDefined();
-		expect(provider?.provider_id).toBe(firstId);
+		expect(provider?.provider_id).toBe(createdProviderId);
 	});
 
 	it("should return undefined if ID does not exist", () => {
-		const result = getOAuthProviderById(999999);
+		const result = getOauthProvidersById(999999);
 		expect(result).toBeUndefined();
 	});
 
-	// --- Tests for retrieval by name ----------------------------------------
-
-	it("should return a provider by its name", () => {
-		const all = getAllOAuthProviders();
-		const name = all[0]?.name;
-		const provider = getOAuthProviderByName(name!);
+	it("should return an oauthProvider by name", () => {
+		const provider = getOauthProvidersByName("TestProvider");
 		expect(provider).toBeDefined();
-		expect(provider?.name).toBe(name);
+		expect(provider?.name).toBe("TestProvider");
 	});
 
 	it("should return undefined for an unknown name", () => {
-		const result = getOAuthProviderByName("nonexistent_provider");
-		expect(result).toBeUndefined();
+		const provider = getOauthProvidersByName("UnknownProviderName");
+		expect(provider).toBeUndefined();
 	});
 
-	// --- Tests for retrieval by discovery URL --------------------------------
-
-	it("should return a provider by its discovery URL", () => {
-		const all = getAllOAuthProviders();
-		const url = all[0]?.discovery_url;
-		if (url) {
-			const provider = getOAuthProviderByDiscoveryUrl(url);
-			expect(provider).toBeDefined();
-			expect(provider?.discovery_url).toBe(url);
-		}
-	});
-
-	it("should return undefined for an unknown discovery URL", () => {
-		const result = getOAuthProviderByDiscoveryUrl("https://unknown.example.com");
-		expect(result).toBeUndefined();
-	});
-
-	// --- Tests for creation -------------------------------------------------
-
-	it("should create a new oauth provider with provided values", () => {
-		const newProvider = createOAuthProvider({
-			name: "test_provider",
-			discovery_url: "https://test.example.com/.well-known/openid-configuration",
-			client_id: "test_client",
-			client_secret_encrypted: Buffer.from("secret"),
-			is_enabled: true
+	it("should update an oauthProvider fields", () => {
+		if (!createdProviderId) return;
+		const updated = updateOauthProviders(createdProviderId, {
+			is_enabled: false,
+			name: "UpdatedName"
 		});
-		expect(newProvider).toBeDefined();
-		expect(newProvider?.name).toBe("test_provider");
-		expect(newProvider?.client_id).toBe("test_client");
-		expect(newProvider?.is_enabled).toBe(true);
+		expect(updated).toBe(true);
+
+		const updatedProvider = getOauthProvidersById(createdProviderId);
+		expect(updatedProvider?.is_enabled).toBe(0);
+		expect(updatedProvider?.name).toBe("UpdatedName");
 	});
 
-	it("should do nothing and return the already existing provider", () => {
-		const existingProvider = createOAuthProvider({
-			name: "test_provider",
-		});
-		expect(existingProvider).toBeDefined();
-		expect(existingProvider?.name).toBe("test_provider");
+	it("should update is_enabled correctly from true to false and back", () => {
+		if (!createdProviderId) return;
+		let updated = updateOauthProviders(createdProviderId, { is_enabled: true });
+		expect(updated).toBe(true);
+		let provider = getOauthProvidersById(createdProviderId);
+		expect(provider?.is_enabled).toBe(1);
+
+		updated = updateOauthProviders(createdProviderId, { is_enabled: false });
+		expect(updated).toBe(true);
+		provider = getOauthProvidersById(createdProviderId);
+		expect(provider?.is_enabled).toBe(0);
 	});
 
-	it("should create a new provider with default values when missing data", () => {
-		const result = createOAuthProvider({});
-		expect(result).toBeDefined();
-		expect(result?.name).toBe("unknown_provider");
-		expect(result?.is_enabled).toBe(true);
-		expect(result?.discovery_url).toBeNull();
-		expect(result?.client_id).toBeNull();
-		expect(result?.client_secret_encrypted).toBeNull();
+	it("should return false when updating with no valid fields", () => {
+		if (!createdProviderId) return;
+		const updated = updateOauthProviders(createdProviderId, {});
+		expect(updated).toBe(false);
 	});
 
-	// --- Tests for listing --------------------------------------------------
-
-	it("should list all providers sorted alphabetically by name", () => {
-		const all = getAllOAuthProviders();
-		const names = all.map(p => p.name);
-		const isSorted = names.every((v, i, arr) => !i || arr[i - 1] <= v);
-		expect(isSorted).toBe(true);
+	it("should return false when updating a non-existing provider", () => {
+		const updated = updateOauthProviders(999999, { is_enabled: true });
+		expect(updated).toBe(false);
 	});
 
+	it("should return false when updating with only undefined/null fields", () => {
+		if (!createdProviderId) return;
+		const updated = updateOauthProviders(createdProviderId, { name: undefined, client_id: null });
+		expect(updated).toBe(false);
+	});
 });
