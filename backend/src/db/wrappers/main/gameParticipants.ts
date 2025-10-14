@@ -3,7 +3,7 @@
  * Provides creation, retrieval, updating, and listing utilities for participants in games.
  */
 
-import { db, insertRow, getRow } from "../index.js";
+import { db, insertRow, getRow } from "../../index.js";
 
 // --- Types ---
 export interface GameParticipant {

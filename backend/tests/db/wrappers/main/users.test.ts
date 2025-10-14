@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { db } from "../../../src/db/index.js";
+import { db } from "../../../../src/db/index.js";
 import {
 	getUserById,
 	getUserByEmail,
@@ -17,7 +17,7 @@ import {
 	updateLastLogin,
 	updateUserRole,
 	getAllUsers,
-} from "../../../src/db/wrappers/users.js";
+} from "../../../../src/db/wrappers/main/users.js";
 
 describe("Users wrapper", () => {
 	let adminId: number;

@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { db } from "../../../src/db/index.js";
+import { db } from "../../../../src/db/index.js";
 import {
 	getProfileById,
 	getProfileByUserId,
@@ -21,7 +21,7 @@ import {
 	createProfile,
 	updateProfile,
 	getAllProfiles
-} from "../../../src/db/wrappers/userProfiles.js";
+} from "../../../../src/db/wrappers/main/userProfiles.js";
 
 describe("UserProfiles wrapper", () => {
 	let userId1: number;
