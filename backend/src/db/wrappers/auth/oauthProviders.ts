@@ -36,7 +36,7 @@ export function getOauthProvidersByName(name: string): oauthProviders | undefine
 /**
  * Create a new oauthProviders if it doesn't exist.
  * Default values will be applied for missing fields.
- * Uses the generic insertRow wrapper to insert and fetch the country.
+ * Uses the generic insertRow wrapper to insert and fetch the oauthProviders.
  * 
  * @param options - Partial oauthProviders object with name, url, client_id, secret, enabled and date
  * @returns The newly created or existing oauthProviders object, or undefined if insertion failed
@@ -58,8 +58,6 @@ export function createOauthProviders(options: Partial<oauthProviders>): oauthPro
 		created_at: created_at
 	});
 
-	if (!new_row) { return (undefined); }
-
 	return (new_row);
 }
 
@@ -80,7 +78,6 @@ export function updateOauthProviders(provider_id: number, options: Partial<oauth
 
 	const setClause = keys.map(key => `${key} = @${key}`).join(", ");
 
-	// Prépare un nouvel objet params en convertissant is_enabled en int si présent
 	const params: Record<string, unknown> = { provider_id };
 	for (const key of keys) {
 		if (key === "is_enabled") {

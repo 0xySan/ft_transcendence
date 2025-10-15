@@ -124,12 +124,12 @@ CREATE TABLE api_tokens (
 -- Store the password token for the forgotten password
 CREATE TABLE password_resets (
 	reset_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER,															--- ID of the user (FK)
+	user_id					INTEGER		NOT NULL,															--- ID of the user (FK)
 	token_hash				TEXT		NOT NULL,												--- the hashed token
 	created_at				DATETIME	NOT NULL,												--- timestamp of the created reset
 	expired_at				DATETIME	NOT NULL,												--- timestamp of the expired reset
-	consumed_at				DATETIME	NOT NULL,												--- timestamp of the consumed reset
-	consumed				DATETIME	DEFAULT 0,												--- is consumed ?
+	consumed_at				DATETIME,												--- timestamp of the consumed reset
+	consumed				BOOLEAN		DEFAULT 0,												--- is consumed ?
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
 
@@ -137,7 +137,7 @@ CREATE TABLE password_resets (
 -- Store informations about sessions
 CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER,															--- ID of the user (FK)
+	user_id					INTEGER		NOT NULL,															--- ID of the user (FK)
 	session_token_hash		TEXT		NOT NULL,												--- the hashed session token
 	created_at				DATETIME	NOT NULL,												--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
