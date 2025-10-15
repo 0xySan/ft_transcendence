@@ -24,6 +24,7 @@ export function insertRow<T>(table: string, data: Record<string, unknown>): T | 
 		console.log("DEBUG: BEFORE RUN COMMAND = " + table);
 		console.log(columns)
 		console.log(placeholders)
+		console.log(values)
 		const stmt = db.prepare(`INSERT INTO ${table} (${columns}) VALUES (${placeholders})`);
 		const info = stmt.run(...values);
 		console.log("DEBUG: AFTER RUN COMMAND = " + table);
