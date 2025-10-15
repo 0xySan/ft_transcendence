@@ -3,10 +3,9 @@
  * Provides retrieval, creation, and listing utilities.
 */
 
-import { link } from "fs";
 import { db, insertRow, getRow } from "../../index.js";
 
-export interface oauthAccounts {
+export interface oauthAccount {
     user_id:            number;
     provider_name:      string;
     provider_user_id:   string;
@@ -17,23 +16,48 @@ export interface oauthAccounts {
 }
 
 /**
- * Retrieve a oauthAccounts by its ID.
- * @param id - The primary key of the oauthAccounts
- * @returns The oauthAccounts object if found, otherwise undefined
+ * Retrieve a oauthAccount by its ID.
+ * @param id - The primary key of the oauthAccount
+ * @returns The oauthAccount object if found, otherwise undefined
  */
-export function getOauthAccountsById(id: number): oauthAccounts | undefined {
-	return (getRow<oauthAccounts>("oauth_accounts", "oauth_account_id", id));
+export function getOauthAccountById(id: number): oauthAccount | undefined {
+	return (getRow<oauthAccount>("oauth_accounts", "oauth_account_id", id));
 }
 
 /**
- * Create a new oauthAccounts if it doesn't exist.
- * Default values will be applied for missing fields.
- * Uses the generic insertRow wrapper to insert and fetch the oauthAccounts.
- * 
- * @param options - Partial oauthAccounts object with user_id, provider_name, provider_user_id, profile_json, if_token_hash, linked_at, revoked_at
- * @returns The newly created or existing oauthAccounts object, or undefined if insertion failed
+ * List all oauthAccounts linked to a specific user ID.
+ * @param user_id - The user ID to filter oauthAccount
+ * @returns An array of oauthAccounts objects, or an empty array if none found
  */
-export function createOauthAccounts(options: Partial<oauthAccounts>): oauthAccounts | undefined {
+export function getOauthAccountsByUserId(user_id: number): oauthAccount[] {
+	return (getRow<oauthAccount[]>("oauth_accounts", "user_id", user_id) ?? []);
+}
+
+/** 
+ * Retrieve a oauthAccount by provider name and provider user ID.
+ * @param provider_name - The OAuth provider name (e.g., 'google', 'facebook')
+ * @param provider_user_id - The user ID assigned by the OAuth provider
+ * @returns The oauthAccount object if found, otherwise undefined
+ */
+export function getOauthAccountByProviderAndUserId(provider_name: string, provider_user_id: string): oauthAccount | undefined {
+	try {
+		const stmt = db.prepare(`SELECT * FROM oauth_accounts WHERE provider_name = ? AND provider_user_id = ?`);
+		const row = stmt.get(provider_name, provider_user_id);
+		return row ? (row as oauthAccount) : undefined;
+	} catch (error) {
+		return undefined;
+	}
+}
+
+/**
+ * Create a new oauthAccount if it doesn't exist.
+ * Default values will be applied for missing fields.
+ * Uses the generic insertRow wrapper to insert and fetch the oauthAccount.
+ * 
+ * @param options - Partial oauthAccount object with user_id, provider_name, provider_user_id, profile_json, if_token_hash, linked_at, revoked_at
+ * @returns The newly created or existing oauthAccount object, or undefined if insertion failed
+ */
+export function createOauthAccount(options: Partial<oauthAccount>): oauthAccount | undefined {
     const   user_id = options.user_id;
     const   provider_name = (options.provider_name ?? "Unknow");
     const   provider_user_id = options.provider_user_id;
@@ -42,7 +66,7 @@ export function createOauthAccounts(options: Partial<oauthAccounts>): oauthAccou
     const   linked_at = options.linked_at;
     const   revoked_at = options.revoked_at;
 
-	const	new_row = insertRow<oauthAccounts>("oauth_accounts", {
+	return (insertRow<oauthAccount>("oauth_accounts", {
         user_id: user_id,
         provider_name: provider_name,
         provider_user_id: provider_user_id,
@@ -50,22 +74,20 @@ export function createOauthAccounts(options: Partial<oauthAccounts>): oauthAccou
         id_token_hash: id_token_hash,
         linked_at: linked_at,
         revoked_at: revoked_at
-	});
-
-	return (new_row);
+	}));
 }
 
 /**
- * Update oauthAccounts.
+ * Update oauthAccount.
  * Only updates the provided fields.
  * 
  * @param provider_id - The provider ID
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */
-export function updateOauthAccounts(oauth_account_id: number, options: Partial<oauthAccounts>): boolean {
+export function updateOauthAccount(oauth_account_id: number, options: Partial<oauthAccount>): boolean {
     const keys = Object.keys(options).filter(
-        key => options[key as keyof oauthAccounts] !== undefined && options[key as keyof oauthAccounts] !== null
+        key => options[key as keyof oauthAccount] !== undefined && options[key as keyof oauthAccount] !== null
     );
 
     if (keys.length === 0) return false;
@@ -74,7 +96,7 @@ export function updateOauthAccounts(oauth_account_id: number, options: Partial<o
 
     const params: Record<string, unknown> = { oauth_account_id };
     for (const key of keys) {
-        params[key] = options[key as keyof oauthAccounts];
+        params[key] = options[key as keyof oauthAccount];
     }
 
     const stmt = db.prepare(`

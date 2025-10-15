@@ -6,7 +6,7 @@
 import { numericToAlpha2 } from "i18n-iso-countries";
 import { db, insertRow, getRow } from "../../index.js";
 
-export interface sessions {
+export interface session {
 	user_id:	    	    number;
 	session_token_hash:		string;
 	created_at:		        number;
@@ -18,12 +18,61 @@ export interface sessions {
 }
 
 /**
- * Retrieve a sessions by its ID.
+ * Retrieve a session by its ID.
  * @param id - This id of the session 
  * @returns The session object if found, otherwise undefined
  */
-export function getSessionsById(id: number): sessions | undefined {
-    return (getRow<sessions>("sessions", "session_id", id));
+export function getSessionById(id: number): session | undefined {
+    return (getRow<session>("sessions", "session_id", id));
+}
+
+/** Retrieve a session by its token hash.
+ * @param token_hash - The token hash of the session
+ * @returns The session object if found, otherwise undefined
+ */
+export function getSessionByTokenHash(token_hash: string): session | undefined {
+	return (getRow<session>("sessions", "session_token_hash", token_hash));
+}
+
+/**
+ * List all sessions linked to a specific user ID.
+ * @param user_id - The user ID to filter sessions
+ * @returns An array of sessions objects, or an empty array if none found
+ */
+export function getSessionsByUserId(user_id: number): session[] {
+	return (getRow<session[]>("sessions", "user_id", user_id) ?? []);
+}
+
+/**
+ * List all active (not expired) sessions linked to a specific user ID.
+ * @param user_id - The user ID to filter sessions
+ * @returns An array of active sessions objects, or an empty array if none found
+ */
+export function getActiveSessionsByUserId(user_id: number): session[] {
+	try {
+		const currentTime = Math.floor(Date.now() / 1000);
+		const stmt = db.prepare(`SELECT * FROM sessions WHERE user_id = ? AND expires_at > ?`);
+		const rows = stmt.all(user_id, currentTime);
+		return rows as session[];
+	} catch (error) {
+		return [];
+	}
+}
+
+/**
+ * Retrieve all active (not expired) sessions of a specific IP address.
+ * @param ip - The IP address to filter sessions
+ * @returns An array of active sessions objects, or an empty array if none found
+ */
+export function getActiveSessionsByIp(ip: string): session[] {
+	try {
+		const currentTime = Math.floor(Date.now() / 1000);
+		const stmt = db.prepare(`SELECT * FROM sessions WHERE ip = ? AND expires_at > ?`);
+		const rows = stmt.all(ip, currentTime);
+		return rows as session[];
+	} catch (error) {
+		return [];
+	}
 }
 
 /**
@@ -34,7 +83,7 @@ export function getSessionsById(id: number): sessions | undefined {
  * @param options - Partial session object with session user_id, token_hash, created_at, expires_at, last_used_at, ip, user_agent, is_persistent
  * @returns The newly created or existing session object, or undefined if insertion failed
  */
-export function createSession(options: Partial<sessions>): sessions | undefined {
+export function createSession(options: Partial<session>): session | undefined {
     if (typeof options.expires_at !== 'number' || typeof options.last_used_at !== 'number') { return (undefined); }
     const   user_id = options.user_id;
     const   session_token_hash = options.session_token_hash;
@@ -45,7 +94,7 @@ export function createSession(options: Partial<sessions>): sessions | undefined 
     const   user_agent = options.user_agent;
     const   is_persistent = (options.is_persistent ?? 0);
 
-    const	new_row = insertRow<sessions>("sessions", {
+    return (insertRow<session>("sessions", {
         user_id: user_id,
 		session_token_hash: session_token_hash,
 		created_at: created_at,
@@ -54,8 +103,7 @@ export function createSession(options: Partial<sessions>): sessions | undefined 
 		ip: ip,
         user_agent: user_agent,
         is_persistent: is_persistent ? 1 : 0
-    });
-    return (new_row);
+    }));
 }
 
 /**
@@ -66,9 +114,9 @@ export function createSession(options: Partial<sessions>): sessions | undefined 
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */
-export function updateSession(session_id: number, options: Partial<sessions>): boolean {
+export function updateSession(session_id: number, options: Partial<session>): boolean {
     const keys = Object.keys(options).filter(
-        key => options[key as keyof sessions] !== undefined && options[key as keyof sessions] !== null
+        key => options[key as keyof session] !== undefined && options[key as keyof session] !== null
     );
 
     if (keys.length === 0) return false;
@@ -80,7 +128,7 @@ export function updateSession(session_id: number, options: Partial<sessions>): b
         if (key === "is_persistent") {
             params[key] = options.is_persistent ? 1 : 0;
         } else {
-            params[key] = options[key as keyof sessions];
+            params[key] = options[key as keyof session];
         }
     }
 

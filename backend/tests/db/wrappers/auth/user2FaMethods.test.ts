@@ -73,7 +73,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 
 	it("should reject creation without user_id", () => {
 		const now = Math.floor(Date.now() / 1000);
-		// @ts-expect-error
 		const method = create2FaMethods({
 			method_type: 1,
 			label: "MissingUserId",
@@ -129,7 +128,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const updated = update2FaMethods(createdMethodId, {
 			// @ts-expect-error
 			label: null,
-			// @ts-expect-error
 			is_verified: undefined
 		});
 		expect(updated).toBe(false);
@@ -144,7 +142,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			is_verified: true,
 			// @ts-expect-error
 			created_at: "not-a-timestamp",
-			// @ts-expect-error
 			update_at: null
 		});
 		expect(method).toBeUndefined();

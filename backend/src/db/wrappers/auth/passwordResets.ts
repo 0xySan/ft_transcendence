@@ -5,7 +5,7 @@
 
 import { db, insertRow, getRow } from "../../index.js";
 
-export interface passwordResets {
+export interface passwordReset {
 	reset_id:		number;
 	user_id:		number;
 	token_hash:		string;
@@ -16,23 +16,57 @@ export interface passwordResets {
 }
 
 /**
- * Retrieve a passwordResets by its ID.
+ * Retrieve a passwordReset by its ID.
  * @param id - This id of the reset password
- * @returns The passwordResets object if found, otherwise undefined
+ * @returns The passwordReset object if found, otherwise undefined
  */
-export function getPasswordResetsById(id: number): passwordResets | undefined {
-	return (getRow<passwordResets>("password_resets", "reset_id", id));
+export function getPasswordResetById(id: number): passwordReset | undefined {
+	return (getRow<passwordReset>("password_resets", "reset_id", id));
 }
 
 /**
- * Create a new passwordResets if it doesn't exist.
- * Default values will be applied for missing fields.
- * Uses the generic insertRow wrapper to insert and fetch the passwordResets.
- * 
- * @param options - Partial passwordResets object with id, token_hash, created and expired timestamp, consumed et date of consumed
- * @returns The newly created or existing passwordResets object, or undefined if insertion failed
+ * Retrieve a passwordReset by its token hash.
+ * @param token_hash - The token hash of the reset password
+ * @returns The passwordReset object if found, otherwise undefined
  */
-export function createPasswordResets(options: Partial<passwordResets>): passwordResets | undefined {
+export function getPasswordResetByTokenHash(token_hash: string): passwordReset | undefined {
+	return (getRow<passwordReset>("password_resets", "token_hash", token_hash));
+}
+
+/**
+ * List all passwordResets linked to a specific user ID.
+ * @param user_id - The user ID to filter passwordResets
+ * @returns An array of passwordResets objects, or an empty array if none found
+ */
+export function getPasswordResetsByUserId(user_id: number): passwordReset[] {
+	return (getRow<passwordReset[]>("password_resets", "user_id", user_id) ?? []);
+}
+
+/**
+ * Retrieve all unconsumed passwordResets that are not expired for a specific user ID.
+ * @param user_id - The user ID to filter passwordResets
+ * @returns An array of unconsumed and valid passwordResets objects, or an empty array if none found
+ */
+export function getValidPasswordResetsByUserId(user_id: number): passwordReset[] {
+	try {
+		const currentTime = Math.floor(Date.now() / 1000);
+		const stmt = db.prepare(`SELECT * FROM password_resets WHERE user_id = ? AND consumed = 0 AND expired_at > ?`);
+		const rows = stmt.all(user_id, currentTime);
+		return rows as passwordReset[];
+	} catch (error) {
+		return [];
+	}
+}
+
+/**
+ * Create a new passwordReset if it doesn't exist.
+ * Default values will be applied for missing fields.
+ * Uses the generic insertRow wrapper to insert and fetch the passwordReset.
+ * 
+ * @param options - Partial passwordReset object with id, token_hash, created and expired timestamp, consumed et date of consumed
+ * @returns The newly created or existing passwordReset object, or undefined if insertion failed
+ */
+export function createPasswordReset(options: Partial<passwordReset>): passwordReset | undefined {
 	const	user_id = options.user_id;
 	const	token_hash = options.token_hash;
 	const	created_at = Math.floor(Date.now() / 1000);
@@ -40,29 +74,27 @@ export function createPasswordResets(options: Partial<passwordResets>): password
 	const	consumed = (options.consumed ?? false);
 	const	consumed_at = 0;
 
-	const	new_row = insertRow<passwordResets>("password_resets", {
+	return (insertRow<passwordReset>("password_resets", {
 		user_id: user_id,
 		token_hash: token_hash,
 		created_at: created_at,
 		expired_at: expired_at,
 		consumed: consumed ? 1 : 0,
 		consumed_at: consumed_at
-	});
-
-	return (new_row);
+	}));
 }
 
 /**
- * Update passwordResets.
+ * Update passwordReset.
  * Only updates the provided fields.
  * 
  * @param reset_id - The provider ID
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */
-export function updatePasswordResets(reset_id: number, options: Partial<passwordResets>): boolean {
+export function updatePasswordReset(reset_id: number, options: Partial<passwordReset>): boolean {
 	const keys = Object.keys(options).filter(
-		key => options[key as keyof passwordResets] !== undefined && options[key as keyof passwordResets] !== null
+		key => options[key as keyof passwordReset] !== undefined && options[key as keyof passwordReset] !== null
 	);
 
 	if (keys.length === 0) return false;
@@ -74,7 +106,7 @@ export function updatePasswordResets(reset_id: number, options: Partial<password
 		if (key === "consumed") {
 			params[key] = options.consumed ? 1 : 0;
 		} else {
-			params[key] = options[key as keyof passwordResets];
+			params[key] = options[key as keyof passwordReset];
 		}
 	}
 

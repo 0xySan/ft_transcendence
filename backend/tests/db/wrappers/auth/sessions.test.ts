@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
 	createSession,
-	getSessionsById,
+	getSessionById,
 	updateSession
 } from "../../../../src/db/wrappers/auth/sessions.js";
 
@@ -124,7 +124,7 @@ describe("sessions wrapper - extended tests", () => {
 		});
 		expect(updated).toBe(true);
 
-		const fetched = getSessionsById(sessionId);
+		const fetched = getSessionById(sessionId);
 		expect(fetched?.ip).toBe("4.3.2.1");
 		expect(fetched?.user_agent).toBe("UpdatedAgent");
 		expect(fetched?.is_persistent).toBe(1);

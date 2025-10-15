@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
-	createPasswordResets,
-	getPasswordResetsById,
-	updatePasswordResets
+	createPasswordReset,
+	getPasswordResetById,
+	updatePasswordReset
 } from "../../../../src/db/wrappers/auth/passwordResets.js";
 
 describe("passwordResets wrapper", () => {
@@ -28,7 +28,7 @@ describe("passwordResets wrapper", () => {
 	});
 
 	it("should create a new passwordReset with provided values", () => {
-		const newReset = createPasswordResets({
+		const newReset = createPasswordReset({
 			user_id: userId1,
 			token_hash: "hashed_token_123",
 			expired_at: Math.floor(Date.now() / 1000) + 3600,
@@ -43,7 +43,7 @@ describe("passwordResets wrapper", () => {
 	});
 
 	it("should create a passwordReset without consumed field (default false)", () => {
-		const reset = createPasswordResets({
+		const reset = createPasswordReset({
 			user_id: userId1,
 			token_hash: "token_no_consumed",
 			expired_at: Math.floor(Date.now() / 1000) + 1800,
@@ -53,7 +53,7 @@ describe("passwordResets wrapper", () => {
 	});
 
 	it("should create a passwordReset with consumed set to true", () => {
-		const reset = createPasswordResets({
+		const reset = createPasswordReset({
 			user_id: userId2,
 			token_hash: "token_consumed_true",
 			expired_at: Math.floor(Date.now() / 1000) + 1800,
@@ -65,7 +65,7 @@ describe("passwordResets wrapper", () => {
 
 	it("should have created_at timestamp close to now", () => {
 		const now = Math.floor(Date.now() / 1000);
-		const reset = createPasswordResets({
+		const reset = createPasswordReset({
 			user_id: userId2,
 			token_hash: "token_created_at",
 			expired_at: now + 3600,
@@ -76,14 +76,14 @@ describe("passwordResets wrapper", () => {
 
 	it("should return a passwordReset by ID", () => {
 		if (!createdResetId) return;
-		const reset = getPasswordResetsById(createdResetId);
+		const reset = getPasswordResetById(createdResetId);
 		expect(reset).toBeDefined();
 		expect(reset?.reset_id).toBe(createdResetId);
 		expect(reset?.user_id).toBe(userId1);
 	});
 
 	it("should return undefined if ID does not exist", () => {
-		const reset = getPasswordResetsById(999999);
+		const reset = getPasswordResetById(999999);
 		expect(reset).toBeUndefined();
 	});
 
@@ -92,13 +92,13 @@ describe("passwordResets wrapper", () => {
 
 		const consumedAtTimestamp = Math.floor(Date.now() / 1000);
 
-		const updated = updatePasswordResets(createdResetId, {
+		const updated = updatePasswordReset(createdResetId, {
 			consumed: true,
 			consumed_at: consumedAtTimestamp,
 		});
 		expect(updated).toBe(true);
 
-		const reset = getPasswordResetsById(createdResetId);
+		const reset = getPasswordResetById(createdResetId);
 		expect(reset?.consumed).toBe(1);
 		expect(reset?.consumed_at).toBe(consumedAtTimestamp);
 	});
@@ -107,23 +107,23 @@ describe("passwordResets wrapper", () => {
 		if (!createdResetId) return;
 
 		const newToken = "updated_token_hash";
-		const updated = updatePasswordResets(createdResetId, {
+		const updated = updatePasswordReset(createdResetId, {
 			token_hash: newToken,
 		});
 		expect(updated).toBe(true);
 
-		const reset = getPasswordResetsById(createdResetId);
+		const reset = getPasswordResetById(createdResetId);
 		expect(reset?.token_hash).toBe(newToken);
 	});
 
 	it("should return false when updating with no valid fields", () => {
 		if (!createdResetId) return;
-		const updated = updatePasswordResets(createdResetId, {});
+		const updated = updatePasswordReset(createdResetId, {});
 		expect(updated).toBe(false);
 	});
 
 	it("should return false when updating non-existing reset", () => {
-		const updated = updatePasswordResets(999999, {
+		const updated = updatePasswordReset(999999, {
 			consumed: true,
 		});
 		expect(updated).toBe(false);
@@ -132,20 +132,20 @@ describe("passwordResets wrapper", () => {
 	it("should update consumed to false and reset consumed_at to 0", () => {
 		if (!createdResetId) return;
 
-		const updated = updatePasswordResets(createdResetId, {
+		const updated = updatePasswordReset(createdResetId, {
 			consumed: false,
 			consumed_at: 0,
 		});
 		expect(updated).toBe(true);
 
-		const reset = getPasswordResetsById(createdResetId);
+		const reset = getPasswordResetById(createdResetId);
 		expect(reset?.consumed).toBe(0);
 		expect(reset?.consumed_at).toBe(0);
 	});
 
 	it("should return undefined if creating with non-existing user_id (FK fail)", () => {
 		// Supposons que insertRow renvoie undefined en cas d'erreur FK
-		const invalidReset = createPasswordResets({
+		const invalidReset = createPasswordReset({
 			user_id: 999999,
 			token_hash: "invalid_fk",
 			expired_at: Math.floor(Date.now() / 1000) + 3600,

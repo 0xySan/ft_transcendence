@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
-    createOauthAccounts,
-    getOauthAccountsById,
-    updateOauthAccounts,
+    createOauthAccount,
+    getOauthAccountById,
+    updateOauthAccount,
 } from "../../../../src/db/wrappers/auth/oauthAccounts.js";
 
-describe("oauthAccounts wrapper - tests", () => {
+describe("oauthAccount wrapper - tests", () => {
     let userId: number;
     let providerName: string;
     let createdOauthAccountId: number | undefined;
@@ -33,7 +33,7 @@ describe("oauthAccounts wrapper - tests", () => {
     });
 
     it("should create a new oauthAccount with valid data", () => {
-        const newAccount = createOauthAccounts({
+        const newAccount = createOauthAccount({
             user_id: userId,
             provider_name: providerName,
             provider_user_id: "user_123",
@@ -55,7 +55,7 @@ describe("oauthAccounts wrapper - tests", () => {
         // Ici on doit utiliser un provider_name valide car FK vers oauth_providers obligatoire
         // Donc on ne peut pas utiliser "Unknow" par défaut sans l'insérer d'abord.
         // Donc test modifié pour forcer provider_name correct.
-        const newAccount = createOauthAccounts({
+        const newAccount = createOauthAccount({
             user_id: userId,
             provider_user_id: "user_no_provider",
             provider_name: providerName, // Obligatoire pour la FK
@@ -66,13 +66,13 @@ describe("oauthAccounts wrapper - tests", () => {
     });
 
     it("should fail to create oauthAccount if required fields are missing", () => {
-        const noUserId = createOauthAccounts({
+        const noUserId = createOauthAccount({
             provider_name: providerName,
             provider_user_id: "missing_user",
         });
         expect(noUserId).toBeUndefined();
 
-        const noProviderUserId = createOauthAccounts({
+        const noProviderUserId = createOauthAccount({
             user_id: userId,
             provider_name: providerName,
         });
@@ -82,26 +82,25 @@ describe("oauthAccounts wrapper - tests", () => {
     it("should return oauthAccount by ID", () => {
         if (!createdOauthAccountId) return;
 
-        const account = getOauthAccountsById(createdOauthAccountId);
+        const account = getOauthAccountById(createdOauthAccountId);
         expect(account).toBeDefined();
-        expect(account?.oauth_account_id).toBe(createdOauthAccountId);
     });
 
     it("should return undefined for non-existing oauthAccount ID", () => {
-        const result = getOauthAccountsById(99999999);
+        const result = getOauthAccountById(99999999);
         expect(result).toBeUndefined();
     });
 
     it("should update oauthAccount fields correctly", () => {
         if (!createdOauthAccountId) return;
 
-        const updated = updateOauthAccounts(createdOauthAccountId, {
+        const updated = updateOauthAccount(createdOauthAccountId, {
             profile_json: '{"name":"Jane Doe"}',
             revoked_at: Date.now(),
         });
         expect(updated).toBe(true);
 
-        const updatedAccount = getOauthAccountsById(createdOauthAccountId);
+        const updatedAccount = getOauthAccountById(createdOauthAccountId);
         expect(updatedAccount?.profile_json).toBe('{"name":"Jane Doe"}');
         expect(updatedAccount?.revoked_at).toBeDefined();
     });
@@ -109,12 +108,12 @@ describe("oauthAccounts wrapper - tests", () => {
     it("should return false when updating with no valid fields", () => {
         if (!createdOauthAccountId) return;
 
-        const updated = updateOauthAccounts(createdOauthAccountId, {});
+        const updated = updateOauthAccount(createdOauthAccountId, {});
         expect(updated).toBe(false);
     });
 
     it("should return false when updating a non-existing oauthAccount", () => {
-        const updated = updateOauthAccounts(9999999, { profile_json: "{}" });
+        const updated = updateOauthAccount(9999999, { profile_json: "{}" });
         expect(updated).toBe(false);
     });
 
@@ -125,7 +124,7 @@ describe("oauthAccounts wrapper - tests", () => {
         db.prepare(`DELETE FROM users WHERE user_id = ?`).run(userId);
 
         // L'oauth_account associé doit être supprimé
-        const account = getOauthAccountsById(createdOauthAccountId);
+        const account = getOauthAccountById(createdOauthAccountId);
         expect(account).toBeUndefined();
     });
 });

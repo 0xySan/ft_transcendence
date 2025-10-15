@@ -25,6 +25,26 @@ export function getUser2FaMethodsById(id: number): user2FaMethods | undefined {
 }
 
 /**
+ * Retrieve all 2FA methods for a specific user.
+ * @param user_id - The ID of the user
+ * @returns An array of user2FaMethods objects associated with the user
+ */
+export function getUser2FaMethodsByUserId(user_id: number): user2FaMethods[] {
+	const stmt = db.prepare("SELECT * FROM user_2fa_methods WHERE user_id = ?");
+	return stmt.all(user_id) as user2FaMethods[];
+}
+
+/**
+ * Retrieve the primary 2FA method for a specific user.
+ * @param user_id - The ID of the user
+ * @returns The primary user2FaMethods object if found, otherwise undefined
+ */
+export function getPrimary2FaMethodByUserId(user_id: number): user2FaMethods | undefined {
+	const stmt = db.prepare("SELECT * FROM user_2fa_methods WHERE user_id = ? AND is_primary = 1");
+	return stmt.get(user_id) as user2FaMethods | undefined;
+}
+
+/**
  * Create a new user2FaMethods if it doesn't exist.
  * Default values will be applied for missing fields.
  * Uses the generic insertRow wrapper to insert and fetch the session.
@@ -42,7 +62,7 @@ export function create2FaMethods(options: Partial<user2FaMethods>): user2FaMetho
     const   created_at = options.created_at;
     const   updated_at = options.updated_at;
 
-    const	new_row = insertRow<user2FaMethods>("user_2fa_methods", {
+    return (insertRow<user2FaMethods>("user_2fa_methods", {
         user_id: user_id,
         method_type: method_type,
         label: label,
@@ -50,8 +70,7 @@ export function create2FaMethods(options: Partial<user2FaMethods>): user2FaMetho
         is_verified: is_verified ? 1 : 0,
         created_at: created_at,
         updated_at: updated_at
-    });
-    return (new_row);
+    }));
 }
 
 /**
@@ -89,4 +108,40 @@ export function update2FaMethods(method_id: number, options: Partial<user2FaMeth
     const result = stmt.run(params);
 
     return (result.changes > 0);
+}
+
+/**
+ * Delete a user2FaMethods by its ID.
+ * @param method_id - The ID of the user2FaMethods to delete
+ * @returns true if deleted, false otherwise
+ */
+export function delete2FaMethods(method_id: number): boolean {
+	const stmt = db.prepare("DELETE FROM user_2fa_methods WHERE method_id = ?");
+	const result = stmt.run(method_id);
+	return (result.changes > 0);
+}
+
+/**
+ * Set a 2FA method as primary for a user, unsetting any previous primary.
+ * @param user_id - The ID of the user
+ * @param method_id - The ID of the 2FA method to set as primary
+ * @returns true if updated, false otherwise
+ */
+export function setPrimary2FaMethod(user_id: number, method_id: number): boolean {
+	const unsetStmt = db.prepare("UPDATE user_2fa_methods SET is_primary = 0 WHERE user_id = ? AND is_primary = 1");
+	unsetStmt.run(user_id);
+	const setStmt = db.prepare("UPDATE user_2fa_methods SET is_primary = 1 WHERE method_id = ? AND user_id = ?");
+	const result = setStmt.run(method_id, user_id);
+	return (result.changes > 0);
+}
+
+/**
+ * Verify a 2FA method.
+ * @param method_id - The ID of the 2FA method to verify
+ * @returns true if updated, false otherwise
+ */
+export function verify2FaMethod(method_id: number): boolean {
+	const stmt = db.prepare("UPDATE user_2fa_methods SET is_verified = 1 WHERE method_id = ?");
+	const result = stmt.run(method_id);
+	return (result.changes > 0);
 }

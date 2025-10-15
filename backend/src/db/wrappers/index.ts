@@ -21,13 +21,8 @@ export function insertRow<T>(table: string, data: Record<string, unknown>): T | 
 		const placeholders = Object.keys(data).map(() => "?").join(", ");
 		const values = Object.values(data);
 
-		console.log("DEBUG: BEFORE RUN COMMAND = " + table);
-		console.log(columns)
-		console.log(placeholders)
-		console.log(values)
 		const stmt = db.prepare(`INSERT INTO ${table} (${columns}) VALUES (${placeholders})`);
 		const info = stmt.run(...values);
-		console.log("DEBUG: AFTER RUN COMMAND = " + table);
 
 		// Fetch the newly inserted row by rowid
 		const row = db.prepare(`SELECT * FROM ${table} WHERE rowid = ?`).get(info.lastInsertRowid);

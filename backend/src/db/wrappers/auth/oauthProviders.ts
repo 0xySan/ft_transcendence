@@ -1,11 +1,11 @@
 /**
- * Wrapper functions for interacting with the `oauthProviders` table.
+ * Wrapper functions for interacting with the `OauthProviders` table.
  * Provides retrieval, creation, and listing utilities.
 */
 
 import { db, insertRow, getRow } from "../../index.js";
 
-export interface oauthProviders {
+export interface OauthProvider {
 	provider_id:				number;
 	name:						string;
 	discovery_url:				string;
@@ -16,32 +16,32 @@ export interface oauthProviders {
 }
 
 /**
- * Retrieve a oauthProviders by its ID.
- * @param id - The primary key of the oauthProviders
- * @returns The oauthProviders object if found, otherwise undefined
+ * Retrieve a OauthProvider by its ID.
+ * @param id - The primary key of the OauthProvider
+ * @returns The OauthProvider object if found, otherwise undefined
  */
-export function getOauthProvidersById(id: number): oauthProviders | undefined {
-	return (getRow<oauthProviders>("oauth_providers", "provider_id", id));
+export function getOauthProviderById(id: number): OauthProvider | undefined {
+	return (getRow<OauthProvider>("oauth_providers", "provider_id", id));
 }
 
 /**
- * Retrieve a oauthProviders by its Name.
- * @param id - The primary key of the oauthProviders
- * @returns The oauthProviders object if found, otherwise undefined
+ * Retrieve a OauthProvider by its Name.
+ * @param id - The primary key of the OauthProvider
+ * @returns The OauthProvider object if found, otherwise undefined
  */
-export function getOauthProvidersByName(name: string): oauthProviders | undefined {
-	return (getRow<oauthProviders>("oauth_providers", "name", name));
+export function getOauthProviderByName(name: string): OauthProvider | undefined {
+	return (getRow<OauthProvider>("oauth_providers", "name", name));
 }
 
 /**
- * Create a new oauthProviders if it doesn't exist.
+ * Create a new OauthProvider if it doesn't exist.
  * Default values will be applied for missing fields.
- * Uses the generic insertRow wrapper to insert and fetch the oauthProviders.
+ * Uses the generic insertRow wrapper to insert and fetch the OauthProvider.
  * 
- * @param options - Partial oauthProviders object with name, url, client_id, secret, enabled and date
- * @returns The newly created or existing oauthProviders object, or undefined if insertion failed
+ * @param options - Partial OauthProvider object with name, url, client_id, secret, enabled and date
+ * @returns The newly created or existing OauthProvider object, or undefined if insertion failed
  */
-export function createOauthProviders(options: Partial<oauthProviders>): oauthProviders | undefined {
+export function createOauthProvider(options: Partial<OauthProvider>): OauthProvider | undefined {
 	const	name = (options.name || "Unknown")
 	const	discovery_url = (options.discovery_url || null)
 	const	client_id = (options.client_id || null)
@@ -49,29 +49,27 @@ export function createOauthProviders(options: Partial<oauthProviders>): oauthPro
 	const	is_enabled = (options.is_enabled ?? true)
 	const	created_at = Math.floor(Date.now() / 1000);
 
-	const	new_row = insertRow<oauthProviders>("oauth_providers", {
+	return (insertRow<OauthProvider>("oauth_providers", {
 		name: name,
 		discovery_url: discovery_url,
 		client_id: client_id,
 		client_secret_encrypted: client_secret_encrypted,
 		is_enabled: is_enabled ? 1 : 0,
 		created_at: created_at
-	});
-
-	return (new_row);
+	}));
 }
 
 /**
- * Update oauthProviders.
+ * Update OauthProvider.
  * Only updates the provided fields.
  * 
  * @param provider_id - The provider ID
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */
-export function updateOauthProviders(provider_id: number, options: Partial<oauthProviders>): boolean {
+export function updateOauthProvider(provider_id: number, options: Partial<OauthProvider>): boolean {
 	const keys = Object.keys(options).filter(
-		key => options[key as keyof oauthProviders] !== undefined && options[key as keyof oauthProviders] !== null
+		key => options[key as keyof OauthProvider] !== undefined && options[key as keyof OauthProvider] !== null
 	);
 
 	if (keys.length === 0) return false;
@@ -83,7 +81,7 @@ export function updateOauthProviders(provider_id: number, options: Partial<oauth
 		if (key === "is_enabled") {
 			params[key] = options.is_enabled ? 1 : 0;
 		} else {
-			params[key] = options[key as keyof oauthProviders];
+			params[key] = options[key as keyof OauthProvider];
 		}
 	}
 
@@ -96,4 +94,21 @@ export function updateOauthProviders(provider_id: number, options: Partial<oauth
 	const result = stmt.run(params);
 
 	return (result.changes > 0);
+}
+
+/**
+ * List all OauthProviders.
+ * @param onlyEnabled - If true, only returns enabled providers
+ * @returns Array of OauthProvider objects
+ */
+export function listOauthProviders(onlyEnabled = false): OauthProvider[] {
+	try {
+		const query = onlyEnabled
+			? `SELECT * FROM oauth_providers WHERE is_enabled = 1 ORDER BY name ASC`
+			: `SELECT * FROM oauth_providers ORDER BY name ASC`;
+		const stmt = db.prepare(query);
+		return stmt.all() as OauthProvider[];
+	} catch (err) {
+		return [];
+	}
 }
