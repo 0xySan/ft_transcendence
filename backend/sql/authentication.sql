@@ -62,7 +62,7 @@ CREATE TABLE oauth_providers (
 -- Store the relation between a user and a Oauth provider
 CREATE TABLE oauth_accounts (
 	oauth_account_id		INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
-	user_id					INTEGER,															-- ID on the user (FK)
+	user_id					INTEGER		NOT NULL,															-- ID on the user (FK)
 	provider_name			TEXT,																-- stock the name (FK)
 	provider_user_id		TEXT		NOT NULL,												-- stock the user id
 	profile_json			TEXT,																-- the profile user on the Oauth server
