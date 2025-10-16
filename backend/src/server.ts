@@ -2,6 +2,15 @@ import Fastify from "fastify";
 
 // Initialize db
 import { db } from "./db/index.js";
+db; // ensure db is initialized
+
+import dotenv from 'dotenv';
+dotenv.config({ quiet: true });
+
+if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length !== 64)) {
+  console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
+  process.exit(1);
+}
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";

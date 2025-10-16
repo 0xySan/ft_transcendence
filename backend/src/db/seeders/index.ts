@@ -13,6 +13,7 @@ type SqliteDatabase = Database.Database;
 
 // Import seeder functions
 import { populateCountries } from "./countries.js";
+import { seedOAuthProviders } from "./oauthProvider.js";
 
 function isTestEnv(): boolean {
   // Type guard for import.meta.vitest
@@ -78,6 +79,15 @@ export function initializeDatabase(): SqliteDatabase {
 		} catch (err) {
 			console.error(`Failed to populate countries table: ${(err as Error).message}`);
 			process.exit(1);
+		}
+
+		if (!isTestEnv()) {
+			try {
+				seedOAuthProviders(db);
+			} catch (err) {
+				console.error(`Failed to seed OAuth providers exiting: ${(err as Error).message}`);
+				process.exit(1);
+			}
 		}
 	} else {
 		log("Database already exists, skipping init.sql execution and seeders");
