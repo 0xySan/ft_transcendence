@@ -18,12 +18,10 @@ const __dirname = path.dirname(__filename);
 countries.registerLocale(enLocale);
 
 // --- Function to populate countries table ---
-export function populateCountries(db: Database.Database) {
-	// --- Resolve svg-country-flags module path in ESM ---
-	const pkgUrl = new URL("../../node_modules/svg-country-flags/package.json", import.meta.url);
-	const pkgPath = fileURLToPath(pkgUrl);
-	const moduleDir = path.dirname(pkgPath);
-	const svgCountryFlagsPath = path.join(moduleDir, "svg");
+export function populateCountries(db: Database.Database): void {
+	// --- Base directory = dossier backend ---
+	const backendDir = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
+	const svgCountryFlagsPath = path.join(backendDir, "node_modules", "svg-country-flags", "svg");
 
 	// Read SVG files
 	const files = fs.readdirSync(svgCountryFlagsPath).filter(f => f.endsWith(".svg"));
@@ -56,7 +54,6 @@ export function populateCountries(db: Database.Database) {
 		const svgPath = `/resources/imgs/svg/flags/${svgFile}`;
 		insertStmt.run(code, name, svgPath);
 	}
-
 	console.log(
 		`Inserted ${files.filter(f => countries.isValid(path.basename(f, ".svg").toUpperCase())).length + Object.keys(customMap).length} countries and custom entries.`
 	);

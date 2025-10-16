@@ -51,12 +51,28 @@ export function addParticipant(
 	userId: number,
 	team?: number
 ): GameParticipant | undefined {
-	return insertRow<GameParticipant>("game_participants", {
-		game_id: gameId,
-		user_id: userId,
-		team,
-	});
+	try {
+		// Insert or ignore to respect UNIQUE(game_id, user_id)
+		const stmt = db.prepare(`
+			INSERT OR IGNORE INTO game_participants (game_id, user_id, team)
+			VALUES (?, ?, ?)
+		`);
+		const info = stmt.run(gameId, userId, team);
+
+		// If nothing was inserted (duplicate), return undefined
+		if (info.changes === 0) return undefined;
+
+		// Fetch the newly inserted participant by rowid
+		const row = db.prepare(`SELECT * FROM game_participants WHERE rowid = ?`)
+			.get(info.lastInsertRowid);
+
+		return row as GameParticipant;
+	} catch (err) {
+		console.error(`Failed to add participant:`, (err as Error).message);
+		return undefined;
+	}
 }
+
 
 /**
  * Update a participant (score, team, result).

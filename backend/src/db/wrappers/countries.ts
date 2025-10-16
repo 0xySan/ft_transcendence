@@ -7,7 +7,7 @@ import { db, insertRow, getRow } from "../index.js";
 
 /** --- Types --- */
 export interface Country {
-	id: number;
+	country_id: number;
 	country_code: string;
 	country_name: string;
 	flag_svg_path: string;
@@ -19,7 +19,7 @@ export interface Country {
  * @returns The country object if found, otherwise undefined
  */
 export function getCountryById(id: number): Country | undefined {
-	return getRow<Country>("countries", "id", id);
+	return getRow<Country>("countries", "country_id", id);
 }
 
 /**
@@ -53,11 +53,21 @@ export function createCountry(options: Partial<Country>): Country | undefined {
 	const name = options.country_name || "Unknown";
 	const flag = options.flag_svg_path || `/resources/imgs/svg/flags/${code.toLowerCase()}.svg`;
 
-	return insertRow<Country>("countries", {
+	const country = insertRow<Country>("countries", {
 		country_code: code,
 		country_name: name,
 		flag_svg_path: flag,
 	});
+
+	// If row already existed or insert failed → try to get it manually
+	if (!country) {
+		const existing = db.prepare(
+			`SELECT * FROM countries WHERE country_code = ?`
+		).get(code) as Country | undefined;
+		return existing;
+	}
+
+	return country;
 }
 
 /**

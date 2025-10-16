@@ -14,8 +14,11 @@ type SqliteDatabase = Database.Database;
 // Import seeder functions
 import { populateCountries } from "./countries.js";
 
-
-
+function isTestEnv(): boolean {
+  // Type guard for import.meta.vitest
+  const hasVitest = typeof (import.meta as any).vitest !== "undefined";
+  return hasVitest || process.env.NODE_ENV === "test";
+}
 
 // --- Main function to initialize DB and run seeders ---
 export function initializeDatabase(): SqliteDatabase {
@@ -23,19 +26,30 @@ export function initializeDatabase(): SqliteDatabase {
 	const dataDir = path.join(process.cwd(), "data");          // Directory to store the DB
 	const dbFile = path.join(dataDir, "database.sqlite");     // SQLite database file
 	const initSqlFile = path.join("sql", "init.sql");         // SQL file for schema initialization
+	let dbExists = false;
+	let db: SqliteDatabase;
+	const log = console.log;
 
-	// --- Ensure data directory exists ---
-	if (!fs.existsSync(dataDir)) {
-		fs.mkdirSync(dataDir, { recursive: true });
-		console.log(`Created data directory at ${dataDir}`);
+	if (isTestEnv()) {
+		// In test environment, use an in-memory database
+		log("Running in test environment, using in-memory SQLite DB");
+		db = new Database(":memory:");
+		dbExists = false; // Always treat as new DB
+		console.log = () => {}; // Silence logs in test env
+	} else {
+		// --- Ensure data directory exists ---
+		if (!fs.existsSync(dataDir)) {
+			fs.mkdirSync(dataDir, { recursive: true });
+			log(`Created data directory at ${dataDir}`);
+		}
+
+		// --- Check if the database already exists ---
+		dbExists = fs.existsSync(dbFile);
+
+		// --- Open the SQLite database ---
+		db = new Database(dbFile);
+		log(`Opened SQLite DB at ${dbFile}`);
 	}
-
-	// --- Check if the database already exists ---
-	const dbExists = fs.existsSync(dbFile);
-
-	// --- Open the SQLite database ---
-	const db: SqliteDatabase = new Database(dbFile);
-	console.log(`Opened SQLite DB at ${dbFile}`);
 
 	// --- Execute init.sql only if the DB was just created ---
 	if (!dbExists) {
@@ -56,8 +70,11 @@ export function initializeDatabase(): SqliteDatabase {
 			process.exit(1);
 		}
 	} else {
-		console.log("Database already exists, skipping init.sql execution and seeders");
+		log("Database already exists, skipping init.sql execution and seeders");
 	}
+	console.log = log; // Restore original console.log if it was overridden
 
 	return db;
 }
+
+export { populateCountries };

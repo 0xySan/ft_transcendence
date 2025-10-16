@@ -21,15 +21,8 @@ export function insertRow<T>(table: string, data: Record<string, unknown>): T | 
 		const placeholders = Object.keys(data).map(() => "?").join(", ");
 		const values = Object.values(data);
 
-		const stmt = db.prepare(`INSERT OR IGNORE INTO ${table} (${columns}) VALUES (${placeholders})`);
+		const stmt = db.prepare(`INSERT INTO ${table} (${columns}) VALUES (${placeholders})`);
 		const info = stmt.run(...values);
-
-		// If nothing was inserted (due to OR IGNORE), try to fetch the existing row
-		if (info.changes === 0) {
-			const pk = Object.keys(data)[0]; // assume first key is unique
-			const existing = db.prepare(`SELECT * FROM ${table} WHERE ${pk} = ?`).get(data[pk]);
-			return existing as T | undefined;
-		}
 
 		// Fetch the newly inserted row by rowid
 		const row = db.prepare(`SELECT * FROM ${table} WHERE rowid = ?`).get(info.lastInsertRowid);
@@ -59,5 +52,9 @@ export function getRow<T>(table: string, column: string, value: unknown): T | un
 }
 
 export * from "./countries.js";
-export * from "./users.js";
+export * from "./gameParticipants.js";
+export * from "./games.js";
+export * from "./userProfiles.js";
 export * from "./userRoles.js";
+export * from "./users.js";
+export * from "./userStats.js";

@@ -40,11 +40,19 @@ export function createGame(
 	scoreLimit = 11,
 	maxPlayers = 2
 ): Game | undefined {
-	return insertRow<Game>("games", {
+	// Insert the new game into the database
+	const game = insertRow<Game>("games", {
 		mode,
 		score_limit: scoreLimit,
 		max_players: maxPlayers,
 	});
+
+	if (!game) return undefined;
+
+	if (game.winner_id === null) game.winner_id = undefined;
+	if (game.duration === null) game.duration = undefined;
+
+	return game;
 }
 
 /**
