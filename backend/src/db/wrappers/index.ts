@@ -51,12 +51,5 @@ export function getRow<T>(table: string, column: string, value: unknown): T | un
 	}
 }
 
-export * from "./main/countries.js";
-export * from "./main/gameParticipants.js";
-export * from "./main/games.js";
-export * from "./main/userProfiles.js";
-export * from "./main/userRoles.js";
-export * from "./main/users.js";
-export * from "./main/userStats.js";
-
-export * from "./auth/oauthProviders.js";
+export * from "./auth/index.js";
+export * from "./main/index.js";

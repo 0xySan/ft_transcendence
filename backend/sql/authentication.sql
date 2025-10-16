@@ -68,7 +68,7 @@ CREATE TABLE oauth_accounts (
 	profile_json			TEXT,																-- the profile user on the Oauth server
 	id_token_hash			TEXT,																-- encrypted hashed token
 	linked_at				DATETIME,															-- timestamp of the linked oauth account
-	revoked_at				DATETIME,															-- timestamp of the revojed oauth account
+	revoked_at				DATETIME,															-- timestamp of the revoked oauth account
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,							-- users.user_id
 	FOREIGN KEY(provider_name) REFERENCES oauth_providers(name) ON DELETE CASCADE				-- oauth_providers.name 
 );

@@ -12,10 +12,6 @@ describe("oauthAccount wrapper - tests", () => {
     let createdOauthAccountId: number | undefined;
 
     beforeAll(() => {
-        // Insérer un rôle minimal pour l'utilisateur
-        try {
-            db.prepare(`INSERT OR IGNORE INTO user_roles (role_id, name) VALUES (?, ?)`).run(1, "testRole");
-        } catch {}
 
         // Créer un utilisateur
         const insertUser = db.prepare(`
