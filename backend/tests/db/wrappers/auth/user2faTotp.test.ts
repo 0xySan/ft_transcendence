@@ -1,0 +1,119 @@
+import { describe, it, expect, beforeAll } from "vitest";
+import { db } from "../../../../src/db/index.js";
+import {
+	createUser2faTotp,
+	getSessionById,
+	updateUser2faTotp,
+	listUser2faTotp,
+	getUser2faTotpByMethodId
+} from "../../../../src/db/wrappers/auth/user2faTotp.js";
+
+import {
+	create2FaMethods
+} from "../../../../src/db/wrappers/auth/user2FaMethods.js";
+
+let userId: number;
+let methodId: number;
+let totpId: number;
+
+describe("user_2fa_totp wrapper – with FK setup", () => {
+	beforeAll(() => {
+		const insertRole = db.prepare(`
+			INSERT INTO user_roles (role_id, role_name) VALUES (1, 'user')
+			ON CONFLICT(role_id) DO NOTHING
+		`);
+		insertRole.run();
+
+		const insertUser = db.prepare(`
+			INSERT INTO users (email, password_hash, role_id)
+			VALUES (?, ?, ?)
+		`);
+		const userRes = insertUser.run("totp@example.local", "hashed-password", 1);
+		userId = Number(userRes.lastInsertRowid);
+
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 2,
+			label: "App Authenticator",
+			is_primary: 1,
+			is_verified: true,
+			created_at: now,
+			updated_at: now
+		});
+        // @ts-expect-error
+		methodId = method?.method_id;
+		expect(methodId).toBeDefined();
+	});
+
+	it("should create a user_2fa_totp entry with valid FK", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const created = createUser2faTotp({
+			method_id: methodId,
+            // @ts-expect-error
+			secret_encrypted: Buffer.from("secret-totp"),
+			secret_meta: "digits=6;period=30",
+			last_used: now
+		});
+		expect(created).toBeDefined();
+		expect(created?.method_id).toBe(methodId);
+		expect(created?.secret_meta).toContain("digits");
+
+		totpId = created!.totp_id;
+		expect(typeof totpId).toBe("number");
+	});
+
+	it("should retrieve a user_2fa_totp entry by ID", () => {
+		const totp = getSessionById(totpId);
+		expect(totp).toBeDefined();
+		expect(totp?.method_id).toBe(methodId);
+		expect(totp?.secret_meta).toMatch(/period=30/);
+	});
+
+	it("should update secret_meta and last_used fields", () => {
+		const updated = updateUser2faTotp(totpId, {
+			secret_meta: "digits=8;period=60",
+			last_used: 1800000000
+		});
+		expect(updated).toBe(true);
+
+		const fetched = getSessionById(totpId);
+		expect(fetched?.secret_meta).toContain("digits=8");
+		expect(fetched?.last_used).toBe(1800000000);
+	});
+
+	it("should return false when trying to update nothing", () => {
+		const result = updateUser2faTotp(totpId, {});
+		expect(result).toBe(false);
+	});
+
+	it("should not allow creation without valid method_id", () => {
+		const result = createUser2faTotp({
+			method_id: 99999,
+            // @ts-expect-error
+			secret_encrypted: Buffer.from("bad"),
+			secret_meta: "fail"
+		});
+		expect(result).toBeUndefined();
+	});
+
+	it("should retrieve user_2fa_totp by method_id", () => {
+        const totp = getUser2faTotpByMethodId(methodId);
+        expect(totp).toBeDefined();
+        expect(totp?.method_id).toBe(methodId);
+        expect(totp?.secret_encrypted).toBeInstanceOf(Buffer);
+    });
+
+	it("should list all user_2fa_totp entries", () => {
+		const allTotps = listUser2faTotp();
+		expect(Array.isArray(allTotps)).toBe(true);
+		expect(allTotps.length).toBeGreaterThan(0);
+		allTotps.forEach(totp => {
+            expect(totp.method_id).toBeDefined();
+            expect(totp.secret_encrypted).toBeInstanceOf(Buffer);
+            // @ts-expect-error
+            const secretString = totp.secret_encrypted.toString("base64");
+            expect(typeof secretString).toBe("string");
+        });
+	});
+});
