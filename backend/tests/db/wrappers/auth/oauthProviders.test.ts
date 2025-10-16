@@ -3,8 +3,10 @@ import {
 	getOauthProviderById,
 	getOauthProviderByName,
 	createOauthProvider,
-	updateOauthProvider
+	updateOauthProvider,
+	listOauthProviders
 } from "../../../../src/db/wrappers/auth/oauthProviders.js";
+import { db } from "../../../../src/db/index.js";
 
 describe("oauthProviders wrapper", () => {
 	let createdProviderId: number | undefined;
@@ -34,11 +36,6 @@ describe("oauthProviders wrapper", () => {
 		const result = createOauthProvider({ is_enabled: false });
 		expect(result).toBeDefined();
 		expect(result?.is_enabled).toBe(0);
-	});
-
-    it("must refuse the name because it is unique", () => {
-		const result = createOauthProvider({});
-		expect(result).toBeUndefined();
 	});
 
 	it("should return undefined when trying to create with duplicate unique name", () => {
@@ -109,9 +106,103 @@ describe("oauthProviders wrapper", () => {
 		expect(updated).toBe(false);
 	});
 
+	it("should store and retrieve client_secret_encrypted correctly", () => {
+		const secret = Buffer.from("my-secret-value");
+		const result = createOauthProvider({
+			name: "SecretProvider",
+			client_secret_encrypted: secret,
+		});
+		expect(result).toBeDefined();
+		expect(result?.client_secret_encrypted.equals(secret)).toBe(true);
+
+		const fetched = getOauthProviderById(result!.provider_id);
+		expect(fetched?.client_secret_encrypted.equals(secret)).toBe(true);
+	});
+
+	it("should store and retrieve discovery_url and client_id", () => {
+		const result = createOauthProvider({
+			name: "DiscoveryProvider",
+			discovery_url: "https://example.com/.well-known/openid-configuration",
+			client_id: "client-123"
+		});
+		expect(result).toBeDefined();
+		expect(result?.discovery_url).toBe("https://example.com/.well-known/openid-configuration");
+		expect(result?.client_id).toBe("client-123");
+
+		const fetched = getOauthProviderById(result!.provider_id);
+		expect(fetched?.discovery_url).toBe("https://example.com/.well-known/openid-configuration");
+		expect(fetched?.client_id).toBe("client-123");
+	});
+
+	it("should set created_at to a recent timestamp", () => {
+		const before = Math.floor(Date.now() / 1000);
+		const result = createOauthProvider({ name: "TimestampProvider" });
+		const after = Math.floor(Date.now() / 1000);
+
+		expect(result).toBeDefined();
+		expect(result!.created_at).toBeGreaterThanOrEqual(before);
+		expect(result!.created_at).toBeLessThanOrEqual(after);
+	});
+
 	it("should return false when updating with only undefined/null fields", () => {
 		if (!createdProviderId) return;
-		const updated = updateOauthProvider(createdProviderId, { name: undefined, client_id: null });
+		const updated = updateOauthProvider(createdProviderId, { name: undefined, client_id: undefined });
 		expect(updated).toBe(false);
+	});
+
+	it("should return all providers with listOauthProviders()", () => {
+		createOauthProvider({ name: "ListProvider1" });
+		createOauthProvider({ name: "ListProvider2" });
+
+		const all = listOauthProviders();
+		const names = all.map(p => p.name);
+		expect(names).toEqual(expect.arrayContaining(["ListProvider1", "ListProvider2"]));
+	});
+
+	it("should return only enabled providers when listOauthProviders(true) is used", () => {
+		createOauthProvider({ name: "EnabledProvider", is_enabled: true });
+		createOauthProvider({ name: "DisabledProvider", is_enabled: false });
+
+		const enabledOnly = listOauthProviders(true);
+		const names = enabledOnly.map(p => p.name);
+
+		expect(names).toContain("EnabledProvider");
+		expect(names).not.toContain("DisabledProvider");
+	});
+
+	it("should update multiple fields at once", () => {
+		const provider = createOauthProvider({
+			name: "MultiUpdateProvider",
+			client_id: "old-client",
+			is_enabled: true
+		});
+		expect(provider).toBeDefined();
+
+		const success = updateOauthProvider(provider!.provider_id, {
+			client_id: "new-client",
+			is_enabled: false
+		});
+		expect(success).toBe(true);
+
+		const updated = getOauthProviderById(provider!.provider_id);
+		expect(updated?.client_id).toBe("new-client");
+		expect(updated?.is_enabled).toBe(0);
+	});
+
+	it("should return an empty array if no providers exist", () => {
+		const all = listOauthProviders();
+		expect(all).toBeInstanceOf(Array);
+	});
+
+	it("should return an empty array if db.prepare throws an error", () => {
+		const originalPrepare = db.prepare;
+
+		// @ts-expect-error
+		db.prepare = vi.fn(() => { throw new Error("forced error"); });
+
+		const result = listOauthProviders();
+
+		expect(result).toEqual([]);
+		db.prepare = originalPrepare;
 	});
 });

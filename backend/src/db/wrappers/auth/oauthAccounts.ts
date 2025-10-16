@@ -30,7 +30,8 @@ export function getOauthAccountById(id: number): oauthAccount | undefined {
  * @returns An array of oauthAccounts objects, or an empty array if none found
  */
 export function getOauthAccountsByUserId(user_id: number): oauthAccount[] {
-	return (getRow<oauthAccount[]>("oauth_accounts", "user_id", user_id) ?? []);
+    const stmt = db.prepare("SELECT * FROM oauth_accounts WHERE user_id = ?");
+	return (stmt.all(user_id) as oauthAccount[]);
 }
 
 /** 
@@ -59,12 +60,14 @@ export function getOauthAccountByProviderAndUserId(provider_name: string, provid
  */
 export function createOauthAccount(options: Partial<oauthAccount>): oauthAccount | undefined {
     const   user_id = options.user_id;
-    const   provider_name = (options.provider_name ?? "Unknow");
+    const   provider_name = (options.provider_name || "Unknow");
     const   provider_user_id = options.provider_user_id;
     const   profile_json = options.profile_json;
     const   id_token_hash = options.id_token_hash;
     const   linked_at = options.linked_at;
     const   revoked_at = options.revoked_at;
+
+    console.log("DEBUG: provider_name = " + provider_name);
 
 	return (insertRow<oauthAccount>("oauth_accounts", {
         user_id: user_id,

@@ -39,7 +39,8 @@ export function getPasswordResetByTokenHash(token_hash: string): passwordReset |
  * @returns An array of passwordResets objects, or an empty array if none found
  */
 export function getPasswordResetsByUserId(user_id: number): passwordReset[] {
-	return (getRow<passwordReset[]>("password_resets", "user_id", user_id) ?? []);
+	const stmt = db.prepare("SELECT * FROM password_resets WHERE user_id = ?");
+	return (stmt.all(user_id) as passwordReset[]);
 }
 
 /**
