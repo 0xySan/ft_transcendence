@@ -44,7 +44,7 @@ export function createApiClients(options: Partial<apiClients>): apiClients | und
     const   redirect_url = (options.redirect_url);
     const   scopes = (options.scopes);
     const   is_confidential = (options.is_confidential ?? 1);
-    const   created_at = (options.created_at);
+    const   created_at = Math.floor(Date.now() / 1000);
     const   updated_at = (options.updated_at);
     const   secret_expiration = (options.secret_expiration);
 
