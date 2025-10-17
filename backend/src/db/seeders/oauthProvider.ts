@@ -14,38 +14,9 @@
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
-import crypto from 'crypto';
 import Database from 'better-sqlite3';
 
-// Encryption key (must be a 64-character hex string for AES-256)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '';
-const IV_LENGTH = 16; // AES block size in bytes
-
-/**
- * Encrypts a given secret using AES-256-CBC.
- * Concatenates the IV and the encrypted data into a single Buffer
- * so it can be easily stored and later decrypted.
- *
- * @param secret - the plaintext secret to encrypt
- * @returns Buffer - IV + encrypted secret
- */
-function encryptSecret(secret: string): Buffer {
-	if (!ENCRYPTION_KEY) {
-		throw new Error('ENCRYPTION_KEY is missing in .env. Cannot encrypt secrets.');
-	}
-
-	const iv = crypto.randomBytes(IV_LENGTH);
-	const key = Buffer.from(ENCRYPTION_KEY, 'hex');
-
-	const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-	const encrypted = Buffer.concat([
-		cipher.update(secret, 'utf8'),
-		cipher.final()
-	]);
-
-	// Return IV + encrypted data (used later for decryption)
-	return Buffer.concat([iv, encrypted]);
-}
+import { encryptSecret } from '../../utils/crypto.js';
 
 /**
  * Interface representing environment variables for a single OAuth provider.
