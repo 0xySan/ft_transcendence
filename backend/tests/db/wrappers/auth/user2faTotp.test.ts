@@ -55,9 +55,10 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 			secret_meta: "digits=6;period=30",
 			last_used: now
 		});
+        if (!created)throw new Error("Expected an user2faTotp from createUser2faTotp(), but got undefined.");
 		expect(created).toBeDefined();
-		expect(created?.method_id).toBe(methodId);
-		expect(created?.secret_meta).toContain("digits");
+		expect(created.method_id).toBe(methodId);
+		expect(created.secret_meta).toContain("digits");
 
 		totpId = created!.totp_id;
 		expect(typeof totpId).toBe("number");
@@ -66,8 +67,9 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 	it("should retrieve a user_2fa_totp entry by ID", () => {
 		const totp = getSessionById(totpId);
 		expect(totp).toBeDefined();
-		expect(totp?.method_id).toBe(methodId);
-		expect(totp?.secret_meta).toMatch(/period=30/);
+        if (!totp)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
+		expect(totp.method_id).toBe(methodId);
+		expect(totp.secret_meta).toMatch(/period=30/);
 	});
 
 	it("should update secret_meta and last_used fields", () => {
@@ -78,8 +80,9 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(totpId);
-		expect(fetched?.secret_meta).toContain("digits=8");
-		expect(fetched?.last_used).toBe(1800000000);
+        if (!fetched)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
+		expect(fetched.secret_meta).toContain("digits=8");
+		expect(fetched.last_used).toBe(1800000000);
 	});
 
 	it("should return false when trying to update nothing", () => {
@@ -99,9 +102,10 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 
 	it("should retrieve user_2fa_totp by method_id", () => {
         const totp = getUser2faTotpByMethodId(methodId);
+        if (!totp)throw new Error("Expected an user2faTotp from getUser2faTotpByMethodId(), but got undefined.");
         expect(totp).toBeDefined();
-        expect(totp?.method_id).toBe(methodId);
-        expect(totp?.secret_encrypted).toBeInstanceOf(Buffer);
+        expect(totp.method_id).toBe(methodId);
+        expect(totp.secret_encrypted).toBeInstanceOf(Buffer);
     });
 
 	it("should list all user_2fa_totp entries", () => {

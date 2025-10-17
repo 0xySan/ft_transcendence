@@ -94,8 +94,9 @@ describe("sessions wrapper - extended tests", () => {
 		expect(session).toBeDefined();
 
 		const found = getSessionByTokenHash(token);
+        if (!found)throw new Error("Expected an OAuth account from getSessionByTokenHash, but got undefined.");
 		expect(found).toBeDefined();
-		expect(found?.session_token_hash).toBe(token);
+		expect(found.session_token_hash).toBe(token);
 	});
 
 	it("should return undefined for unknown token hash", () => {
@@ -211,8 +212,9 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "IPv6Tester",
 			is_persistent: false
 		});
+        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
-		expect(session?.ip).toBe("::1");
+		expect(session.ip).toBe("::1");
 	});
 
 	it("should allow expired sessions to be stored (but not recommended)", () => {
@@ -226,8 +228,9 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "ExpiredAgent",
 			is_persistent: false
 		});
+        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
-		expect(session?.expires_at).toBeLessThan(now);
+		expect(session.expires_at).toBeLessThan(now);
 	});
 
 	it("should update multiple fields simultaneously", () => {
@@ -251,9 +254,10 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-		expect(fetched?.ip).toBe("4.3.2.1");
-		expect(fetched?.user_agent).toBe("UpdatedAgent");
-		expect(fetched?.is_persistent).toBe(1);
+        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		expect(fetched.ip).toBe("4.3.2.1");
+		expect(fetched.user_agent).toBe("UpdatedAgent");
+		expect(fetched.is_persistent).toBe(1);
 	});
 
 	it("should return false when updating a session with only undefined fields", () => {
@@ -326,8 +330,9 @@ describe("sessions wrapper - extended tests", () => {
 			ip: "127.0.0.1",
 			user_agent: "defaultPersistent"
 		});
+        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
-		expect(session?.is_persistent).toBe(0);
+		expect(session.is_persistent).toBe(0);
 	});
 
 	it("should store is_persistent as 1 when truthy (like true)", () => {
@@ -341,8 +346,9 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "persistentTrue",
 			is_persistent: true
 		});
+        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
-		expect(session?.is_persistent).toBe(1);
+		expect(session.is_persistent).toBe(1);
 	});
 
 	it("should store is_persistent as 0 when falsy (like false)", () => {
@@ -356,8 +362,9 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "persistentFalse",
 			is_persistent: false
 		});
+        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
-		expect(session?.is_persistent).toBe(0);
+		expect(session.is_persistent).toBe(0);
 	});
 
 	it("should update is_persistent correctly to 1", () => {
@@ -378,7 +385,8 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-		expect(fetched?.is_persistent).toBe(1);
+        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		expect(fetched.is_persistent).toBe(1);
 	});
 
 	it("should update is_persistent correctly to 0", () => {
@@ -399,7 +407,8 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-		expect(fetched?.is_persistent).toBe(0);
+        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		expect(fetched.is_persistent).toBe(0);
 	});
 
 	it("should ignore fields that are undefined or null in updateSession", () => {
@@ -424,8 +433,9 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(false);
 
 		const fetched = getSessionById(sessionId);
-		expect(fetched?.ip).toBe("9.9.9.9");
-		expect(fetched?.user_agent).toBe("ignoreUndefined");
+        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		expect(fetched.ip).toBe("9.9.9.9");
+		expect(fetched.user_agent).toBe("ignoreUndefined");
 	});
 
 	it("should update multiple fields including is_persistent correctly", () => {
@@ -450,8 +460,9 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-		expect(fetched?.ip).toBe("2.2.2.2");
-		expect(fetched?.user_agent).toBe("updatedAgent");
-		expect(fetched?.is_persistent).toBe(1);
+        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		expect(fetched.ip).toBe("2.2.2.2");
+		expect(fetched.user_agent).toBe("updatedAgent");
+		expect(fetched.is_persistent).toBe(1);
 	});
 });

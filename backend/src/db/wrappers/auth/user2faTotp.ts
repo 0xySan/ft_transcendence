@@ -29,8 +29,7 @@ export function getSessionById(id: number): user_2fa_totp | undefined {
  * @returns The user_2fa_totp object if found, otherwise undefined
  */
 export function getUser2faTotpByMethodId(method_id: number): user_2fa_totp | undefined {
-	const stmt = db.prepare(`SELECT * FROM user_2fa_totp WHERE method_id = ?`);
-	return stmt.get(method_id) as user_2fa_totp | undefined;
+    return (getRow<user_2fa_totp>("user_2fa_totp", "method_id", method_id));
 }
 
 /**

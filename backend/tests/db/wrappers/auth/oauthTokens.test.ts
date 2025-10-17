@@ -61,9 +61,9 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		expect(newToken).toBeDefined();
-		console.log("DEBUG: account_id = " + newToken?.oauth_account_id + " second = " + oauthAccountId);
-		expect(newToken?.oauth_account_id).toBe(oauthAccountId);
-		expect(newToken?.access_token_hash).toBe("access_hash_123");
+        if (!newToken)throw new Error("Expected an OAuthToken from newToken, but got undefined.");
+		expect(newToken.oauth_account_id).toBe(oauthAccountId);
+		expect(newToken.access_token_hash).toBe("access_hash_123");
 	});
 
 	it("should retrieve an OAuth token by its ID", () => {
@@ -73,8 +73,9 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		const fetched = getOauthTokenById((token as any).oauth_token_id);
+        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
 		expect(fetched).toBeDefined();
-		expect(fetched?.access_token_hash).toBe("hash_by_id");
+		expect(fetched.access_token_hash).toBe("hash_by_id");
 	});
 
 	it("should retrieve token by access_token_hash", () => {
@@ -84,8 +85,9 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		const result = getOauthTokenByAccessTokenHash("find_me_hash");
+        if (!result)throw new Error("Expected an OAuthToken from result, but got undefined.");
 		expect(result).toBeDefined();
-		expect(result?.access_token_hash).toBe("find_me_hash");
+		expect(result.access_token_hash).toBe("find_me_hash");
 	});
 
 	it("should return undefined if access_token_hash not found", () => {
@@ -172,8 +174,8 @@ describe("OauthTokens wrapper", () => {
 			access_token_hash: "default_expiry",
 			issued_at: now
 		});
-
-		expect(token?.expires_at).toBe(now + 3600);
+        if (!token)throw new Error("Expected an OAuthToken from createOauthToken(), but got undefined.");
+		expect(token.expires_at).toBe(now + 3600);
 	});
 
 	it("should return all OAuth tokens for a given account ID", () => {
@@ -217,7 +219,8 @@ describe("OauthTokens wrapper", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getOauthTokenById(tokenId);
-		expect(fetched?.access_token_hash).toBe("updated_hash");
+        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+		expect(fetched.access_token_hash).toBe("updated_hash");
 	});
 
 	it("should update multiple fields correctly", () => {
@@ -236,9 +239,10 @@ describe("OauthTokens wrapper", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getOauthTokenById(tokenId);
-		expect(fetched?.access_token_hash).toBe("multi_field_after");
-		expect(fetched?.scopes).toBe("read write");
-		expect(fetched?.revoked).toBe(1);
+        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+		expect(fetched.access_token_hash).toBe("multi_field_after");
+		expect(fetched.scopes).toBe("read write");
+		expect(fetched.revoked).toBe(1);
 	});
 
 	it("should convert boolean revoked to 1 or 0", () => {
@@ -251,11 +255,13 @@ describe("OauthTokens wrapper", () => {
 
 		updateOauthToken(tokenId, { revoked: true });
 		let fetched = getOauthTokenById(tokenId);
-		expect(fetched?.revoked).toBe(1);
+        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+		expect(fetched.revoked).toBe(1);
 
 		updateOauthToken(tokenId, { revoked: false });
 		fetched = getOauthTokenById(tokenId);
-		expect(fetched?.revoked).toBe(0);
+        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+		expect(fetched.revoked).toBe(0);
 	});
 
 	it("should return false when no fields to update", () => {
@@ -293,9 +299,10 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		expect(token).toBeDefined();
-		expect(token?.oauth_account_id).toBeNull();
-		expect(token?.refresh_token_hash).toBeNull();
-		expect(token?.scopes).toBeNull();
-		expect(token?.access_token_hash).toBe("null_fields_test");
+        if (!token)throw new Error("Expected an OAuthToken from token, but got undefined.");
+		expect(token.oauth_account_id).toBeNull();
+		expect(token.refresh_token_hash).toBeNull();
+		expect(token.scopes).toBeNull();
+		expect(token.access_token_hash).toBe("null_fields_test");
 	});
 });
