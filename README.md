@@ -59,16 +59,20 @@ cd ft_transcendence
 cd backend
 cp .env.example .env
 npm install
-npm run dev
+npm run build
+npm run start
 ```
 - Uses SQLite by default. DB is auto-initialized using init.sql
+- Runs at: http://localhost:3000
 ### 3. Frontend setup
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run build
+npm run start
 ```
 - Tailwind is already configured
+- Runs at: http://localhost:8080
 ---
 ## ▶️ Running Everything with Docker
 
