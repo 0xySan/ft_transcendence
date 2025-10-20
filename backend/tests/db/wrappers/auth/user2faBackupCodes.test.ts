@@ -14,14 +14,12 @@ let backupCodeId: number;
 
 describe("user_2fa_backup_codes wrapper – with FK setup", () => {
     beforeAll(() => {
-        // Insert role if not exists
         const insertRole = db.prepare(`
             INSERT INTO user_roles (role_id, role_name) VALUES (1, 'user')
             ON CONFLICT(role_id) DO NOTHING
         `);
         insertRole.run();
 
-        // Insert a test user
         const insertUser = db.prepare(`
             INSERT INTO users (email, password_hash, role_id)
             VALUES (?, ?, ?)
@@ -30,7 +28,6 @@ describe("user_2fa_backup_codes wrapper – with FK setup", () => {
         userId = Number(userRes.lastInsertRowid);
         expect(userId).toBeGreaterThan(0);
 
-        // Create a 2FA method linked to this user
         const now = Math.floor(Date.now() / 1000);
         const method = create2FaMethods({
             user_id: userId,
@@ -95,7 +92,7 @@ describe("user_2fa_backup_codes wrapper – with FK setup", () => {
 
     it("should not allow creation without valid method_id", () => {
         const result = createUser2faBackupCodes({
-            method_id: 99999, // likely non-existent
+            method_id: 99999,
             code_json: JSON.stringify(["fail"]),
             created_at: Math.floor(Date.now() / 1000),
         });

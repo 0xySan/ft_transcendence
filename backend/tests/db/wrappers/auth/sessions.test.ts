@@ -28,7 +28,7 @@ describe("sessions wrapper - extended tests", () => {
 	});
 
 	it("should store very long user agent string", () => {
-		const longAgent = "A".repeat(1024); // 1 KB string
+		const longAgent = "A".repeat(1024);
 		const session = createSession({
 			user_id: userId,
 			session_token_hash: "long_agent_token",
@@ -38,8 +38,8 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: longAgent,
 			is_persistent: false,
 		});
-		expect(session).toBeDefined();
-		expect(session?.user_agent.length).toBe(1024);
+		if (!session) throw new Error("Throw error (undefined)");
+		expect(session.user_agent.length).toBe(1024);
 	});
 
 	it("should store a persistent session correctly", () => {
@@ -54,11 +54,11 @@ describe("sessions wrapper - extended tests", () => {
 			is_persistent: true
 		});
 		expect(session).toBeDefined();
-		expect(session?.is_persistent).toBe(1);
+		if (!session) throw new Error("Throw error (undefined)");
+		expect(session.is_persistent).toBe(1);
 	});
 
 	it("should reject session creation with missing required fields", () => {
-		// missing token_hash, expires_at, etc.
 		const session = createSession({
 			user_id: userId
 		});
@@ -208,7 +208,7 @@ describe("sessions wrapper - extended tests", () => {
 			session_token_hash: "ipv6_token",
 			expires_at: Math.floor(Date.now() / 1000) + 5000,
 			last_used_at: Math.floor(Date.now() / 1000),
-			ip: "::1", // localhost IPv6
+			ip: "::1",
 			user_agent: "IPv6Tester",
 			is_persistent: false
 		});
@@ -222,7 +222,7 @@ describe("sessions wrapper - extended tests", () => {
 		const session = createSession({
 			user_id: userId,
 			session_token_hash: "expired_session",
-			expires_at: now - 10, // already expired
+			expires_at: now - 10,
 			last_used_at: now - 20,
 			ip: "0.0.0.0",
 			user_agent: "ExpiredAgent",

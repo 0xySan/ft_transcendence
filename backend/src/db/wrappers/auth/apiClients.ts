@@ -28,6 +28,26 @@ export function getApiClientsById(id: number): apiClients | undefined {
 }
 
 /**
+ * List of api clients
+ * @returns The list of the table
+ */
+export function listApiClients(): apiClients[] {
+    const stmt = db.prepare("SELECT * FROM api_clients");
+    return stmt.all() as apiClients[];
+}
+
+/**
+ * Retrieve an apiClient using its unique client_id.
+ * This is useful when authenticating clients based on their public ID.
+ * @param client_id - The unique identifier of the client (client_id column)
+ * @returns The matching apiClients object if found, otherwise undefined
+ */
+export function getApiClientsByClientId(client_id: string): apiClients | undefined {
+    const stmt = db.prepare("SELECT * FROM api_clients WHERE client_id = ?");
+    return stmt.get(client_id) as apiClients | undefined;
+}
+
+/**
  * Create a new apiClients if it doesn't exist.
  * Default values will be applied for missing fields.
  * Uses the generic insertRow wrapper to insert and fetch the apiClients.

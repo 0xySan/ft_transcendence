@@ -105,7 +105,7 @@ describe("oauthAccount wrapper - tests", () => {
 
         const found = getOauthAccountByProviderAndUserId(providerName, provider_user_id);
 
-        expect(found).toBeDefined(); // ✅ Vérifie que found n’est pas undefined
+        expect(found).toBeDefined();
 
         if (!found)throw new Error("Expected to find an oauthAccount but got undefined");
         expect(found.provider_user_id).toBe(provider_user_id);

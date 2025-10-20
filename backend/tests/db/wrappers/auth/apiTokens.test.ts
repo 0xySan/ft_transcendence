@@ -15,14 +15,12 @@ describe("apiTokens wrapper - tests", () => {
   const now = Date.now();
 
   beforeAll(() => {
-    // Insert user
     const insertUser = db.prepare(`
       INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)
     `);
     const resUser = insertUser.run("apitoken_user@example.com", "hashed", 1);
     userId = Number(resUser.lastInsertRowid);
 
-    // Create client
     const client = createApiClients({
       client_id: "token-client-1",
       owner_id: userId,
@@ -51,8 +49,8 @@ describe("apiTokens wrapper - tests", () => {
       revoked: false,
     });
 
-    expect(token).toBeDefined();
-    expect(token?.revoked).toBe(0); // should be stored as 0
+    if (!token) throw new Error("Throw error (undefined)");
+    expect(token.revoked).toBe(0);
   });
 
   it("should default 'revoked' to false when not provided", () => {
@@ -65,8 +63,8 @@ describe("apiTokens wrapper - tests", () => {
       last_used_at: now,
     });
 
-    expect(token).toBeDefined();
-    expect(token?.revoked).toBe(0);
+    if (!token) throw new Error("Throw error (undefined)");
+    expect(token.revoked).toBe(0);
   });
 
   it("should retrieve token by ID", () => {
@@ -82,8 +80,32 @@ describe("apiTokens wrapper - tests", () => {
     const tokenId = (created as any).token_id;
     const retrieved = getApiTokensById(tokenId);
 
-    expect(retrieved).toBeDefined();
-    expect(retrieved?.token_hash).toBe("retrieval_token");
+    if (!retrieved) throw new Error("Throw error (undefined)");
+    expect(retrieved.token_hash).toBe("retrieval_token");
+  });
+
+  it("should update only one field without affecting others", () => {
+    const created = createApiTokens({
+      app_id: appId,
+      token_hash: "partial_update_token",
+      scopes: "initial-scope",
+      issued_at: now,
+      expires_at: now + 50000,
+      last_used_at: now,
+      revoked: false,
+    });
+
+    const tokenId = (created as any).token_id;
+
+    const updated = updateApiTokens(tokenId, {
+      scopes: "updated-scope",
+    });
+
+    expect(updated).toBe(true);
+
+    const result = getApiTokensById(tokenId);
+    expect(result?.scopes).toBe("updated-scope");
+    expect(result?.token_hash).toBe("partial_update_token");
   });
 
   it("should return undefined for unknown token ID", () => {
@@ -111,8 +133,9 @@ describe("apiTokens wrapper - tests", () => {
     expect(updated).toBe(true);
 
     const updatedToken = getApiTokensById(tokenId);
-    expect(updatedToken?.last_used_at).toBe(now + 5000);
-    expect(updatedToken?.revoked).toBe(1);
+    if (!updatedToken) throw new Error("Throw error (undefined)");
+    expect(updatedToken.last_used_at).toBe(now + 5000);
+    expect(updatedToken.revoked).toBe(1);
   });
 
   it("should update token with revoked = false", () => {
@@ -134,7 +157,8 @@ describe("apiTokens wrapper - tests", () => {
     expect(updated).toBe(true);
 
     const token = getApiTokensById(tokenId);
-    expect(token?.revoked).toBe(0);
+    if (!token) throw new Error("Throw error (undefined)");
+    expect(token.revoked).toBe(0);
   });
 
   it("should return false when no valid fields are provided for update", () => {
@@ -169,7 +193,6 @@ describe("apiTokens wrapper - tests", () => {
 
     const tokenId = (created as any).token_id;
 
-    // Delete the api_client, which should cascade to api_tokens
     db.prepare(`DELETE FROM api_clients WHERE app_id = ?`).run(appId);
 
     const token = getApiTokensById(tokenId);

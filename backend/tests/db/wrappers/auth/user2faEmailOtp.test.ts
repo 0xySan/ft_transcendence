@@ -12,14 +12,12 @@ describe("user2faEmailOtp wrapper - tests", () => {
   const now = Date.now();
 
   beforeAll(() => {
-    // Insert user
     const insertUser = db.prepare(`
       INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)
     `);
     const resUser = insertUser.run("user2fa@example.com", "hashed_pass", 1);
     userId = Number(resUser.lastInsertRowid);
 
-    // Insert 2fa method linked to user
     const insertMethod = db.prepare(`
       INSERT INTO user_2fa_methods (user_id, method_type, label, is_primary, is_verified)
       VALUES (?, ?, ?, ?, ?)
@@ -38,9 +36,9 @@ describe("user2faEmailOtp wrapper - tests", () => {
       expires_at: now + 60000,
     });
 
-    expect(otp).toBeDefined();
-    expect(otp?.attempts).toBe(2);
-    expect(otp?.consumed).toBe(1);
+    if (!otp) throw new Error("Throw error (undefined)");
+    expect(otp.attempts).toBe(2);
+    expect(otp.consumed).toBe(1);
   });
 
   it("should default attempts and consumed to 0 if not provided", () => {
@@ -51,9 +49,9 @@ describe("user2faEmailOtp wrapper - tests", () => {
       expires_at: now + 60000,
     });
 
-    expect(otp).toBeDefined();
-    expect(otp?.attempts).toBe(0);
-    expect(otp?.consumed).toBe(0);
+    if (!otp) throw new Error("Throw error (undefined)");
+    expect(otp.attempts).toBe(0);
+    expect(otp.consumed).toBe(0);
   });
 
   it("should retrieve user2faEmailOtp by ID", () => {
@@ -67,8 +65,8 @@ describe("user2faEmailOtp wrapper - tests", () => {
     const otpId = (created as any).email_otp_id;
     const retrieved = getUser2faEmailOtpById(otpId);
 
-    expect(retrieved).toBeDefined();
-    expect(retrieved?.last_sent_code_hash).toBe("hashed_code_retrieve");
+    if (!retrieved) throw new Error("Throw error (undefined)");
+    expect(retrieved.last_sent_code_hash).toBe("hashed_code_retrieve");
   });
 
   it("should return undefined for non-existing email_otp_id", () => {
@@ -94,9 +92,10 @@ describe("user2faEmailOtp wrapper - tests", () => {
     expect(updated).toBe(true);
 
     const updatedOtp = getUser2faEmailOtpById(otpId);
-    expect(updatedOtp?.attempts).toBe(5);
-    expect(updatedOtp?.consumed).toBe(3);
-    expect(updatedOtp?.last_sent_at).toBe(now + 5000);
+    if (!updatedOtp) throw new Error("Throw error (undefined)");
+    expect(updatedOtp.attempts).toBe(5);
+    expect(updatedOtp.consumed).toBe(3);
+    expect(updatedOtp.last_sent_at).toBe(now + 5000);
   });
 
   it("should return false when no valid fields are provided for update", () => {
@@ -127,7 +126,6 @@ describe("user2faEmailOtp wrapper - tests", () => {
 
     const otpId = (created as any).email_otp_id;
 
-    // Delete 2fa method, should cascade delete otp
     db.prepare(`DELETE FROM user_2fa_methods WHERE method_id = ?`).run(methodId);
 
     const otp = getUser2faEmailOtpById(otpId);

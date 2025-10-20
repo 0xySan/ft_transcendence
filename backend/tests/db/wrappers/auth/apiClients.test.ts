@@ -3,7 +3,9 @@ import { db } from "../../../../src/db/index.js";
 import {
     createApiClients,
     getApiClientsById,
-    updateApiClients
+    updateApiClients,
+    getApiClientsByClientId,
+    listApiClients
 } from "../../../../src/db/wrappers/auth/apiClients.js";
 
 describe("apiClients wrapper - tests", () => {
@@ -33,8 +35,7 @@ describe("apiClients wrapper - tests", () => {
             secret_expiration: now + 1000 * 60 * 60 * 24 * 30,
         });
 
-        expect(client).toBeDefined();
-        if (!client) throw new Error("Client should have been created but was undefined.");
+        if (!client) throw new Error("Throw error (undefined)");
 
         createdClient = client;
 
@@ -44,9 +45,9 @@ describe("apiClients wrapper - tests", () => {
 
     it("should return the api client by ID", () => {
         const found = getApiClientsById((createdClient as any).app_id);
-        expect(found).toBeDefined();
-        expect(found?.client_id).toBe("test-client-id");
-        expect(found?.owner_id).toBe(userId);
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.client_id).toBe("test-client-id");
+        expect(found.owner_id).toBe(userId);
     });
 
     it("should update specific fields of the api client", () => {
@@ -57,8 +58,9 @@ describe("apiClients wrapper - tests", () => {
         expect(updated).toBe(true);
 
         const found = getApiClientsById((createdClient as any).app_id);
-        expect(found?.name).toBe("Updated API Client Name");
-        expect(found?.scopes).toBe("read");
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.name).toBe("Updated API Client Name");
+        expect(found.scopes).toBe("read");
     });
 
     it("should return false when no valid fields are provided for update", () => {
@@ -78,12 +80,47 @@ describe("apiClients wrapper - tests", () => {
             is_confidential: true
         });
 
-        expect(client).toBeDefined();
-        if (!client) throw new Error("Client creation failed");
+        if (!client) throw new Error("Throw error (undefined)");
 
         const found = getApiClientsById((client as any).app_id);
-        expect(found).toBeDefined();
-        expect(found?.is_confidential).toBe(1);
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.is_confidential).toBe(1);
+    });
+
+        it("should retrieve api client by client_id", () => {
+        const now = Date.now();
+
+        const client = createApiClients({
+            client_id: "lookup-client-id",
+            owner_id: userId,
+            client_secret_encrypted: "lookup_secret",
+            redirect_url: "https://lookup.example.com",
+            scopes: "lookup",
+            created_at: now,
+            updated_at: now,
+            secret_expiration: now + 3600 * 1000,
+            is_confidential: true
+        });
+
+        expect(client).toBeDefined();
+
+        const found = getApiClientsByClientId("lookup-client-id");
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.client_id).toBe("lookup-client-id");
+        expect(found.owner_id).toBe(userId);
+    });
+
+    it("should return undefined for unknown client_id", () => {
+        const found = getApiClientsByClientId("non-existent-client-id");
+        expect(found).toBeUndefined();
+    });
+
+    it("should return a list of api clients", () => {
+        const clients = listApiClients();
+        expect(Array.isArray(clients)).toBe(true);
+        expect(clients.length).toBeGreaterThan(0);
+        expect(clients[0]).toHaveProperty("client_id");
+        expect(clients[0]).toHaveProperty("owner_id");
     });
 
     it("should return false when updating non-existing api client", () => {
@@ -103,15 +140,15 @@ describe("apiClients wrapper - tests", () => {
             is_confidential: false
         });
 
-        expect(client).toBeDefined();
+        if (!client) throw new Error("Throw error (undefined)");
         const app_id = (client as any).app_id;
 
         const updated = updateApiClients(app_id, { is_confidential: true });
         expect(updated).toBe(true);
 
         const found = getApiClientsById(app_id);
-        expect(found).toBeDefined();
-        expect(found?.is_confidential).toBe(1);
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.is_confidential).toBe(1);
     });
 
     it("should correctly update is_confidential to false", () => {
@@ -126,15 +163,15 @@ describe("apiClients wrapper - tests", () => {
             is_confidential: true
         });
 
-        expect(client).toBeDefined();
+        if (!client) throw new Error("Throw error (undefined)");
         const app_id = (client as any).app_id;
 
         const updated = updateApiClients(app_id, { is_confidential: false });
         expect(updated).toBe(true);
 
         const found = getApiClientsById(app_id);
-        expect(found).toBeDefined();
-        expect(found?.is_confidential).toBe(0);
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.is_confidential).toBe(0);
     });
 
     it("should default is_confidential to true when not provided", () => {
@@ -149,12 +186,12 @@ describe("apiClients wrapper - tests", () => {
             secret_expiration: now + 1000 * 60 * 60 * 24
         });
 
-        expect(client).toBeDefined();
+        if (!client) throw new Error("Throw error (undefined)");
         const app_id = (client as any).app_id;
         const found = getApiClientsById(app_id);
 
-        expect(found).toBeDefined();
-        expect(found?.is_confidential).toBe(1);
+        if (!found) throw new Error("Throw error (undefined)");
+        expect(found.is_confidential).toBe(1);
     });
 
     it("should cascade delete api client when user is deleted", () => {

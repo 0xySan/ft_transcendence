@@ -43,7 +43,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		});
         // @ts-expect-error
 		methodId = method?.method_id;
-		expect(methodId).toBeDefined();
+		if (!methodId) throw new Error("Throw error (undefined)");
 	});
 
 	it("should create a user_2fa_totp entry with valid FK", () => {

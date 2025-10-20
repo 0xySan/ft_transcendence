@@ -182,9 +182,9 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
-		expect(methodA).toBeDefined();
-		expect(methodB).toBeDefined();
-		expect(methodA.label).not.toBe(methodB?.label);
+		if (!methodA) throw new Error("Throw error (undefined)");
+		if (!methodB) throw new Error("Throw error (undefined)");
+		expect(methodA.label).not.toBe(methodB.label);
 	});
 
 	it("should update label and verification status", () => {
@@ -275,7 +275,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			method_type: 10,
 			label: "No Verified Field",
 			is_primary: 0,
-			// is_verified omitted
 			created_at: now,
 			updated_at: now,
 		});
