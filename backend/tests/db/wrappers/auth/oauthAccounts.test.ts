@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, expectTypeOf } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
     createOauthAccount,
@@ -35,8 +35,9 @@ describe("oauthAccount wrapper - tests", () => {
             provider_user_id: "user_default_provider",
         });
         expect(newAccount).toBeDefined();
-        expect(newAccount?.provider_name).toBe("Unknow");
-        expect(newAccount?.provider_user_id).toBe("user_default_provider");
+        if (!newAccount)throw new Error("Expected an OAuth account from createOauthAccount(), but got undefined.");
+        expect(newAccount.provider_name).toBe("Unknow");
+        expect(newAccount.provider_user_id).toBe("user_default_provider");
     });
 
     it("should create a new oauthAccount with valid data", () => {
@@ -51,9 +52,10 @@ describe("oauthAccount wrapper - tests", () => {
         });
 
         expect(newAccount).toBeDefined();
-        expect(newAccount?.user_id).toBe(userId);
-        expect(newAccount?.provider_name).toBe(providerName);
-        expect(newAccount?.provider_user_id).toBe("user_123");
+        if (!newAccount) throw new Error("Expected an OAuth account from createOauthAccount(), but got undefined.");
+        expect(newAccount.user_id).toBe(userId);
+        expect(newAccount.provider_name).toBe(providerName);
+        expect(newAccount.provider_user_id).toBe("user_123");
 
         createdOauthAccountId = (newAccount as any).oauth_account_id;
     });
@@ -87,8 +89,9 @@ describe("oauthAccount wrapper - tests", () => {
             provider_name: providerName,
         });
         expect(newAccount).toBeDefined();
-        expect(newAccount?.provider_name).toBe(providerName);
-        expect(newAccount?.provider_user_id).toBe("user_no_provider");
+        if (!newAccount) throw new Error("Expected an OAuth account from createOauthAccount(), but got undefined.");
+        expect(newAccount.provider_name).toBe(providerName);
+        expect(newAccount.provider_user_id).toBe("user_no_provider");
     });
 
     it("should return oauthAccount by provider_name and provider_user_id", () => {
@@ -101,10 +104,14 @@ describe("oauthAccount wrapper - tests", () => {
         });
 
         const found = getOauthAccountByProviderAndUserId(providerName, provider_user_id);
-        expect(found).toBeDefined();
-        expect(found?.provider_user_id).toBe(provider_user_id);
-        expect(found?.provider_name).toBe(providerName);
+
+        expect(found).toBeDefined(); // ✅ Vérifie que found n’est pas undefined
+
+        if (!found)throw new Error("Expected to find an oauthAccount but got undefined");
+        expect(found.provider_user_id).toBe(provider_user_id);
+        expect(found.provider_name).toBe(providerName);
     });
+
 
     it("should return undefined for unknown provider/user combination", () => {
         const found = getOauthAccountByProviderAndUserId("non-existent-provider", "non-existent-user");
@@ -140,7 +147,8 @@ describe("oauthAccount wrapper - tests", () => {
         });
 
         const found = getOauthAccountByProviderAndUserId(providerName, "json_test_user");
-        expect(found?.profile_json).toBe(complexProfile);
+        if (!found)throw new Error("Expected an OAuth account from getOauthAccountByProviderAndUserId, but got undefined.");
+        expect(found.profile_json).toBe(complexProfile);
     });
 
     it("should update all fields of an oauthAccount", () => {
@@ -166,10 +174,11 @@ describe("oauthAccount wrapper - tests", () => {
         expect(updated).toBe(true);
 
         const found = getOauthAccountById(accountId);
-        expect(found?.profile_json).toBe('{"updated":true}');
-        expect(found?.id_token_hash).toBe("new_hash");
-        expect(found?.linked_at).toBe(222222);
-        expect(found?.revoked_at).toBe(333333);
+        if (!found)throw new Error("Expected an OAuth account from gaccountId, but got undefined.");
+        expect(found.profile_json).toBe('{"updated":true}');
+        expect(found.id_token_hash).toBe("new_hash");
+        expect(found.linked_at).toBe(222222);
+        expect(found.revoked_at).toBe(333333);
     });
 
     it("should fail to create oauthAccount if required fields are missing", () => {
@@ -208,8 +217,9 @@ describe("oauthAccount wrapper - tests", () => {
         expect(updated).toBe(true);
 
         const updatedAccount = getOauthAccountById(createdOauthAccountId);
-        expect(updatedAccount?.profile_json).toBe('{"name":"Jane Doe"}');
-        expect(updatedAccount?.revoked_at).toBeDefined();
+        if (!updatedAccount)throw new Error("Expected an OAuth account from getOauthAccountById(), but got undefined.");
+        expect(updatedAccount.profile_json).toBe('{"name":"Jane Doe"}');
+        expect(updatedAccount.revoked_at).toBeDefined();
     });
 
     it("should return false when updating with no valid fields", () => {

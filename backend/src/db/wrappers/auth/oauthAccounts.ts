@@ -67,8 +67,6 @@ export function createOauthAccount(options: Partial<oauthAccount>): oauthAccount
     const   linked_at = options.linked_at;
     const   revoked_at = options.revoked_at;
 
-    console.log("DEBUG: provider_name = " + provider_name);
-
 	return (insertRow<oauthAccount>("oauth_accounts", {
         user_id: user_id,
         provider_name: provider_name,
