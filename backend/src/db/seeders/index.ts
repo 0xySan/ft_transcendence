@@ -25,6 +25,7 @@ function isTestEnv(): boolean {
 export function initializeDatabase(): SqliteDatabase {
 	// --- Define paths ---
 	const dataDir = path.join(process.cwd(), "data");          // Directory to store the DB
+	const userDataDir = path.join(process.cwd(), "userData/imgs"); // user data directory
 	const dbFile = path.join(dataDir, "database.sqlite");     // SQLite database file
 	const initSqlFile = path.join("sql", "init.sql");         // SQL file for schema initialization
 	const authInitSqlFile = path.join("sql", "authentication.sql"); // SQL file for auth schema (if needed)
@@ -44,6 +45,11 @@ export function initializeDatabase(): SqliteDatabase {
 		if (!fs.existsSync(dataDir)) {
 			fs.mkdirSync(dataDir, { recursive: true });
 			log(`Created data directory at ${dataDir}`);
+		}
+
+		if (!fs.existsSync(userDataDir)) {
+			fs.mkdirSync(userDataDir, { recursive: true });
+			log(`Created user data directory at ${userDataDir}`);
 		}
 
 		// --- Check if the database already exists ---

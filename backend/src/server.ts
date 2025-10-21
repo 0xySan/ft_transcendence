@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cookie from '@fastify/cookie';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -12,6 +13,16 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
   process.exit(1);
 }
 
+// Routes imports
+import { oauthRoutes } from "./routes/oauth/index.js";
+import { userRoutes } from "./routes/users/index.js";
+
+// Register routes
+async function registerRoutes(app: Fastify.FastifyInstance) {
+  app.register(oauthRoutes, { prefix: '/api/oauth' });
+  app.register(userRoutes, { prefix: '/api/users' });
+}
+
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 
@@ -19,10 +30,14 @@ async function buildServer() {
   const app = Fastify({
     logger: true,
   });
-  // Register users routes under /api/users
+
+  // Register cookie plugin
+  app.register(cookie, {
+		secret: process.env.COOKIE_SECRET, // for signing cookies
+	});
 
   // A simple health-check endpoint
-  app.get("/health", async () => {
+  app.get("/api/health", async () => {
     return { status: "ok" };
   });
 
@@ -31,6 +46,7 @@ async function buildServer() {
 
 async function start() {
   const app = await buildServer();
+  await registerRoutes(app);
 
   try {
     await app.listen({ port: SERVER_PORT, host: HOST });
