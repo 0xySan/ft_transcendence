@@ -6,6 +6,7 @@
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface user2FaMethods {
+    method_id:              number;
 	user_id:	    	    number;
     method_type:            number;
     label:                  string;

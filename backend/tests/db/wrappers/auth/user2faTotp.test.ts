@@ -35,8 +35,8 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 			created_at: now,
 			updated_at: now
 		});
-        // @ts-expect-error
-		methodId = method?.method_id;
+		if (!method) throw new Error("Throw error (undefined)");
+		methodId = method.method_id;
 		if (!methodId) throw new Error("Throw error (undefined)");
 	});
 

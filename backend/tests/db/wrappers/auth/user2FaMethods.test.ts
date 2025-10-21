@@ -101,7 +101,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const primary = getPrimary2FaMethodByUserId(userId);
         if (!primary)throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
 		expect(primary.method_type).toBe(7);
-		// @ts-expect-error
 		expect(primary.method_id).toBe(methodId);
 	});
 

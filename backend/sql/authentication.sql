@@ -1,15 +1,15 @@
 -- Table: user_2fa_methods
 -- Store different methods of 2fa
 CREATE TABLE user_2fa_methods (
-	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,							--- Unique identifier
-	user_id					INTEGER,														--- ID of the user (FK)
-	method_type				INTEGER		NOT NULL DEFAULT 0,									--- Store the method
-	label					TEXT,															--- 2fa method name
-	is_primary				INTEGER		DEFAULT 0,											--- store the prymary
-	is_verified				BOOLEAN		DEFAULT 0,											--- is verified ?
-	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,							--- timestamp of the created method
-	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,							--- timestamp of the updated method
-	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE						--- users.user_id
+	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	user_id					INTEGER,															--- ID of the user (FK)
+	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
+	label					TEXT,																--- 2fa method name
+	is_primary				INTEGER		DEFAULT 0,												--- store the prymary
+	is_verified				BOOLEAN		DEFAULT 0,												--- is verified ?
+	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the created method
+	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the updated method
+	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
 
 -- Table: user_2fa_email_otp
@@ -136,7 +136,7 @@ CREATE TABLE password_resets (
 -- Store informations about sessions
 CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER		NOT NULL,															--- ID of the user (FK)
+	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
 	session_token_hash		TEXT		NOT NULL,												--- the hashed session token
 	created_at				DATETIME	NOT NULL,												--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
@@ -146,7 +146,6 @@ CREATE TABLE sessions (
 	is_persistent			BOOLEAN		DEFAULT 0,												--- is persistent ?
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
-
 
 -- api_clients
 CREATE INDEX idx_api_clients_owner_id ON api_clients(owner_id);

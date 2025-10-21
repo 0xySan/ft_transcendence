@@ -84,7 +84,7 @@ describe("apiClients wrapper - tests", () => {
     });
 
     it("should return an empty array if no api clients exist for the owner", () => {
-        const clients = getApiClientByOwnerId(9999999); // owner_id qui n'existe pas
+        const clients = getApiClientByOwnerId(9999999);
         expect(clients).toEqual([]);
     });
 
