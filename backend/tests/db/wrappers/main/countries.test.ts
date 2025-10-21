@@ -12,7 +12,7 @@ import {
 	getCountryByName,
 	createCountry,
 	getAllCountries
-} from "../../../src/db/wrappers/countries.js";
+} from "../../../../src/db/wrappers/main/countries.js";
 
 /**
  * Test suite for the Countries wrapper.

@@ -3,7 +3,7 @@
  * Provides retrieval, creation, and listing utilities for user roles.
  */
 
-import { db, insertRow, getRow } from "../index.js";
+import { db, insertRow, getRow } from "../../index.js";
 
 // --- Types ---
 export interface UserRole {

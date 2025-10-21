@@ -26,6 +26,8 @@ export function initializeDatabase(): SqliteDatabase {
 	const dataDir = path.join(process.cwd(), "data");          // Directory to store the DB
 	const dbFile = path.join(dataDir, "database.sqlite");     // SQLite database file
 	const initSqlFile = path.join("sql", "init.sql");         // SQL file for schema initialization
+	const authInitSqlFile = path.join("sql", "authentication.sql"); // SQL file for auth schema (if needed)
+
 	let dbExists = false;
 	let db: SqliteDatabase;
 	const log = console.log;
@@ -58,6 +60,14 @@ export function initializeDatabase(): SqliteDatabase {
 			if (sql.trim().length > 0) {
 				db.exec(sql);
 				console.log(`Executed init SQL from ${initSqlFile}`);
+			}
+		}
+
+		if (fs.existsSync(authInitSqlFile)) {
+			const authSql = fs.readFileSync(authInitSqlFile, "utf8");
+			if (authSql.trim().length > 0) {
+				db.exec(authSql);
+				console.log(`Executed authentication SQL from ${authInitSqlFile}`);
 			}
 		}
 

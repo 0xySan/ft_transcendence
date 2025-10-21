@@ -3,7 +3,7 @@
  * Provides retrieval, creation, and update utilities for user accounts.
  */
 
-import { db, getRow, insertRow } from "../index.js";
+import { db, getRow, insertRow } from "../../index.js";
 
 // --- Types ---
 export interface User {

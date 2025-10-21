@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { db } from "../../../src/db/index.js";
+import { db } from "../../../../src/db/index.js";
 import {
 	createStats,
 	getStatsByUserId,
@@ -17,7 +17,7 @@ import {
 	updateStats,
 	getAllStats,
 	UserStats,
-} from "../../../src/db/wrappers/userStats.js";
+} from "../../../../src/db/wrappers/main/userStats.js";
 
 describe("UserStats wrapper", () => {
 	let testUserId: number;

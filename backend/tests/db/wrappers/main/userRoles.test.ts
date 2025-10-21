@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { getRoleById, getRoleByName, createRole, getAllRoles } from "../../../src/db/wrappers/userRoles.js";
+import { getRoleById, getRoleByName, createRole, getAllRoles } from "../../../../src/db/wrappers/main/userRoles.js";
 
 describe("UserRoles wrapper", () => {
 	let defaultRoles: string[] = ["user", "moderator", "admin", "banned", "unverified"];

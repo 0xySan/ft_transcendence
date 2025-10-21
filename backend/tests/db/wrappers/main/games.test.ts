@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { db } from "../../../src/db/index.js";
-import { createGame, getGameById, updateGame, getAllGames} from "../../../src/db/wrappers/games.js";
+import { db } from "../../../../src/db/index.js";
+import { createGame, getGameById, updateGame, getAllGames} from "../../../../src/db/wrappers/main/games.js";
 
 let gameId: number;
 let winnerId: number;

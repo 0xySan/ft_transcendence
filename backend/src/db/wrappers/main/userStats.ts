@@ -4,7 +4,7 @@
  * Provides retrieval, creation, and update utilities for user statistics.
  */
 
-import { db, insertRow, getRow } from "../index.js";
+import { db, insertRow, getRow } from "../../index.js";
 
 // --- Types ---
 export interface UserStats {

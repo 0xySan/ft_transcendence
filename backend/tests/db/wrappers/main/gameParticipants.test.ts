@@ -22,9 +22,9 @@ import {
 	getParticipantsByGameId,
 	updateParticipant,
 	getAllParticipants,
-} from "../../../src/db/wrappers/gameParticipants.js";
+} from "../../../../src/db/wrappers/main/gameParticipants.js";
 
-import { db } from "../../../src/db/index.js";
+import { db } from "../../../../src/db/index.js";
 
 let gameId: number;
 let userId1: number;
