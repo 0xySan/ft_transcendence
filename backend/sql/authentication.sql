@@ -1,15 +1,15 @@
 -- Table: user_2fa_methods
 -- Store different methods of 2fa
 CREATE TABLE user_2fa_methods (
-	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,							--- Unique identifier
-	user_id					INTEGER,														--- ID of the user (FK)
-	method_type				INTEGER		NOT NULL DEFAULT 0,									--- Store the method
-	label					TEXT,															--- 2fa method name
-	is_primary				INTEGER		DEFAULT 0,											--- store the prymary
-	is_verified				BOOLEAN		DEFAULT 0,											--- is verified ?
-	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,							--- timestamp of the created method
-	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,							--- timestamp of the updated method
-	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE						--- users.user_id
+	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	user_id					INTEGER,															--- ID of the user (FK)
+	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
+	label					TEXT,																--- 2fa method name
+	is_primary				INTEGER		DEFAULT 0,												--- store the prymary
+	is_verified				BOOLEAN		DEFAULT 0,												--- is verified ?
+	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the created method
+	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the updated method
+	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
 
 -- Table: user_2fa_email_otp
@@ -54,7 +54,7 @@ CREATE TABLE oauth_providers (
 	discovery_url			TEXT,																-- store the discovery url
 	client_id				TEXT,																-- ID of the client
 	client_secret_encrypted	BLOB,																-- secret encrypted oauth
-	is_enabled				BOOLEAN		DEFAULT 1,												-- is enable ?
+	is_enabled				BOOLEAN		DEFAULT 1,												-- is enabled ?
 	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP								-- timestamp of the created oauth provider
 );
 
@@ -62,7 +62,7 @@ CREATE TABLE oauth_providers (
 -- Store the relation between a user and a Oauth provider
 CREATE TABLE oauth_accounts (
 	oauth_account_id		INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
-	user_id					INTEGER		NOT NULL,															-- ID on the user (FK)
+	user_id					INTEGER		NOT NULL,												-- ID on the user (FK)
 	provider_name			TEXT,																-- stock the name (FK)
 	provider_user_id		TEXT		NOT NULL,												-- stock the user id
 	profile_json			TEXT,																-- the profile user on the Oauth server
@@ -89,11 +89,10 @@ CREATE TABLE oauth_tokens (
 );
 
 -- Table: api_clients
-/*It represent an aplication associated with an user that can deliveR
+/*It represent an aplication associated with an user that can deliver
 tokens to interact with the api in limited an define scope.*/
 CREATE TABLE api_clients (
 	app_id					INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	client_id				TEXT		UNIQUE NOT NULL,										--- ID of the client
 	owner_id				INTEGER,															--- ID of the owner (FK)
 	name					TEXT		DEFAULT "unamed",										--- name of the api
 	client_secret_encrypted	BLOB		NOT NULL,												--- encrypted secret
@@ -124,11 +123,11 @@ CREATE TABLE api_tokens (
 -- Store the password token for the forgotten password
 CREATE TABLE password_resets (
 	reset_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER		NOT NULL,															--- ID of the user (FK)
+	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
 	token_hash				TEXT		NOT NULL,												--- the hashed token
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the created reset
 	expired_at				DATETIME	NOT NULL,												--- timestamp of the expired reset
-	consumed_at				DATETIME,												--- timestamp of the consumed reset
+	consumed_at				DATETIME,															--- timestamp of the consumed reset
 	consumed				BOOLEAN		DEFAULT 0,												--- is consumed ?
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
@@ -137,7 +136,7 @@ CREATE TABLE password_resets (
 -- Store informations about sessions
 CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER		NOT NULL,															--- ID of the user (FK)
+	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
 	session_token_hash		TEXT		NOT NULL,												--- the hashed session token
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
@@ -147,7 +146,6 @@ CREATE TABLE sessions (
 	is_persistent			BOOLEAN		DEFAULT 0,												--- is persistent ?
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
-
 
 -- api_clients
 CREATE INDEX idx_api_clients_owner_id ON api_clients(owner_id);

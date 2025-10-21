@@ -3,7 +3,10 @@ import { db } from "../../../../src/db/index.js";
 import {
 	createPasswordReset,
 	getPasswordResetById,
-	updatePasswordReset
+	updatePasswordReset,
+	getValidPasswordResetsByUserId,
+	getPasswordResetByTokenHash,
+	getPasswordResetsByUserId
 } from "../../../../src/db/wrappers/auth/passwordResets.js";
 
 describe("passwordResets wrapper", () => {
@@ -36,10 +39,12 @@ describe("passwordResets wrapper", () => {
 		});
 
 		expect(newReset).toBeDefined();
-		expect(newReset?.user_id).toBe(userId1);
-		expect(newReset?.token_hash).toBe("hashed_token_123");
-		expect(newReset?.consumed).toBe(0);
-		createdResetId = newReset?.reset_id;
+        if (!newReset)throw new Error("Expected an passwordResets from createPasswordReset(), but got undefined.");
+		expect(newReset.user_id).toBe(userId1);
+		expect(newReset.token_hash).toBe("hashed_token_123");
+		expect(newReset.consumed).toBe(0);
+		createdResetId = newReset.reset_id;
+        if (!createdResetId)throw new Error("Expected an passwordResets from createdResetId, but got undefined.");
 	});
 
 	it("should create a passwordReset without consumed field (default false)", () => {
@@ -48,8 +53,9 @@ describe("passwordResets wrapper", () => {
 			token_hash: "token_no_consumed",
 			expired_at: Math.floor(Date.now() / 1000) + 1800,
 		});
+        if (!reset)throw new Error("Expected an passwordResets from createPasswordReset(), but got undefined.");
 		expect(reset).toBeDefined();
-		expect(reset?.consumed).toBe(0);
+		expect(reset.consumed).toBe(0);
 	});
 
 	it("should create a passwordReset with consumed set to true", () => {
@@ -59,8 +65,9 @@ describe("passwordResets wrapper", () => {
 			expired_at: Math.floor(Date.now() / 1000) + 1800,
 			consumed: true,
 		});
+        if (!reset)throw new Error("Expected an passwordResets from createPasswordReset(), but got undefined.");
 		expect(reset).toBeDefined();
-		expect(reset?.consumed).toBe(1);
+		expect(reset.consumed).toBe(1);
 	});
 
 	it("should have created_at timestamp close to now", () => {
@@ -70,16 +77,18 @@ describe("passwordResets wrapper", () => {
 			token_hash: "token_created_at",
 			expired_at: now + 3600,
 		});
+        if (!reset)throw new Error("Expected an passwordResets from createPasswordReset(), but got undefined.");
 		expect(reset).toBeDefined();
-		expect(Math.abs((reset?.created_at ?? 0) - now)).toBeLessThan(5); // moins de 5 sec d'écart
+		expect(Math.abs((reset.created_at ?? 0) - now)).toBeLessThan(5);
 	});
 
 	it("should return a passwordReset by ID", () => {
 		if (!createdResetId) return;
 		const reset = getPasswordResetById(createdResetId);
+        if (!reset)throw new Error("Expected an passwordResets from getPasswordResetById(), but got undefined.");
 		expect(reset).toBeDefined();
-		expect(reset?.reset_id).toBe(createdResetId);
-		expect(reset?.user_id).toBe(userId1);
+		expect(reset.reset_id).toBe(createdResetId);
+		expect(reset.user_id).toBe(userId1);
 	});
 
 	it("should return undefined if ID does not exist", () => {
@@ -99,8 +108,9 @@ describe("passwordResets wrapper", () => {
 		expect(updated).toBe(true);
 
 		const reset = getPasswordResetById(createdResetId);
-		expect(reset?.consumed).toBe(1);
-		expect(reset?.consumed_at).toBe(consumedAtTimestamp);
+        if (!reset)throw new Error("Expected an passwordResets from getPasswordResetById(), but got undefined.");
+		expect(reset.consumed).toBe(1);
+		expect(reset.consumed_at).toBe(consumedAtTimestamp);
 	});
 
 	it("should update only token_hash", () => {
@@ -113,7 +123,8 @@ describe("passwordResets wrapper", () => {
 		expect(updated).toBe(true);
 
 		const reset = getPasswordResetById(createdResetId);
-		expect(reset?.token_hash).toBe(newToken);
+        if (!reset)throw new Error("Expected an passwordResets from getPasswordResetById(), but got undefined.");
+		expect(reset.token_hash).toBe(newToken);
 	});
 
 	it("should return false when updating with no valid fields", () => {
@@ -139,17 +150,98 @@ describe("passwordResets wrapper", () => {
 		expect(updated).toBe(true);
 
 		const reset = getPasswordResetById(createdResetId);
-		expect(reset?.consumed).toBe(0);
-		expect(reset?.consumed_at).toBe(0);
+        if (!reset)throw new Error("Expected an passwordResets from getPasswordResetById(), but got undefined.");
+		expect(reset.consumed).toBe(0);
+		expect(reset.consumed_at).toBe(0);
 	});
 
 	it("should return undefined if creating with non-existing user_id (FK fail)", () => {
-		// Supposons que insertRow renvoie undefined en cas d'erreur FK
 		const invalidReset = createPasswordReset({
 			user_id: 999999,
 			token_hash: "invalid_fk",
 			expired_at: Math.floor(Date.now() / 1000) + 3600,
 		});
 		expect(invalidReset).toBeUndefined();
+	});
+
+	it("should return a passwordReset by token_hash", () => {
+		const reset = createPasswordReset({
+			user_id: userId1,
+			token_hash: "unique_hash_for_token_test",
+			expired_at: Math.floor(Date.now() / 1000) + 3600,
+		});
+		expect(reset).toBeDefined();
+
+		const found = getPasswordResetByTokenHash("unique_hash_for_token_test");
+        if (!found)throw new Error("Expected an passwordResets from found, but got undefined.");
+		expect(found).toBeDefined();
+		expect(found.token_hash).toBe("unique_hash_for_token_test");
+	});
+
+	it("should return undefined for unknown token_hash", () => {
+		const found = getPasswordResetByTokenHash("non_existing_hash");
+		expect(found).toBeUndefined();
+	});
+
+	it("should return all password resets for a given user ID", () => {
+		createPasswordReset({
+			user_id: userId2,
+			token_hash: "multi_1",
+			expired_at: Math.floor(Date.now() / 1000) + 3000,
+		});
+		createPasswordReset({
+			user_id: userId2,
+			token_hash: "multi_2",
+			expired_at: Math.floor(Date.now() / 1000) + 3000,
+		});
+
+		const resets = getPasswordResetsByUserId(userId2);
+		expect(Array.isArray(resets)).toBe(true);
+		expect(resets.length).toBeGreaterThanOrEqual(2);
+	});
+
+	it("should return only valid (not consumed & not expired) resets for user", () => {
+		const now = Math.floor(Date.now() / 1000);
+
+		createPasswordReset({
+			user_id: userId1,
+			token_hash: "valid_reset",
+			expired_at: now + 3600,
+			consumed: false,
+		});
+
+		createPasswordReset({
+			user_id: userId1,
+			token_hash: "expired_reset",
+			expired_at: now - 100,
+			consumed: false,
+		});
+
+		createPasswordReset({
+			user_id: userId1,
+			token_hash: "consumed_reset",
+			expired_at: now + 3600,
+			consumed: true,
+		});
+
+		const validResets = getValidPasswordResetsByUserId(userId1);
+		expect(Array.isArray(validResets)).toBe(true);
+		
+		// @ts-expect-error
+		const onlyValid = validResets.every(r => r.expired_at > now && r.consumed === 0);
+		expect(onlyValid).toBe(true);
+	});
+
+	it("should return empty array if db.prepare throws (test catch block)", () => {
+		const originalPrepare = db.prepare;
+
+		db.prepare = () => {
+			throw new Error("Forced error");
+		};
+
+		const result = getValidPasswordResetsByUserId(userId1);
+		expect(result).toEqual([]);
+
+		db.prepare = originalPrepare;
 	});
 });

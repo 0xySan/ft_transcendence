@@ -3,7 +3,12 @@ import { db } from "../../../../src/db/index.js";
 import {
 	create2FaMethods,
 	getUser2FaMethodsById,
-	update2FaMethods
+	update2FaMethods,
+	getPrimary2FaMethodByUserId,
+	getUser2FaMethodsByUserId,
+	verify2FaMethod,
+	setPrimary2FaMethod,
+	delete2FaMethods
 } from "../../../../src/db/wrappers/auth/user2FaMethods.js";
 
 describe("user2FaMethods wrapper - extended tests", () => {
@@ -11,7 +16,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 	let createdMethodId: number | undefined;
 
 	beforeAll(() => {
-		// Insertion d'un utilisateur de test
 		const insertUser = db.prepare(`
 			INSERT INTO users (email, password_hash, role_id)
 			VALUES (?, ?, ?)
@@ -32,10 +36,10 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			updated_at: now
 		});
 		expect(method).toBeDefined();
-		expect(method?.user_id).toBe(userId);
-		expect(method?.label).toBe("Phone");
+        if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		expect(method.user_id).toBe(userId);
+		expect(method.label).toBe("Phone");
 
-		// On suppose que l'objet retourné contient une sorte d'ID
 		createdMethodId = (method as any).method_id ?? (method as any).id;
 		expect(typeof createdMethodId).toBe("number");
 	});
@@ -44,8 +48,81 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		if (createdMethodId === undefined) return;
 		const method = getUser2FaMethodsById(createdMethodId);
 		expect(method).toBeDefined();
-		expect(method?.user_id).toBe(userId);
-		expect(method?.label).toBe("Phone");
+        if (!method)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(method.user_id).toBe(userId);
+		expect(method.label).toBe("Phone");
+	});
+
+	it("should retrieve the primary 2FA method for a user", () => {
+		const method = getPrimary2FaMethodByUserId(userId);
+		expect(method).toBeDefined();
+        if (!method)throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
+		expect(method.user_id).toBe(userId);
+		expect(method.is_primary).toBe(1);
+	});
+
+	it("should delete a 2FA method by ID", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 99,
+			label: "ToDelete",
+			is_primary: 0,
+			is_verified: false,
+			created_at: now,
+			updated_at: now
+		});
+		const methodId = (method as any).method_id;
+
+		const deleted = delete2FaMethods(methodId);
+		expect(deleted).toBe(true);
+
+		const fetched = getUser2FaMethodsById(methodId);
+		expect(fetched).toBeUndefined();
+	});
+
+	it("should set a method as primary and unset previous primary", () => {
+		const now = Math.floor(Date.now() / 1000);
+
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 7,
+			label: "NewPrimary",
+			is_primary: 0,
+			is_verified: true,
+			created_at: now,
+			updated_at: now
+		});
+		const methodId = (method as any).method_id;
+
+		const success = setPrimary2FaMethod(userId, methodId);
+		expect(success).toBe(true);
+
+		const primary = getPrimary2FaMethodByUserId(userId);
+        if (!primary)throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
+		expect(primary.method_type).toBe(7);
+		expect(primary.method_id).toBe(methodId);
+	});
+
+	it("should verify a 2FA method", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 8,
+			label: "ToVerify",
+			is_primary: 0,
+			is_verified: false,
+			created_at: now,
+			updated_at: now
+		});
+		const methodId = (method as any).method_id;
+
+		const verified = verify2FaMethod(methodId);
+		expect(verified).toBe(true);
+
+		const fetched = getUser2FaMethodsById(methodId);
+        if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(fetched.is_verified).toBe(1);
 	});
 
 	it("should reject creation with missing required fields", () => {
@@ -94,6 +171,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
+        if (!methodA)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		const methodB = create2FaMethods({
 			user_id: userId,
 			method_type: 4,
@@ -103,9 +181,9 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
-		expect(methodA).toBeDefined();
-		expect(methodB).toBeDefined();
-		expect(methodA?.label).not.toBe(methodB?.label);
+		if (!methodA) throw new Error("Throw error (undefined)");
+		if (!methodB) throw new Error("Throw error (undefined)");
+		expect(methodA.label).not.toBe(methodB.label);
 	});
 
 	it("should update label and verification status", () => {
@@ -118,8 +196,9 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const method = getUser2FaMethodsById(createdMethodId);
-		expect(method?.label).toBe("Updated Phone");
-		expect(method?.is_verified).toBe(0);
+        if (!method)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(method.label).toBe("Updated Phone");
+		expect(method.is_verified).toBe(0);
 	});
 
 	it("should not update when no valid fields are provided", () => {
@@ -159,8 +238,9 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
+        if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
-		expect(method?.is_verified).toBe(1);
+		expect(method.is_verified).toBe(1);
 	});
 
 	it("should create method with is_primary = 0 if omitted", () => {
@@ -173,7 +253,165 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
+        if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
-		expect(method?.is_primary ?? 0).toBe(0);
+		expect(method.is_primary ?? 0).toBe(0);
+	});
+
+	it("should retrieve all 2FA methods for a user", () => {
+		const methods = getUser2FaMethodsByUserId(userId);
+		expect(Array.isArray(methods)).toBe(true);
+		expect(methods.length).toBeGreaterThanOrEqual(2);
+		methods.forEach(method => {
+			expect(method.user_id).toBe(userId);
+		});
+	});
+
+	it("should treat is_verified = undefined as 0 on creation", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 10,
+			label: "No Verified Field",
+			is_primary: 0,
+			created_at: now,
+			updated_at: now,
+		});
+        if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		expect(method).toBeDefined();
+		expect(method.is_verified).toBe(0);
+	});
+
+	it("should treat is_verified = false as 0 on creation", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 11,
+			label: "False Verified",
+			is_primary: 0,
+			is_verified: false,
+			created_at: now,
+			updated_at: now,
+		});
+        if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		expect(method).toBeDefined();
+		expect(method.is_verified).toBe(0);
+	});
+
+	it("should treat is_verified = true as 1 on creation", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 12,
+			label: "True Verified",
+			is_primary: 0,
+			is_verified: true,
+			created_at: now,
+			updated_at: now,
+		});
+        if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		expect(method).toBeDefined();
+		expect(method.is_verified).toBe(1);
+	});
+
+	it("should reject creation when created_at or updated_at are missing", () => {
+		let method = create2FaMethods({
+			user_id: userId,
+			method_type: 13,
+			label: "Missing created_at",
+			is_verified: true,
+			updated_at: Math.floor(Date.now() / 1000),
+		});
+		expect(method).toBeUndefined();
+
+		method = create2FaMethods({
+			user_id: userId,
+			method_type: 14,
+			label: "Missing updated_at",
+			is_verified: true,
+			created_at: Math.floor(Date.now() / 1000),
+		});
+		expect(method).toBeUndefined();
+	});
+
+	it("should update is_verified correctly (true to false)", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 15,
+			label: "Update Verified",
+			is_primary: 0,
+			is_verified: true,
+			created_at: now,
+			updated_at: now,
+		});
+		expect(method).toBeDefined();
+		const methodId = (method as any).method_id;
+		expect(methodId).toBeDefined();
+
+		let updated = update2FaMethods(methodId, { is_verified: true });
+		expect(updated).toBe(true);
+
+		let fetched = getUser2FaMethodsById(methodId);
+        if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(fetched.is_verified).toBe(1);
+
+		updated = update2FaMethods(methodId, { is_verified: false });
+		expect(updated).toBe(true);
+
+		fetched = getUser2FaMethodsById(methodId);
+        if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(fetched.is_verified).toBe(0);
+	});
+
+	it("should ignore undefined and null values in update", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 16,
+			label: "Ignore Undefined",
+			is_primary: 0,
+			is_verified: true,
+			created_at: now,
+			updated_at: now,
+		});
+		expect(method).toBeDefined();
+		const methodId = (method as any).method_id;
+		expect(methodId).toBeDefined();
+
+		const updated = update2FaMethods(methodId, {
+			is_verified: undefined,
+			// @ts-expect-error
+			label: null,
+		});
+		expect(updated).toBe(false);
+	});
+
+	it("should update created_at and updated_at when provided", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 17,
+			label: "Update Timestamps",
+			is_primary: 0,
+			is_verified: false,
+			created_at: now,
+			updated_at: now,
+		});
+		expect(method).toBeDefined();
+		const methodId = (method as any).method_id;
+		expect(methodId).toBeDefined();
+
+		const newTimestamp = now + 1000;
+		const updated = update2FaMethods(methodId, {
+			created_at: newTimestamp,
+			updated_at: newTimestamp,
+		});
+		expect(updated).toBe(true);
+
+		const fetched = getUser2FaMethodsById(methodId);
+        if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(fetched.created_at).toBe(newTimestamp);
+		expect(fetched.updated_at).toBe(newTimestamp);
 	});
 });

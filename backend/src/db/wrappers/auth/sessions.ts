@@ -40,7 +40,8 @@ export function getSessionByTokenHash(token_hash: string): session | undefined {
  * @returns An array of sessions objects, or an empty array if none found
  */
 export function getSessionsByUserId(user_id: number): session[] {
-	return (getRow<session[]>("sessions", "user_id", user_id) ?? []);
+    const stmt = db.prepare("SELECT * FROM sessions WHERE user_id = ?");
+    return (stmt.all(user_id) as session[]);
 }
 
 /**

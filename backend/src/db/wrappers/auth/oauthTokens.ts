@@ -67,7 +67,7 @@ export function isTokenValid(oauth_token_id: number): boolean {
  * @returns The newly created or existing OauthToken object, or undefined if insertion failed
  */
 export function createOauthToken(options: Partial<OauthToken>): OauthToken | undefined {
-	const	oauth_account_id = (null)
+	const	oauth_account_id = (options.oauth_account_id ?? null)
 	const	access_token_hash = (options.access_token_hash)
 	const	refresh_token_hash = (options.refresh_token_hash || null)
 	const	scopes = (options.scopes || null)
