@@ -14,14 +14,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 }
 
 // Routes imports
-import { oauthRoutes } from "./routes/oauth/index.js";
-import { userRoutes } from "./routes/users/index.js";
-
-// Register routes
-async function registerRoutes(app: Fastify.FastifyInstance) {
-  app.register(oauthRoutes, { prefix: '/api/oauth' });
-  app.register(userRoutes, { prefix: '/api/users' });
-}
+import { registerRoutes } from "./routes/index.js";
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";

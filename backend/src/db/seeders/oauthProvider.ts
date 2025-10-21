@@ -29,35 +29,36 @@ interface OAuthProviderEnv {
 }
 
 /**
- * List of OAuth providers to seed into the database.
- * Each provider reads its credentials from the environment.
- */
-const providers: OAuthProviderEnv[] = [
-	{
-		name: 'google',
-		clientId: process.env.GOOGLE_CLIENT_ID,
-		clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-		discoveryUrl: process.env.GOOGLE_DISCOVERY_URL
-	},
-	{
-		name: '42',
-		clientId: process.env['42_CLIENT_ID'],
-		clientSecret: process.env['42_CLIENT_SECRET'],
-		discoveryUrl: process.env['42_DISCOVERY_URL']
-	},
-	{
-		name: 'github',
-		clientId: process.env.GITHUB_CLIENT_ID,
-		clientSecret: process.env.GITHUB_CLIENT_SECRET,
-		discoveryUrl: process.env.GITHUB_DISCOVERY_URL
-	}
-];
-
-/**
  * Seeds the OAuth providers into the database.
  * Skips providers that are missing required environment variables.
  */
 export function seedOAuthProviders(db: Database.Database): void {
+
+	/**
+	 * List of OAuth providers to seed into the database.
+	 * Each provider reads its credentials from the environment.
+	 */
+	const providers: OAuthProviderEnv[] = [
+		{
+			name: 'google',
+			clientId: process.env.GOOGLE_CLIENT_ID,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+			discoveryUrl: process.env.GOOGLE_DISCOVERY_URL
+		},
+		{
+			name: '42',
+			clientId: process.env['42_CLIENT_ID'],
+			clientSecret: process.env['42_CLIENT_SECRET'],
+			discoveryUrl: process.env['42_DISCOVERY_URL']
+		},
+		{
+			name: 'github',
+			clientId: process.env.GITHUB_CLIENT_ID,
+			clientSecret: process.env.GITHUB_CLIENT_SECRET,
+			discoveryUrl: process.env.GITHUB_DISCOVERY_URL
+		}
+	];
+
 	for (const p of providers) {
 		if (!p.clientId || !p.clientSecret || !p.discoveryUrl) {
 			console.warn(`⚠️  Skipping ${p.name}: missing environment variables`);
