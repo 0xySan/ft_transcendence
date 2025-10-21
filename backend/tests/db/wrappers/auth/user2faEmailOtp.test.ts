@@ -62,7 +62,8 @@ describe("user2faEmailOtp wrapper - tests", () => {
       expires_at: now + 60000,
     });
 
-    const otpId = (created as any).email_otp_id;
+    if (!created) throw new Error("Throw error (undefined)");
+    const otpId = created.email_otp_id;
     const retrieved = getUser2faEmailOtpById(otpId);
 
     if (!retrieved) throw new Error("Throw error (undefined)");

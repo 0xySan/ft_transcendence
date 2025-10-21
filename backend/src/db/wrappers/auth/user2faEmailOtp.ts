@@ -6,6 +6,7 @@
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface user2faEmailOtp {
+    email_otp_id:           number;
     method_id:              number;
     last_sent_code_hash:    string;
     last_sent_at:           number;

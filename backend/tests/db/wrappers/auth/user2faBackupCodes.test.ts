@@ -14,12 +14,6 @@ let backupCodeId: number;
 
 describe("user_2fa_backup_codes wrapper – with FK setup", () => {
     beforeAll(() => {
-        const insertRole = db.prepare(`
-            INSERT INTO user_roles (role_id, role_name) VALUES (1, 'user')
-            ON CONFLICT(role_id) DO NOTHING
-        `);
-        insertRole.run();
-
         const insertUser = db.prepare(`
             INSERT INTO users (email, password_hash, role_id)
             VALUES (?, ?, ?)

@@ -6,7 +6,6 @@
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface apiClients {
-    client_id:                  string;
     owner_id:                   number;
     name:                       string;
     client_secret_encrypted:    string;
@@ -23,7 +22,7 @@ export interface apiClients {
  * @param id - The primary key of the apiClients
  * @returns The apiClients object if found, otherwise undefined
  */
-export function getApiClientsById(id: number): apiClients | undefined {
+export function getApiClientById(id: number): apiClients | undefined {
     return (getRow<apiClients>("api_clients", "app_id", id));
 }
 
@@ -31,20 +30,19 @@ export function getApiClientsById(id: number): apiClients | undefined {
  * List of api clients
  * @returns The list of the table
  */
-export function listApiClients(): apiClients[] {
+export function listApiClient(): apiClients[] {
     const stmt = db.prepare("SELECT * FROM api_clients");
     return stmt.all() as apiClients[];
 }
 
 /**
- * Retrieve an apiClient using its unique client_id.
- * This is useful when authenticating clients based on their public ID.
- * @param client_id - The unique identifier of the client (client_id column)
- * @returns The matching apiClients object if found, otherwise undefined
+ * Retrieve apiClients by owner_id.
+ * @param owner_id - The user ID of the owner
+ * @returns An array of apiClients objects owned by the specified owner
  */
-export function getApiClientsByClientId(client_id: string): apiClients | undefined {
-    const stmt = db.prepare("SELECT * FROM api_clients WHERE client_id = ?");
-    return stmt.get(client_id) as apiClients | undefined;
+export function getApiClientByOwnerId(owner_id: number): apiClients[] {
+    const stmt = db.prepare("SELECT * FROM api_clients WHERE owner_id = ?");
+    return stmt.all(owner_id) as apiClients[];
 }
 
 /**
@@ -56,8 +54,7 @@ export function getApiClientsByClientId(client_id: string): apiClients | undefin
  * is_confidential, created_at, updated_at, secret_expiration
  * @returns The newly created or existing apiClients object, or undefined if insertion failed
  */
-export function createApiClients(options: Partial<apiClients>): apiClients | undefined {
-    const   client_id = (options.client_id);
+export function createApiClient(options: Partial<apiClients>): apiClients | undefined {
     const   owner_id = (options.owner_id);
     const   name = (options.name ?? "unamed");
     const   client_secret_encrypted = (options.client_secret_encrypted);
@@ -69,7 +66,6 @@ export function createApiClients(options: Partial<apiClients>): apiClients | und
     const   secret_expiration = (options.secret_expiration);
 
     return (insertRow<apiClients>("api_clients", {
-        client_id: client_id,
         owner_id: owner_id,
         name: name,
         client_secret_encrypted: client_secret_encrypted,
@@ -90,7 +86,7 @@ export function createApiClients(options: Partial<apiClients>): apiClients | und
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */
-export function updateApiClients(app_id: number, options: Partial<apiClients>): boolean {
+export function updateApiClient(app_id: number, options: Partial<apiClients>): boolean {
     const keys = Object.keys(options).filter(
         key => options[key as keyof apiClients] !== undefined && options[key as keyof apiClients] !== null
     );

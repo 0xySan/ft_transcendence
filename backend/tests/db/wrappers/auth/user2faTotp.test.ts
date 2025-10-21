@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
 	createUser2faTotp,
-	getSessionById,
+	getUser2faTotpById,
 	updateUser2faTotp,
 	listUser2faTotp,
 	getUser2faTotpByMethodId
@@ -18,12 +18,6 @@ let totpId: number;
 
 describe("user_2fa_totp wrapper – with FK setup", () => {
 	beforeAll(() => {
-		const insertRole = db.prepare(`
-			INSERT INTO user_roles (role_id, role_name) VALUES (1, 'user')
-			ON CONFLICT(role_id) DO NOTHING
-		`);
-		insertRole.run();
-
 		const insertUser = db.prepare(`
 			INSERT INTO users (email, password_hash, role_id)
 			VALUES (?, ?, ?)
@@ -65,7 +59,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 	});
 
 	it("should retrieve a user_2fa_totp entry by ID", () => {
-		const totp = getSessionById(totpId);
+		const totp = getUser2faTotpById(totpId);
 		expect(totp).toBeDefined();
         if (!totp)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
 		expect(totp.method_id).toBe(methodId);
@@ -79,7 +73,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		});
 		expect(updated).toBe(true);
 
-		const fetched = getSessionById(totpId);
+		const fetched = getUser2faTotpById(totpId);
         if (!fetched)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
 		expect(fetched.secret_meta).toContain("digits=8");
 		expect(fetched.last_used).toBe(1800000000);

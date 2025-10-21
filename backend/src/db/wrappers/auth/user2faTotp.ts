@@ -3,7 +3,6 @@
  * Provides retrieval, creation, and listing utilities.
 */
 
-import { numericToAlpha2 } from "i18n-iso-countries";
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface user_2fa_totp {
@@ -19,7 +18,7 @@ export interface user_2fa_totp {
  * @param id - This id of the user_2fa_totp 
  * @returns The user_2fa_totp object if found, otherwise undefined
  */
-export function getSessionById(id: number): user_2fa_totp | undefined {
+export function getUser2faTotpById(id: number): user_2fa_totp | undefined {
     return (getRow<user_2fa_totp>("user_2fa_totp", "totp_id", id));
 }
 

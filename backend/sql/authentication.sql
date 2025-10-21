@@ -54,7 +54,7 @@ CREATE TABLE oauth_providers (
 	discovery_url			TEXT,																-- store the discovery url
 	client_id				TEXT,																-- ID of the client
 	client_secret_encrypted	BLOB,																-- secret encrypted oauth
-	is_enabled				BOOLEAN		DEFAULT 1,												-- is enable ?
+	is_enabled				BOOLEAN		DEFAULT 1,												-- is enabled ?
 	created_at				DATETIME															-- timestamp of the created oauth provider
 );
 
@@ -62,7 +62,7 @@ CREATE TABLE oauth_providers (
 -- Store the relation between a user and a Oauth provider
 CREATE TABLE oauth_accounts (
 	oauth_account_id		INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
-	user_id					INTEGER		NOT NULL,															-- ID on the user (FK)
+	user_id					INTEGER		NOT NULL,												-- ID on the user (FK)
 	provider_name			TEXT,																-- stock the name (FK)
 	provider_user_id		TEXT		NOT NULL,												-- stock the user id
 	profile_json			TEXT,																-- the profile user on the Oauth server
@@ -89,11 +89,10 @@ CREATE TABLE oauth_tokens (
 );
 
 -- Table: api_clients
-/*It represent an aplication associated with an user that can deliveR
+/*It represent an aplication associated with an user that can deliver
 tokens to interact with the api in limited an define scope.*/
 CREATE TABLE api_clients (
 	app_id					INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	client_id				TEXT		UNIQUE NOT NULL,										--- ID of the client
 	owner_id				INTEGER,															--- ID of the owner (FK)
 	name					TEXT		DEFAULT "unamed",										--- name of the api
 	client_secret_encrypted	BLOB		NOT NULL,												--- encrypted secret

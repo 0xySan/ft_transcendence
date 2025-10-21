@@ -6,6 +6,7 @@
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface apiTokens {
+    token_id:       number;
     app_id:         number;
     token_hash:     string;
     scopes:         string;
@@ -20,8 +21,39 @@ export interface apiTokens {
  * @param id - The primary key of the apiTokens
  * @returns The apiTokens object if found, otherwise undefined
  */
-export function getApiTokensById(id: number): apiTokens | undefined {
+export function getApiTokenById(id: number): apiTokens | undefined {
     return (getRow<apiTokens>("api_tokens", "token_id", id));
+}
+
+/**
+ * Retrieve an apiToken by its token_hash.
+ * @param token_hash - The hash of the token
+ * @returns The apiTokens object if found, otherwise undefined
+ */
+export function getTokenApiByHash(token_hash: string): apiTokens | undefined {
+    const stmt = db.prepare("SELECT * FROM api_tokens WHERE token_hash = ?");
+    const token = stmt.get(token_hash) as apiTokens | undefined;
+    return token;
+}
+
+/**
+ * Check if an apiToken is valid:
+ * - Exists
+ * - Not revoked
+ * - Not expired (expires_at timestamp > current time)
+ * 
+ * @param token_hash - The hash of the token to validate
+ * @returns true if valid, false otherwise
+ */
+export function checkApiTokenValidity(token_hash: string): boolean {
+    const token = getTokenApiByHash(token_hash);
+    if (!token) return false;
+
+    const now = Math.floor(Date.now() / 1000);
+    if (token.revoked) return false;
+    if (token.expires_at && token.expires_at < now) return false;
+
+    return true;
 }
 
 /**
@@ -32,7 +64,7 @@ export function getApiTokensById(id: number): apiTokens | undefined {
  * @param options - Partial apiTokens object with app_id, token_hash, scopes, issued_at, expired_at, last_used_at, revoked
  * @returns The newly created or existing apiTokens object, or undefined if insertion failed
  */
-export function createApiTokens(options: Partial<apiTokens>): apiTokens | undefined {
+export function createApiToken(options: Partial<apiTokens>): apiTokens | undefined {
     const   app_id = (options.app_id);
     const   token_hash = (options.token_hash);
     const   scopes = (options.scopes);
@@ -60,7 +92,7 @@ export function createApiTokens(options: Partial<apiTokens>): apiTokens | undefi
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */
-export function updateApiTokens(token_id: number, options: Partial<apiTokens>): boolean {
+export function updateApiToken(token_id: number, options: Partial<apiTokens>): boolean {
     const keys = Object.keys(options).filter(
         key => options[key as keyof apiTokens] !== undefined && options[key as keyof apiTokens] !== null
     );

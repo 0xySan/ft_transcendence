@@ -4,3 +4,8 @@ export * from "./oauthTokens.js";
 export * from "./passwordResets.js";
 export * from "./sessions.js";
 export * from "./user2FaMethods.js";
+export * from "./apiClients.js";
+export * from "./apiTokens.js";
+export * from "./user2faEmailOtp.js";
+export * from "./user2FaMethods.js";
+export * from "./user2faTotp.js";
