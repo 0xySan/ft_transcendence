@@ -6,6 +6,7 @@ services:
       - "3000"
     volumes:
       - sqlite-data:/app/data
+      - user-data:/app/userData
 
   frontend:
     build: ./frontend
@@ -26,3 +27,4 @@ services:
 
 volumes:
   sqlite-data:
+  user-data:
