@@ -5,6 +5,9 @@
 
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 12;
 
 dotenv.config({ quiet: true });
 
@@ -63,4 +66,14 @@ export function decryptSecret(encrypted: Buffer): string {
  */
 export function generateRandomToken(length: number): string {
 	return crypto.randomBytes(length).toString('hex');
+}
+
+// Hash a password
+export async function hashPassword(password: string): Promise<string> {
+	return await bcrypt.hash(password, SALT_ROUNDS);
+}
+
+// Verify a password
+export async function verifyPassword(password: string, hashed: string): Promise<boolean> {
+	return await bcrypt.compare(password, hashed);
 }

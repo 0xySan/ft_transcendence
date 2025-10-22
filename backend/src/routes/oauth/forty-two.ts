@@ -105,7 +105,7 @@ export function routes(fastify: FastifyInstance) {
 				return reply.redirect(`/auth/link-account?${query}`);
 			}
 
-			return reply.redirect(`/auth/new-account?${query}`);
+			return reply.redirect(`/register?${query}`);
         } catch (err) {
 			console.error('42 OAuth callback error:', err);
 			return reply.status(500).send({ error: (err as Error).message });

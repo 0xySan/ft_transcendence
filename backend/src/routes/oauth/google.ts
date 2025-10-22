@@ -114,7 +114,7 @@ export function googleRoutes(fastify: FastifyInstance) {
 				// would ask password confirmation before linking accounts
 			}
 
-			return reply.redirect(`/auth/new-account?${query}`); // Need to be implemented frontend and backend
+			return reply.redirect(`/register?${query}`); // Need to be implemented frontend and backend
 			// page would be prefilled with info from Google to create a new account
 		} catch (err) {
 			console.error('Google OAuth callback error:', err);

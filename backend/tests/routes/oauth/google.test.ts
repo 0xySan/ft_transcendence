@@ -162,7 +162,7 @@ describe("Google OAuth routes", () => {
     const res = await fastify.inject({ method: "GET", url: "/google/callback?code=mock-code" });
 
     expect(res.statusCode).toBe(302);
-    expect(res.headers.location).toContain("/auth/new-account?");
+    expect(res.headers.location).toContain("/register?email=new%40example.com&provider=google&providerId=google123&name=New&picture=");
   });
 
   it("returns 500 if token response misses access_token", async () => {
