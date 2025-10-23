@@ -60,7 +60,7 @@ Built entirely from scratch with a focus on **clean architecture**, **security**
 │   ├── tests/        # Vitest test suites
 │   ├── Dockerfile
 │   └── README.md
-├── frontend/         # Frontend app with Tailwind, TypeScript, BabylonJS
+├── frontend/         # Frontend app with TypeScript, Fastify, HTML and CSS
 │   ├── public/       # Static assets (HTML, images)
 │   ├── src/          # TS and CSS source files
 │   ├── Dockerfile
@@ -88,7 +88,32 @@ cd ft_transcendence
 
 ```bash
 cd backend
-cp .env.example .env
+
+# Edit .env to fill in the values for your environment:
+``
+# Encryption & cookies
+ENCRYPTION_KEY=your_random_encryption_key
+COOKIE_SECRET=your_random_cookie_secret
+
+# Email settings (for notifications, etc.)
+MAIL_DOMAIN=your_mail_domain.com
+
+# Google OAuth2
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration
+
+# 42 OAuth2
+42_CLIENT_ID=your_42_client_id
+42_CLIENT_SECRET=your_42_client_secret
+42_DISCOVERY_URL=https://api.intra.42.fr/oauth/token
+
+# GitHub OAuth2
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_DISCOVERY_URL=https://github.com/login/oauth/access_token
+``
+
 npm install
 npm run build
 npm run start
