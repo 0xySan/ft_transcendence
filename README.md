@@ -31,20 +31,22 @@ Built entirely from scratch with a focus on **clean architecture**, **security**
 ### Frontend
 
 * **TypeScript**
-* **Tailwind CSS**
+* **Fastify** – with fastify-static
+* **Html and CSS**
 
 ### Backend
 
 * **Fastify** – high-performance Node.js framework
-* **SQLite** – lightweight SQL database (auto-initialized)
+* **SQLite** – lightweight SQL database (auto-initialized) using **better-sqlite3** for synchronous access
 * **WebSockets** – real-time multiplayer & chat
-* **OAuth2** – login with external providers (42, GitHub, etc.)
 
 ### DevOps / Observability
 
 * **Docker / Docker Compose** – full-stack orchestration
 * **Vitest** – testing framework
-* **Nginx** – reverse proxy and static file serving
+* **Redis** – in-memory data store for caching and real-time features
+* **Nginx** – reverse proxy
+* **GitHub Actions** – automated CI/CD workflows
 
 ---
 
@@ -130,7 +132,7 @@ This will:
 
 * Build and start both services
 * Initialize SQLite
-* Expose the app at **[http://localhost](http://localhost)**
+* Expose the app at **[http://localhost:8080](http://localhost:8080)**
 
 ---
 
@@ -191,39 +193,6 @@ Accept: application/json
   "error": "User not found"
 }
 ```
-
----
-
-## 🤝 Contributing
-
-We welcome contributions!
-Here’s how to get started:
-
-1. **Fork** the repository
-2. **Create a feature branch**
-
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Commit your changes**
-
-   ```bash
-   git commit -m "feat: add user matchmaking"
-   ```
-4. **Push to your branch**
-
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-5. **Open a Pull Request**
-
-### Coding Guidelines
-
-* Use **TypeScript** consistently (frontend & backend)
-* Follow **conventional commits** (`feat:`, `fix:`, `chore:`, etc.)
-* Keep commits atomic and meaningful
-* Write small, focused PRs
-* Add unit tests for critical logic
 
 ---
 
