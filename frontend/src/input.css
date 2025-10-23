@@ -1,2 +1,139 @@
 @import "tailwindcss";
 
+[data-theme="catppuccin-macchiato"] {
+	--rosewater:	245, 224, 220; /* Primary accent (cursor or highlights) */
+	--flamingo:		242, 205, 205; /* Secondary accent (alerts or highlights) */
+	--pink:			245, 194, 231; /* Vivid accent (used for emphasis) */
+	--mauve:		203, 166, 247; /* Syntax highlighting or active elements */
+	--red:			243, 139, 168; /* Error or critical alert (bright tone) */
+	--maroon:		235, 160, 172; /* Error or danger (muted tone) */
+	--peach:		250, 179, 135; /* Warning (highlight important elements) */
+	--yellow:		249, 226, 175; /* Caution or notification */
+	--green:		166, 227, 161; /* Success or confirmation */
+	--teal:			148, 226, 213; /* Info or moderate success (cyan-green tone) */
+	--sky:			137, 220, 235; /* General information (light cyan) */
+	--sapphire:		116, 199, 236; /* Accent for links or buttons (deep blue) */
+	--blue:			137, 180, 250; /* Primary actions or links (bright blue) */
+	--lavender:		180, 190, 254; /* Soft accent or comments (light lavender) */
+
+	--text:			202, 211, 245; /* Main text (on dark background) */
+	--subtext1:		184, 192, 224; /* Secondary text (subtitles, captions) */
+	--subtext0:		165, 173, 203; /* Tertiary text (labels, minor info) */
+
+	--overlay2:		147, 154, 183; /* Light overlay (for elevated surfaces) */
+	--overlay1:		128, 135, 162; /* Medium overlay */
+	--overlay0:		110, 115, 141; /* Dark overlay */
+
+	--surface2:		91, 96, 120;   /* Light UI surface (foreground elements) */
+	--surface1:		73, 77, 100;   /* Mid UI surface */
+	--surface0:		54, 58, 79;    /* Dark UI surface */
+
+	--base:			36, 39, 58;    /* Main background */
+	--mantle:		30, 32, 48;    /* Secondary background (containers) */
+	--crust:		24, 25, 38;    /* Tertiary background (deep layers) */
+}
+
+[data-theme="catppuccin-latte"] {
+	--rosewater:	220, 138, 120;
+	--flamingo:		221, 120, 120;
+	--pink:			234, 118, 203;
+	--mauve:		136, 57, 239;
+	--red:			210, 15, 57;
+	--maroon:		230, 69, 83;
+	--peach:		254, 100, 11;
+	--yellow:		223, 142, 29;
+	--green:		64, 160, 43;
+	--teal:			23, 146, 153;
+	--sky:			4, 165, 229;
+	--sapphire:		32, 159, 181;
+	--blue:			30, 102, 245;
+	--lavender:		114, 135, 253;
+
+	--text:			76, 79, 105;
+	--subtext1:		92, 95, 119;
+	--subtext0:		108, 111, 133;
+
+	--overlay2:		124, 127, 147;
+	--overlay1:		140, 143, 161;
+	--overlay0:		156, 160, 176;
+
+	--surface2:		172, 176, 190;
+	--surface1:		188, 192, 204;
+	--surface0:		204, 208, 218;
+
+	--base:			239, 241, 245;
+	--mantle:		230, 233, 239;
+	--crust:		220, 224, 232;
+}
+
+
+[data-theme="catppuccin-mocha"] {
+	--rosewater:	245, 224, 220;
+	--flamingo:		242, 205, 205;
+	--pink:			245, 194, 231;
+	--mauve:		203, 166, 247;
+	--red:			243, 139, 168;
+	--maroon:		235, 160, 172;
+	--peach:		250, 179, 135;
+	--yellow:		249, 226, 175;
+	--green:		166, 227, 161;
+	--teal:			148, 226, 213;
+	--sky:			137, 220, 235;
+	--sapphire:		116, 199, 236;
+	--blue:			137, 180, 250;
+	--lavender:		180, 190, 254;
+
+	--text:			205, 214, 244;
+	--subtext1:		186, 194, 222;
+	--subtext0:		166, 173, 200;
+
+	--overlay2:		147, 153, 178;
+	--overlay1:		127, 132, 156;
+	--overlay0:		108, 112, 134;
+
+	--surface2:		88, 91, 112;
+	--surface1:		69, 71, 90;
+	--surface0:		49, 50, 68;
+
+	--base:			30, 30, 46;
+	--mantle:		24, 24, 37;
+	--crust:		17, 17, 27;
+}
+
+  
+[data-theme="catppuccin-frappe"] {
+	--rosewater:	242, 213, 207;
+	--flamingo:		238, 190, 190;
+	--pink:			244, 184, 228;
+	--mauve:		202, 158, 230;
+	--red:			231, 130, 132;
+	--maroon:		234, 153, 156;
+	--peach:		239, 159, 118;
+	--yellow:		229, 200, 144;
+	--green:		166, 209, 137;
+	--teal:			129, 200, 190;
+	--sky:			153, 209, 219;
+	--sapphire:		133, 193, 220;
+	--blue:			140, 170, 238;
+	--lavender:		186, 187, 241;
+
+	--text:			198, 208, 245;
+	--subtext1:		181, 191, 226;
+	--subtext0:		165, 173, 206;
+
+	--overlay2:		148, 156, 187;
+	--overlay1:		131, 139, 167;
+	--overlay0:		115, 121, 148;
+
+	--surface2:		98, 104, 128;
+	--surface1:		81, 87, 109;
+	--surface0:		65, 69, 89;
+
+	--base:			48, 52, 70;
+	--mantle:		41, 44, 60;
+	--crust:		35, 38, 52;
+}
+
+:root {
+	--bg-transition: 0.5s;
+}
