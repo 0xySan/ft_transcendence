@@ -5,6 +5,7 @@
 
 import { FastifyInstance } from "fastify";
 import geoip from 'geoip-lite';
+import dotenv from 'dotenv';
 
 import { 
 	createUser, 
@@ -22,6 +23,9 @@ import {
 import { hashPassword } from '../../../utils/crypto.js';
 import { saveAvatarFromUrl } from '../../../utils/userData.js';
 
+import { sendMail } from "../../../utils/mail/mail.js";
+
+dotenv.config({ quiet: true });
 
 export async function newUserAccountRoutes(fastify: FastifyInstance) {
 	const emailRegex = /^([-!#-'*+\/-9=?A-Z^-~]+(\.[-!#-'*+\/-9=?A-Z^-~]+)*|"([]!#-[^-~ \t]|(\\[\t -~]))+")@[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?(\.[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?)+$/;
@@ -146,6 +150,19 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 					linked_at: Date.now(),
 				});
 			}
+
+			sendMail(
+				newUser.email,
+				"Welcome to ft_transcendence!",
+				"accountVerification.html",
+				{
+					HEADER: "Welcome to ft_transcendence!",
+					VERIFICATION_LINK: `https://moutig.sh/verify?user=${newUser.user_id}&token=some-verification-token`
+				},
+				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
+			).catch(err => {
+				console.error("Failed to send welcome email:", err);
+			});
 
 			// --- Response ---
 			return reply.status(201).send({
