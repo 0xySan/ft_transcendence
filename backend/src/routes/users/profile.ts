@@ -8,11 +8,15 @@ import { getUserById } from "../../db/wrappers/main/users.js";
 import { getProfileByUserId } from "../../db/wrappers/main/userProfiles.js";
 
 export async function userProfileRoutes(fastify: FastifyInstance) {
-	fastify.get("/profile/:id", async (request, reply) => {
+	fastify.get("/profile", async (request, reply) => {
 		try {
-			const { id } = request.params as { id: string };
-			const userId = parseInt(id, 10);
+			const { id } = request.query as { id?: string };
 
+			if (!id) {
+				return reply.status(400).send({ error: "Missing user ID in query" });
+			}
+
+			const userId = parseInt(id, 10);
 			if (isNaN(userId)) {
 				return reply.status(400).send({ error: "Invalid user ID" });
 			}
@@ -43,7 +47,7 @@ export async function userProfileRoutes(fastify: FastifyInstance) {
 					: null,
 			});
 		} catch (err) {
-			console.error("Error in /profile/:id:", err);
+			console.error("Error in /profile:", err);
 			return reply.status(500).send({ error: "Internal server error" });
 		}
 	});

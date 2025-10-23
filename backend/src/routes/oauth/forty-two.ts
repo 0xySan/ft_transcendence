@@ -17,10 +17,14 @@ interface UserInfo {
   id: string;
   email: string;
   login: string;
+  usual_first_name: string;
+  usual_full_name: string;
   first_name: string;
   last_name: string;
   displayname: string;
-  image_url: string;
+  image: {
+    link: string;
+  };
 }
 
 export function routes(fastify: FastifyInstance) {
@@ -88,18 +92,19 @@ export function routes(fastify: FastifyInstance) {
                 });
                 
                 // TODO check here
-                return reply.redirect(`/auth/success?provider=google`);
+                return reply.redirect(`/auth/success?provider=42`);
             }
 
             const existingUser = getUserByEmail(userInfo.email);
 
 			const query = new URLSearchParams({
-					email: userInfo.email,
-					provider: '42',
-					providerId: userInfo.id,
-					name: userInfo.displayname,
-					picture: userInfo.image_url || ''
-				}).toString();
+				email: userInfo.email,
+				provider: '42',
+				providerId: userInfo.id,
+				name: userInfo.usual_first_name || userInfo.first_name || userInfo.login,
+				displayName: userInfo.usual_full_name || userInfo.displayname || `${userInfo.first_name} ${userInfo.last_name}`,
+				picture: userInfo.image?.link || '',
+			}).toString();
 
 			if (existingUser) {
 				return reply.redirect(`/auth/link-account?${query}`);

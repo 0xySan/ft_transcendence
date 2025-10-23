@@ -124,46 +124,66 @@ describe("42 OAuth routes", () => {
     });
 
     it("redirects to link-account when user exists but no oauth account", async () => {
-        mocks.getOauthProviderByName.mockReturnValue({
-        client_id: "mock-client-id",
-        client_secret_encrypted: "encrypted",
-        discovery_url: "http://localhost/callback",
-        });
-        mocks.decryptSecret.mockReturnValue("decrypted-secret");
+		mocks.getOauthProviderByName.mockReturnValue({
+			client_id: "mock-client-id",
+			client_secret_encrypted: "encrypted",
+			discovery_url: "http://localhost/callback",
+		});
+		mocks.decryptSecret.mockReturnValue("decrypted-secret");
 
-        nodeFetchMock
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "mock-token" }) })
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "forty_two123", email: "user@example.com", name: "Exist" }) });
+		nodeFetchMock
+			.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "mock-token" }) })
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					id: "forty_two123",
+					email: "user@example.com",
+					login: "exist",
+					usual_first_name: "Exist",
+					usual_full_name: "Exist Full",
+					image: { link: "" },
+				}),
+			});
 
-        mocks.getOauthAccountByProviderAndUserId.mockReturnValue(undefined);
-        mocks.getUserByEmail.mockReturnValue({ id: 99, email: "user@example.com" });
+		mocks.getOauthAccountByProviderAndUserId.mockReturnValue(undefined);
+		mocks.getUserByEmail.mockReturnValue({ id: 99, email: "user@example.com" });
 
-        const res = await fastify.inject({ method: "GET", url: "/forty-two/callback?code=mock-code" });
+		const res = await fastify.inject({ method: "GET", url: "/forty-two/callback?code=mock-code" });
 
-        expect(res.statusCode).toBe(302);
-        expect(res.headers.location).toContain("/auth/link-account?");
-    });
+		expect(res.statusCode).toBe(302);
+		expect(res.headers.location).toContain("/auth/link-account?");
+	});
 
-    it("redirects to new-account when user didn't exists", async () => {
-        mocks.getOauthProviderByName.mockReturnValue({
-        client_id: "mock-client-id",
-        client_secret_encrypted: "encrypted",
-        discovery_url: "http://localhost/callback",
-        });
-        mocks.decryptSecret.mockReturnValue("decrypted-secret");
+	it("redirects to new-account when user didn't exists", async () => {
+		mocks.getOauthProviderByName.mockReturnValue({
+			client_id: "mock-client-id",
+			client_secret_encrypted: "encrypted",
+			discovery_url: "http://localhost/callback",
+		});
+		mocks.decryptSecret.mockReturnValue("decrypted-secret");
 
-        nodeFetchMock
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "mock-token" }) })
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "forty_two123", email: "user@example.com", name: "Exist" }) });
+		nodeFetchMock
+			.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: "mock-token" }) })
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					id: "forty_two123",
+					email: "user@example.com",
+					login: "newuser",
+					usual_first_name: "New",
+					usual_full_name: "New User",
+					image: { link: "" },
+				}),
+			});
 
-        mocks.getOauthAccountByProviderAndUserId.mockReturnValue(undefined);
-        mocks.getUserByEmail.mockReturnValue(undefined);
+		mocks.getOauthAccountByProviderAndUserId.mockReturnValue(undefined);
+		mocks.getUserByEmail.mockReturnValue(undefined);
 
-        const res = await fastify.inject({ method: "GET", url: "/forty-two/callback?code=mock-code" });
+		const res = await fastify.inject({ method: "GET", url: "/forty-two/callback?code=mock-code" });
 
-        expect(res.statusCode).toBe(302);
-        expect(res.headers.location).toContain("/register?email=user%40example.com&provider=42&providerId=forty_two123&name=undefined&picture=");
-    });
+		expect(res.statusCode).toBe(302);
+		expect(res.headers.location).toContain("/register?email=user%40example.com&provider=42&providerId=forty_two123&name=New&displayName=New+User&picture=");
+	});
 
     it("returns 500 if token response misses access_token", async () => {
         mocks.getOauthProviderByName.mockReturnValue({

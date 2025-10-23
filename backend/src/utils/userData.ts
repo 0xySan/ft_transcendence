@@ -21,6 +21,7 @@ function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
 /**
  * Save an avatar from a remote URL
  */
+
 export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 	const res = await fetch(imageUrl);
 	if (!res.ok) {
@@ -39,9 +40,18 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 	// Remove existing avatar if exists
 	if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-	// Stream the image to a file
 	if (!res.body) throw new Error('Response body is null');
-	const nodeStream = (await import('stream')).Readable.fromWeb(res.body as any);
+
+	// Handle both Web and Node streams
+	let nodeStream: any;
+	if (typeof res.body.pipe === 'function') {
+		// undici/Node Fetch gives a Node stream (PassThrough)
+		nodeStream = res.body;
+	} else {
+		// Standard Fetch gives a Web ReadableStream
+		const { Readable } = await import('stream');
+		nodeStream = Readable.fromWeb(res.body as any);
+	}
 
 	await streamPipeline(nodeStream, fs.createWriteStream(filePath));
 

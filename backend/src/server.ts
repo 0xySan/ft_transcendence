@@ -22,12 +22,13 @@ const HOST = process.env.HOST || "0.0.0.0";
 async function buildServer() {
   const app = Fastify({
     logger: true,
+    trustProxy: true,
   });
 
   // Register cookie plugin
   app.register(cookie, {
-		secret: process.env.COOKIE_SECRET, // for signing cookies
-	});
+    secret: process.env.COOKIE_SECRET, // for signing cookies
+  });
 
   // A simple health-check endpoint
   app.get("/api/health", async () => {
