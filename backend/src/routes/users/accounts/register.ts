@@ -157,7 +157,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				},
 			});
 		} catch (err) {
-			console.error("Error in /accounts/new:", err);
+			console.error("Error in /accounts/register:", err);
 			return reply.status(500).send({ error: "Internal server error" });
 		}
 	});

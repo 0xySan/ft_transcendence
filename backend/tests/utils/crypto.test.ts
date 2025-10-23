@@ -69,4 +69,25 @@ describe('crypto utilities', () => {
 
 		expect(enc1.equals(enc2)).toBe(false);
 	});
+
+	it('hashPassword should generate a valid bcrypt hash', async () => {
+		const password = 'MySuperPassword';
+		const hash = await cryptoModule.hashPassword(password);
+
+		expect(hash).toMatch(/^\$2[aby]\$/);
+		expect(hash.length).toBeGreaterThan(50);
+		expect(hash).not.toBe(password);
+	});
+
+	it('verifyPassword should correctly validate hashed passwords', async () => {
+		const password = 'SecurePass123!';
+		const hash = await cryptoModule.hashPassword(password);
+
+		const isValid = await cryptoModule.verifyPassword(password, hash);
+		const isInvalid = await cryptoModule.verifyPassword('wrongPassword', hash);
+
+		expect(isValid).toBe(true);
+		expect(isInvalid).toBe(false);
+	});
+
 });
