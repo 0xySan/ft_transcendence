@@ -9,13 +9,13 @@ Built entirely from scratch with a focus on **clean architecture**, **security**
 
 ## 📚 Table of Contents
 
-1. [Tech Stack](#-tech-stack)
+1. [Tech Stack](#%EF%B8%8F-tech-stack)
 2. [Project Structure](#-project-structure)
-3. [Installation & Setup](#-installation--setup)
+3. [Installation & Setup](#%EF%B8%8F-installation--setup)
 
-   * [Backend Setup](#backend-setup)
-   * [Frontend Setup](#frontend-setup)
-   * [Run with Docker](#run-with-docker)
+   * [Backend Setup](#2-backend-setup)
+   * [Frontend Setup](#3-frontend-setup)
+   * [Run with Docker](#4-run-with-docker)
 4. [API Documentation](#-api-documentation)
 
    * [Tool](#tool)
