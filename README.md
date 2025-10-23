@@ -1,28 +1,50 @@
 # 🕹️ ft_transcendence – Web-Based Pong & Tetris Experience 🚀
 
-ft_transcendence is a full-stack web application developed as part of the 42 cursus.
-It brings together classic retro gaming (Pong & Tetris) with modern web technologies, allowing players to compete, chat, and challenge each other in real time — all inside the browser.
+**ft_transcendence** is a full-stack web application developed as part of the **42 cursus**.
+It brings together **retro gaming (Pong & Tetris)** with modern web technologies — enabling players to compete, chat, and challenge each other in real-time, directly in the browser.
 
-Built from scratch with a focus on clean architecture, security, and scalability, this project goes beyond simple gameplay to explore authentication, WebSockets, REST APIs, and responsive design.
+Built entirely from scratch with a focus on **clean architecture**, **security**, and **scalability**, this project goes beyond gameplay to explore authentication, WebSockets, REST APIs, and responsive design.
 
 ---
 
+## 📚 Table of Contents
+
+1. [Tech Stack](#-tech-stack)
+2. [Project Structure](#-project-structure)
+3. [Installation & Setup](#-installation--setup)
+
+   * [Backend Setup](#backend-setup)
+   * [Frontend Setup](#frontend-setup)
+   * [Run with Docker](#run-with-docker)
+4. [API Documentation](#-api-documentation)
+
+   * [Tool](#tool)
+   * [Sample Endpoint](#sample-endpoint)
+5. [Contributing](#-contributing)
+6. [Design Assets](#-design-assets)
+7. [License](#-license)
+
+---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **TypeScript**
-- **Tailwind CSS**
+
+* **TypeScript**
+* **Tailwind CSS**
 
 ### Backend
-- **Fastify** – high-performance Node.js framework
-- **SQLite** – lightweight SQL database
-- **WebSockets** – for real-time multiplayer sync
-- **OAuth2** – external login providers (42, GitHub, etc.)
+
+* **Fastify** – high-performance Node.js framework
+* **SQLite** – lightweight SQL database (auto-initialized)
+* **WebSockets** – real-time multiplayer & chat
+* **OAuth2** – login with external providers (42, GitHub, etc.)
 
 ### DevOps / Observability
-- **Docker / Docker Compose**
-- **Vitest** – testing framework
+
+* **Docker / Docker Compose** – full-stack orchestration
+* **Vitest** – testing framework
+* **Nginx** – reverse proxy and static file serving
 
 ---
 
@@ -34,27 +56,34 @@ Built from scratch with a focus on clean architecture, security, and scalability
 │   ├── src/          # Source code (auth, db, routes, server utils)
 │   ├── sql/          # Init & schema SQL files
 │   ├── tests/        # Vitest test suites
-│   └── Dockerfile
-├── frontend/         # Frontend with Tailwind, TypeScript, BabylonJS
+│   ├── Dockerfile
+│   └── README.md
+├── frontend/         # Frontend app with Tailwind, TypeScript, BabylonJS
 │   ├── public/       # Static assets (HTML, images)
 │   ├── src/          # TS and CSS source files
-│   └── Dockerfile
-├── nginx/            # Reverse proxy config
+│   ├── Dockerfile
+│   └── README.md
+├── nginx/            # Nginx reverse proxy config
 ├── docker-compose.yml
 ├── LICENSE
-└── README.md
+└── README.md         # You are here!
 ```
 
 ---
 
-## ⚙️ Installation
+## ⚙️ Installation & Setup
 
-### 1. Clone the repository
+### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/0xySan/ft_transcendence.git
 cd ft_transcendence
 ```
-### 2. Backend setup
+
+---
+
+### 2. Backend Setup
+
 ```bash
 cd backend
 cp .env.example .env
@@ -62,49 +91,150 @@ npm install
 npm run build
 npm run start
 ```
-- Uses SQLite by default. DB is auto-initialized using init.sql
-- Runs at: http://localhost:3000
-### 3. Frontend setup
+
+* Runs by default at: **[http://localhost:3000](http://localhost:3000)**
+* Uses SQLite (auto-initialized using `init.sql`)
+* Logs API and WebSocket events to console
+* Test using:
+
+  ```bash
+  npm run test
+  ```
+
+---
+
+### 3. Frontend Setup
+
 ```bash
 cd frontend
 npm install
 npm run build
 npm run start
 ```
-- Tailwind is already configured
-- Runs at: http://localhost:8080
----
-## ▶️ Running Everything with Docker
 
-You can use```docker-compose``` for full stack orchestration:
+* Runs by default at: **[http://localhost:8080](http://localhost:8080)**
+* Tailwind is preconfigured
+* Backend API endpoint can be set in `.env`
+
+---
+
+### 4. Run with Docker
+
+To run the full stack (frontend + backend + nginx):
+
 ```bash
 docker-compose up --build
 ```
+
+This will:
+
+* Build and start both services
+* Initialize SQLite
+* Expose the app at **[http://localhost](http://localhost)**
+
+---
+
+## 📘 API Documentation
+
+### Tool
+
+API documentation is powered by **Swagger (OpenAPI)** and lives under `/api/docs` when running locally.
+
+Future endpoints will follow OpenAPI 3.1 format and can be automatically generated using `fastify-swagger`.
+
+#### Example initialization (in `backend/src/plugins/swagger.ts`):
+
+```ts
+fastify.register(import('@fastify/swagger'), {
+  openapi: {
+    info: {
+      title: 'ft_transcendence API',
+      version: '1.0.0',
+      description: 'API documentation for ft_transcendence project'
+    },
+  },
+});
+```
+
+---
+
+### Sample Endpoint
+
+#### **GET /api/users/:id**
+
+**Description:**
+Fetches public information about a user by their ID.
+
+**Request**
+
+```http
+GET /api/users/1
+Accept: application/json
+```
+
+**Response (200 OK)**
+
+```json
+{
+  "id": 1,
+  "username": "playerOne",
+  "avatar": "/avatars/playerOne.png",
+  "wins": 12,
+  "losses": 8
+}
+```
+
+**Error Response (404 Not Found)**
+
+```json
+{
+  "error": "User not found"
+}
+```
+
 ---
 
 ## 🤝 Contributing
 
-### We welcome contributions! Here’s how to get started:
-1. Fork the repository
-2. Create a feature branch: git checkout -b feature/your-feature-name
-3. Commit your changes: git commit -m 'Add your feature'
-4. Push to your branch: git push origin feature/your-feature-name
-5. Open a pull request
+We welcome contributions!
+Here’s how to get started:
+
+1. **Fork** the repository
+2. **Create a feature branch**
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Commit your changes**
+
+   ```bash
+   git commit -m "feat: add user matchmaking"
+   ```
+4. **Push to your branch**
+
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Open a Pull Request**
 
 ### Coding Guidelines
-- Use TypeScript consistently across frontend and backend
-- Commit messages should follow conventional commits (feat:, fix:, chore:, etc.)
+
+* Use **TypeScript** consistently (frontend & backend)
+* Follow **conventional commits** (`feat:`, `fix:`, `chore:`, etc.)
+* Keep commits atomic and meaningful
+* Write small, focused PRs
+* Add unit tests for critical logic
 
 ---
 
 ## 🎨 Design Assets
 
-- [Figma – UI/UX, Component Layouts](https://www.figma.com/file/)
+Figma layout and component guides are available here:
+👉 [Figma – ft_transcendence UI/UX](https://www.figma.com/file/)
 
 ---
 
-# 📄 License
+## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0)
-<br>
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 See [LICENSE](https://github.com/0xySan/ft_transcendence/blob/main/LICENSE) for details.
