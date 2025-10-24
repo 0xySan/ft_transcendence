@@ -132,6 +132,121 @@
 	--crust:		35, 38, 52;
 }
 
+@font-face {
+	font-family: 'Poppins-Medium';
+	src: url('resources/fonts/Poppins-Medium.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Poppins-Regular';
+	src: url('resources/fonts/Poppins-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Poppins-SemiBold';
+	src: url('resources/fonts/Poppins-SemiBold.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+.background-color-base {
+	background-color: rgb(var(--base));
+}
+
+.button {
+	/* color: rgb(var(--text)); */
+  	border: none;
+  	border-radius: 20px;
+  	padding: 0.75em 2.5em; /* 12px top/bottom, 40px left/right */
+  	font-weight: 600;
+  	cursor: pointer;
+  	transition: background-color var(--bg-transition), transform 0.2s;
+}
+
+.button:hover {
+  	background-color: rgba(var(--red), 0.85); /* slightly transparent hover effect */
+  	transform: translateY(-1px);
+}
+
+.button:active {
+  	transform: translateY(0);
+}
+
+.gradient-red-to-maroon {
+  	background: linear-gradient(
+		90deg,
+		rgb(var(--red)),
+		rgb(var(--maroon))
+	);
+}
+
+.gradient-mauve-to-pink {
+  	background: linear-gradient(
+		90deg,
+		rgb(var(--mauve)),
+		rgb(var(--pink))
+	);
+}
+
+.gradient-text {
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text; /* for Firefox */
+	color: transparent;
+}
+
+.font-poppins-medium {
+	font-family: 'Poppins-Medium', sans-serif;
+}
+
+.font-poppins-regular {
+	font-family: 'Poppins-Regular', sans-serif;
+}
+
+.font-poppins-semibold {
+	font-family: 'Poppins-SemiBold', sans-serif;
+}
+
+.text-color-text {
+	color: rgb(var(--text));
+}
+
+.flex-space-between {
+	display: flex;
+	flex-direction: column;      /* stack vertically */
+	justify-content: space-between; /* push first to top, last to bottom */
+	align-items: center;         /* center horizontally (align center in Figma) */
+	height: 100vh;                /* must have a fixed or inherited height */
+}
+
+body {
+	overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+nav {
+	position: fixed;
+	top: 0;
+	left: 0;
+	background-color: rgb(var(--crust));
+	padding: 1rem 2rem;
+	width: 100vw;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+	margin-bottom: 0px;
+	background-color: rgb(var(--crust));
+	padding: 1rem 2rem;
+	width: 100vw;
+	text-align: center;
+	color: rgb(var(--text));
+	font-size: 0.875rem;
+}
+
 :root {
-	--bg-transition: 0.5s;
+	transition: background-color 0.5s ease;
 }
