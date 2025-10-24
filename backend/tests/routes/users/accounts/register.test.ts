@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
 
-describe("POST /accounts/new", () => {
+describe("POST /accounts/register", () => {
 	let fastify: ReturnType<typeof Fastify>;
 	let mocks: {
 		geoip: any;
@@ -28,6 +28,7 @@ describe("POST /accounts/new", () => {
 			createProfile: vi.fn(),
 			getProfileByUsername: vi.fn(),
 			getCountryByCode: vi.fn(),
+			getRoleByName: vi.fn().mockResolvedValue({ role_id: 4, role_name: "unverified" }),
 		}));
 		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
 			getOauthAccountByProviderAndUserId: vi.fn(),
@@ -66,21 +67,21 @@ describe("POST /accounts/new", () => {
 
 	it("returns 400 when username is missing", async () => {
 		const payload = { email: "user@example.com", password: "Aa1!aaaa" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(400);
 		expect(res.json()).toHaveProperty("error", "Username is required");
 	});
 
 	it("returns 400 for invalid email", async () => {
 		const payload = { username: "user123", email: "bad.@email.com", password: "Aa1!aaaa" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(400);
 		expect(res.json()).toHaveProperty("error", "Invalid email format");
 	});
 
 	it("returns 400 when neither password nor oauth provided", async () => {
 		const payload = { username: "user123", email: "user@example.com" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(400);
 		expect(res.json()).toHaveProperty("error", "Either password or OAuth data is required");
 	});
@@ -88,7 +89,7 @@ describe("POST /accounts/new", () => {
 	it("returns 409 if email already exists", async () => {
 		(mocks.main.getUserByEmail as any).mockReturnValue({ user_id: 1 });
 		const payload = { username: "user123", email: "exists@example.com", password: "Aa1!aaaa" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(409);
 		expect(res.json()).toHaveProperty("error", "User with this email already exists");
 	});
@@ -96,14 +97,14 @@ describe("POST /accounts/new", () => {
 	it("returns 409 if username already taken", async () => {
 		(mocks.main.getProfileByUsername as any).mockReturnValue({ profile_id: 5 });
 		const payload = { username: "taken_name", email: "user2@example.com", password: "Aa1!aaaa" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(409);
 		expect(res.json()).toHaveProperty("error", "Username is already taken");
 	});
 
 	it("creates user with password and returns 201", async () => {
 		const payload = { username: "newuser", email: "new@example.com", password: "Aa1!aaaa!" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(201);
 		const body = res.json();
 		expect(body).toHaveProperty("message", "User account created successfully");
@@ -119,7 +120,7 @@ describe("POST /accounts/new", () => {
 			oauth: { provider_name: "google", provider_user_id: "12345" },
 			pfp: "https://example.com/avatar.png",
 		};
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(201);
 		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "oauthuser", "oauthuser", "avatar_55.png", undefined);
 		expect((mocks.auth.createOauthAccount as any)).toHaveBeenCalled();
@@ -133,7 +134,7 @@ describe("POST /accounts/new", () => {
 			oauth: { provider_name: "google", provider_user_id: "z123" },
 			pfp: "https://bad.example/avatar.png",
 		};
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(201);
 		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "userNoAvatar", "userNoAvatar", undefined, undefined);
 	});
@@ -141,7 +142,7 @@ describe("POST /accounts/new", () => {
 	it("returns 500 if createUser fails", async () => {
 		(mocks.main.createUser as any).mockReturnValue(null);
 		const payload = { username: "failuser", email: "failuser@example.com", password: "Aa1!aaaa!" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(500);
 		expect(res.json()).toHaveProperty("error", "Failed to create user");
 	});
@@ -153,7 +154,7 @@ describe("POST /accounts/new", () => {
 		(mocks.main.getCountryByCode as any).mockReturnValue(testCountry);
 
 		const payload = { username: "userWithIp", email: "ip@example.com", password: "Aa1!aaaa!" };
-		const res = await fastify.inject({ method: "POST", url: "/accounts/new", payload, ip: testIp });
+		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
 		expect(res.statusCode).toBe(201);
 		expect((mocks.main.getCountryByCode as any)).toHaveBeenCalledWith("US");
 
@@ -162,7 +163,7 @@ describe("POST /accounts/new", () => {
 		(mocks.main.getCountryByCode as any).mockClear();
 		const resHeader = await fastify.inject({
 			method: "POST",
-			url: "/accounts/new",
+			url: "/accounts/register",
 			payload,
 			headers: { "x-forwarded-for": testIp }
 		});
@@ -172,14 +173,14 @@ describe("POST /accounts/new", () => {
 		// geoip returns undefined
 		(mocks.geoip.default.lookup as any).mockReturnValue(undefined);
 		(mocks.main.getCountryByCode as any).mockClear();
-		const resGeoUndefined = await fastify.inject({ method: "POST", url: "/accounts/new", payload, ip: testIp });
+		const resGeoUndefined = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
 		expect(resGeoUndefined.statusCode).toBe(201);
 		expect((mocks.main.getCountryByCode as any)).not.toHaveBeenCalled();
 
 		// getCountryByCode returns undefined
 		(mocks.geoip.default.lookup as any).mockReturnValue({ country: "US" });
 		(mocks.main.getCountryByCode as any).mockReturnValue(undefined);
-		const resCountryUndefined = await fastify.inject({ method: "POST", url: "/accounts/new", payload, ip: testIp });
+		const resCountryUndefined = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
 		expect(resCountryUndefined.statusCode).toBe(201);
 	});
 

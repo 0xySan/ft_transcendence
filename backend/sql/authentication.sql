@@ -147,6 +147,18 @@ CREATE TABLE sessions (
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
 
+-- Table: email_verifications
+-- Store email verification tokens
+CREATE TABLE email_verifications (
+	id						INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
+	token					TEXT		NOT NULL UNIQUE,										--- the verification token
+	expires_at				DATETIME	NOT NULL,												--- timestamp of expiration
+	verified				BOOLEAN		NOT NULL DEFAULT 0,										--- is verified ?
+	FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
+);
+
+
 -- api_clients
 CREATE INDEX idx_api_clients_owner_id ON api_clients(owner_id);
 

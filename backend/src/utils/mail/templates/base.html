@@ -4,38 +4,90 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<style>
+		/* === Catppuccin Macchiato Theme === */
+		:root {
+			--base: #24273a;
+			--mantle: #1e2030;
+			--crust: #181926;
+
+			--text: #cad3f5;
+			--subtext0: #a5adcb;
+			--subtext1: #b8c0e0;
+
+			--surface0: #363a4f;
+			--surface1: #494d64;
+			--surface2: #5b6078;
+
+			--blue: #8aadf4;
+			--lavender: #b7bdf8;
+			--mauve: #c6a0f6;
+			--rosewater: #f4dbd6;
+			--red: #ed8796;
+			--green: #a6da95;
+			--yellow: #eed49f;
+		}
+
+		/* === Layout & General === */
 		body {
-			font-family: Arial, sans-serif;
-			background-color: #f6f8fa;
-			color: #222;
+			font-family: "Inter", "Segoe UI", Arial, sans-serif;
+			background-color: var(--base);
+			color: var(--text);
 			margin: 0;
 			padding: 0;
 		}
+
 		.container {
 			max-width: 600px;
-			margin: 20px auto;
-			background: white;
+			margin: 32px auto;
+			background: var(--mantle);
 			border-radius: 12px;
-			box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 			overflow: hidden;
+			border: 1px solid var(--surface1);
 		}
+
+		/* === Header === */
 		header {
-			background: #24292e;
-			color: white;
+			background: var(--mauve);
+			color: var(--crust);
 			padding: 16px;
 			font-size: 20px;
 			font-weight: bold;
 			text-align: center;
+			letter-spacing: 0.5px;
 		}
+
+		/* === Main Content === */
 		main {
-			padding: 20px;
-			line-height: 1.6;
+			padding: 24px;
+			line-height: 1.7;
+			color: var(--subtext1);
+			background-color: var(--mantle);
 		}
+
+		main strong {
+			color: var(--lavender);
+		}
+
+		main a {
+			color: var(--blue);
+			text-decoration: none;
+			font-weight: 500;
+		}
+
+		main a:hover {
+			text-decoration: underline;
+			color: var(--rosewater);
+		}
+
+		/* === Footer === */
 		footer {
 			text-align: center;
 			font-size: 12px;
-			color: #777;
-			padding: 12px;
+			color: var(--subtext0);
+			padding: 14px;
+			background-color: var(--surface0);
+			border-top: 1px solid var(--surface1);
 		}
 	</style>
 </head>

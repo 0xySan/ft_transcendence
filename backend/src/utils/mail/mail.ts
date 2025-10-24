@@ -5,12 +5,27 @@ import path from 'path';
 
 dotenv.config({ quiet: true });
 
-const transporter = nodemailer.createTransport({
-	host: 'host.docker.internal',
-	port: 25,
-	secure: false,
-	tls: { rejectUnauthorized: false },
-});
+function createTransporter() {
+	if (process.env.NODE_ENV !== 'test') {
+		return nodemailer.createTransport({
+			host: 'host.docker.internal',
+			port: 25,
+			secure: false,
+			tls: { rejectUnauthorized: false },
+			dkim: {
+				domainName: process.env.MAIL_DOMAIN || 'example.com',
+				keySelector: 'mail',
+				privateKey: fs.readFileSync('/etc/opendkim/keys/moutig.sh/mail.private', 'utf8')
+			}
+		});
+	} else {
+			return nodemailer.createTransport({
+				jsonTransport: true
+			});
+	}
+}
+
+const transporter = createTransporter();
 
 /**
  * Load an email template from the filesystem.

@@ -12,7 +12,8 @@ import {
 	getUserByEmail, 
 	createProfile, 
 	getProfileByUsername,
-	getCountryByCode 
+	getCountryByCode,
+	getRoleByName
 } from '../../../db/wrappers/main/index.js';
 
 import { 
@@ -32,7 +33,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 	const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};\'\\|,.<>\/?]).{8,40}$/;
 	const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 
-	fastify.post("/accounts/new", async (request, reply) => {
+	fastify.post("/accounts/register", async (request, reply) => {
 		try {
 			const { username, email, password, oauth, pfp, display_name } = request.body as {
 				username?:	string;
@@ -107,7 +108,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				passwordHash = await hashPassword(password);
 			}
 
-			const newUser = createUser(email!, passwordHash);
+			const newUser = createUser(email!, passwordHash, getRoleByName('unverified')!.role_id);
 			if (!newUser) {
 				return reply.status(500).send({ error: "Failed to create user" });
 			}
