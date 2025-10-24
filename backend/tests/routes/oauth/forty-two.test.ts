@@ -8,7 +8,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 
 // mock modules used by the route before importing it
-vi.mock("../../../src/db/wrappers/auth/oauthProviders.js", () => ({
+vi.mock("../../../src/db/wrappers/auth/oauth/oauthProviders.js", () => ({
   getOauthProviderByName: vi.fn(),
 }));
 vi.mock("../../../src/utils/crypto.js", () => ({
@@ -17,10 +17,10 @@ vi.mock("../../../src/utils/crypto.js", () => ({
 vi.mock("../../../src/utils/session.js", () => ({
   createNewSession: vi.fn(),
 }));
-vi.mock("../../../src/db/wrappers/auth/oauthAccounts.js", () => ({
+vi.mock("../../../src/db/wrappers/auth/oauth/oauthAccounts.js", () => ({
   getOauthAccountByProviderAndUserId: vi.fn(),
 }));
-vi.mock("../../../src/db/wrappers/main/users.js", () => ({
+vi.mock("../../../src/db/wrappers/main/users/users.js", () => ({
   getUserByEmail: vi.fn(),
 }));
 
@@ -53,11 +53,11 @@ describe("42 OAuth routes", () => {
     
         // import the other mocked functions (they are vi.fn() thanks to vi.mock)
         mocks = {
-            getOauthProviderByName: (await import("../../../src/db/wrappers/auth/oauthProviders.js")).getOauthProviderByName,
+            getOauthProviderByName: (await import("../../../src/db/wrappers/auth/oauth/oauthProviders.js")).getOauthProviderByName,
             decryptSecret: (await import("../../../src/utils/crypto.js")).decryptSecret,
             createNewSession: (await import("../../../src/utils/session.js")).createNewSession,
-            getOauthAccountByProviderAndUserId: (await import("../../../src/db/wrappers/auth/oauthAccounts.js")).getOauthAccountByProviderAndUserId,
-            getUserByEmail: (await import("../../../src/db/wrappers/main/users.js")).getUserByEmail,
+            getOauthAccountByProviderAndUserId: (await import("../../../src/db/wrappers/auth/oauth/oauthAccounts.js")).getOauthAccountByProviderAndUserId,
+            getUserByEmail: (await import("../../../src/db/wrappers/main/users/users.js")).getUserByEmail,
         };
     });
 

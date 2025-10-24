@@ -8,9 +8,8 @@
 // src/routes/oauth/google.ts
 
 import { FastifyInstance } from 'fastify';
-import cookie from '@fastify/cookie';
 import fetch from 'node-fetch';
-import { getOauthProviderByName } from '../../db/wrappers/auth/oauthProviders.js';
+import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
 import { decryptSecret } from '../../utils/crypto.js';
 import { createNewSession } from '../../utils/session.js';
 import { getOauthAccountByProviderAndUserId, getUserByEmail } from '../../db/index.js';

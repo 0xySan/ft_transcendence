@@ -1,4 +1,4 @@
-import { getOauthProviderByName } from '../../db/wrappers/auth/oauthProviders.js';
+import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
 import { getOauthAccountByProviderAndUserId, getUserByEmail } from '../../db/index.js';
 import { FastifyInstance } from 'fastify';
 import fetch from 'node-fetch';

@@ -4,8 +4,8 @@
  */
 
 import { FastifyInstance } from "fastify";
-import { getUserById } from "../../db/wrappers/main/users.js";
-import { getProfileByUserId } from "../../db/wrappers/main/userProfiles.js";
+import { getUserById } from "../../db/wrappers/main/users/users.js";
+import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
 
 export async function userProfileRoutes(fastify: FastifyInstance) {
 	fastify.get("/profile", async (request, reply) => {

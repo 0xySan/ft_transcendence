@@ -7,10 +7,10 @@ import { describe, it, expect, vi, beforeEach, afterEach, Mock } from "vitest";
 import Fastify from "fastify";
 
 // -> from tests/routes/users/profile.test.ts to src/... : ../../../src/...
-vi.mock("../../../src/db/wrappers/main/users.js", () => ({
+vi.mock("../../../src/db/wrappers/main/users/users.js", () => ({
 	getUserById: vi.fn(),
 }));
-vi.mock("../../../src/db/wrappers/main/userProfiles.js", () => ({
+vi.mock("../../../src/db/wrappers/main/users/userProfiles.js", () => ({
 	getProfileByUserId: vi.fn(),
 }));
 
@@ -32,10 +32,10 @@ describe("/profile route", () => {
 		fastify.register(userProfileRoutes);
 
 		// Dynamic imports -> same module ids as the vi.mock above
-		const users = (await import("../../../src/db/wrappers/main/users.js")) as unknown as {
+		const users = (await import("../../../src/db/wrappers/main/users/users.js")) as unknown as {
 			getUserById: Mock;
 		};
-		const profiles = (await import("../../../src/db/wrappers/main/userProfiles.js")) as unknown as {
+		const profiles = (await import("../../../src/db/wrappers/main/users/userProfiles.js")) as unknown as {
 			getProfileByUserId: Mock;
 		};
 
