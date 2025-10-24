@@ -54,36 +54,43 @@ Built entirely from scratch with a focus on **clean architecture**, **security**
 
 ```plaintext
 .
-├── .github/            # GitHub workflows and CI/CD configurations
-├── backend/            # Fastify server, SQLite DB, API routes, WebSocket logic
-│   ├── src/            # Source code (auth, db, routes, server utils)
+├── .github/             # GitHub workflows and CI/CD configurations
+├── backend/             # Fastify server, SQLite DB, API routes, WebSocket logic
+│   ├── src/             # Source code (auth, db, routes, server utils)
+│   │  ├── routes/       # Api routes
 │   │  ├── db/
 │   │  │  ├── index.ts
 │   │  │  ├── seeders/
 │   │  │  └── wrappers/
-│   │  └── server.ts
-│   ├── sql/            # Init & schema SQL files
-│   ├── tests/          # Vitest test suites
-│   ├── dist/           # Compiled backend JS (runtime) (ignored in Git)
-│   ├── data/           # Runtime data (e.g., SQLite files, user uploads) (ignored in Git)
-│   ├── node_modules/   # Installed dependencies (ignored in Git)
-│   ├── coverage/       # Test coverage reports (ignored in Git)
-│   ├── .env            # Environment variables
+│   │  ├── server.ts
+│   │  └── utils         # Various utility functions
+│   ├── sql/             # Init & schema SQL files
+│   ├── tests/           # Vitest test suites
+│   ├── dist/            # Compiled backend JS (runtime) (ignored in Git)
+│   ├── data/            # Runtime data (e.g., SQLite files, user uploads) (ignored in Git)
+│   ├── node_modules/    # Installed dependencies (ignored in Git)
+│   ├── coverage/        # Test coverage reports (ignored in Git)
+│   ├── .env             # Environment variables
+|   ├── package.json     # Infos about project and dependencies
+│   ├── tsconfig.json    # typescript config
+│   ├── vitest.config.ts # Vitest config
 │   └── Dockerfile
-├── frontend/           # Frontend app with TypeScript, Fastify, HTML and CSS
-│   ├── public/         # Static assets (HTML, images)
+├── frontend/            # Frontend app with TypeScript, Fastify, HTML and CSS
+│   ├── public/          # Static assets (HTML, images)
 │   │  ├── index.html
-│   │  ├── pages/       # HTML pages other than default (index.html)
-│   │  └── resources/   # Ressources to get imgs, etc... eg: bzh.svg
-│   ├── src/            # TS and CSS source files
+│   │  ├── pages/        # HTML pages other than default (index.html)
+│   │  └── resources/    # Ressources to get imgs, etc... eg: bzh.svg
+│   ├── src/             # TS and CSS source files
 │   │  ├── input.css
 │   │  └── js/
+|   ├── package.json     # Infos about project and dependencies
+│   ├── tsconfig.json    # typescript config
 │   └── Dockerfile
-├── nginx/              # Nginx reverse proxy config
+├── nginx/               # Nginx reverse proxy config
 ├── docker-compose.yml
 ├── LICENSE
 ├── CONTRIBUTING.md
-└── README.md           # You are here!
+└── README.md            # You are here!
 ```
 
 ---
