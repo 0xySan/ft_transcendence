@@ -62,6 +62,8 @@ Built entirely from scratch with a focus on **clean architecture**, **security**
 │   │  │  ├── index.ts
 │   │  │  ├── seeders/
 │   │  │  └── wrappers/
+|   |  ├── plugins/
+│   │  │  └── swagger/   # Api doc plugin
 │   │  ├── server.ts
 │   │  └── utils         # Various utility functions
 │   ├── sql/             # Init & schema SQL files
