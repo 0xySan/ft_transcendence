@@ -5,7 +5,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
-import { encryptSecret, generateRandomToken } from "../../../../src/utils/crypto.js";
 
 describe("POST /accounts/register", () => {
 	let fastify: ReturnType<typeof Fastify>;
@@ -18,47 +17,77 @@ describe("POST /accounts/register", () => {
 	};
 
 	beforeEach(async () => {
+		// Reset module registry so doMock works cleanly
 		vi.resetModules();
 		vi.restoreAllMocks();
 
 		// --- Mocks ---
-		vi.doMock("geoip-lite", () => ({ __esModule: true, default: { lookup: vi.fn() } }));
+		// geoip-lite mock
+		vi.doMock("geoip-lite", () => ({
+			__esModule: true,
+			default: { lookup: vi.fn() },
+		}));
+
+		// main DB wrappers mock
 		vi.doMock("../../../../src/db/wrappers/main/index.js", () => ({
+			__esModule: true,
 			createUser: vi.fn(),
 			getUserByEmail: vi.fn(),
 			createProfile: vi.fn(),
 			getProfileByUsername: vi.fn(),
 			getCountryByCode: vi.fn(),
-			getRoleByName: vi.fn().mockResolvedValue({ role_id: 4, role_name: "unverified" }),
+			getRoleByName: vi.fn().mockReturnValue({ role_id: 1, role_name: "unverified" }),
 		}));
+
+		// auth DB wrappers mock
 		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
+			__esModule: true,
 			getOauthAccountByProviderAndUserId: vi.fn(),
 			createOauthAccount: vi.fn(),
 			createEmailVerification: vi.fn().mockResolvedValue({ email: "user@example.com", token: "token123" }),
 		}));
-		vi.doMock("../../../../src/utils/crypto.js", () => ({
-			hashPassword: vi.fn(),
-			generateRandomToken: vi.fn().mockImplementation(generateRandomToken),
-			encryptSecret: vi.fn().mockImplementation(encryptSecret),
-		}));
-		vi.doMock("../../../../src/utils/userData.js", () => ({ saveAvatarFromUrl: vi.fn() }));
 
-		// Import route after mocks
+		// crypto utils mock - deterministic and no env/bcrypt dependency
+		vi.doMock("../../../../src/utils/crypto.js", () => {
+			// deterministic token + encrypt/decrypt pair for tests
+			return {
+				__esModule: true,
+				hashPassword: vi.fn(async (plain: string) => `hashed_test_${plain}`),
+				verifyPassword: vi.fn(async (plain: string, hashed: string) => hashed === `hashed_test_${plain}`),
+				generateRandomToken: vi.fn((len: number) => "fixed_test_token_0123456789"),
+				encryptSecret: vi.fn((secret: string) => Buffer.from(secret, "utf8")),
+				decryptSecret: vi.fn((buf: Buffer | string) => {
+					if (typeof buf === "string") {
+						return Buffer.from(buf, "base64").toString("utf8");
+					}
+					return buf.toString("utf8");
+				}),
+			};
+		});
+
+		// userData mock
+		vi.doMock("../../../../src/utils/userData.js", () => ({
+			__esModule: true,
+			saveAvatarFromUrl: vi.fn(),
+		}));
+
+		// Import route AFTER the mocks are registered
 		const mod = await import("../../../../src/routes/users/accounts/register.js");
 		const { newUserAccountRoutes } = mod;
 
+		// Setup fastify with the route
 		fastify = Fastify();
 		fastify.register(newUserAccountRoutes);
 		await fastify.ready();
 
-		// Import mocked modules
+		// Import mocked modules so tests can inspect mock calls
 		const geoip = await import("geoip-lite");
 		const main = await import("../../../../src/db/wrappers/main/index.js");
 		const auth = await import("../../../../src/db/wrappers/auth/index.js");
 		const crypto = await import("../../../../src/utils/crypto.js");
 		const userData = await import("../../../../src/utils/userData.js");
 
-		// default createUser & hashPassword
+		// default createUser & hashPassword behaviour
 		(main.createUser as any).mockImplementation((email: string) => ({ user_id: 1, email, role_id: 1 }));
 		(crypto.hashPassword as any).mockResolvedValue("hashedpwd");
 
@@ -189,6 +218,4 @@ describe("POST /accounts/register", () => {
 		const resCountryUndefined = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
 		expect(resCountryUndefined.statusCode).toBe(201);
 	});
-
-
 });

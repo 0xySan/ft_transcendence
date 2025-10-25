@@ -49,10 +49,7 @@ export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
 					matchedRecord = rec;
 					break;
 				}
-			} catch (err) {
-				// decrypt failed or timingSafeEqual raised; continue to next record
-				continue;
-			}
+			} catch (err) {continue;}
 		}
 
 		if (!matchedRecord) {
@@ -75,10 +72,7 @@ export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
 		// update user role to "user"
 		try {
 			updateUserRole(matchedRecord.user_id, getRoleByName("user")!.role_id);
-		} catch (err) {
-			fastify.log.error("Failed to update user role after verification");
-			// continue — verification succeeded, but role update failed
-		}
+		} catch (err) {fastify.log.error("Failed to update user role after verification");}
 
 		return reply.status(200).send("Email verified successfully");
 	});
