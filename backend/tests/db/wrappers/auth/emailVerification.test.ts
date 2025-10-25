@@ -6,7 +6,8 @@ import {
 	getEmailVerificationByToken,
 	checkEmailVerificationValidity,
 	markEmailAsVerified,
-	cleanupOldEmailVerifications
+	cleanupOldEmailVerifications,
+	getEmailVerificationsByUserId
 } from "../../../../src/db/wrappers/auth/emailVerification.js";
 
 describe("emailVerification wrapper - tests", () => {
@@ -15,7 +16,6 @@ describe("emailVerification wrapper - tests", () => {
 	let validToken: string;
 
 	beforeAll(() => {
-		// Crée un utilisateur de test
 		const insertUser = db.prepare(`
 			INSERT INTO users (email, password_hash, role_id)
 			VALUES (?, ?, ?)
@@ -72,7 +72,7 @@ describe("emailVerification wrapper - tests", () => {
 		createEmailVerification({
 			user_id: userId,
 			token: expiredToken,
-			expires_at: now - 60 // expiré il y a 1 min
+			expires_at: now - 60 // expired 1 minute ago
 		});
 
 		const isValid = checkEmailVerificationValidity(expiredToken);
@@ -101,7 +101,7 @@ describe("emailVerification wrapper - tests", () => {
 	it("should delete expired or verified tokens via cleanup", () => {
 		const now = Math.floor(Date.now() / 1000);
 
-		// Crée un token expiré et un token valide
+		// Create an expired token and a valid one
 		const expiredToken = "expired_" + Math.random().toString(36).substring(2, 10);
 		const validToken2 = "still_valid_" + Math.random().toString(36).substring(2, 10);
 
@@ -123,6 +123,13 @@ describe("emailVerification wrapper - tests", () => {
 		// Le token encore valide doit toujours exister
 		const found = getEmailVerificationByToken(validToken2);
 		expect(found).toBeDefined();
+	});
+
+	it("should retrieve all email verifications for a user", () => {
+		const verifications = getEmailVerificationsByUserId(userId);
+		expect(verifications).toBeDefined();
+		expect(verifications.length).toBeGreaterThan(0);
+		expect(verifications[0].user_id).toBe(userId);
 	});
 
 	it("should cascade delete when user is deleted", () => {

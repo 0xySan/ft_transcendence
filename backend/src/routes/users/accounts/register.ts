@@ -18,10 +18,11 @@ import {
 
 import { 
 	getOauthAccountByProviderAndUserId,
+	createEmailVerification,
 	createOauthAccount
 } from '../../../db/wrappers/auth/index.js';
 
-import { hashPassword } from '../../../utils/crypto.js';
+import { hashPassword, generateRandomToken, encryptSecret } from '../../../utils/crypto.js';
 import { saveAvatarFromUrl } from '../../../utils/userData.js';
 
 import { sendMail } from "../../../utils/mail/mail.js";
@@ -152,13 +153,22 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				});
 			}
 
+			const verificationToken = generateRandomToken(32);
+			const encryptedToken = encryptSecret(verificationToken).toString('base64');
+
+			createEmailVerification({
+				user_id: newUser.user_id,
+				token: encryptedToken,
+				expires_at: Date.now() + 60 * 60 * 1000, // 1 hour
+			});
+
 			sendMail(
 				newUser.email,
 				"Welcome to ft_transcendence!",
 				"accountVerification.html",
 				{
 					HEADER: "Welcome to ft_transcendence!",
-					VERIFICATION_LINK: `https://moutig.sh/verify?user=${newUser.user_id}&token=some-verification-token`
+					VERIFICATION_LINK: `https://moutig.sh/verify?user=${newUser.user_id}&token=${encodeURIComponent(verificationToken)}`,
 				},
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 			).catch(err => {

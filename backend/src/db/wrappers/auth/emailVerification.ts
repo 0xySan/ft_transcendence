@@ -34,6 +34,17 @@ export function getEmailVerificationByToken(token: string): emailVerification | 
 }
 
 /**
+ * Retrieve all emailVerifications for a given user ID.
+ * @param userId - The user ID
+ * @returns An array of emailVerification objects
+ */
+export function getEmailVerificationsByUserId(userId: number): emailVerification[] {
+	const stmt = db.prepare("SELECT * FROM email_verifications WHERE user_id = ?");
+	const rows = stmt.all(userId) as emailVerification[];
+	return rows;
+}
+
+/**
  * Check if an emailVerification token is valid:
  * - Exists
  * - Not verified yet

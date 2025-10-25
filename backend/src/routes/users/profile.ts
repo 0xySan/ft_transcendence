@@ -6,6 +6,7 @@
 import { FastifyInstance } from "fastify";
 import { getUserById } from "../../db/wrappers/main/users/users.js";
 import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
+import { getRoleById } from "../../db/wrappers/main/users/userRoles.js";
 
 export async function userProfileRoutes(fastify: FastifyInstance) {
 	fastify.get("/profile", async (request, reply) => {
@@ -27,12 +28,18 @@ export async function userProfileRoutes(fastify: FastifyInstance) {
 			}
 
 			const profile = getProfileByUserId(userId);
+			const role = getRoleById(user.role_id);
 
 			return reply.status(200).send({
 				user: {
 					user_id: user.user_id,
 					email: user.email,
-					role_id: user.role_id,
+					role: role
+						? {
+								role_id: role.role_id,
+								role_name: role.role_name,
+						  }
+						: null,
 					created_at: user.created_at,
 					last_login: user.last_login ?? null,
 				},

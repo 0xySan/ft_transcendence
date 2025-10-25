@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
+import { encryptSecret, generateRandomToken } from "../../../../src/utils/crypto.js";
 
 describe("POST /accounts/register", () => {
 	let fastify: ReturnType<typeof Fastify>;
@@ -33,8 +34,13 @@ describe("POST /accounts/register", () => {
 		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
 			getOauthAccountByProviderAndUserId: vi.fn(),
 			createOauthAccount: vi.fn(),
+			createEmailVerification: vi.fn().mockResolvedValue({ email: "user@example.com", token: "token123" }),
 		}));
-		vi.doMock("../../../../src/utils/crypto.js", () => ({ hashPassword: vi.fn() }));
+		vi.doMock("../../../../src/utils/crypto.js", () => ({
+			hashPassword: vi.fn(),
+			generateRandomToken: vi.fn().mockImplementation(generateRandomToken),
+			encryptSecret: vi.fn().mockImplementation(encryptSecret),
+		}));
 		vi.doMock("../../../../src/utils/userData.js", () => ({ saveAvatarFromUrl: vi.fn() }));
 
 		// Import route after mocks
