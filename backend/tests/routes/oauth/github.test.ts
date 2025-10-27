@@ -31,7 +31,6 @@ vi.mock("node-fetch", () => ({
 
 // now import the route (after mocks)
 import { githubRoutes } from "../../../src/routes/oauth/github.js";
-import { access } from "fs";
 
 describe("GitHub OAuth routes", () => {
   let fastify: ReturnType<typeof Fastify>;
@@ -65,7 +64,7 @@ describe("GitHub OAuth routes", () => {
     vi.restoreAllMocks();
   });
 
-  // ---- TESTS ----import { access } from "fs";
+  // ---- TESTS ----
 
   it("redirects to GitHub OAuth URL", async () => {
     mocks.getOauthProviderByName.mockReturnValue({
@@ -243,7 +242,7 @@ describe("GitHub OAuth routes", () => {
     expect(body).toEqual({ error: "Failed to create session" });
   });
 
-  it("return 502 if GithuB server is down" ), async () => {
+  it("return 502 if Github server is down" ), async () => {
     mocks.getOauthProviderByName.mockReturnValue({
       client_id: "mock-client-id",
       client_secret_encrypted: "encrypted",

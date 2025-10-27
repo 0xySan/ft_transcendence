@@ -1,5 +1,5 @@
 /**
- * tests/routes/oauth/google.test.ts
+ * tests/routes/oauth/forty-two.test.ts
  * Corrected: properly mocks node-fetch so the route sees the mocked responses.
  */
 
@@ -123,7 +123,7 @@ describe("42 OAuth routes", () => {
         expect(nodeFetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it("redirects to link-account when user exists but no oauth account", async () => {
+    it("redirects to link-account when user exist but no oauth account", async () => {
 		mocks.getOauthProviderByName.mockReturnValue({
 			client_id: "mock-client-id",
 			client_secret_encrypted: "encrypted",
