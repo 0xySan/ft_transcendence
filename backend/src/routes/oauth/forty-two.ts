@@ -27,7 +27,7 @@ interface UserInfo {
   };
 }
 
-export function routes(fastify: FastifyInstance) {
+export function ftRoutes(fastify: FastifyInstance) {
 
     fastify.get('/forty-two', async (req, reply) => {
         const provider = getOauthProviderByName('42');

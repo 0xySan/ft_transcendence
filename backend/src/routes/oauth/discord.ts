@@ -1,11 +1,9 @@
-// src/routes/oauth/discord.ts
 /**
  * @file Discord OAuth routes
  * Handles Discord OAuth login and callback, fetches user info, and allows
  * integration with DB for user creation/retrieval.
  */
 
-// src/routes/oauth/discord.ts
 import { FastifyInstance } from 'fastify';
 import fetch from 'node-fetch';
 import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
@@ -93,7 +91,7 @@ export function discordRoutes(fastify: FastifyInstance) {
 			const oauthAccount = getOauthAccountByProviderAndUserId('discord', userInfo.id);
 
 			if (oauthAccount) { // direct login
-				const result = await createNewSession(oauthAccount.user_id, {
+				const result = createNewSession(oauthAccount.user_id, {
 					ip: request.ip,
 					userAgent: request.headers['user-agent']
 				});

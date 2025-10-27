@@ -1,17 +1,13 @@
-// src/routes/oauth/github.ts
 /**
  * @file github OAuth routes
  * Handles github OAuth login and callback, fetches user info, and allows
  * integration with DB for user creation/retrieval.
  */
 
-// src/routes/oauth/github.ts
-
 import { FastifyInstance } from 'fastify';
 import fetch from 'node-fetch';
 import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
 import { decryptSecret } from '../../utils/crypto.js';
-import crypto from 'crypto';
 import { createNewSession } from '../../utils/session.js';
 import { getOauthAccountByProviderAndUserId, getUserByEmail } from '../../db/index.js';
 

@@ -1,11 +1,9 @@
-// src/routes/oauth/google.ts
 /**
  * @file Google OAuth routes
  * Handles Google OAuth login and callback, fetches user info, and allows
  * integration with DB for user creation/retrieval.
  */
 
-// src/routes/oauth/google.ts
 
 import { FastifyInstance } from 'fastify';
 import fetch from 'node-fetch';

@@ -30,7 +30,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 // Now import the route (after mocks)
-import { routes } from "../../../src/routes/oauth/forty-two.js";
+import { ftRoutes } from "../../../src/routes/oauth/forty-two.js";
 
 describe("42 OAuth routes", () => {
     let fastify: ReturnType<typeof Fastify>;
@@ -45,7 +45,7 @@ describe("42 OAuth routes", () => {
         // fastify instance and cookie plugin (so setCookie works)
         fastify = Fastify();
         fastify.register(cookie);
-        fastify.register(routes);
+        fastify.register(ftRoutes);
     
         // get the node-fetch mock we created above
         const nodeFetch = await import("node-fetch");

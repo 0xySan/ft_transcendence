@@ -87,7 +87,7 @@ describe("Discord OAuth routes", () => {
 	expect(res.body).toContain("Missing code");
   });
 
-it("creates session and sets cookie when oauth account exists", async () => {
+  it("creates session and sets cookie when oauth account exists", async () => {
 	mocks.getOauthProviderByName.mockReturnValue({
 		client_id: "mock-client-id",
 		client_secret_encrypted: "encrypted",
@@ -126,7 +126,7 @@ it("creates session and sets cookie when oauth account exists", async () => {
 	expect(res.headers["set-cookie"]).toBeDefined();
 	expect(res.headers.location).toContain("/auth/success");
 	expect(nodeFetchMock).toHaveBeenCalledTimes(2);
-});
+  });
 
   it("redirects to link-account when user exists but no oauth account", async () => {
 	mocks.getOauthProviderByName.mockReturnValue({
