@@ -1,0 +1,73 @@
+<h1>Register</h1>
+
+	<div id="errorContainer" class="error-message"></div>
+
+	<form id="registerForm">
+		<input type="text" name="username" placeholder="Username" required />
+		<input type="text" name="display_name" placeholder="Display Name" required />
+		<input type="email" name="email" placeholder="Email" required />
+		<input type="password" name="password" placeholder="Password" />
+		<button type="submit">Register</button>
+	</form>
+
+	<a class="google-btn no-dynamic-load" href="/api/oauth/google" target="_blank">Register with Google</a>
+	<a class="google-btn no-dynamic-load" href="/api/oauth/forty-two" target="_blank">Register with 42</a>
+
+	<script type="module">
+		const form = document.getElementById('registerForm');
+		const errorContainer = document.getElementById('errorContainer');
+
+		// --- Pré-remplir les champs depuis l'URL (OAuth) ---
+		const params = new URLSearchParams(window.location.search);
+		const oauthEmail = params.get('email');
+		const oauthName = params.get('name');
+		const oauthPicture = params.get('picture');
+
+		if (oauthEmail) form.email.value = decodeURIComponent(oauthEmail);
+		if (oauthName) {
+			const displayName = decodeURIComponent(oauthName);
+			form.display_name.value = displayName;
+			form.username.value = displayName.replace(/\s+/g, '').toLowerCase().slice(0, 20);
+		}
+
+		// --- Soumission du formulaire ---
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			errorContainer.textContent = '';
+
+			const formData = new FormData(form);
+			const data = Object.fromEntries(formData.entries());
+
+			// Si OAuth présent dans l'URL, ajouter les données OAuth
+			if (oauthEmail && oauthName) {
+				data.oauth = {
+					provider_name: params.get('provider') || 'google',
+					provider_user_id: params.get('providerId') || '',
+					profile_json: JSON.stringify({ name: data.display_name, picture: oauthPicture })
+				};
+				data.pfp = oauthPicture || '';
+				// On ne force pas le password si c'est un compte OAuth
+				delete data.password;
+			}
+
+			try {
+				const res = await fetch('/api/users/accounts/new', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(data)
+				});
+
+				const result = await res.json();
+
+				if (res.ok) {
+					alert('Registration successful!');
+					window.location.href = '/login.html';
+				} else {
+					errorContainer.textContent = result.error || 'An unknown error occurred';
+				}
+			} catch (err) {
+				errorContainer.textContent = 'Network error';
+				console.error(err);
+			}
+		});
+	</script>
