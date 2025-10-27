@@ -56,6 +56,12 @@ export function seedOAuthProviders(db: Database.Database): void {
 			clientId: process.env.GITHUB_CLIENT_ID,
 			clientSecret: process.env.GITHUB_CLIENT_SECRET,
 			discoveryUrl: process.env.GITHUB_DISCOVERY_URL
+		},
+		{
+			name: 'discord',
+			clientId: process.env.DISCORD_CLIENT_ID,
+			clientSecret: process.env.DISCORD_CLIENT_SECRET,
+			discoveryUrl: process.env.DISCORD_DISCOVERY_URL
 		}
 	];
 

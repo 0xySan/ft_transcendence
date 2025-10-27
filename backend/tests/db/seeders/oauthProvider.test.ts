@@ -40,6 +40,10 @@ describe('seedOAuthProviders (integration)', () => {
 		process.env.GITHUB_CLIENT_ID = 'github_id';
 		process.env.GITHUB_CLIENT_SECRET = 'github_secret';
 		process.env.GITHUB_DISCOVERY_URL = 'https://github.com/login/oauth';
+
+		process.env.DISCORD_CLIENT_ID = 'discord_id';
+		process.env.DISCORD_CLIENT_SECRET = 'discord_secret';
+		process.env.DISCORD_DISCOVERY_URL = 'https://discord.com/api/oauth2';
 	});
 
 	afterEach(() => {
@@ -55,7 +59,7 @@ describe('seedOAuthProviders (integration)', () => {
 		// Fetch all rows after seeding
 		const rows = db.prepare('SELECT * FROM oauth_providers ORDER BY name').all();
 
-		expect(rows.length).toBe(3);
+		expect(rows.length).toBe(4);
 
 		// Check for expected content
 		const expected = [
@@ -64,6 +68,12 @@ describe('seedOAuthProviders (integration)', () => {
 				client_id: 'fortytwo_id',
 				client_secret_encrypted: 'encrypted(fortytwo_secret)',
 				discovery_url: 'https://api.intra.42.fr'
+			},
+			{
+				name: 'discord',
+				client_id: 'discord_id',
+				client_secret_encrypted: 'encrypted(discord_secret)',
+				discovery_url: 'https://discord.com/api/oauth2'
 			},
 			{
 				name: 'github',
@@ -97,7 +107,7 @@ describe('seedOAuthProviders (integration)', () => {
 		const rows = db.prepare('SELECT * FROM oauth_providers ORDER BY name').all();
 
 		// Only two providers should be inserted
-		expect(rows.length).toBe(2);
+		expect(rows.length).toBe(3);
 
 		// Check that warning was logged
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping google'));
@@ -106,6 +116,6 @@ describe('seedOAuthProviders (integration)', () => {
 		//@ts-expect-error
 		const names = rows.map(r => r.name);
 		expect(names).not.toContain('google');
-		expect(names).toEqual(expect.arrayContaining(['42', 'github']));
+		expect(names).toEqual(expect.arrayContaining(['42', 'github', 'discord']));
 	});
 });
