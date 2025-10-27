@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cookie from '@fastify/cookie';
+import swaggerPlugin from "./plugins/swagger/index.js";
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -13,57 +14,49 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
   process.exit(1);
 }
 
-// Routes imports
-import { registerRoutes } from "./routes/index.js";
-
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 
 async function buildServer() {
-  const app = Fastify({
-    logger: true,
-    trustProxy: true,
-  });
+	const app = Fastify({
+		logger: true,
+		trustProxy: true,
+	});
 
-  // Register cookie plugin
-  app.register(cookie, {
-    secret: process.env.COOKIE_SECRET, // for signing cookies
-  });
+	// Register cookie plugin
+	app.register(cookie, {
+		secret: process.env.COOKIE_SECRET, // for signing cookies
+	});
 
-  // A simple health-check endpoint
-  app.get("/api/health", async () => {
-    return { status: "ok" };
-  });
+	await app.register(swaggerPlugin);
 
-  return app;
+	return app;
 }
 
 async function start() {
-  const app = await buildServer();
-  await registerRoutes(app);
+	const app = await buildServer();
 
-  try {
-    await app.listen({ port: SERVER_PORT, host: HOST });
-    app.log.info(`Backend listening on http://${HOST}:${SERVER_PORT}`);
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
+	try {
+		await app.listen({ port: SERVER_PORT, host: HOST });
+		app.log.info(`Backend listening on http://${HOST}:${SERVER_PORT}`);
+	} catch (err) {
+		app.log.error(err);
+		process.exit(1);
+	}
 }
 
 // Graceful shutdown on signals
 process.on("SIGINT", async () => {
-  console.log("SIGINT received, shutting down");
-  try {
-    const app = await buildServer();
-    await app.close();
-    process.exit(0);
-  } catch {
-    process.exit(1);
-  }
+	console.log("SIGINT received, shutting down");
+	try {
+		const app = await buildServer();
+		await app.close();
+		process.exit(0);
+	} catch {
+		process.exit(1);
+	}
 });
 
 start();
 
-// Export for tests or programmatic usage
 export default buildServer;

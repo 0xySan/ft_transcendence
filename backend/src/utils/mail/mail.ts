@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ quiet: true });
 
 function createTransporter() {
-	if (process.env.NODE_ENV !== 'test') {
+	if (process.env.NODE_ENV !== 'test' && process.env.DKIM_KEY && fs.existsSync(process.env.DKIM_KEY)) {
 		return nodemailer.createTransport({
 			host: 'host.docker.internal',
 			port: 25,
@@ -15,7 +15,7 @@ function createTransporter() {
 			dkim: {
 				domainName: process.env.MAIL_DOMAIN || 'example.com',
 				keySelector: 'mail',
-				privateKey: fs.readFileSync('/etc/opendkim/keys/moutig.sh/mail.private', 'utf8')
+				privateKey: fs.readFileSync(process.env.DKIM_KEY, 'utf8')
 			}
 		});
 	} else {

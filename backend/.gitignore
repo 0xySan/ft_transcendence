@@ -4,3 +4,4 @@ dist/
 coverage/
 .env
 userData/
+package-lock.json
