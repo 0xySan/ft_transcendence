@@ -4,7 +4,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { userDataImgsRoute } from './imgs.js';
+import { userDataImgsRoute } from './imgs.route.js';
 
 export function userDataRoutes(fastify: FastifyInstance) {
 	userDataImgsRoute(fastify);
