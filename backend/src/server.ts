@@ -1,6 +1,18 @@
 import Fastify from "fastify";
-import { db } from "./db/index.js";
+import cookie from '@fastify/cookie';
 import swaggerPlugin from "./plugins/swagger/index.js";
+
+// Initialize db
+import { db } from "./db/index.js";
+db; // ensure db is initialized
+
+import dotenv from 'dotenv';
+dotenv.config({ quiet: true });
+
+if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length !== 64)) {
+  console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
+  process.exit(1);
+}
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
@@ -8,12 +20,15 @@ const HOST = process.env.HOST || "0.0.0.0";
 async function buildServer() {
 	const app = Fastify({
 		logger: true,
+		trustProxy: true,
 	});
 
-	// Register swagger plugin
-	await app.register(swaggerPlugin);
+	// Register cookie plugin
+	app.register(cookie, {
+		secret: process.env.COOKIE_SECRET, // for signing cookies
+	});
 
-	
+	await app.register(swaggerPlugin);
 
 	return app;
 }

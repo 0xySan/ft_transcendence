@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 
-import { healthRoute } from "../../routes/health.route.js";
+import { registerRoutes } from "../../routes/index.js";
 
 export default async function swaggerPlugin(app: FastifyInstance) {
 	const SERVER_PORT = Number(process.env.PORT || 3000);
@@ -33,5 +33,5 @@ export default async function swaggerPlugin(app: FastifyInstance) {
 		staticCSP: true,
 	});
 
-	await healthRoute(app);
+	await registerRoutes(app);
 }

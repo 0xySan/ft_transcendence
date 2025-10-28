@@ -13,6 +13,7 @@ type SqliteDatabase = Database.Database;
 
 // Import seeder functions
 import { populateCountries } from "./countries.js";
+import { seedOAuthProviders } from "./oauthProvider.js";
 
 function isTestEnv(): boolean {
   // Type guard for import.meta.vitest
@@ -24,6 +25,7 @@ function isTestEnv(): boolean {
 export function initializeDatabase(): SqliteDatabase {
 	// --- Define paths ---
 	const dataDir = path.join(process.cwd(), "data");          // Directory to store the DB
+	const userDataDir = path.join(process.cwd(), "userData/imgs"); // user data directory
 	const dbFile = path.join(dataDir, "database.sqlite");     // SQLite database file
 	const initSqlFile = path.join("sql", "init.sql");         // SQL file for schema initialization
 	const authInitSqlFile = path.join("sql", "authentication.sql"); // SQL file for auth schema (if needed)
@@ -43,6 +45,11 @@ export function initializeDatabase(): SqliteDatabase {
 		if (!fs.existsSync(dataDir)) {
 			fs.mkdirSync(dataDir, { recursive: true });
 			log(`Created data directory at ${dataDir}`);
+		}
+
+		if (!fs.existsSync(userDataDir)) {
+			fs.mkdirSync(userDataDir, { recursive: true });
+			log(`Created user data directory at ${userDataDir}`);
 		}
 
 		// --- Check if the database already exists ---
@@ -78,6 +85,15 @@ export function initializeDatabase(): SqliteDatabase {
 		} catch (err) {
 			console.error(`Failed to populate countries table: ${(err as Error).message}`);
 			process.exit(1);
+		}
+
+		if (!isTestEnv()) {
+			try {
+				seedOAuthProviders(db);
+			} catch (err) {
+				console.error(`Failed to seed OAuth providers exiting: ${(err as Error).message}`);
+				process.exit(1);
+			}
 		}
 	} else {
 		log("Database already exists, skipping init.sql execution and seeders");

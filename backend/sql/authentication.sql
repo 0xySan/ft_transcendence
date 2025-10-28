@@ -42,7 +42,7 @@ CREATE TABLE user_2fa_backup_codes (
 	backup_code_id			INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
 	method_id				INTEGER,															-- method id (FK)
 	code_json				TEXT		NOT NULL ,												-- Store the json codes
-	created_at				DATETIME	NOT NULL,												-- timestamp of the created backup code
+	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						-- timestamp of the created backup code
 	FOREIGN KEY(method_id) REFERENCES user_2fa_methods(method_id) ON DELETE CASCADE				-- user_2fa_methods.method_id
 );
 
@@ -55,7 +55,7 @@ CREATE TABLE oauth_providers (
 	client_id				TEXT,																-- ID of the client
 	client_secret_encrypted	BLOB,																-- secret encrypted oauth
 	is_enabled				BOOLEAN		DEFAULT 1,												-- is enabled ?
-	created_at				DATETIME															-- timestamp of the created oauth provider
+	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP								-- timestamp of the created oauth provider
 );
 
 -- Table: oauth_accounts
@@ -82,7 +82,7 @@ CREATE TABLE oauth_tokens (
 	refresh_token_hash		TEXT,																-- Store the refresh hashed token
 	scopes					TEXT,																-- the different access of the oauth
 	token_type				TEXT,																-- Store the type of the token
-	issued_at				DATETIME,															-- timestamp of the issued oauth token
+	issued_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								-- timestamp of the issued oauth token
 	expires_at				DATETIME,															-- timestamp of the expired oauth token
 	revoked					BOOLEAN		DEFAULT 0,												-- is revoked ?
 	FOREIGN KEY(oauth_account_id) REFERENCES oauth_accounts(oauth_account_id) ON DELETE CASCADE	-- oauth_account.oauth_account_id
@@ -99,8 +99,8 @@ CREATE TABLE api_clients (
 	redirect_url			TEXT,																--- redirect url
 	scopes					TEXT,																--- the authorized accesses of the app
 	is_confidential			BOOLEAN		DEFAULT 1,												--- is public ?
-	created_at				DATETIME	NOT NULL,												--- timestamp of creation
-	updated_at				DATETIME,															--- timestamp of update
+	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of creation
+	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of update
 	secret_expiration		DATETIME	NOT NULL,												--- timestamp of secret
 	FOREIGN KEY(owner_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
@@ -112,9 +112,9 @@ CREATE TABLE api_tokens (
 	app_id					INTEGER,															--- ID of the app (FK)
 	token_hash				TEXT		UNIQUE NOT NULL,										--- the hashed token
 	scopes					TEXT,																--- the authorized accesses of the app
-	issued_at				DATETIME	NOT NULL,												--- timestamp of the token creation
+	issued_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the token creation
 	expires_at				DATETIME	NOT NULL,												--- timestamp of the token expired
-	last_used_at			DATETIME	NOT NULL,												--- timestamp of the last update
+	last_used_at			DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the last update
 	revoked					BOOLEAN		DEFAULT 0,												--- is revoked ?
 	FOREIGN KEY(app_id) REFERENCES api_clients(app_id) ON DELETE CASCADE						--- api_clients.app_id
 );
@@ -125,7 +125,7 @@ CREATE TABLE password_resets (
 	reset_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
 	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
 	token_hash				TEXT		NOT NULL,												--- the hashed token
-	created_at				DATETIME	NOT NULL,												--- timestamp of the created reset
+	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the created reset
 	expired_at				DATETIME	NOT NULL,												--- timestamp of the expired reset
 	consumed_at				DATETIME,															--- timestamp of the consumed reset
 	consumed				BOOLEAN		DEFAULT 0,												--- is consumed ?
@@ -138,14 +138,26 @@ CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
 	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
 	session_token_hash		TEXT		NOT NULL,												--- the hashed session token
-	created_at				DATETIME	NOT NULL,												--- timestamp of created session
+	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
-	last_used_at			DATETIME	NOT NULL,												--- timestamp of the last used session
+	last_used_at			DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the last used session
 	ip						TEXT		NOT NULL,												--- the device public ip
 	user_agent				TEXT,																--- store more informations
 	is_persistent			BOOLEAN		DEFAULT 0,												--- is persistent ?
 	FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
 );
+
+-- Table: email_verifications
+-- Store email verification tokens
+CREATE TABLE email_verifications (
+	id						INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
+	token					TEXT		NOT NULL UNIQUE,										--- the verification token
+	expires_at				DATETIME	NOT NULL,												--- timestamp of expiration
+	verified				BOOLEAN		NOT NULL DEFAULT 0,										--- is verified ?
+	FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE							--- users.user_id
+);
+
 
 -- api_clients
 CREATE INDEX idx_api_clients_owner_id ON api_clients(owner_id);

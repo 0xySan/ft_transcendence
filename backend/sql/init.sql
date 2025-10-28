@@ -154,5 +154,5 @@ CREATE TRIGGER update_user_profiles_updated_at
     AFTER UPDATE ON user_profiles
     FOR EACH ROW
 BEGIN
-    UPDATE user_profiles SET updated_at = CURRENT_TIMESTAMP WHERE profile_id = NEW.profile_id;
+    UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE user_id = NEW.user_id;
 END;
