@@ -4,6 +4,7 @@
  */
 
 import { db, getRow, insertRow } from "../../index.js";
+import { redisClient } from "../../../redis/index.js"
 
 // --- Types ---
 export interface User {
@@ -41,13 +42,10 @@ export function getUserByEmail(email: string): User | undefined {
  * @param email - The user's email
  * @param passwordHash - The hashed password
  * @param roleId - The role ID (defaults to 1)
+ * @param client - The redis client
  * @returns The created or existing user, or undefined if failed
  */
-export function createUser(
-	email: string,
-	passwordHash: string,
-	roleId = 1
-): User | undefined {
+export function createUser(email: string, passwordHash: string, roleId = 1): User | undefined {
 	const user = insertRow<User>("users", {
 		email,
 		password_hash: passwordHash,

@@ -8,6 +8,7 @@
  *  - alphabetical listing.
  */
 
+import { redisClient, checkRedisHealth } from '../../../../src/redis/index.js';
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
@@ -16,7 +17,7 @@ import {
 	createUser,
 	updateLastLogin,
 	updateUserRole,
-	getAllUsers,
+	getAllUsers
 } from "../../../../src/db/wrappers/main/users.js";
 
 describe("Users wrapper", () => {
@@ -25,7 +26,9 @@ describe("Users wrapper", () => {
 	let guestId: number;
 
 	// --- Populate DB with initial users -----------------------------------
-	beforeAll(() => {
+	beforeAll(async() => {
+		await redisClient.connect();
+
 		// Clean users table for testing
 		db.prepare(`DELETE FROM users`).run();
 
@@ -43,7 +46,9 @@ describe("Users wrapper", () => {
 		guestId = Number(r3.lastInsertRowid);
 	});
 
-	afterAll(() => {
+	afterAll(async() => {
+		await redisClient.quit();
+
 		try {
 			db.prepare(`DELETE FROM users`).run();
 		} catch {
@@ -75,22 +80,22 @@ describe("Users wrapper", () => {
 	});
 
 	// --- Tests for creation ----------------------------------------------
-	it("should create a new user successfully", () => {
-		const newUser = createUser("new@example.com", "hashed_new", 2);
+	it("should create a new user successfully", async () => {
+		const newUser = await createUser("new@example.com", "hashed_new", 2);
 		expect(newUser).toBeDefined();
 		expect(newUser?.email).toBe("new@example.com");
 		expect(newUser?.role_id).toBe(2);
 	});
 
-	it("should return existing user if email already exists", () => {
-		const duplicate = createUser("admin@example.com", "hashed_admin", 1);
+	it("should return existing user if email already exists", async () => {
+		const duplicate = await createUser("admin@example.com", "hashed_admin", 1);
 		expect(duplicate).toBeDefined();
 		expect(duplicate?.email).toBe("admin@example.com");
 	});
 
-	it("should return undefined if creation fails for other reasons", () => {
+	it("should return undefined if creation fails for other reasons", async () => {
 		// Simulate failure by passing invalid role_id (assuming roles 1-3 exist)
-		const result = createUser("test@example.com", "hashed_test", 99);
+		const result = await createUser("test@example.com", "hashed_test", 99);
 		expect(result).toBeUndefined();
 	});
 
@@ -119,6 +124,10 @@ describe("Users wrapper", () => {
 	it("should return false when updating role for non-existing user", () => {
 		const result = updateUserRole(9999, 1);
 		expect(result).toBe(false);
+	});
+
+	it('should pass health check', async () => {
+		expect(await checkRedisHealth()).toBe(true);
 	});
 
 	// --- Tests for listing -----------------------------------------------
