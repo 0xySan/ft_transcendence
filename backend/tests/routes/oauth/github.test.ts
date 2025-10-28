@@ -30,7 +30,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 // now import the route (after mocks)
-import { githubRoutes } from "../../../src/routes/oauth/github.js";
+import { githubRoutes } from "../../../src/routes/oauth/github.route.js";
 
 describe("GitHub OAuth routes", () => {
   let fastify: ReturnType<typeof Fastify>;

@@ -30,7 +30,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 // Now import the route (after mocks)
-import { discordRoutes } from "../../../src/routes/oauth/discord.js";
+import { discordRoutes } from "../../../src/routes/oauth/discord.route.js";
 
 describe("Discord OAuth routes", () => {
   let fastify: ReturnType<typeof Fastify>;

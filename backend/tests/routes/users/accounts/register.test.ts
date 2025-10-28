@@ -72,7 +72,7 @@ describe("POST /accounts/register", () => {
 		}));
 
 		// Import route AFTER the mocks are registered
-		const mod = await import("../../../../src/routes/users/accounts/register.js");
+		const mod = await import("../../../../src/routes/users/accounts/register.route.js");
 		const { newUserAccountRoutes } = mod;
 
 		// Setup fastify with the route

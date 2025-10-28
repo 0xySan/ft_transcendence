@@ -30,7 +30,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 // Now import the route (after mocks)
-import { ftRoutes } from "../../../src/routes/oauth/forty-two.js";
+import { ftRoutes } from "../../../src/routes/oauth/forty-two.route.js";
 
 describe("42 OAuth routes", () => {
     let fastify: ReturnType<typeof Fastify>;

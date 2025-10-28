@@ -30,7 +30,7 @@ vi.mock("node-fetch", () => ({
 }));
 
 // Now import the route (after mocks)
-import { googleRoutes } from "../../../src/routes/oauth/google.js";
+import { googleRoutes } from "../../../src/routes/oauth/google.route.js";
 
 describe("Google OAuth routes", () => {
   let fastify: ReturnType<typeof Fastify>;

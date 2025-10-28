@@ -30,7 +30,7 @@ describe("GET /data/imgs/:fileName", () => {
 		});
 
 		// import route after mocks
-		const mod = await import("../../../../src/routes/users/data/imgs.ts");
+		const mod = await import("../../../../src/routes/users/data/imgs.route.ts");
 		const { userDataImgsRoute } = mod;
 
 		fastify = Fastify();
