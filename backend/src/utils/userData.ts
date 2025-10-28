@@ -10,8 +10,7 @@ import { promisify } from 'util';
 import fetch from 'node-fetch';
 const streamPipeline = promisify(pipeline);
 
-import { db, updateProfile } from '../db/index.js'; // adapte selon ton ORM
-
+import { updateProfile } from '../db/index.js';
 const USER_IMG_DIR = path.join(process.cwd(), 'userData', 'imgs');
 
 function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
