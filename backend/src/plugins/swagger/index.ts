@@ -12,14 +12,20 @@ export default async function swaggerPlugin(app: FastifyInstance) {
 		openapi: {
 			info: {
 				title: "ft_transcendence API",
-				description: "API documentation (Fastify + Swagger)",
+				description: "Full API documentation for users, OAuth, and gameplay endpoints",
 				version: "1.0.0",
 			},
 			servers: [
 				{
-					url: `https://pong.moutig.sh/api`, // Will be put in .env later
+					url: "https://pong.moutig.sh/api",
 					description: "Production server",
 				},
+			],
+			tags: [
+				{ name: "Users", description: "User-related endpoints (profiles, images...)" },
+				{ name: "Accounts", description: "Account management endpoints (registration, login...)" },
+				{ name: "Auth", description: "Authentication endpoints" },
+				{ name: "Game", description: "Gameplay and match tracking endpoints" },
 			],
 		},
 	});
