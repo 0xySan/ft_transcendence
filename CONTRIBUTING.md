@@ -40,7 +40,7 @@ Here’s how to get started:
     * `task:` for maintenance tasks
     * `docs:` for documentation updates
   * Keep commit messages **clear and concise**.
-	* it's recommanded to add a description if necessary
+	* it's recommended to add a description if necessary
 
 * **Pull Requests**
   * Make PRs **small and focused**.
@@ -49,8 +49,8 @@ Here’s how to get started:
 
 * **Testing**
   * Add **unit tests** for critical logic.
-	* tests must be located in `backend/tests/` with the sam file structure as `src`
-	* Files **must be nammed** after the **file** tested like this: `<filename>.test.ts`
+	* tests must be located in `backend/tests/` with the same file structure as `src`
+	* Files **must be named** after the **file** tested like this: `<filename>.test.ts`
    
   * **Run tests locally before opening a PR**:
   
@@ -73,7 +73,7 @@ Export the schema as a constant, for example:
 ```ts
 export const exampleSchema = {
   summary: "An example",
-  description: "This is a schema to use as an exmaple",
+  description: "This is a schema to use as an example",
   tags: ["Users"],
   querystring: {
     type: "object",
@@ -126,7 +126,7 @@ fastify.get('/somewhere', {
 
 - Be respectful and concise.
 - Avoid harsh language or public blaming.
--Discuss large changes or architecture decisions in an issue first before implementing.
+- Discuss large changes or architecture decisions in an issue first before implementing.
 - Respond to comments on PRs within a reasonable timeframe.
 
 Thank you for contributing to ft_transcendence! Your work makes this project better and stronger.

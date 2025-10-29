@@ -5,7 +5,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { githubCallbackSchema } from '../../plugins/swagger/schemas/githubCallaback.schema.js';
+import { githubCallbackSchema } from '../../plugins/swagger/schemas/githubCallback.schema.js';
 
 import fetch from 'node-fetch';
 

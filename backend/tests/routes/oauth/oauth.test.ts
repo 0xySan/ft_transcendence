@@ -3,7 +3,7 @@
  * Corrected: properly mocks node-fetch so the route sees the mocked responses.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach, Mock } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 
