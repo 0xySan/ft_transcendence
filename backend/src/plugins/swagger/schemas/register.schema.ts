@@ -2,7 +2,7 @@ export const registerAccountSchema = {
 	summary: "Create a new user account",
 	description:
 		"Registers a new user account with either email/password or OAuth credentials. Also creates a user profile and sends a verification email.",
-	tags: ["Accounts"],
+	tags: ["Users: Accounts"],
 	body: {
 		type: "object",
 		required: ["email", "username"],

@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { healthSchema } from "../plugins/swagger/schemas/health.schemas.js";
+import { healthSchema } from "../plugins/swagger/schemas/health.schema.js";
 
 export async function healthRoute(app: FastifyInstance) {
 	app.get("/api/health", { schema: healthSchema }, async () => {
