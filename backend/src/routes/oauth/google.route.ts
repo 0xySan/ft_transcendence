@@ -25,22 +25,6 @@ interface GoogleUserInfo {
 }
 
 export function googleRoutes(fastify: FastifyInstance) {
-	fastify.get('/google', async (req, reply) => {
-		const provider = getOauthProviderByName('google');
-		if (!provider) return reply.status(404).send('OAuth provider not found');
-
-		const authUrl =
-			`https://accounts.google.com/o/oauth2/v2/auth?` +
-			new URLSearchParams({
-				client_id: provider.client_id,
-				redirect_uri: provider.discovery_url,
-				response_type: 'code',
-				scope: 'openid email profile'
-			});
-
-		return reply.redirect(authUrl);
-	});
-
 	fastify.get('/google/callback', async (request, reply) => {
 		const { code } = request.query as { code?: string };
 		if (!code) return reply.status(400).send('Missing code');

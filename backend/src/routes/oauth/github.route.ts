@@ -25,19 +25,6 @@ interface GithubUserInfo {
 }
 
 export function githubRoutes(fastify: FastifyInstance) {
-
-    fastify.get('/github', async (req, reply) => {
-    const provider = getOauthProviderByName('github');
-    if (!provider) return reply.status(404).send('OAuth provider not found');
-    const authUrl =
-        `https://github.com/login/oauth/authorize?` +
-        new URLSearchParams({
-            client_id: provider.client_id,
-            redirect_uri: provider.discovery_url,
-            scope: 'read:user user:email'
-        });
-        return reply.redirect(authUrl);
-    });
     fastify.get('/github/callback', async (request, reply) => {
         const { code } = request.query as { code?: string };
         if (!code) return reply.status(400).send('Missing code');

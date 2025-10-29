@@ -27,22 +27,6 @@ interface DiscordUserInfo {
 }
 
 export function discordRoutes(fastify: FastifyInstance) {
-	fastify.get('/discord', async (_req, reply) => {
-		const provider = getOauthProviderByName('discord');
-		if (!provider) return reply.status(404).send('OAuth provider not found');
-
-		const authUrl =
-			`https://discord.com/oauth2/authorize?` +
-			new URLSearchParams({
-				client_id: provider.client_id,
-				redirect_uri: provider.discovery_url,
-				response_type: 'code',
-				scope: 'identify email'
-			});
-
-		return reply.redirect(authUrl);
-	});
-
 	fastify.get('/discord/callback', async (request, reply) => {
 		const { code } = request.query as { code?: string };
 		if (!code) return reply.status(400).send('Missing code');

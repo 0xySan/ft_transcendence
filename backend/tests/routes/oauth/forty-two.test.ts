@@ -32,7 +32,7 @@ vi.mock("node-fetch", () => ({
 // Now import the route (after mocks)
 import { ftRoutes } from "../../../src/routes/oauth/forty-two.route.js";
 
-describe("42 OAuth routes", () => {
+describe("42 OAuth route", () => {
     let fastify: ReturnType<typeof Fastify>;
     let nodeFetchMock: Mock;
     let mocks: any;
@@ -65,19 +65,6 @@ describe("42 OAuth routes", () => {
         try { await fastify.close(); } catch {}
         vi.resetAllMocks();
         vi.restoreAllMocks();
-    });
-
-    it("redirects to 42 OAuth URL", async () => {
-        mocks.getOauthProviderByName.mockReturnValue({
-            client_id: "mock-client-id",
-            discovery_url: "http://localhost/callback"
-        });
-
-        const res = await fastify.inject({ method: "GET", url: "/forty-two" });
-
-        expect(res.statusCode).toBe(302);
-        expect(res.headers.location).toContain("https://api.intra.42.fr/oauth/authorize?");
-        expect(res.headers.location).toContain("client_id=mock-client-id");
     });
 
     it("returns 400 if callback is missing code", async () => {
@@ -207,16 +194,6 @@ describe("42 OAuth routes", () => {
         mocks.getOauthProviderByName.mockReturnValue(undefined);
 
         const res = await fastify.inject({ method: "GET", url: "/forty-two/callback?code=mock-code" });
-
-        expect(res.statusCode).toBe(404);
-        expect(res.body).toContain("OAuth provider not found");
-    });
-
-    // TODO ADD MANUALY
-    it("returns 404 if 42 is OAuth provider not found", async () => {
-        mocks.getOauthProviderByName.mockReturnValue(undefined);
-
-        const res = await fastify.inject({ method: "GET", url: "/forty-two" });
 
         expect(res.statusCode).toBe(404);
         expect(res.body).toContain("OAuth provider not found");

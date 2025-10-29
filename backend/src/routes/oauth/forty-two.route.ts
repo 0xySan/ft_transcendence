@@ -28,21 +28,6 @@ interface UserInfo {
 }
 
 export function ftRoutes(fastify: FastifyInstance) {
-
-    fastify.get('/forty-two', async (req, reply) => {
-        const provider = getOauthProviderByName('42');
-        if (!provider) return reply.status(404).send('OAuth provider not found');
-
-        const authUrl = `https://api.intra.42.fr/oauth/authorize?` +
-            `client_id=${provider.client_id}` +
-            `&redirect_uri=${provider.discovery_url}` +
-            `&response_type=code` +
-            `&scope=public` +
-            `&state=public`;
-        
-        return (reply.redirect(authUrl));
-    });
-
     fastify.get('/forty-two/callback', async (request, reply) => {
         const { code } = request.query as { code?: string };
 		if (!code) return reply.status(400).send('Missing code');
