@@ -1,4 +1,4 @@
-## ✨ Summary
+## Summary
 
 <!-- Describe the purpose of this PR -->
 - What type of change is this? (Feature / Bugfix / Task)
@@ -14,6 +14,7 @@
 
 ## ✅ Checklist
 
+- [ ] CONTRIBUING.md respected
 - [ ] Code builds correctly
 - [ ] Tests pass
 - [ ] Documentation updated if necessary
