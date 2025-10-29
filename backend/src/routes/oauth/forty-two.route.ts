@@ -1,9 +1,12 @@
+import { FastifyInstance } from 'fastify';
+import { ftCallbackSchema } from '../../plugins/swagger/schemas/ftCallback.schema.js';
+
+import fetch from 'node-fetch';
+
 import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
 import { getOauthAccountByProviderAndUserId, getUserByEmail } from '../../db/index.js';
-import { FastifyInstance } from 'fastify';
-import fetch from 'node-fetch';
+import { returnOauthSession } from '../../auth/oauth/utils.js';
 import { decryptSecret } from '../../utils/crypto.js';
-import { createNewSession } from '../../utils/session.js';
 
 interface TokenResponse {
   access_token: string;
@@ -28,11 +31,11 @@ interface UserInfo {
 }
 
 export function ftRoutes(fastify: FastifyInstance) {
-    fastify.get('/forty-two/callback', async (request, reply) => {
+    fastify.get('/forty-two/callback', { schema: ftCallbackSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
         const { code } = request.query as { code?: string };
 		if (!code) return reply.status(400).send('Missing code');
 
-		const provider = getOauthProviderByName('42');
+		const provider = getOauthProviderByName('forty-two');
 		if (!provider) return reply.status(404).send('OAuth provider not found');
 
         try {
@@ -61,27 +64,10 @@ export function ftRoutes(fastify: FastifyInstance) {
             
             const oauthAccount = getOauthAccountByProviderAndUserId('42', userInfo.id);
 
-            if (oauthAccount) {
-                const result = createNewSession(oauthAccount.user_id, {
-                    ip: request.ip,
-                    userAgent: request.headers['user-agent']
-                });
-                if (!result) return reply.status(500).send({ error: 'Failed to create session' });
-            
-                reply.setCookie('session', result.token, {
-                    path: '/',
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                    maxAge: 60 * 60 * 24 * 30
-                });
-                
-                // TODO check here
-                return reply.redirect(`/auth/success?provider=42`);
-            }
+            if (oauthAccount)
+                return returnOauthSession(oauthAccount, request, reply);
 
             const existingUser = getUserByEmail(userInfo.email);
-
 			const query = new URLSearchParams({
 				email: userInfo.email,
 				provider: '42',
@@ -91,10 +77,8 @@ export function ftRoutes(fastify: FastifyInstance) {
 				picture: userInfo.image?.link || '',
 			}).toString();
 
-			if (existingUser) {
+			if (existingUser)
 				return reply.redirect(`/auth/link-account?${query}`);
-			}
-
 			return reply.redirect(`/register?${query}`);
         } catch (err) {
 			console.error('42 OAuth callback error:', err);

@@ -46,7 +46,7 @@ export function seedOAuthProviders(db: Database.Database): void {
 			discoveryUrl: process.env.GOOGLE_DISCOVERY_URL
 		},
 		{
-			name: '42',
+			name: 'forty-two',
 			clientId: process.env['42_CLIENT_ID'],
 			clientSecret: process.env['42_CLIENT_SECRET'],
 			discoveryUrl: process.env['42_DISCOVERY_URL']

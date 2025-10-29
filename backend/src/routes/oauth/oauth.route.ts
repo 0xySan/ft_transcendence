@@ -44,7 +44,7 @@ export function oauthRoute(fastify: FastifyInstance) {
 		};
 
 		let authUrl: string;
-		if (provider === '42') {
+		if (provider === 'forty-two') {
 			// 42 API needs custom query string concatenation
 			const query = Object.entries(params)
 				.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
