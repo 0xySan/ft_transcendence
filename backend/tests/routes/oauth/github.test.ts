@@ -30,9 +30,9 @@ vi.mock("node-fetch", () => ({
 }));
 
 // now import the route (after mocks)
-import { githubRoutes } from "../../../src/routes/oauth/github.js";
+import { githubRoutes } from "../../../src/routes/oauth/github.route.js";
 
-describe("GitHub OAuth routes", () => {
+describe("GitHub OAuth route", () => {
   let fastify: ReturnType<typeof Fastify>;
   let nodeFetchMock: Mock;
   let mocks: any;
@@ -65,20 +65,6 @@ describe("GitHub OAuth routes", () => {
   });
 
   // ---- TESTS ----
-
-  it("redirects to GitHub OAuth URL", async () => {
-    mocks.getOauthProviderByName.mockReturnValue({
-      client_id: "mock-client-id",
-      discovery_url: "http://localhost/callback",
-    });
-
-    const res = await fastify.inject({ method: "GET", url: "/github" });
-
-    expect(res.statusCode).toBe(302);
-    expect(res.headers.location).toContain("https://github.com/login/oauth/authorize");
-    expect(res.headers.location).toContain("client_id=mock-client-id");
-  });
-
   it("returns 400 if callback is missing code", async () => {
     const res = await fastify.inject({ method: "GET", url: "/github/callback" });
 
@@ -190,15 +176,6 @@ describe("GitHub OAuth routes", () => {
     expect(res.statusCode).toBe(500);
     const body = JSON.parse(res.body);
     expect(body.error).toMatch(/No access token/);
-  });
-
-  it("GET /github returns 404 when provider is missing", async () => {
-    mocks.getOauthProviderByName.mockReturnValue(undefined);
-
-    const res = await fastify.inject({ method: "GET", url: "/github" });
-
-    expect(res.statusCode).toBe(404);
-    expect(res.body).toContain("OAuth provider not found");
   });
 
   it("GET /github/callback returns 404 when provider is missing", async () => {

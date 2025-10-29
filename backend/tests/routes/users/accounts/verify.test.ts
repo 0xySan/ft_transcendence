@@ -49,7 +49,7 @@ describe("GET /accounts/verify", () => {
 		}));
 
 		// Import route AFTER mocks are registered
-		const mod = await import("../../../../src/routes/users/accounts/verify.js");
+		const mod = await import("../../../../src/routes/users/accounts/verify.route.js");
 		const { verifyUserAccountRoutes } = mod;
 
 		fastify = Fastify();

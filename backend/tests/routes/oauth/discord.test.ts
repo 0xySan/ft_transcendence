@@ -30,9 +30,9 @@ vi.mock("node-fetch", () => ({
 }));
 
 // Now import the route (after mocks)
-import { discordRoutes } from "../../../src/routes/oauth/discord.js";
+import { discordRoutes } from "../../../src/routes/oauth/discord.route.js";
 
-describe("Discord OAuth routes", () => {
+describe("Discord OAuth route", () => {
   let fastify: ReturnType<typeof Fastify>;
   let nodeFetchMock: Mock;
   let mocks: any;
@@ -65,19 +65,6 @@ describe("Discord OAuth routes", () => {
 	try { await fastify.close(); } catch {}
 	vi.resetAllMocks();
 	vi.restoreAllMocks();
-  });
-
-  it("redirects to Discord OAuth URL", async () => {
-	mocks.getOauthProviderByName.mockReturnValue({
-	  client_id: "mock-client-id",
-	  discovery_url: "http://localhost/callback",
-	});
-
-	const res = await fastify.inject({ method: "GET", url: "/discord" });
-
-	expect(res.statusCode).toBe(302);
-	expect(res.headers.location).toContain("https://discord.com/oauth2/authorize");
-	expect(res.headers.location).toContain("client_id=mock-client-id");
   });
 
   it("returns 400 if callback is missing code", async () => {
@@ -185,16 +172,6 @@ describe("Discord OAuth routes", () => {
 	expect(res.statusCode).toBe(500);
 	const body = JSON.parse(res.body);
 	expect(body.error).toMatch(/No access token/);
-  });
-
-  it("GET /discord returns 404 when provider is missing", async () => {
-	// force provider missing
-	mocks.getOauthProviderByName.mockReturnValue(undefined);
-
-	const res = await fastify.inject({ method: "GET", url: "/discord" });
-
-	expect(res.statusCode).toBe(404);
-	expect(res.body).toContain("OAuth provider not found");
   });
 
   it("GET /discord/callback returns 404 when provider is missing", async () => {

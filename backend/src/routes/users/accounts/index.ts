@@ -4,8 +4,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { newUserAccountRoutes } from './register.js';
-import { verifyUserAccountRoutes } from './verify.js';
+import { newUserAccountRoutes } from './register.route.js';
+import { verifyUserAccountRoutes } from './verify.route.js';
 
 export function userAccountRoutes(fastify: FastifyInstance) {
 	newUserAccountRoutes(fastify);

@@ -4,6 +4,7 @@
  */
 
 import { FastifyInstance } from "fastify";
+import { registerAccountSchema } from "../../../plugins/swagger/schemas/register.schema.js";
 import geoip from 'geoip-lite';
 import dotenv from 'dotenv';
 
@@ -34,7 +35,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 	const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};\'\\|,.<>\/?]).{8,40}$/;
 	const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 
-	fastify.post("/accounts/register", async (request, reply) => {
+	fastify.post("/accounts/register", { schema: registerAccountSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
 		try {
 			const { username, email, password, oauth, pfp, display_name } = request.body as {
 				username?:	string;
@@ -51,7 +52,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 			};
 
 			// --- Validate input ---
-			const validations = [
+			const validations: { condition: any; status: 400 | 409 | 500 | 201; error: string }[] = [
 				{	condition: !email,
 					status: 400,
 					error: "Email is required"

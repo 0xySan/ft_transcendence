@@ -4,12 +4,14 @@
  * integration with DB for user creation/retrieval.
  */
 
-
 import { FastifyInstance } from 'fastify';
+import { googleCallbackSchema } from '../../plugins/swagger/schemas/googleCallback.schema.js';
+
 import fetch from 'node-fetch';
-import { decryptSecret } from '../../utils/crypto.js';
-import { createNewSession } from '../../utils/session.js';
+
 import { getOauthAccountByProviderAndUserId, getUserByEmail, getOauthProviderByName } from '../../db/wrappers/index.js';
+import { returnOauthSession } from '../../auth/oauth/utils.js';
+import { decryptSecret } from '../../utils/crypto.js';
 
 interface GoogleTokenResponse {
 	access_token: string;
@@ -25,23 +27,7 @@ interface GoogleUserInfo {
 }
 
 export function googleRoutes(fastify: FastifyInstance) {
-	fastify.get('/google', async (req, reply) => {
-		const provider = getOauthProviderByName('google');
-		if (!provider) return reply.status(404).send('OAuth provider not found');
-
-		const authUrl =
-			`https://accounts.google.com/o/oauth2/v2/auth?` +
-			new URLSearchParams({
-				client_id: provider.client_id,
-				redirect_uri: provider.discovery_url,
-				response_type: 'code',
-				scope: 'openid email profile'
-			});
-
-		return reply.redirect(authUrl);
-	});
-
-	fastify.get('/google/callback', async (request, reply) => {
+	fastify.get('/google/callback', { schema: googleCallbackSchema, validatorCompiler:  ({ schema }) => {return () => true;} }, async (request, reply) => {
 		const { code } = request.query as { code?: string };
 		if (!code) return reply.status(400).send('Missing code');
 
@@ -74,28 +60,10 @@ export function googleRoutes(fastify: FastifyInstance) {
 
 			const oauthAccount = getOauthAccountByProviderAndUserId('google', userInfo.id);
 			
-			if (oauthAccount) { // direct login
-				const result = createNewSession(oauthAccount.user_id, {
-					ip: request.ip,
-					userAgent: request.headers['user-agent']
-				});
-				if (!result) return reply.status(500).send({ error: 'Failed to create session' });
-
-				// result.token is the plain token, result.session is the DB record
-				reply.setCookie('session', result.token, {
-					path: '/',
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'lax',
-					maxAge: 60 * 60 * 24 * 30 // 30 days
-				});
-
-				return reply.redirect(`/auth/success?provider=google`); // Logged in page ?
-			}
-
+			if (oauthAccount)
+				return returnOauthSession(oauthAccount, request, reply);
 
 			const existingUser = getUserByEmail(userInfo.email);
-
 			const query = new URLSearchParams({
 					email: userInfo.email,
 					provider: 'google',
@@ -104,14 +72,9 @@ export function googleRoutes(fastify: FastifyInstance) {
 					picture: userInfo.picture || ''
 				}).toString();
 
-			if (existingUser) {
-				// redirect to confirmation page on frontend
-				return reply.redirect(`/auth/link-account?${query}`); // Need to be implemented frontend and backend
-				// would ask password confirmation before linking accounts
-			}
-
-			return reply.redirect(`/register?${query}`); // Need to be implemented frontend and backend
-			// page would be prefilled with info from Google to create a new account
+			if (existingUser)
+				return reply.redirect(`/auth/link-account?${query}`);
+			return reply.redirect(`/register?${query}`);
 		} catch (err) {
 			console.error('Google OAuth callback error:', err);
 			return reply.status(500).send({ error: (err as Error).message });

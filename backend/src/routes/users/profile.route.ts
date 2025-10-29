@@ -4,12 +4,13 @@
  */
 
 import { FastifyInstance } from "fastify";
+import { profileSchema } from "../../plugins/swagger/schemas/profile.schema.js";
 import { getUserById } from "../../db/wrappers/main/users/users.js";
 import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
 import { getRoleById } from "../../db/wrappers/main/users/userRoles.js";
 
 export async function userProfileRoutes(fastify: FastifyInstance) {
-	fastify.get("/profile", async (request, reply) => {
+	fastify.get("/profile", { schema: profileSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
 		try {
 			const { id } = request.query as { id?: string };
 

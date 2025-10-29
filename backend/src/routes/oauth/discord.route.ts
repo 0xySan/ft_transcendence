@@ -5,11 +5,14 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { discordCallbackSchema } from '../../plugins/swagger/schemas/discordCallback.schema.js';
+
 import fetch from 'node-fetch';
+
 import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
-import { decryptSecret } from '../../utils/crypto.js';
-import { createNewSession } from '../../utils/session.js';
 import { getOauthAccountByProviderAndUserId, getUserByEmail } from '../../db/index.js';
+import { returnOauthSession } from '../../auth/oauth/utils.js';
+import { decryptSecret } from '../../utils/crypto.js';
 
 interface DiscordTokenResponse {
   access_token: string;
@@ -26,24 +29,16 @@ interface DiscordUserInfo {
   email: string;
 }
 
+function getDiscordAvatarIndex(id?: string): number {
+	try {
+		return Number(BigInt(id ?? "0") % 5n);
+	} catch {
+		return 0;
+	}
+}
+
 export function discordRoutes(fastify: FastifyInstance) {
-	fastify.get('/discord', async (_req, reply) => {
-		const provider = getOauthProviderByName('discord');
-		if (!provider) return reply.status(404).send('OAuth provider not found');
-
-		const authUrl =
-			`https://discord.com/oauth2/authorize?` +
-			new URLSearchParams({
-				client_id: provider.client_id,
-				redirect_uri: provider.discovery_url,
-				response_type: 'code',
-				scope: 'identify email'
-			});
-
-		return reply.redirect(authUrl);
-	});
-
-	fastify.get('/discord/callback', async (request, reply) => {
+	fastify.get('/discord/callback', { schema: discordCallbackSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
 		const { code } = request.query as { code?: string };
 		if (!code) return reply.status(400).send('Missing code');
 
@@ -88,26 +83,14 @@ export function discordRoutes(fastify: FastifyInstance) {
 
 			const userInfo = (await userRes.json()) as DiscordUserInfo;
 
+			if (!userInfo.email) {
+				throw new Error('Discord account has no email associated');
+			}
+
 			const oauthAccount = getOauthAccountByProviderAndUserId('discord', userInfo.id);
 
-			if (oauthAccount) { // direct login
-				const result = createNewSession(oauthAccount.user_id, {
-					ip: request.ip,
-					userAgent: request.headers['user-agent']
-				});
-				if (!result) return reply.status(500).send({ error: 'Failed to create session' });
-
-				// result.token is the plain token, result.session is the DB record
-				reply.setCookie('session', result.token, {
-					path: '/',
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-					sameSite: 'lax',
-					maxAge: 60 * 60 * 24 * 30 // 30 days
-				});
-
-				return reply.redirect(`/auth/success?provider=discord`);
-			}
+			if (oauthAccount)
+				return returnOauthSession(oauthAccount, request, reply);
 
 			const existingUser = getUserByEmail(userInfo.email);
 
@@ -122,11 +105,7 @@ export function discordRoutes(fastify: FastifyInstance) {
 
 			const avatarUrl = userInfo.avatar
 				? `https://cdn.discordapp.com/avatars/${userInfo.id}/${userInfo.avatar}.${userInfo.avatar.startsWith('a_') ? 'gif' : 'png'}`
-				: `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
-
-			if (!userInfo.email) {
-				throw new Error('Discord account has no email associated');
-			}
+				: `https://cdn.discordapp.com/embed/avatars/${getDiscordAvatarIndex(userInfo.id)}.png`;
 
 			const query = new URLSearchParams({
 					email: userInfo.email,
@@ -136,11 +115,8 @@ export function discordRoutes(fastify: FastifyInstance) {
 					picture: avatarUrl
 				}).toString();
 
-			if (existingUser) {
-				// redirect to confirmation page on frontend
+			if (existingUser)
 				return reply.redirect(`/auth/link-account?${query}`);
-			}
-
 			return reply.redirect(`/register?${query}`);
 		} catch (err) {
 			console.error('Discord OAuth callback error:', err);

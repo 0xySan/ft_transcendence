@@ -15,7 +15,7 @@ vi.mock("../../../src/db/wrappers/main/users/userProfiles.js", () => ({
 }));
 
 // import the route AFTER the top-level vi.mock calls
-import { userProfileRoutes } from "../../../src/routes/users/profile.js";
+import { userProfileRoutes } from "../../../src/routes/users/profile.route.js";
 
 describe("/profile route", () => {
 	let fastify: ReturnType<typeof Fastify>;

@@ -4,6 +4,7 @@
  */
 
 import { FastifyInstance } from "fastify";
+import { verifySchema } from "../../../plugins/swagger/schemas/verify.schema.js";
 import crypto from "crypto";
 import {
 	getEmailVerificationsByUserId,
@@ -13,7 +14,7 @@ import { getRoleByName, updateUserRole } from "../../../db/wrappers/main/index.j
 import { decryptSecret } from "../../../utils/crypto.js";
 
 export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
-	fastify.get("/accounts/verify", async (request, reply) => {
+	fastify.get("/accounts/verify", { schema: verifySchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
 		const { token: rawToken, user: rawUser } = request.query as { token?: string; user?: string };
 
 		if (!rawToken || !rawUser) {

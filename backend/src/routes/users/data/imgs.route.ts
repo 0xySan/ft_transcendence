@@ -4,11 +4,12 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { userImgsSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
 import path from 'path';
 import fs from 'fs';
 
 export function userDataImgsRoute(fastify: FastifyInstance) {
-	fastify.get('/data/imgs/:fileName', async (request, reply) => {
+	fastify.get('/data/imgs/:fileName', { schema: userImgsSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
 		try {
 			const { fileName } = request.params as { fileName: string };
 			if (!fileName) {

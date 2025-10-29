@@ -64,16 +64,16 @@ describe('seedOAuthProviders (integration)', () => {
 		// Check for expected content
 		const expected = [
 			{
-				name: '42',
-				client_id: 'fortytwo_id',
-				client_secret_encrypted: 'encrypted(fortytwo_secret)',
-				discovery_url: 'https://api.intra.42.fr'
-			},
-			{
 				name: 'discord',
 				client_id: 'discord_id',
 				client_secret_encrypted: 'encrypted(discord_secret)',
 				discovery_url: 'https://discord.com/api/oauth2'
+			},
+			{
+				name: 'forty-two',
+				client_id: 'fortytwo_id',
+				client_secret_encrypted: 'encrypted(fortytwo_secret)',
+				discovery_url: 'https://api.intra.42.fr'
 			},
 			{
 				name: 'github',
@@ -116,6 +116,6 @@ describe('seedOAuthProviders (integration)', () => {
 		//@ts-expect-error
 		const names = rows.map(r => r.name);
 		expect(names).not.toContain('google');
-		expect(names).toEqual(expect.arrayContaining(['42', 'github', 'discord']));
+		expect(names).toEqual(expect.arrayContaining(['forty-two', 'github', 'discord']));
 	});
 });
