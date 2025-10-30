@@ -23,7 +23,7 @@ import {
 	createOauthAccount
 } from '../../../db/wrappers/auth/index.js';
 
-import { hashPassword, generateRandomToken, encryptSecret } from '../../../utils/crypto.js';
+import { hashString, generateRandomToken, encryptSecret } from '../../../utils/crypto.js';
 import { saveAvatarFromUrl } from '../../../utils/userData.js';
 
 import { sendMail } from "../../../utils/mail/mail.js";
@@ -32,7 +32,8 @@ dotenv.config({ quiet: true });
 
 export async function newUserAccountRoutes(fastify: FastifyInstance) {
 	const emailRegex = /^([-!#-'*+\/-9=?A-Z^-~]+(\.[-!#-'*+\/-9=?A-Z^-~]+)*|"([]!#-[^-~ \t]|(\\[\t -~]))+")@[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?(\.[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?)+$/;
-	const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};\'\\|,.<>\/?]).{8,40}$/;
+	// NIST/OWASP compliant: only checks length, not composition
+	const passwordRegex = /^.{8,64}$/;
 	const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 
 	fastify.post("/accounts/register", { schema: registerAccountSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
@@ -107,7 +108,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 			// --- Create user (if password provided) ---
 			let passwordHash = "";
 			if (password) {
-				passwordHash = await hashPassword(password);
+				passwordHash = await hashString(password);
 			}
 
 			const newUser = createUser(email!, passwordHash, getRoleByName('unverified')!.role_id);

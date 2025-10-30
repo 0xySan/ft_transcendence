@@ -52,8 +52,8 @@ describe("POST /accounts/register", () => {
 			// deterministic token + encrypt/decrypt pair for tests
 			return {
 				__esModule: true,
-				hashPassword: vi.fn(async (plain: string) => `hashed_test_${plain}`),
-				verifyPassword: vi.fn(async (plain: string, hashed: string) => hashed === `hashed_test_${plain}`),
+				hashString: vi.fn(async (plain: string) => `hashed_test_${plain}`),
+				verifyHashedString: vi.fn(async (plain: string, hashed: string) => hashed === `hashed_test_${plain}`),
 				generateRandomToken: vi.fn((len: number) => "fixed_test_token_0123456789"),
 				encryptSecret: vi.fn((secret: string) => Buffer.from(secret, "utf8")),
 				decryptSecret: vi.fn((buf: Buffer | string) => {
@@ -87,9 +87,9 @@ describe("POST /accounts/register", () => {
 		const crypto = await import("../../../../src/utils/crypto.js");
 		const userData = await import("../../../../src/utils/userData.js");
 
-		// default createUser & hashPassword behaviour
+		// default createUser & hashString behaviour
 		(main.createUser as any).mockImplementation((email: string) => ({ user_id: 1, email, role_id: 1 }));
-		(crypto.hashPassword as any).mockResolvedValue("hashedpwd");
+		(crypto.hashString as any).mockResolvedValue("hashedpwd");
 
 		mocks = { geoip, main, auth, crypto, userData };
 	});
