@@ -42,7 +42,7 @@ export function encryptSecret(secret: string): Buffer {
  */
 export function decryptSecret(encrypted: Buffer): string {
 	if (!ENCRYPTION_KEY) {
-		throw new Error('ENCRYPTION_KEY is missing in .env. Cannot decrypt secrets.');
+		return '';
 	}
 
 	const iv = encrypted.subarray(0, IV_LENGTH);

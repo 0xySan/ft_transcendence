@@ -1,80 +1,101 @@
 /**
  * src/routes/verify.route.ts
- * Verify user account route — fixed decryption & comparison logic
+ * Verify user account route — Argon2 hash verification + rate limiting + timing defense
  */
 
 import { FastifyInstance } from "fastify";
 import { verifySchema } from "../../../plugins/swagger/schemas/verify.schema.js";
-import crypto from "crypto";
 import {
 	getEmailVerificationsByUserId,
 	markEmailAsVerified
 } from "../../../db/wrappers/auth/index.js";
 import { getRoleByName, updateUserRole } from "../../../db/wrappers/main/index.js";
-import { decryptSecret, isValidUUIDv7 } from "../../../utils/crypto.js";
+import { verifyHashedString, isValidUUIDv7 } from "../../../utils/crypto.js";
+import { checkRateLimit, delayResponse } from "../../../utils/security.js";
+
+// Simple in-memory rate limiter (per IP)
+const requestCount: Record<string, { count: number; lastReset: number }> = {};
+const RATE_LIMIT = 10; // max 10 requests per 15 minutes
+const RATE_WINDOW = 15 * 60 * 1000;
+const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 
 export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
-	fastify.get("/accounts/verify", { schema: verifySchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
-		const { token: rawToken, user: rawUser } = request.query as { token?: string; user?: string };
+	fastify.get(
+		"/accounts/verify",
+		{ schema: verifySchema, validatorCompiler: ({ schema }) => () => true },
+		async (request, reply) => {
+			const startTime = Date.now();
+			const clientIp = request.ip || request.headers["x-forwarded-for"]?.toString() || "unknown";
 
-		if (!rawToken || !rawUser) {
-			return reply.status(400).send("Missing token or user id");
-		}
+			if (!checkRateLimit(requestCount, clientIp, reply, RATE_LIMIT, RATE_WINDOW)) {
+				return; // rate limit exceeded, response already sent
+			}
 
-		const userId = decodeURIComponent(rawUser);
-		if (!isValidUUIDv7(userId)) {
-			return reply.status(400).send("Invalid user id");
-		}
+			const { token: rawToken, user: rawUser } = request.query as { token?: string; user?: string };
 
-		const decodedToken = decodeURIComponent(rawToken);
-		const decodedBuf = Buffer.from(decodedToken, "utf8");
+			if (!rawToken || !rawUser) {
+				return reply.status(400).send("Missing token or user id");
+			}
 
-		// fetch all verification records for this user
-		const records = getEmailVerificationsByUserId(userId);
-		if (!records || records.length === 0) {
-			return reply.status(404).send("Verification record not found");
-		}
+			const userId = decodeURIComponent(rawUser);
+			if (!isValidUUIDv7(userId)) {
+				return reply.status(400).send("Invalid user id");
+			}
 
-		let matchedRecord: any = null;
+			const decodedToken = decodeURIComponent(rawToken);
 
-		for (const rec of records) {
-			// Expectation: rec.token is stored as base64(encryptedBuffer) — produced by encryptSecret(...).toString('base64')
-			if (!rec.token) continue;
+			// fetch all verification records for this user
+			const records = getEmailVerificationsByUserId(userId);
+			if (!records || records.length === 0) {
+				await delayResponse(startTime, MIN_DELAY);
+				return reply.status(202).send({ message: "If the verification is valid, your email will be verified shortly." });
+			}
 
-			try {
-				const storedBuf = Buffer.from(rec.token, "base64"); // convert base64 -> Buffer
-				const plaintext = decryptSecret(storedBuf); // returns utf8 string
-				const plainBuf = Buffer.from(plaintext, "utf8");
+			let matchedRecord: any = null;
 
-				if (plainBuf.length === decodedBuf.length && crypto.timingSafeEqual(plainBuf, decodedBuf)) {
-					matchedRecord = rec;
-					break;
+			for (const rec of records) {
+				if (!rec.token) continue;
+
+				try {
+					const isValid = await verifyHashedString(decodedToken, rec.token);
+					if (isValid) {
+						matchedRecord = rec;
+						break;
+					}
+				} catch {
+					continue;
 				}
-			} catch (err) {continue;}
+			}
+
+			if (!matchedRecord) {
+				await delayResponse(startTime, MIN_DELAY);
+				return reply.status(202).send({ message: "If the verification is valid, your email will be verified shortly." });
+			}
+
+			// check expiration
+			if (matchedRecord.expires_at && Number(matchedRecord.expires_at) < Date.now()) {
+				await delayResponse(startTime, MIN_DELAY);
+				return reply.status(202).send({ message: "If the verification is valid, your email will be verified shortly." });
+			}
+
+			// mark as verified
+			try {
+				markEmailAsVerified(matchedRecord.token);
+			} catch (err) {
+				fastify.log.error(`Failed to mark email as verified for user ${userId}: ${err}`);
+				await delayResponse(startTime, MIN_DELAY);
+				return reply.status(500).send("Failed to verify email");
+			}
+
+			// update user role to "user"
+			try {
+				updateUserRole(matchedRecord.user_id, getRoleByName("user")!.role_id);
+			} catch (err) {
+				fastify.log.error("Failed to update user role after verification");
+			}
+
+			await delayResponse(startTime, MIN_DELAY);
+			return reply.status(202).send({ message: "If the verification is valid, your email will be verified shortly." });
 		}
-
-		if (!matchedRecord) {
-			return reply.status(404).send("Verification record not found");
-		}
-
-		// check expiration (if present)
-		if (matchedRecord.expires_at && Number(matchedRecord.expires_at) < Date.now()) {
-			return reply.status(400).send("Verification token has expired");
-		}
-
-		// mark as verified
-		try {
-			markEmailAsVerified(matchedRecord.token);
-		} catch (err) {
-			fastify.log.error(`Failed to mark email as verified for user ${userId}: ${err}`);
-			return reply.status(500).send("Failed to verify email");
-		}
-
-		// update user role to "user"
-		try {
-			updateUserRole(matchedRecord.user_id, getRoleByName("user")!.role_id);
-		} catch (err) {fastify.log.error("Failed to update user role after verification");}
-
-		return reply.status(200).send("Email verified successfully");
-	});
+	);
 }

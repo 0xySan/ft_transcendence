@@ -23,9 +23,10 @@ import {
 	createOauthAccount
 } from '../../../db/wrappers/auth/index.js';
 
-import { hashString, generateRandomToken, encryptSecret } from '../../../utils/crypto.js';
+import { hashString, generateRandomToken } from '../../../utils/crypto.js';
 import { saveAvatarFromUrl } from '../../../utils/userData.js';
 import { sendMail } from "../../../utils/mail/mail.js";
+import { checkRateLimit, delayResponse } from "../../../utils/security.js";
 
 dotenv.config({ quiet: true });
 
@@ -33,6 +34,7 @@ dotenv.config({ quiet: true });
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
 const RATE_LIMIT = 5; // max 5 registrations per 15 minutes per IP
 const RATE_WINDOW = 15 * 60 * 1000;
+const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 
 export async function newUserAccountRoutes(fastify: FastifyInstance) {
 	const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
@@ -43,21 +45,8 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 		const startTime = Date.now();
 		const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
 
-		// --- Rate limiting ---
-		const rate = requestCount[clientIp] || { count: 0, lastReset: startTime };
-		if (startTime - rate.lastReset > RATE_WINDOW) {
-			rate.count = 0;
-			rate.lastReset = startTime;
-		}
-		rate.count++;
-		requestCount[clientIp] = rate;
-
-		if (rate.count > RATE_LIMIT) {
-			await new Promise(res => setTimeout(res, 1000)); // uniform delay
-			reply.header('Retry-After', Math.ceil(RATE_WINDOW / 1000));
-			return reply.status(429).send({
-				message: "Too many registration attempts. Please try again later."
-			});
+		if (!checkRateLimit(requestCount, clientIp, reply, RATE_LIMIT, RATE_WINDOW)) {
+			return; // rate limit exceeded, response already sent
 		}
 
 		try {
@@ -77,19 +66,19 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			// --- Basic validation (no enumeration risk) ---
 			if (!email || !emailRegex.test(email) || !username || !usernameRegex.test(username)) {
-				await delayResponse(startTime);
+				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(400).send({
 					message: "Invalid registration details. Please check your input."
 				});
 			}
 
 			if (!password && !oauth) {
-				await delayResponse(startTime);
+				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(400).send({ message: "Missing authentication information." });
 			}
 
 			if (password && !passwordRegex.test(password)) {
-				await delayResponse(startTime);
+				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(400).send({
 					message: "Invalid password format."
 				});
@@ -104,7 +93,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			if (existingUser || existingProfile || existingOauth) {
 				console.warn(`Duplicate registration attempt for ${email || username}`);
-				await delayResponse(startTime);
+				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(202).send({
 					message: "If the registration is valid, a verification email will be sent shortly."
 				});
@@ -118,7 +107,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			const newUser = createUser(email!, passwordHash, getRoleByName('unverified')!.role_id);
 			if (!newUser) {
-				await delayResponse(startTime);
+				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(500).send({ message: "Registration failed. Please try again later." });
 			}
 
@@ -158,7 +147,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 			}
 
 			const verificationToken = generateRandomToken(32);
-			const encryptedToken = encryptSecret(verificationToken).toString('base64');
+			const encryptedToken = await hashString(verificationToken);
 			createEmailVerification({
 				user_id: newUser.user_id,
 				token: encryptedToken,
@@ -176,22 +165,14 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 			).catch(err => console.error("Failed to send email:", err));
 
-			await delayResponse(startTime);
+			await delayResponse(startTime, MIN_DELAY);
 			return reply.status(202).send({
 				message: "If the registration is valid, a verification email will be sent shortly."
 			});
 		} catch (err) {
 			console.error("Error in /accounts/register:", err);
-			await delayResponse(startTime);
+			await delayResponse(startTime, MIN_DELAY);
 			return reply.status(500).send({ message: "Registration failed. Please try again later." });
 		}
 	});
-}
-
-async function delayResponse(startTime: number) {
-	const elapsed = Date.now() - startTime;
-	const minDelay = 500; // in ms — ensures uniform timing
-	if (elapsed < minDelay) {
-		await new Promise(res => setTimeout(res, minDelay - elapsed));
-	}
 }

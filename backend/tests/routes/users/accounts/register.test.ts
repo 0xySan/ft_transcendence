@@ -240,7 +240,7 @@ describe("POST /accounts/register", () => {
 		expect(r6.statusCode).toBe(429);
 		expect(r6.headers).toHaveProperty("retry-after");
 		expect(r6.json()).toHaveProperty("message");
-		expect(r6.json().message).toMatch(/too many registration attempts/i);
+		expect(r6.json().message).toMatch(/Too many requests. Try again later./i);
 	});
 
 	it ("Returns 400 for password beeing too short or too long", async () => {
