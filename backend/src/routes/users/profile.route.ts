@@ -8,6 +8,7 @@ import { profileSchema } from "../../plugins/swagger/schemas/profile.schema.js";
 import { getUserById } from "../../db/wrappers/main/users/users.js";
 import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
 import { getRoleById } from "../../db/wrappers/main/users/userRoles.js";
+import { isValidUUIDv7 } from "../../utils/crypto.js";
 
 export async function userProfileRoutes(fastify: FastifyInstance) {
 	fastify.get("/profile", { schema: profileSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
@@ -18,8 +19,8 @@ export async function userProfileRoutes(fastify: FastifyInstance) {
 				return reply.status(400).send({ error: "Missing user ID in query" });
 			}
 
-			const userId = parseInt(id, 10);
-			if (isNaN(userId)) {
+			const userId = id;
+			if (!isValidUUIDv7(userId)) {
 				return reply.status(400).send({ error: "Invalid user ID" });
 			}
 
@@ -30,7 +31,7 @@ export async function userProfileRoutes(fastify: FastifyInstance) {
 
 			const profile = getProfileByUserId(userId);
 			const role = getRoleById(user.role_id);
-
+			console.error("User profile fetched:", { user, profile, role });
 			return reply.status(200).send({
 				user: {
 					user_id: user.user_id,

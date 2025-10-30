@@ -27,7 +27,8 @@
     "i18n-iso-countries": "^7.14.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.10",
-    "svg-country-flags": "^1.2.10"
+    "svg-country-flags": "^1.2.10",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

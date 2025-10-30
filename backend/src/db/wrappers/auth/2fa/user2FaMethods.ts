@@ -7,7 +7,7 @@ import { db, insertRow, getRow } from "../../../index.js";
 
 export interface user2FaMethods {
     method_id:              number;
-	user_id:	    	    number;
+	user_id:	    	    string;
     method_type:            number;
     label:                  string;
     is_primary:             number;
@@ -30,7 +30,7 @@ export function getUser2FaMethodsById(id: number): user2FaMethods | undefined {
  * @param user_id - The ID of the user
  * @returns An array of user2FaMethods objects associated with the user
  */
-export function getUser2FaMethodsByUserId(user_id: number): user2FaMethods[] {
+export function getUser2FaMethodsByUserId(user_id: string): user2FaMethods[] {
 	const stmt = db.prepare("SELECT * FROM user_2fa_methods WHERE user_id = ?");
 	return stmt.all(user_id) as user2FaMethods[];
 }
@@ -40,7 +40,7 @@ export function getUser2FaMethodsByUserId(user_id: number): user2FaMethods[] {
  * @param user_id - The ID of the user
  * @returns The primary user2FaMethods object if found, otherwise undefined
  */
-export function getPrimary2FaMethodByUserId(user_id: number): user2FaMethods | undefined {
+export function getPrimary2FaMethodByUserId(user_id: string): user2FaMethods | undefined {
 	const stmt = db.prepare("SELECT * FROM user_2fa_methods WHERE user_id = ? AND is_primary = 1");
 	return stmt.get(user_id) as user2FaMethods | undefined;
 }
@@ -54,7 +54,7 @@ export function getPrimary2FaMethodByUserId(user_id: number): user2FaMethods | u
  * @returns The newly created or existing user2FaMethods object, or undefined if insertion failed
  */
 export function create2FaMethods(options: Partial<user2FaMethods>): user2FaMethods | undefined {
-    if (typeof options.user_id !== 'number' || typeof options.updated_at !== 'number' || typeof options.created_at !== 'number') { return (undefined); }
+    if (typeof options.user_id !== 'string' || typeof options.updated_at !== 'number' || typeof options.created_at !== 'number') { return (undefined); }
     const   user_id = options.user_id;
     const   method_type = options.method_type;
     const   label = options.label;
@@ -128,7 +128,7 @@ export function delete2FaMethods(method_id: number): boolean {
  * @param method_id - The ID of the 2FA method to set as primary
  * @returns true if updated, false otherwise
  */
-export function setPrimary2FaMethod(user_id: number, method_id: number): boolean {
+export function setPrimary2FaMethod(user_id: string, method_id: number): boolean {
 	const unsetStmt = db.prepare("UPDATE user_2fa_methods SET is_primary = 0 WHERE user_id = ? AND is_primary = 1");
 	unsetStmt.run(user_id);
 	const setStmt = db.prepare("UPDATE user_2fa_methods SET is_primary = 1 WHERE method_id = ? AND user_id = ?");

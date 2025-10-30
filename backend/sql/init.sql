@@ -17,7 +17,7 @@ CREATE TABLE user_roles (
 -- Table: users
 -- Stores main account information and links to role.
 CREATE TABLE users (
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,                -- Unique identifier
+    user_id TEXT PRIMARY KEY,									-- uuid v4 unique identifier
     email TEXT UNIQUE NOT NULL CHECK(
         length(email) <= 255 AND 
         email LIKE '%@%.%' AND 
@@ -34,7 +34,7 @@ CREATE TABLE users (
 -- Stores additional optional profile information for each user.
 CREATE TABLE user_profiles (
     profile_id INTEGER PRIMARY KEY AUTOINCREMENT,             -- Unique identifier
-    user_id INTEGER NOT NULL UNIQUE REFERENCES users(user_id) 
+    user_id TEXT NOT NULL UNIQUE REFERENCES users(user_id) 
         ON DELETE CASCADE,                                    -- Link to users (one profile per user)
     username TEXT UNIQUE NOT NULL CHECK(
         length(username) >= 3 AND 
@@ -52,7 +52,7 @@ CREATE TABLE user_profiles (
 -- Stores serialized preferences (e.g., JSON) for customization.
 CREATE TABLE user_preferences (
     preference_id INTEGER PRIMARY KEY AUTOINCREMENT,          -- Unique identifier
-    user_id INTEGER NOT NULL REFERENCES users(user_id) 
+    user_id TEXT NOT NULL REFERENCES users(user_id) 
         ON DELETE CASCADE,                                    -- Link to users
     preferences TEXT                                         -- User preferences (JSON/text format)
 );
@@ -61,7 +61,7 @@ CREATE TABLE user_preferences (
 -- Stores aggregated statistics for gameplay and ranking.
 CREATE TABLE user_stats (
     stat_id INTEGER PRIMARY KEY AUTOINCREMENT,                -- Unique identifier
-    user_id INTEGER NOT NULL UNIQUE REFERENCES users(user_id) 
+    user_id TEXT NOT NULL UNIQUE REFERENCES users(user_id) 
         ON DELETE CASCADE,                                    -- Link to users
     elo_rating INTEGER DEFAULT 1000,                          -- Elo ranking score
 	games_played INTEGER DEFAULT 0,                           -- Total games played
@@ -82,7 +82,7 @@ CREATE TABLE games (
     status TEXT CHECK(status IN ('completed','ongoing','abandoned','waiting')) 
         DEFAULT 'waiting',                                    -- Current game status
     score_limit INTEGER DEFAULT 11 CHECK(score_limit > 0),   -- Score needed to win (positive)
-    winner_id INTEGER REFERENCES users(user_id),             -- Winner of the game (if completed)
+    winner_id TEXT REFERENCES users(user_id),             -- Winner of the game (if completed)
     max_players INTEGER DEFAULT 2 CHECK(max_players >= 1 AND max_players <= 4) -- Maximum players allowed
 );
 
@@ -92,7 +92,7 @@ CREATE TABLE game_participants (
     participant_id INTEGER PRIMARY KEY AUTOINCREMENT,         -- Unique identifier
     game_id INTEGER NOT NULL REFERENCES games(game_id) 
         ON DELETE CASCADE,                                    -- Link to games
-    user_id INTEGER NOT NULL REFERENCES users(user_id) 
+    user_id TEXT NOT NULL REFERENCES users(user_id) 
         ON DELETE CASCADE,                                    -- Link to users
     team INTEGER CHECK(team >= 1 AND team <= 2),             -- Team number (1 or 2)
     score INTEGER DEFAULT 0 CHECK(score >= 0),               -- Final score for the player (non-negative)

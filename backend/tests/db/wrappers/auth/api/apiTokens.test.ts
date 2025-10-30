@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../../src/db/index.js";
 import {
   createApiToken,
@@ -12,16 +14,16 @@ import {
 } from "../../../../../src/db/wrappers/auth/api/apiClients.js";
 
 describe("apiTokens wrapper - tests", () => {
-  let userId: number;
+  let userId: string;
   let appId: number;
   const now = Date.now();
 
   beforeAll(() => {
+	userId = uuidv7();
     const insertUser = db.prepare(`
-      INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)
+      INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)
     `);
-    const resUser = insertUser.run("apitoken_user@example.com", "hashed", 1);
-    userId = Number(resUser.lastInsertRowid);
+    insertUser.run(userId, "apitoken_user@example.com", "hashed", 1);
 
     const client = createApiClient({
       owner_id: userId,

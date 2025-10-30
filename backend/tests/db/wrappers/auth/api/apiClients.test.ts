@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../../src/db/index.js";
 import {
     createApiClient,
@@ -9,15 +11,15 @@ import {
 } from "../../../../../src/db/wrappers/auth/api/apiClients.js";
 
 describe("apiClients wrapper - tests", () => {
-    let userId: number;
+    let userId: string;
     let createdClient: any;
 
     beforeAll(() => {
+		userId = uuidv7();
         const insertUser = db.prepare(`
-            INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)
+            INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)
         `);
-        const res = insertUser.run("test_client_user@example.com", "hashed-password", 1);
-        userId = Number(res.lastInsertRowid);
+        insertUser.run(userId, "test_client_user@example.com", "hashed-password", 1);
     });
 
     it("should create a new api client with valid data", () => {
@@ -84,7 +86,7 @@ describe("apiClients wrapper - tests", () => {
     });
 
     it("should return an empty array if no api clients exist for the owner", () => {
-        const clients = getApiClientByOwnerId(9999999);
+        const clients = getApiClientByOwnerId("9999999");
         expect(clients).toEqual([]);
     });
 

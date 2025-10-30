@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../../src/db/index.js";
 import {
 	create2FaMethods,
@@ -12,16 +14,16 @@ import {
 } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
 describe("user2FaMethods wrapper - extended tests", () => {
-	let userId: number;
+	let userId: string;
 	let createdMethodId: number | undefined;
 
 	beforeAll(() => {
+		userId = uuidv7();
 		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
 		`);
-		const res = insertUser.run("2fa_user@example.local", "hashed-password", 1);
-		userId = Number(res.lastInsertRowid);
+		const res = insertUser.run(userId, "2fa_user@example.local", "hashed-password", "1");
 	});
 
 	it("should create a 2FA method with valid data", () => {
@@ -136,14 +138,13 @@ describe("user2FaMethods wrapper - extended tests", () => {
 
 	it("should reject invalid types for numeric fields", () => {
 		const method = create2FaMethods({
-			// @ts-expect-error
 			user_id: "not-a-number",
 			method_type: 2,
 			label: "Invalid",
 			is_primary: 0,
 			is_verified: true,
 			created_at: Math.floor(Date.now() / 1000),
-			update_at: Math.floor(Date.now() / 1000)
+			updated_at: Math.floor(Date.now() / 1000)
 		});
 		expect(method).toBeUndefined();
 	});

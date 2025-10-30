@@ -4,10 +4,11 @@
  */
 
 import { db, getRow, insertRow } from "../../../index.js";
+import { v7 as uuidv7 } from "uuid";
 
 // --- Types ---
 export interface User {
-	user_id: number;
+	user_id: string;
 	email: string;
 	password_hash: string;
 	created_at: string;
@@ -21,7 +22,7 @@ export interface User {
  * @param id - The primary key of the user
  * @returns The user object if found, otherwise undefined
  */
-export function getUserById(id: number): User | undefined {
+export function getUserById(id: string): User | undefined {
 	return getRow<User>("users", "user_id", id);
 }
 
@@ -43,12 +44,11 @@ export function getUserByEmail(email: string): User | undefined {
  * @param roleId - The role ID (defaults to 1)
  * @returns The created or existing user, or undefined if failed
  */
-export function createUser(
-	email: string,
-	passwordHash: string,
-	roleId = 1
-): User | undefined {
+export function createUser(email: string, passwordHash: string, roleId = 1): User | undefined {
+	const userId = uuidv7(); // <-- generate UUID v4
+
 	const user = insertRow<User>("users", {
+		user_id: userId,
 		email,
 		password_hash: passwordHash,
 		role_id: roleId,
@@ -72,7 +72,7 @@ export function createUser(
  * @param userId - The user's ID
  * @returns boolean indicating if the update was successful
  */
-export function updateLastLogin(userId: number): boolean {
+export function updateLastLogin(userId: string): boolean {
 	const stmt = db.prepare(`
 		UPDATE users
 		SET last_login = CURRENT_TIMESTAMP
@@ -90,7 +90,7 @@ export function updateLastLogin(userId: number): boolean {
  * @param roleId - The new role ID
  * @returns boolean indicating if the update was successful
  */
-export function updateUserRole(userId: number, roleId: number): boolean {
+export function updateUserRole(userId: string, roleId: number): boolean {
 	const stmt = db.prepare(`
 		UPDATE users
 		SET role_id = ?

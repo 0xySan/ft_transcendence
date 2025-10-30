@@ -6,7 +6,7 @@
 import { db, insertRow, getRow } from "../../../index.js";
 
 export interface oauthAccount {
-    user_id:            number;
+    user_id:            string;
     provider_name:      string;
     provider_user_id:   string;
     profile_json:       string;
@@ -29,7 +29,7 @@ export function getOauthAccountById(id: number): oauthAccount | undefined {
  * @param user_id - The user ID to filter oauthAccount
  * @returns An array of oauthAccounts objects, or an empty array if none found
  */
-export function getOauthAccountsByUserId(user_id: number): oauthAccount[] {
+export function getOauthAccountsByUserId(user_id: string): oauthAccount[] {
     const stmt = db.prepare("SELECT * FROM oauth_accounts WHERE user_id = ?");
 	return (stmt.all(user_id) as oauthAccount[]);
 }

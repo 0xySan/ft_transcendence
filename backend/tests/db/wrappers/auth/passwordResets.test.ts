@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../src/db/index.js";
 import {
 	createPasswordReset,
@@ -10,8 +12,8 @@ import {
 } from "../../../../src/db/wrappers/auth/passwordResets.js";
 
 describe("passwordResets wrapper", () => {
-	let userId1: number;
-	let userId2: number;
+	let userId1: string;
+	let userId2: string;
 	let createdResetId: number | undefined;
 
 	beforeAll(() => {
@@ -19,15 +21,16 @@ describe("passwordResets wrapper", () => {
 			db.prepare(`INSERT OR IGNORE INTO user_roles (role_id, name) VALUES (?, ?)`).run(1, "testRole");
 		} catch {}
 
-		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
-		`);
-		const r1 = insertUser.run("test_user1@example.local", "hash-user1", 1);
-		const r2 = insertUser.run("test_user2@example.local", "hash-user2", 1);
+		userId1 = uuidv7();
+		userId2 = uuidv7();
 
-		userId1 = Number(r1.lastInsertRowid);
-		userId2 = Number(r2.lastInsertRowid);
+		const insertUser = db.prepare(`
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
+		`);
+		const r1 = insertUser.run(userId1, "test_user1@example.local", "hash-user1", 1);
+		const r2 = insertUser.run(userId2, "test_user2@example.local", "hash-user2", 1);
+
 	});
 
 	it("should create a new passwordReset with provided values", () => {
@@ -157,7 +160,7 @@ describe("passwordResets wrapper", () => {
 
 	it("should return undefined if creating with non-existing user_id (FK fail)", () => {
 		const invalidReset = createPasswordReset({
-			user_id: 999999,
+			user_id: "999999",
 			token_hash: "invalid_fk",
 			expired_at: Math.floor(Date.now() / 1000) + 3600,
 		});

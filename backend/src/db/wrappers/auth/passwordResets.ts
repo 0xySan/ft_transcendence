@@ -7,7 +7,7 @@ import { db, insertRow, getRow } from "../../index.js";
 
 export interface passwordReset {
 	reset_id:		number;
-	user_id:		number;
+	user_id:		string;
 	token_hash:		string;
 	created_at:		number;
 	expired_at:		number;
@@ -38,7 +38,7 @@ export function getPasswordResetByTokenHash(token_hash: string): passwordReset |
  * @param user_id - The user ID to filter passwordResets
  * @returns An array of passwordResets objects, or an empty array if none found
  */
-export function getPasswordResetsByUserId(user_id: number): passwordReset[] {
+export function getPasswordResetsByUserId(user_id: string): passwordReset[] {
 	const stmt = db.prepare("SELECT * FROM password_resets WHERE user_id = ?");
 	return (stmt.all(user_id) as passwordReset[]);
 }
@@ -48,7 +48,7 @@ export function getPasswordResetsByUserId(user_id: number): passwordReset[] {
  * @param user_id - The user ID to filter passwordResets
  * @returns An array of unconsumed and valid passwordResets objects, or an empty array if none found
  */
-export function getValidPasswordResetsByUserId(user_id: number): passwordReset[] {
+export function getValidPasswordResetsByUserId(user_id: string): passwordReset[] {
 	try {
 		const currentTime = Math.floor(Date.now() / 1000);
 		const stmt = db.prepare(`SELECT * FROM password_resets WHERE user_id = ? AND consumed = 0 AND expired_at > ?`);
@@ -89,7 +89,7 @@ export function createPasswordReset(options: Partial<passwordReset>): passwordRe
  * Update passwordReset.
  * Only updates the provided fields.
  * 
- * @param reset_id - The provider ID
+ * @param reset_id - The reset ID
  * @param options - Partial information to update
  * @returns true if updated, false otherwise
  */

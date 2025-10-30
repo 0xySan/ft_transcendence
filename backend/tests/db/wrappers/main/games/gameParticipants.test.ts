@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 
 import {
 	addParticipant,
@@ -27,21 +28,22 @@ import {
 import { db } from "../../../../../src/db/index.js";
 
 let gameId: number;
-let userId1: number;
-let userId2: number;
+let userId1: string;
+let userId2: string;
 
 describe("GameParticipants wrapper (DB constraints + cascade)", () => {
 	// --- Prepare users and a game before the test suite -----------------------
 	beforeAll(() => {
+
+		userId1 = uuidv7();
+		userId2 = uuidv7();
 		// Insert two users (email & password_hash required by schema)
 		const insertUserStmt = db.prepare(
-			`INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)`
+			`INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)`
 		);
-		const u1 = insertUserStmt.run("test1+gp@example.local", "hash1", 1);
-		const u2 = insertUserStmt.run("test2+gp@example.local", "hash2", 1);
+		insertUserStmt.run(userId1, "test1+gp@example.local", "hash1", 1);
+		insertUserStmt.run(userId2, "test2+gp@example.local", "hash2", 1);
 
-		userId1 = Number(u1.lastInsertRowid);
-		userId2 = Number(u2.lastInsertRowid);
 
 		// Insert a game
 		const insertGameStmt = db.prepare(
@@ -101,13 +103,13 @@ describe("GameParticipants wrapper (DB constraints + cascade)", () => {
 		// invalid user
 		gotErr = false;
 		try {
-			addParticipant(gameId, 9999999);
+			addParticipant(gameId, "9999999");
 		} catch (err) {
 			gotErr = true;
 			expect(String((err as Error).message)).toMatch(/FOREIGN KEY|constraint/i);
 		}
 		if (!gotErr) {
-			const res = addParticipant(gameId, 9999999);
+			const res = addParticipant(gameId, "9999999");
 			expect(res).toBeUndefined();
 		}
 	});

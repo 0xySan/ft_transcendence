@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeAll, expectTypeOf } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../../src/db/index.js";
 import {
     createOauthAccount,
@@ -9,16 +11,16 @@ import {
 } from "../../../../../src/db/wrappers/auth/oauth/oauthAccounts.js";
 
 describe("oauthAccount wrapper - tests", () => {
-    let userId: number;
+    let userId: string;
     let providerName: string;
     let createdOauthAccountId: number | undefined;
 
     beforeAll(() => {
+		userId = uuidv7();
         const insertUser = db.prepare(`
-            INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)
+            INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)
         `);
-        const userRes = insertUser.run("oauth_test_user@example.com", "hashed-pass", 1);
-        userId = Number(userRes.lastInsertRowid);
+        const userRes = insertUser.run(userId, "oauth_test_user@example.com", "hashed-pass", 1);
 
         const insertProvider = db.prepare(`
             INSERT INTO oauth_providers (name, discovery_url, client_id, is_enabled) VALUES (?, ?, ?, ?)
@@ -120,7 +122,6 @@ describe("oauthAccount wrapper - tests", () => {
 
     it("should return undefined if user_id is not a number", () => {
         const result = createOauthAccount({
-            // @ts-expect-error
             user_id: "not-a-number",
             provider_name: providerName,
             provider_user_id: "invalid_type_test"
@@ -139,7 +140,7 @@ describe("oauthAccount wrapper - tests", () => {
             }
         });
 
-        const account = createOauthAccount({
+        createOauthAccount({
             user_id: userId,
             provider_name: providerName,
             provider_user_id: "json_test_user",

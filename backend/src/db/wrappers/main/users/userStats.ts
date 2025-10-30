@@ -24,7 +24,7 @@ export interface UserStats {
  * @param userId - The user's ID
  * @returns The UserStats object if found, otherwise undefined
  */
-export function getStatsByUserId(userId: number): UserStats | undefined {
+export function getStatsByUserId(userId: string): UserStats | undefined {
 	return getRow<UserStats>("user_stats", "user_id", userId);
 }
 
@@ -33,7 +33,7 @@ export function getStatsByUserId(userId: number): UserStats | undefined {
  * @param userId - The user's ID
  * @returns The created UserStats row, or undefined if failed
  */
-export function createStats(userId: number): UserStats | undefined {
+export function createStats(userId: string): UserStats | undefined {
 	return insertRow<UserStats>("user_stats", {
 		user_id: userId,
 		elo_rating: 1000,
@@ -55,7 +55,7 @@ export function createStats(userId: number): UserStats | undefined {
  * @returns true if updated, false otherwise
  */
 export function updateStats(
-	userId: number,
+	userId: string,
 	updates: Partial<Omit<UserStats, "stat_id" | "user_id">>
 ): boolean {
 	const keys = Object.keys(updates);
@@ -86,7 +86,7 @@ export function getAllStats(sortBy: keyof UserStats = "user_id", desc = false): 
 /**
  * Update Elo rating.
  */
-export function updateElo(userId: number, newElo: number): boolean {
+export function updateElo(userId: string, newElo: number): boolean {
 	const stmt = db.prepare(`
 		UPDATE user_stats
 		SET elo_rating = @newElo
@@ -99,7 +99,7 @@ export function updateElo(userId: number, newElo: number): boolean {
 /**
  * Increment games played counter.
  */
-export function incrementGamesPlayed(userId: number, count = 1): boolean {
+export function incrementGamesPlayed(userId: string, count = 1): boolean {
 	const stmt = db.prepare(`
 		UPDATE user_stats
 		SET games_played = games_played + @count
@@ -112,7 +112,7 @@ export function incrementGamesPlayed(userId: number, count = 1): boolean {
 /**
  * Increment games won counter.
  */
-export function incrementGamesWon(userId: number, count = 1): boolean {
+export function incrementGamesWon(userId: string, count = 1): boolean {
 	const stmt = db.prepare(`
 		UPDATE user_stats
 		SET games_won = games_won + @count
@@ -125,7 +125,7 @@ export function incrementGamesWon(userId: number, count = 1): boolean {
 /**
  * Increment games lost counter.
  */
-export function incrementGamesLost(userId: number, count = 1): boolean {
+export function incrementGamesLost(userId: string, count = 1): boolean {
 	const stmt = db.prepare(`
 		UPDATE user_stats
 		SET games_lost = games_lost + @count
@@ -138,7 +138,7 @@ export function incrementGamesLost(userId: number, count = 1): boolean {
 /**
  * Increment total play time in seconds.
  */
-export function incrementPlayTime(userId: number, seconds: number): boolean {
+export function incrementPlayTime(userId: string, seconds: number): boolean {
 	const stmt = db.prepare(`
 		UPDATE user_stats
 		SET total_play_time = total_play_time + @seconds
@@ -151,7 +151,7 @@ export function incrementPlayTime(userId: number, seconds: number): boolean {
 /**
  * Increment user level.
  */
-export function incrementLevel(userId: number, increment = 1): boolean {
+export function incrementLevel(userId: string, increment = 1): boolean {
 	const stmt = db.prepare(`
 		UPDATE user_stats
 		SET level = level + @increment

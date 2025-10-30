@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 import { db } from "../../../../../src/db/index.js";
 import {
 	getUserById,
@@ -20,9 +21,9 @@ import {
 } from "../../../../../src/db/wrappers/main/users/users.js";
 
 describe("Users wrapper", () => {
-	let adminId: number;
-	let userId: number;
-	let guestId: number;
+	let adminId: string;
+	let userId: string;
+	let guestId: string;
 
 	// --- Populate DB with initial users -----------------------------------
 	beforeAll(() => {
@@ -31,16 +32,17 @@ describe("Users wrapper", () => {
 
 		// Assuming user_roles already populated with 'Admin', 'User', 'Guest'
 		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
 		`);
-		const r1 = insertUser.run("admin@example.com", "hashed_admin", 1); // Admin role
-		const r2 = insertUser.run("user@example.com", "hashed_user", 2);  // User role
-		const r3 = insertUser.run("guest@example.com", "hashed_guest", 3); // Guest role
+		adminId = uuidv7();
+		userId = uuidv7();
+		guestId = uuidv7();
 
-		adminId = Number(r1.lastInsertRowid);
-		userId = Number(r2.lastInsertRowid);
-		guestId = Number(r3.lastInsertRowid);
+		// Insertion avec UUID comme PK
+		insertUser.run(adminId, "admin@example.com", "hashed_admin", 1); // Admin role
+		insertUser.run(userId, "user@example.com", "hashed_user", 2);    // User role
+		insertUser.run(guestId, "guest@example.com", "hashed_guest", 3); // Guest role
 	});
 
 	afterAll(() => {
@@ -59,7 +61,7 @@ describe("Users wrapper", () => {
 	});
 
 	it("should return undefined if ID does not exist", () => {
-		const result = getUserById(9999);
+		const result = getUserById("9999");
 		expect(result).toBeUndefined();
 	});
 
@@ -104,7 +106,7 @@ describe("Users wrapper", () => {
 	});
 
 	it("should return false when updating last login for non-existing user", () => {
-		const result = updateLastLogin(9999);
+		const result = updateLastLogin("9999");
 		expect(result).toBe(false);
 	});
 
@@ -117,7 +119,7 @@ describe("Users wrapper", () => {
 	});
 
 	it("should return false when updating role for non-existing user", () => {
-		const result = updateUserRole(9999, 1);
+		const result = updateUserRole("9999", 1);
 		expect(result).toBe(false);
 	});
 

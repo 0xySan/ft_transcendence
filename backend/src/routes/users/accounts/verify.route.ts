@@ -8,10 +8,10 @@ import { verifySchema } from "../../../plugins/swagger/schemas/verify.schema.js"
 import crypto from "crypto";
 import {
 	getEmailVerificationsByUserId,
-	markEmailAsVerified, // wrapper existant
+	markEmailAsVerified
 } from "../../../db/wrappers/auth/index.js";
 import { getRoleByName, updateUserRole } from "../../../db/wrappers/main/index.js";
-import { decryptSecret } from "../../../utils/crypto.js";
+import { decryptSecret, isValidUUIDv7 } from "../../../utils/crypto.js";
 
 export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
 	fastify.get("/accounts/verify", { schema: verifySchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
@@ -21,8 +21,8 @@ export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
 			return reply.status(400).send("Missing token or user id");
 		}
 
-		const userId = Number(rawUser);
-		if (!Number.isInteger(userId) || userId <= 0) {
+		const userId = decodeURIComponent(rawUser);
+		if (!isValidUUIDv7(userId)) {
 			return reply.status(400).send("Invalid user id");
 		}
 

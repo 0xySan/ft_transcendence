@@ -7,7 +7,7 @@ import { db, insertRow, getRow } from "../../index.js";
 
 export interface emailVerification {
 	id:             number;
-	user_id:        number;
+	user_id:        string;
 	token:          string;
 	expires_at:     number; // Unix timestamp (seconds)
 	verified:       boolean;
@@ -18,7 +18,7 @@ export interface emailVerification {
  * @param id - The primary key of the emailVerification
  * @returns The emailVerification object if found, otherwise undefined
  */
-export function getEmailVerificationById(id: number): emailVerification | undefined {
+export function getEmailVerificationById(id: string): emailVerification | undefined {
 	return getRow<emailVerification>("email_verifications", "id", id);
 }
 
@@ -38,7 +38,7 @@ export function getEmailVerificationByToken(token: string): emailVerification | 
  * @param userId - The user ID
  * @returns An array of emailVerification objects
  */
-export function getEmailVerificationsByUserId(userId: number): emailVerification[] {
+export function getEmailVerificationsByUserId(userId: string): emailVerification[] {
 	const stmt = db.prepare("SELECT * FROM email_verifications WHERE user_id = ?");
 	const rows = stmt.all(userId) as emailVerification[];
 	return rows;

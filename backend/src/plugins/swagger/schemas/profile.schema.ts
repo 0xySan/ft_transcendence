@@ -20,7 +20,7 @@ export const profileSchema = {
 				user: {
 					type: "object",
 					properties: {
-						user_id: { type: "number", example: 1 },
+						user_id: { type: "string", example: 1 },
 						email: { type: "string", format: "email", example: "example@domain.com" },
 						role: {
 							type: "object",

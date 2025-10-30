@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 import { db } from "../../../../../src/db/index.js";
 import {
   createUser2faEmailOtp,
@@ -7,16 +8,17 @@ import {
 } from "../../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js";
 
 describe("user2faEmailOtp wrapper - tests", () => {
-  let userId: number;
+  let userId: string;
   let methodId: number;
   const now = Date.now();
 
   beforeAll(() => {
     const insertUser = db.prepare(`
-      INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)
-    `);
-    const resUser = insertUser.run("user2fa@example.com", "hashed_pass", 1);
-    userId = Number(resUser.lastInsertRowid);
+      INSERT INTO users (user_id, email, password_hash, role_id)
+	  VALUES (?, ?, ?, ?)
+	`);
+	userId = uuidv7();
+	insertUser.run(userId, "user2fa@example.com", "hashed_pass", 1);
 
     const insertMethod = db.prepare(`
       INSERT INTO user_2fa_methods (user_id, method_type, label, is_primary, is_verified)

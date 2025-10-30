@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 import { db } from "../../../../../src/db/index.js";
 import {
     createUser2faBackupCodes,
@@ -8,34 +9,37 @@ import {
 
 import { create2FaMethods } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
-let userId: number;
+let userId: string;
 let methodId: number;
 let backupCodeId: number;
 
 describe("user_2fa_backup_codes wrapper – with FK setup", () => {
-    beforeAll(() => {
-        const insertUser = db.prepare(`
-            INSERT INTO users (email, password_hash, role_id)
-            VALUES (?, ?, ?)
-        `);
-        const userRes = insertUser.run("backupcode@example.local", "hashed-password", 1);
-        userId = Number(userRes.lastInsertRowid);
-        expect(userId).toBeGreaterThan(0);
+	beforeAll(() => {
+		// Generate UUID for user
+		userId = uuidv7();
 
-        const now = Math.floor(Date.now() / 1000);
-        const method = create2FaMethods({
-            user_id: userId,
-            method_type: 3,
-            label: "Backup Codes",
-            is_primary: 0,
-            is_verified: true,
-            created_at: now,
-            updated_at: now,
-        });
-        // @ts-expect-error
-        methodId = method?.method_id;
-        expect(methodId).toBeDefined();
-    });
+		// Insert user with UUID primary key
+		const insertUser = db.prepare(`
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
+		`);
+		insertUser.run(userId, "backupcode@example.local", "hashed-password", 1);
+
+		// Create a 2FA method linked to this user
+		const now = Math.floor(Date.now() / 1000);
+		const method = create2FaMethods({
+			user_id: userId,
+			method_type: 3,
+			label: "Backup Codes",
+			is_primary: 0,
+			is_verified: true,
+			created_at: now,
+			updated_at: now,
+		});
+		if (!method) throw new Error("Expected user2FaMethods from create2FaMethods(), but got undefined.");
+		methodId = method?.method_id;
+		expect(methodId).toBeDefined();
+	});
 
     it("should create a user_2fa_backup_codes entry with valid FK", () => {
         const now = Math.floor(Date.now() / 1000);

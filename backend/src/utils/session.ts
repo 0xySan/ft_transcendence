@@ -8,7 +8,7 @@ import * as crypto from "./crypto.js";
 
 const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
-export function createNewSession(userId: number, opts?: { ip?: string; userAgent?: string; ttlMs?: number; isPersistent?: boolean; }): { session: session; token: string } | undefined {
+export function createNewSession(userId: string, opts?: { ip?: string; userAgent?: string; ttlMs?: number; isPersistent?: boolean; }): { session: session; token: string } | undefined {
 	const ttlMs = (opts && opts.ttlMs) || DEFAULT_TTL_MS;
 
 	// Generate session token

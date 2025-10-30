@@ -2,7 +2,7 @@
 -- Store different methods of 2fa
 CREATE TABLE user_2fa_methods (
 	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER,															--- ID of the user (FK)
+	user_id					TEXT,																--- ID of the user (FK)
 	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
 	label					TEXT,																--- 2fa method name
 	is_primary				INTEGER		DEFAULT 0,												--- store the prymary
@@ -62,7 +62,7 @@ CREATE TABLE oauth_providers (
 -- Store the relation between a user and a Oauth provider
 CREATE TABLE oauth_accounts (
 	oauth_account_id		INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
-	user_id					INTEGER		NOT NULL,												-- ID on the user (FK)
+	user_id					TEXT		NOT NULL,												-- ID on the user (FK)
 	provider_name			TEXT,																-- stock the name (FK)
 	provider_user_id		TEXT		NOT NULL,												-- stock the user id
 	profile_json			TEXT,																-- the profile user on the Oauth server
@@ -93,7 +93,7 @@ CREATE TABLE oauth_tokens (
 tokens to interact with the api in limited an define scope.*/
 CREATE TABLE api_clients (
 	app_id					INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	owner_id				INTEGER,															--- ID of the owner (FK)
+	owner_id				TEXT,																--- ID of the owner (FK)
 	name					TEXT		DEFAULT "unamed",										--- name of the api
 	client_secret_encrypted	BLOB		NOT NULL,												--- encrypted secret
 	redirect_url			TEXT,																--- redirect url
@@ -123,7 +123,7 @@ CREATE TABLE api_tokens (
 -- Store the password token for the forgotten password
 CREATE TABLE password_resets (
 	reset_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
+	user_id					TEXT		NOT NULL,												--- ID of the user (FK)
 	token_hash				TEXT		NOT NULL,												--- the hashed token
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the created reset
 	expired_at				DATETIME	NOT NULL,												--- timestamp of the expired reset
@@ -136,7 +136,7 @@ CREATE TABLE password_resets (
 -- Store informations about sessions
 CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
+	user_id					TEXT		NOT NULL,												--- ID of the user (FK)
 	session_token_hash		TEXT		NOT NULL,												--- the hashed session token
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
@@ -151,7 +151,7 @@ CREATE TABLE sessions (
 -- Store email verification tokens
 CREATE TABLE email_verifications (
 	id						INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	user_id					INTEGER		NOT NULL,												--- ID of the user (FK)
+	user_id					TEXT		NOT NULL,												--- ID of the user (FK)
 	token					TEXT		NOT NULL UNIQUE,										--- the verification token
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expiration
 	verified				BOOLEAN		NOT NULL DEFAULT 0,										--- is verified ?

@@ -6,7 +6,6 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import argon2 from 'argon2';
-import { stringify } from 'querystring';
 
 dotenv.config({ quiet: true });
 
@@ -98,4 +97,15 @@ export async function verifyHashedString(password: string, hashed: string): Prom
 	} catch {
 		return false;
 	}
+}
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate if a string is a valid UUID v7.
+ * @param uuid - The string to validate.
+ * @returns boolean - True if valid UUID v7, false otherwise.
+ */
+export function isValidUUIDv7(uuid: string): boolean {
+	return uuidRegex.test(uuid);
 }

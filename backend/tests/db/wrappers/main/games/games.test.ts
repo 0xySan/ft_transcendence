@@ -6,11 +6,12 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 import { db } from "../../../../../src/db/index.js";
 import { createGame, getGameById, updateGame, getAllGames} from "../../../../../src/db/wrappers/main/games/games.js";
 
 let gameId: number;
-let winnerId: number;
+let winnerId: string;
 
 beforeAll(() => {
 	// --- Clean tables for isolated tests ---
@@ -18,10 +19,11 @@ beforeAll(() => {
 	db.prepare("DELETE FROM games").run();
 	db.prepare("DELETE FROM users").run();
 
+	winnerId = uuidv7();
+
 	const user = db.prepare(
-		"INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)"
-	).run("winner@example.local", "hash", 1);
-	winnerId = Number(user.lastInsertRowid);
+		"INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)"
+	).run(winnerId, "winner@example.local", "hash", 1);
 });
 
 describe("Games wrapper (DB operations)", () => {

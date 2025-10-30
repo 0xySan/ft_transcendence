@@ -8,7 +8,7 @@ import { db, insertRow, getRow } from "../../../index.js";
 // --- Types ---
 export interface UserProfile {
 	profile_id: number;
-	user_id: number;
+	user_id: string;
 	username: string;
 	display_name?: string;
 	profile_picture?: string;
@@ -32,7 +32,7 @@ export function getProfileById(id: number): UserProfile | undefined {
  * @param userId - The user's ID
  * @returns The profile object if found, otherwise undefined
  */
-export function getProfileByUserId(userId: number): UserProfile | undefined {
+export function getProfileByUserId(userId: string): UserProfile | undefined {
 	return getRow<UserProfile>("user_profiles", "user_id", userId);
 }
 
@@ -58,7 +58,7 @@ export function getProfileByUsername(username: string): UserProfile | undefined 
  * @returns The created UserProfile, or undefined if failed
  */
 export function createProfile(
-	userId: number,
+	userId: string,
 	username: string,
 	displayName?: string,
 	profilePicture?: string,
