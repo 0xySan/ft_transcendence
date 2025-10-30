@@ -5,7 +5,7 @@ describe('Redis Client', () => {
 
     beforeAll(async () => {
         if (!redisClient.connected && redisClient.connect) {
-        await redisClient.connect?.();
+            await redisClient.connect?.();
         }
     });
 

@@ -19,7 +19,7 @@ function promisifyRedisMethod(fn: any, ...args: any) {
     });
 }
 
-export const hsetValue = async (hashKey: string, fieldOrObject: any, value?: string) => {
+export const hsetValue = async (hashKey: any, fieldOrObject: any, value?: string) => {
     if (typeof fieldOrObject === 'object') {
         if (isTest) return promisifyRedisMethod(redisClient.hmset, hashKey, fieldOrObject);
         return redisClient.hSet(hashKey, fieldOrObject);
@@ -29,7 +29,7 @@ export const hsetValue = async (hashKey: string, fieldOrObject: any, value?: str
     }
 };
 
-export const hgetAllValues = async (hashKey: string) => {
+export const hgetAllValues = async (hashKey: any) => {
     if (isTest) return promisifyRedisMethod(redisClient.hgetall, hashKey);
     return redisClient.hGetAll(hashKey);
 };

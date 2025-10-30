@@ -8,7 +8,7 @@
  *  - alphabetical listing.
  */
 
-import { redisClient, checkRedisHealth } from '../../../../src/redis/index.js';
+import { setValue, getValue, checkRedisHealth, redisClient, hsetValue, hgetAllValues, hgetValue } from '../../../../src/redis/index.js'
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { db } from "../../../../src/db/index.js";
 import {
@@ -27,7 +27,9 @@ describe("Users wrapper", () => {
 
 	// --- Populate DB with initial users -----------------------------------
 	beforeAll(async() => {
-		await redisClient.connect();
+		if (!redisClient.connected && redisClient.connect) {
+            await redisClient.connect?.();
+        }
 
 		// Clean users table for testing
 		db.prepare(`DELETE FROM users`).run();
@@ -47,7 +49,7 @@ describe("Users wrapper", () => {
 	});
 
 	afterAll(async() => {
-		await redisClient.quit();
+		await redisClient.quit?.();
 
 		try {
 			db.prepare(`DELETE FROM users`).run();
@@ -57,14 +59,14 @@ describe("Users wrapper", () => {
 	});
 
 	// --- Tests for retrieval ---------------------------------------------
-	it("should return a user by ID", () => {
-		const user = getUserById(adminId);
+	it("should return a user by ID", async () => {
+		const user = await getUserById(adminId);
 		expect(user).toBeDefined();
 		expect(user?.email).toBe("admin@example.com");
 	});
 
-	it("should return undefined if ID does not exist", () => {
-		const result = getUserById(9999);
+	it("should return undefined if ID does not exist", async () => {
+		const result = await getUserById(9999);
 		expect(result).toBeUndefined();
 	});
 
@@ -100,11 +102,11 @@ describe("Users wrapper", () => {
 	});
 
 	// --- Tests for updates -----------------------------------------------
-	it("should update last login successfully", () => {
+	it("should update last login successfully", async () => {
 		const updated = updateLastLogin(userId);
 		expect(updated).toBe(true);
 
-		const user = getUserById(userId);
+		const user = await getUserById(userId);
 		expect(user?.last_login).toBeDefined();
 	});
 
@@ -113,11 +115,11 @@ describe("Users wrapper", () => {
 		expect(result).toBe(false);
 	});
 
-	it("should update user role successfully", () => {
-		const updated = updateUserRole(guestId, 2); // change Guest -> User
+	it("should update user role successfully", async () => {
+		const updated = updateUserRole(guestId, 2);
 		expect(updated).toBe(true);
 
-		const user = getUserById(guestId);
+		const user = await getUserById(guestId);
 		expect(user?.role_id).toBe(2);
 	});
 

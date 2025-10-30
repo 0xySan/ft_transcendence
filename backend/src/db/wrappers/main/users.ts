@@ -4,7 +4,7 @@
  */
 
 import { db, getRow, insertRow } from "../../index.js";
-import { redisClient } from "../../../redis/index.js"
+import { hsetValue, hgetAllValues } from "../../../redis/index.js"
 
 // --- Types ---
 export interface User {
@@ -22,7 +22,11 @@ export interface User {
  * @param id - The primary key of the user
  * @returns The user object if found, otherwise undefined
  */
-export function getUserById(id: number): User | undefined {
+export async function getUserById(id: number): Promise<User | undefined> {
+	const cached = await hgetAllValues(id);
+	if (cached != null && Object.keys(cached).length > 0)
+		return cached as unknown as User;
+
 	return getRow<User>("users", "user_id", id);
 }
 
@@ -32,6 +36,8 @@ export function getUserById(id: number): User | undefined {
  * @returns The user object if found, otherwise undefined
  */
 export function getUserByEmail(email: string): User | undefined {
+
+
 	return getRow<User>("users", "email", email);
 }
 
@@ -45,7 +51,7 @@ export function getUserByEmail(email: string): User | undefined {
  * @param client - The redis client
  * @returns The created or existing user, or undefined if failed
  */
-export function createUser(email: string, passwordHash: string, roleId = 1): User | undefined {
+export async function createUser(email: string, passwordHash: string, roleId = 1): Promise<User | undefined> {
 	const user = insertRow<User>("users", {
 		email,
 		password_hash: passwordHash,
@@ -56,6 +62,8 @@ export function createUser(email: string, passwordHash: string, roleId = 1): Use
 		const isExisting = getUserByEmail(email);
 		if (isExisting) return isExisting;
 		return undefined;
+	} else {
+		await hsetValue(roleId, { email: user.email, password_hash: user.password_hash});
 	}
 
 	if (user.last_login === null) user.last_login = undefined;
