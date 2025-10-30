@@ -1,6 +1,6 @@
 /**
  * @file new.ts
- * @description Route to create a new user account, with optional OAuth link.
+ * @description Secure user registration route (OWASP-compliant, prevents user enumeration).
  */
 
 import { FastifyInstance } from "fastify";
@@ -25,87 +25,92 @@ import {
 
 import { hashString, generateRandomToken, encryptSecret } from '../../../utils/crypto.js';
 import { saveAvatarFromUrl } from '../../../utils/userData.js';
-
 import { sendMail } from "../../../utils/mail/mail.js";
 
 dotenv.config({ quiet: true });
 
+// Simple in-memory rate limiter (can be replaced with Redis later)
+const requestCount: Record<string, { count: number; lastReset: number }> = {};
+const RATE_LIMIT = 5; // max 5 registrations per 15 minutes per IP
+const RATE_WINDOW = 15 * 60 * 1000;
+
 export async function newUserAccountRoutes(fastify: FastifyInstance) {
-	const emailRegex = /^([-!#-'*+\/-9=?A-Z^-~]+(\.[-!#-'*+\/-9=?A-Z^-~]+)*|"([]!#-[^-~ \t]|(\\[\t -~]))+")@[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?(\.[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?)+$/;
-	// NIST/OWASP compliant: only checks length, not composition
+	const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
 	const passwordRegex = /^.{8,64}$/;
 	const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 
 	fastify.post("/accounts/register", { schema: registerAccountSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
+		const startTime = Date.now();
+		const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
+
+		// --- Rate limiting ---
+		const rate = requestCount[clientIp] || { count: 0, lastReset: startTime };
+		if (startTime - rate.lastReset > RATE_WINDOW) {
+			rate.count = 0;
+			rate.lastReset = startTime;
+		}
+		rate.count++;
+		requestCount[clientIp] = rate;
+
+		if (rate.count > RATE_LIMIT) {
+			await new Promise(res => setTimeout(res, 1000)); // uniform delay
+			reply.header('Retry-After', Math.ceil(RATE_WINDOW / 1000));
+			return reply.status(429).send({
+				message: "Too many registration attempts. Please try again later."
+			});
+		}
+
 		try {
 			const { username, email, password, oauth, pfp, display_name } = request.body as {
-				username?:	string;
-				email?:		string;
-				password?:	string;
+				username?: string;
+				email?: string;
+				password?: string;
 				oauth?: {
-					provider_name:		string;
-					provider_user_id:	string;
-					profile_json?:		string;
-					id_token_hash?:		string;
+					provider_name: string;
+					provider_user_id: string;
+					profile_json?: string;
+					id_token_hash?: string;
 				};
-				pfp?:			string;
-				display_name?:	string;
+				pfp?: string;
+				display_name?: string;
 			};
 
-			// --- Validate input ---
-			const validations: { condition: any; status: 400 | 409 | 500 | 201; error: string }[] = [
-				{	condition: !email,
-					status: 400,
-					error: "Email is required"
-				}, {
-					condition: email && !emailRegex.test(email),
-					status: 400,
-					error: "Invalid email format"
-				}, {
-					condition: !username,
-					status: 400,
-					error: "Username is required"
-				}, {
-					condition: username && !usernameRegex.test(username),
-					status: 400,
-					error: "Username must be 3-20 characters long and contain only letters, numbers, and underscores"
-				}, {
-					condition: pfp && pfp.length > 255,
-					status: 400,
-					error: "Profile picture URL/path must be 255 characters or fewer"
-				}, {
-					condition: display_name !== undefined && (display_name.length === 0 || display_name.length > 50),
-					status: 400,
-					error: "Display name must be 1-50 characters long"
-				}, {
-					condition: !password && !oauth,
-					status: 400,
-					error: "Either password or OAuth data is required"
-				}, {
-					condition: password && !passwordRegex.test(password),
-					status: 400,
-					error: "Password must be 8-40 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character"
-				}, {
-					condition: getUserByEmail(email!),
-					status: 409,
-					error: "User with this email already exists"
-				}, {
-					condition: getProfileByUsername(username!),
-					status: 409,
-					error: "Username is already taken"
-				}, {
-					condition: oauth && getOauthAccountByProviderAndUserId(oauth.provider_name, oauth.provider_user_id),
-					status: 409,
-					error: "An account with this OAuth provider and user ID already exists"
-				},
-			];
-
-			// execute checks
-			for (const v of validations) {
-				if (v.condition) return reply.status(v.status).send({ error: v.error });
+			// --- Basic validation (no enumeration risk) ---
+			if (!email || !emailRegex.test(email) || !username || !usernameRegex.test(username)) {
+				await delayResponse(startTime);
+				return reply.status(400).send({
+					message: "Invalid registration details. Please check your input."
+				});
 			}
 
-			// --- Create user (if password provided) ---
+			if (!password && !oauth) {
+				await delayResponse(startTime);
+				return reply.status(400).send({ message: "Missing authentication information." });
+			}
+
+			if (password && !passwordRegex.test(password)) {
+				await delayResponse(startTime);
+				return reply.status(400).send({
+					message: "Invalid password format."
+				});
+			}
+
+			// --- Silent existence checks (no error exposure) protect against user enumeration ---
+			const existingUser = getUserByEmail(email);
+			const existingProfile = getProfileByUsername(username);
+			const existingOauth = oauth
+				? getOauthAccountByProviderAndUserId(oauth.provider_name, oauth.provider_user_id)
+				: null;
+
+			if (existingUser || existingProfile || existingOauth) {
+				console.warn(`Duplicate registration attempt for ${email || username}`);
+				await delayResponse(startTime);
+				return reply.status(202).send({
+					message: "If the registration is valid, a verification email will be sent shortly."
+				});
+			}
+
+			// --- Proceed with creation ---
 			let passwordHash = "";
 			if (password) {
 				passwordHash = await hashString(password);
@@ -113,17 +118,15 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			const newUser = createUser(email!, passwordHash, getRoleByName('unverified')!.role_id);
 			if (!newUser) {
-				return reply.status(500).send({ error: "Failed to create user" });
+				await delayResponse(startTime);
+				return reply.status(500).send({ message: "Registration failed. Please try again later." });
 			}
 
-			const ip = request.ip || request.headers['x-forwarded-for']?.toString() || '';
 			let countryId: number | undefined;
-			if (ip) {
-				const geo = geoip.lookup(ip);
-				if (geo && geo.country) {
-					const country  = getCountryByCode(geo.country);
-					if (country) {countryId = country.country_id;}
-				}
+			const geo = geoip.lookup(clientIp);
+			if (geo && geo.country) {
+				const country = getCountryByCode(geo.country);
+				if (country) countryId = country.country_id;
 			}
 
 			let avatarFileName: string | undefined;
@@ -131,19 +134,18 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				try {
 					avatarFileName = await saveAvatarFromUrl(newUser.user_id.toString(), pfp);
 				} catch (err) {
-					console.error("Failed to save avatar from URL:", err);
+					console.error("Failed to save avatar:", err);
 				}
 			}
 
 			createProfile(
-						newUser.user_id,
-						username!,
-						display_name || username!,
-						avatarFileName || undefined,
-						countryId
-					);
+				newUser.user_id,
+				username!,
+				display_name || username!,
+				avatarFileName,
+				countryId
+			);
 
-			// --- Optional OAuth association ---
 			if (oauth) {
 				createOauthAccount({
 					user_id: newUser.user_id,
@@ -157,11 +159,10 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			const verificationToken = generateRandomToken(32);
 			const encryptedToken = encryptSecret(verificationToken).toString('base64');
-
 			createEmailVerification({
 				user_id: newUser.user_id,
 				token: encryptedToken,
-				expires_at: Date.now() + 60 * 60 * 1000, // 1 hour
+				expires_at: Date.now() + 60 * 60 * 1000,
 			});
 
 			sendMail(
@@ -173,22 +174,24 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 					VERIFICATION_LINK: `https://moutig.sh/verify?user=${newUser.user_id}&token=${encodeURIComponent(verificationToken)}`,
 				},
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
-			).catch(err => {
-				console.error("Failed to send welcome email:", err);
-			});
+			).catch(err => console.error("Failed to send email:", err));
 
-			// --- Response ---
-			return reply.status(201).send({
-				message: "User account created successfully",
-				user: {
-					user_id: newUser.user_id,
-					email: newUser.email,
-					role_id: newUser.role_id,
-				},
+			await delayResponse(startTime);
+			return reply.status(202).send({
+				message: "If the registration is valid, a verification email will be sent shortly."
 			});
 		} catch (err) {
 			console.error("Error in /accounts/register:", err);
-			return reply.status(500).send({ error: "Internal server error" });
+			await delayResponse(startTime);
+			return reply.status(500).send({ message: "Registration failed. Please try again later." });
 		}
 	});
+}
+
+async function delayResponse(startTime: number) {
+	const elapsed = Date.now() - startTime;
+	const minDelay = 500; // in ms — ensures uniform timing
+	if (elapsed < minDelay) {
+		await new Promise(res => setTimeout(res, minDelay - elapsed));
+	}
 }

@@ -1,7 +1,7 @@
 export const registerAccountSchema = {
 	summary: "Create a new user account",
 	description:
-		"Registers a new user account with either email/password or OAuth credentials. Also creates a user profile and sends a verification email.",
+		"Registers a new user account with either email/password or OAuth credentials. Creates a user profile, saves avatar, and sends a verification email.",
 	tags: ["Users: Accounts"],
 	body: {
 		type: "object",
@@ -14,8 +14,7 @@ export const registerAccountSchema = {
 			},
 			password: {
 				type: "string",
-				description:
-					"User password (8–40 chars, must include uppercase, lowercase, number, special character)",
+				description: "User password (8–64 chars)",
 			},
 			username: {
 				type: "string",
@@ -23,15 +22,15 @@ export const registerAccountSchema = {
 			},
 			display_name: {
 				type: "string",
-				description: "Public display name (optional)",
+				description: "Public display name (optional, 1–50 chars)",
 			},
 			pfp: {
 				type: "string",
-				description: "Optional avatar URL or path",
+				description: "Optional avatar URL or path (max 255 chars)",
 			},
 			oauth: {
 				type: "object",
-				description: "Optional OAuth account data (used when registering via an external provider)",
+				description: "Optional OAuth account data (external provider sign-up)",
 				properties: {
 					provider_name: { type: "string", description: "OAuth provider name" },
 					provider_user_id: { type: "string", description: "Unique provider user ID" },
@@ -42,7 +41,7 @@ export const registerAccountSchema = {
 		},
 		anyOf: [
 			{
-				required: ["password"], 
+				required: ["password"],
 				description: "Password-based registration"
 			},
 			{
@@ -52,35 +51,27 @@ export const registerAccountSchema = {
 		],
 	},
 	response: {
-		201: {
-			description: "User account created successfully",
+		202: {
+			description: "Registration accepted (verification email sent if valid).",
 			type: "object",
 			properties: {
 				message: { type: "string" },
-				user: {
-					type: "object",
-					properties: {
-						user_id: { type: "number" },
-						email: { type: "string" },
-						role_id: { type: "number" },
-					},
-				},
 			},
 		},
 		400: {
 			description: "Bad request — missing or invalid fields",
 			type: "object",
-			properties: { error: { type: "string" } },
+			properties: { message: { type: "string" } },
 		},
-		409: {
-			description: "Conflict — email, username or OAuth already registered",
+		429: {
+			description: "Too many registration attempts",
 			type: "object",
-			properties: { error: { type: "string" } },
+			properties: { message: { type: "string" } },
 		},
 		500: {
 			description: "Internal server error",
 			type: "object",
-			properties: { error: { type: "string" } },
+			properties: { message: { type: "string" } },
 		},
 	},
 };

@@ -1,6 +1,6 @@
 /**
  * @file backend/tests/routes/users/accounts/register.test.ts
- * @description Optimized and corrected tests for the user account registration route.
+ * @description Updated tests for the user account registration route (OWASP-compliant).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -17,18 +17,15 @@ describe("POST /accounts/register", () => {
 	};
 
 	beforeEach(async () => {
-		// Reset module registry so doMock works cleanly
 		vi.resetModules();
 		vi.restoreAllMocks();
 
 		// --- Mocks ---
-		// geoip-lite mock
 		vi.doMock("geoip-lite", () => ({
 			__esModule: true,
 			default: { lookup: vi.fn() },
 		}));
 
-		// main DB wrappers mock
 		vi.doMock("../../../../src/db/wrappers/main/index.js", () => ({
 			__esModule: true,
 			createUser: vi.fn(),
@@ -39,7 +36,6 @@ describe("POST /accounts/register", () => {
 			getRoleByName: vi.fn().mockReturnValue({ role_id: 1, role_name: "unverified" }),
 		}));
 
-		// auth DB wrappers mock
 		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
 			__esModule: true,
 			getOauthAccountByProviderAndUserId: vi.fn(),
@@ -47,9 +43,7 @@ describe("POST /accounts/register", () => {
 			createEmailVerification: vi.fn().mockResolvedValue({ email: "user@example.com", token: "token123" }),
 		}));
 
-		// crypto utils mock - deterministic and no env/bcrypt dependency
 		vi.doMock("../../../../src/utils/crypto.js", () => {
-			// deterministic token + encrypt/decrypt pair for tests
 			return {
 				__esModule: true,
 				hashString: vi.fn(async (plain: string) => `hashed_test_${plain}`),
@@ -65,13 +59,12 @@ describe("POST /accounts/register", () => {
 			};
 		});
 
-		// userData mock
 		vi.doMock("../../../../src/utils/userData.js", () => ({
 			__esModule: true,
 			saveAvatarFromUrl: vi.fn(),
 		}));
 
-		// Import route AFTER the mocks are registered
+		// Import route AFTER mocks
 		const mod = await import("../../../../src/routes/users/accounts/register.route.js");
 		const { newUserAccountRoutes } = mod;
 
@@ -80,7 +73,7 @@ describe("POST /accounts/register", () => {
 		fastify.register(newUserAccountRoutes);
 		await fastify.ready();
 
-		// Import mocked modules so tests can inspect mock calls
+		// Import mocks for assertions
 		const geoip = await import("geoip-lite");
 		const main = await import("../../../../src/db/wrappers/main/index.js");
 		const auth = await import("../../../../src/db/wrappers/auth/index.js");
@@ -104,46 +97,55 @@ describe("POST /accounts/register", () => {
 		const payload = { email: "user@example.com", password: "Aa1!aaaa" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(400);
-		expect(res.json()).toHaveProperty("error", "Username is required");
+		const body = res.json();
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/invalid registration/i);
 	});
 
 	it("returns 400 for invalid email", async () => {
-		const payload = { username: "user123", email: "bad.@email.com", password: "Aa1!aaaa" };
+		const payload = { username: "user123", email: "invalid-email", password: "Aa1!aaaa" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(400);
-		expect(res.json()).toHaveProperty("error", "Invalid email format");
+		const body = res.json();
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/invalid registration/i);
 	});
 
 	it("returns 400 when neither password nor oauth provided", async () => {
 		const payload = { username: "user123", email: "user@example.com" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(400);
-		expect(res.json()).toHaveProperty("error", "Either password or OAuth data is required");
+		const body = res.json();
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/missing authentication/i);
 	});
 
-	it("returns 409 if email already exists", async () => {
+	it("returns 202 if email already exists (no enumeration)", async () => {
 		(mocks.main.getUserByEmail as any).mockReturnValue({ user_id: 1 });
 		const payload = { username: "user123", email: "exists@example.com", password: "Aa1!aaaa" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(409);
-		expect(res.json()).toHaveProperty("error", "User with this email already exists");
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("message");
+		expect(res.json().message).toMatch(/verification email/i);
 	});
 
-	it("returns 409 if username already taken", async () => {
+	it("returns 202 if username already taken (no enumeration)", async () => {
 		(mocks.main.getProfileByUsername as any).mockReturnValue({ profile_id: 5 });
 		const payload = { username: "taken_name", email: "user2@example.com", password: "Aa1!aaaa" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(409);
-		expect(res.json()).toHaveProperty("error", "Username is already taken");
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("message");
+		expect(res.json().message).toMatch(/verification email/i);
 	});
 
-	it("creates user with password and returns 201", async () => {
+	it("creates user with password and returns 202 (accepted)", async () => {
 		const payload = { username: "newuser", email: "new@example.com", password: "Aa1!aaaa!" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(201);
+		expect(res.statusCode).toBe(202);
 		const body = res.json();
-		expect(body).toHaveProperty("message", "User account created successfully");
-		expect(body.user).toMatchObject({ user_id: 1, email: "new@example.com", role_id: 1 });
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/verification email/i);
+		// ensure profile creation called with expected args
 		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "newuser", "newuser", undefined, undefined);
 	});
 
@@ -156,7 +158,7 @@ describe("POST /accounts/register", () => {
 			pfp: "https://example.com/avatar.png",
 		};
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(201);
+		expect(res.statusCode).toBe(202);
 		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "oauthuser", "oauthuser", "avatar_55.png", undefined);
 		expect((mocks.auth.createOauthAccount as any)).toHaveBeenCalled();
 	});
@@ -170,7 +172,7 @@ describe("POST /accounts/register", () => {
 			pfp: "https://bad.example/avatar.png",
 		};
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(201);
+		expect(res.statusCode).toBe(202);
 		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "userNoAvatar", "userNoAvatar", undefined, undefined);
 	});
 
@@ -179,7 +181,9 @@ describe("POST /accounts/register", () => {
 		const payload = { username: "failuser", email: "failuser@example.com", password: "Aa1!aaaa!" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
 		expect(res.statusCode).toBe(500);
-		expect(res.json()).toHaveProperty("error", "Failed to create user");
+		const body = res.json();
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/registration failed/i);
 	});
 
 	it("sets countryId correctly based on request IP", async () => {
@@ -190,7 +194,7 @@ describe("POST /accounts/register", () => {
 
 		const payload = { username: "userWithIp", email: "ip@example.com", password: "Aa1!aaaa!" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
-		expect(res.statusCode).toBe(201);
+		expect(res.statusCode).toBe(202);
 		expect((mocks.main.getCountryByCode as any)).toHaveBeenCalledWith("US");
 
 		// fallback on x-forwarded-for
@@ -202,20 +206,55 @@ describe("POST /accounts/register", () => {
 			payload,
 			headers: { "x-forwarded-for": testIp }
 		});
-		expect(resHeader.statusCode).toBe(201);
+		expect(resHeader.statusCode).toBe(202);
 		expect((mocks.main.getCountryByCode as any)).toHaveBeenCalledWith("US");
 
 		// geoip returns undefined
 		(mocks.geoip.default.lookup as any).mockReturnValue(undefined);
 		(mocks.main.getCountryByCode as any).mockClear();
 		const resGeoUndefined = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
-		expect(resGeoUndefined.statusCode).toBe(201);
+		expect(resGeoUndefined.statusCode).toBe(202);
 		expect((mocks.main.getCountryByCode as any)).not.toHaveBeenCalled();
 
 		// getCountryByCode returns undefined
 		(mocks.geoip.default.lookup as any).mockReturnValue({ country: "US" });
 		(mocks.main.getCountryByCode as any).mockReturnValue(undefined);
 		const resCountryUndefined = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
-		expect(resCountryUndefined.statusCode).toBe(201);
+		expect(resCountryUndefined.statusCode).toBe(202);
+	});
+
+	it("rate limits after too many attempts and returns Retry-After header", async () => {
+		// Use a dedicated IP to avoid interference with other tests
+		const testIp = "9.9.9.9";
+		const payload = { username: "rateuser", email: "rate@example.com", password: "Aa1!aaaa!" };
+
+		// RATE_LIMIT is 5 in route; perform 5 valid requests first
+		for (let i = 0; i < 5; i++) {
+			const r = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
+			// expected accepted (202) for valid requests
+			expect(r.statusCode).toBe(202);
+		}
+
+		// 6th request should be rate-limited
+		const r6 = await fastify.inject({ method: "POST", url: "/accounts/register", payload, ip: testIp });
+		expect(r6.statusCode).toBe(429);
+		expect(r6.headers).toHaveProperty("retry-after");
+		expect(r6.json()).toHaveProperty("message");
+		expect(r6.json().message).toMatch(/too many registration attempts/i);
+	});
+
+	it ("Returns 400 for password beeing too short or too long", async () => {
+		const shortPayload = { username: "user123", email: "password@example.com", password: "short" };
+		const resShort = await fastify.inject({ method: "POST", url: "/accounts/register", payload: shortPayload });
+		expect(resShort.statusCode).toBe(400);
+		expect(resShort.json()).toHaveProperty("message");
+		expect(resShort.json().message).toMatch(/Invalid password format./i);
+
+		const longPassword = "A".repeat(65); // 65 chars, exceeding max length
+		const longPayload = { username: "user123", email: "password@example.com", password: longPassword };
+		const resLong = await fastify.inject({ method: "POST", url: "/accounts/register", payload: longPayload });
+		expect(resLong.statusCode).toBe(400);
+		expect(resLong.json()).toHaveProperty("message");
+		expect(resLong.json().message).toMatch(/Invalid password format./i);
 	});
 });
