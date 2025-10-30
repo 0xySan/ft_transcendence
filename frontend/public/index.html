@@ -1,35 +1,46 @@
 <!DOCTYPE html>
 <html data-theme="catppuccin-macchiato" lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>Example</title>
-	<link href="style.css" rel="stylesheet">
-	<script defer type="module" src="/js/dynamicLoader.js"></script>
-	<script>
-			const listeners = [];
-			function addListener(element, type, callback, options = false) {
-				element.addEventListener(type, callback, options);
-				listeners.push({ element, type, callback, options });
-			}
-	</script>
-	<!-- Flag to indicate full page load completion -> see dupChecker -->
-	<script>
-		window.isFullPageLoaded = true;
-	</script>
-</head>
-<body class="flex-space-between background-color-base">
-	<header class="nav-bar">
-		<nav>
-			<a href="/">Home</a>
-		</nav>
-	</header>
+	<head>
+		<meta charset="UTF-8">
+		<title>Example</title>
+		<link href="style.css" rel="stylesheet">
+		<script defer type="module" src="/js/dynamicLoader.js"></script>
+		<script>
+				const listeners = [];
+				function addListener(element, type, callback, options = false) {
+					element.addEventListener(type, callback, options);
+					listeners.push({ element, type, callback, options });
+				}
+		</script>
+		<!-- Flag to indicate full page load completion -> see dupChecker -->
+		<script>
+			window.isFullPageLoaded = true;
+		</script>
+	</head>
+	<body class="flex-space-between background-color-base">
+		<header class="nav-bar">
+			<nav>
+				<a href="/">Home</a>
+			</nav>
+		</header>
 
-	<div id="content" class="flex-1 p-4">
-		<!-- Dynamic content goes here -->
-	</div>
+		<div id="content" class="flex-1 p-4">
+			<!-- Dynamic content goes here -->
+		</div>
 
-	<footer class="footer-bar">
-		<p>© 2025 Copyrights</p>
-	</footer>
-</body>
+		<div class="footer">
+	    	<div id="link-text">
+	    	    <a href="/home" class="footer-link">Home</a>
+	    	    <span class="divider"></span>
+	    	    <a href="/privacy" class="footer-link">Privacy Policy</a>
+	    	    <span class="divider"></span>
+	    	    <a href="https://github.com/0xySan/ft_transcendence" class="footer-link">GitHub</a>
+	    	    <span class="divider"></span>
+	    	    <a href="/about" class="footer-link">About</a>
+	    	</div>
+	    	<div id="copyright-text">
+	    	    © 2025 Transcendence 42. All rights reserved.
+			</div>
+	    </div>
+	</body>
 </html>
