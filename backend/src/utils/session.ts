@@ -12,7 +12,7 @@ export function createNewSession(userId: string, opts?: { ip?: string; userAgent
 	const ttlMs = (opts && opts.ttlMs) || DEFAULT_TTL_MS;
 
 	// Generate session token
-	const token = crypto.generateRandomToken(32);
+	const token = crypto.generateRandomToken(128);
 	const tokenHash = crypto.encryptSecret(token);
 
 	const expiresAt = new Date(Date.now() + ttlMs);

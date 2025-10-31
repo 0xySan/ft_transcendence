@@ -60,8 +60,9 @@ export function googleRoutes(fastify: FastifyInstance) {
 
 			const oauthAccount = getOauthAccountByProviderAndUserId('google', userInfo.id);
 			
-			if (oauthAccount)
-				return returnOauthSession(oauthAccount, request, reply);
+			if (oauthAccount) {
+				return await returnOauthSession(oauthAccount, request, reply);
+			}
 
 			const existingUser = getUserByEmail(userInfo.email);
 			const query = new URLSearchParams({

@@ -90,7 +90,7 @@ export function discordRoutes(fastify: FastifyInstance) {
 			const oauthAccount = getOauthAccountByProviderAndUserId('discord', userInfo.id);
 
 			if (oauthAccount)
-				return returnOauthSession(oauthAccount, request, reply);
+				return await returnOauthSession(oauthAccount, request, reply);
 
 			const existingUser = getUserByEmail(userInfo.email);
 

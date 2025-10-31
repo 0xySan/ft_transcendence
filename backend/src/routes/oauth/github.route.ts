@@ -24,7 +24,7 @@ interface GithubUserInfo {
 	email: string;
 	verified_email?: boolean;
 	name: string;
-	picture?: string;
+	avatar_url?: string;
 }
 
 export function githubRoutes(fastify: FastifyInstance) {
@@ -69,7 +69,7 @@ export function githubRoutes(fastify: FastifyInstance) {
                     provider: 'github',
                     providerId: userInfo.id,
                     name: userInfo.name,
-                    picture: userInfo.picture || ''
+                    picture: userInfo.avatar_url || ''
                 }).toString();
 
             if (existingUser)

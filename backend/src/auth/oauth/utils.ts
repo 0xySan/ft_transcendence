@@ -13,21 +13,22 @@ import { createNewSession } from "../../utils/session.js";
  * @param reply - The Fastify reply object
  * @returns A redirect response to the auth success page or an error response
  */
-export function returnOauthSession(oauthAccount: oauthAccount, request: any, reply: any) {
+export async function returnOauthSession(oauthAccount: any, request: any, reply: any) {
 	const result = createNewSession(oauthAccount.user_id, {
 		ip: request.ip,
 		userAgent: request.headers['user-agent']
 	});
 
-	if (!result) return reply.status(500).send({ error: 'Failed to create session' });
+	if (!result) {
+		return reply.status(500).send({ error: 'Failed to create session' });
+	}
 
 	reply.setCookie('session', result.token, {
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV !== 'test',
-		sameSite: 'lax',
+		sameSite: 'Strict',
 		maxAge: 60 * 60 * 24 * 30 // 30 days
 	});
-
 	return reply.redirect(`/auth/success?provider=${oauthAccount.provider_name}`);
 }
