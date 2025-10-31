@@ -66,33 +66,39 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			// --- Basic validation (no enumeration risk) ---
 			if (!email || !emailRegex.test(email) || !username || !usernameRegex.test(username)) {
-				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(400).send({
 					message: "Invalid registration details. Please check your input."
 				});
 			}
 
 			if (!password && !oauth) {
-				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(400).send({ message: "Missing authentication information." });
 			}
 
 			if (password && !passwordRegex.test(password)) {
-				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(400).send({
 					message: "Invalid password format."
 				});
 			}
 
-			// --- Silent existence checks (no error exposure) protect against user enumeration ---
-			const existingUser = getUserByEmail(email);
+			
 			const existingProfile = getProfileByUsername(username);
+
+			if (existingProfile) {
+				await delayResponse(startTime, MIN_DELAY);
+				return reply.status(400).send({
+					message: "Username is already taken."
+				});
+			}
+
+			const existingUser = getUserByEmail(email);
+
+			// --- Silent existence checks (no error exposure) protect against user enumeration ---
 			const existingOauth = oauth
 				? getOauthAccountByProviderAndUserId(oauth.provider_name, oauth.provider_user_id)
 				: null;
 
-			if (existingUser || existingProfile || existingOauth) {
-				console.warn(`Duplicate registration attempt for ${email || username}`);
+			if (existingOauth || existingUser) {
 				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(202).send({
 					message: "If the registration is valid, a verification email will be sent shortly."

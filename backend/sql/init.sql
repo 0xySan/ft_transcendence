@@ -17,7 +17,7 @@ CREATE TABLE user_roles (
 -- Table: users
 -- Stores main account information and links to role.
 CREATE TABLE users (
-    user_id TEXT PRIMARY KEY,									-- uuid v4 unique identifier
+    user_id TEXT PRIMARY KEY,									-- uuid v7 unique identifier
     email TEXT UNIQUE NOT NULL CHECK(
         length(email) <= 255 AND 
         email LIKE '%@%.%' AND 

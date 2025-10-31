@@ -89,8 +89,7 @@ export async function hashString(password: string): Promise<string> {
  */
 export async function verifyHashedString(password: string, hashed: string): Promise<boolean> {
 	if (typeof password !== 'string' || typeof hashed !== 'string') return false;
-	if (password.length === 0 || password.length > 64) return false;
-	if (hashed.length === 0) return false; // avoid doS with extremely long passwords
+	if (password.length === 0 || password.length > 64) return false; // avoid doS with extremely long passwords
 
 	try {
 		return await argon2.verify(hashed, password);

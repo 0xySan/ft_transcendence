@@ -23,7 +23,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			INSERT INTO users (user_id, email, password_hash, role_id)
 			VALUES (?, ?, ?, ?)
 		`);
-		const res = insertUser.run(userId, "2fa_user@example.local", "hashed-password", "1");
+		insertUser.run(userId, "2fa_user@example.local", "hashed-password", 1);
 	});
 
 	it("should create a 2FA method with valid data", () => {

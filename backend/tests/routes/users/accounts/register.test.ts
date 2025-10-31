@@ -129,13 +129,13 @@ describe("POST /accounts/register", () => {
 		expect(res.json().message).toMatch(/verification email/i);
 	});
 
-	it("returns 202 if username already taken (no enumeration)", async () => {
+	it("returns 400 if username already taken (no enumeration)", async () => {
 		(mocks.main.getProfileByUsername as any).mockReturnValue({ profile_id: 5 });
 		const payload = { username: "taken_name", email: "user2@example.com", password: "Aa1!aaaa" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(202);
+		expect(res.statusCode).toBe(400);
 		expect(res.json()).toHaveProperty("message");
-		expect(res.json().message).toMatch(/verification email/i);
+		expect(res.json().message).toMatch(/Username is already taken./i);
 	});
 
 	it("creates user with password and returns 202 (accepted)", async () => {
@@ -243,7 +243,7 @@ describe("POST /accounts/register", () => {
 		expect(r6.json().message).toMatch(/Too many requests. Try again later./i);
 	});
 
-	it ("Returns 400 for password beeing too short or too long", async () => {
+	it ("Returns 400 for password being too short or too long", async () => {
 		const shortPayload = { username: "user123", email: "password@example.com", password: "short" };
 		const resShort = await fastify.inject({ method: "POST", url: "/accounts/register", payload: shortPayload });
 		expect(resShort.statusCode).toBe(400);

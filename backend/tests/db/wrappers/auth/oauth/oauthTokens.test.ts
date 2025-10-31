@@ -27,12 +27,12 @@ describe("OauthTokens wrapper", () => {
 			`INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)`
 		);
 		const userId = uuidv7();
-		const u = insertUserStmt.run(userId, "OauthTokenUsers@test.com", "hashed-pass", 1);
+		insertUserStmt.run(userId, "OauthTokenUsers@test.com", "hashed-pass", 1);
 
 		const insertProviderStmt = db.prepare(
 			`INSERT INTO oauth_providers (name, discovery_url, client_id, is_enabled) VALUES (?, ?, ?, ?)`
 		);
-		const p = insertProviderStmt.run("TestProvider", "https://testprovider.com/.well-known/openid-configuration", "client-id-123", 1);
+		insertProviderStmt.run("TestProvider", "https://testprovider.com/.well-known/openid-configuration", "client-id-123", 1);
 		const providerName = "TestProvider";
 
 		const insertAccountStmt = db.prepare(

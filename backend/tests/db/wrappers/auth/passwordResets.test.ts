@@ -28,8 +28,8 @@ describe("passwordResets wrapper", () => {
 			INSERT INTO users (user_id, email, password_hash, role_id)
 			VALUES (?, ?, ?, ?)
 		`);
-		const r1 = insertUser.run(userId1, "test_user1@example.local", "hash-user1", 1);
-		const r2 = insertUser.run(userId2, "test_user2@example.local", "hash-user2", 1);
+		insertUser.run(userId1, "test_user1@example.local", "hash-user1", 1);
+		insertUser.run(userId2, "test_user2@example.local", "hash-user2", 1);
 
 	});
 

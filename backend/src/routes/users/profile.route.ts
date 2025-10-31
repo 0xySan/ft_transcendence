@@ -31,7 +31,6 @@ export async function userProfileRoutes(fastify: FastifyInstance) {
 
 			const profile = getProfileByUserId(userId);
 			const role = getRoleById(user.role_id);
-			console.error("User profile fetched:", { user, profile, role });
 			return reply.status(200).send({
 				user: {
 					user_id: user.user_id,

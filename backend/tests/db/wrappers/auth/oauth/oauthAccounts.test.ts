@@ -20,7 +20,7 @@ describe("oauthAccount wrapper - tests", () => {
         const insertUser = db.prepare(`
             INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)
         `);
-        const userRes = insertUser.run(userId, "oauth_test_user@example.com", "hashed-pass", 1);
+        insertUser.run(userId, "oauth_test_user@example.com", "hashed-pass", 1);
 
         const insertProvider = db.prepare(`
             INSERT INTO oauth_providers (name, discovery_url, client_id, is_enabled) VALUES (?, ?, ?, ?)

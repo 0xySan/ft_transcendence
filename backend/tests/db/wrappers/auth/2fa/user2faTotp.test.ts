@@ -25,7 +25,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 			INSERT INTO users (user_id, email, password_hash, role_id)
 			VALUES (?, ?, ?, ?)
 		`);
-		const userRes = insertUser.run(userId, "totp@example.local", "hashed-password", 1);
+		insertUser.run(userId, "totp@example.local", "hashed-password", 1);
 
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({

@@ -33,14 +33,6 @@ describe("UserProfiles wrapper", () => {
 
 	// Prepare initial users and profiles before tests
 	beforeAll(() => {
-		// --- Ensure updated_at column exists on user_profiles (trigger expects it) ---
-		// If the column already exists this will throw; swallow that error.
-		try {
-			db.prepare(`ALTER TABLE user_profiles ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`).run();
-		} catch (err) {
-			// ignore if column already exists or ALTER not applicable
-		}
-
 		userId1 = uuidv7();
 		userId2 = uuidv7();
 		userId3 = uuidv7();
@@ -50,9 +42,9 @@ describe("UserProfiles wrapper", () => {
 			INSERT INTO users (user_id, email, password_hash, role_id)
 			VALUES (?, ?, ?, ?)
 		`);
-		const r1 = insertUser.run(userId1, "test_admin@example.local", "hash-admin", 1);
-		const r2 = insertUser.run(userId2, "test_guest@example.local", "hash-guest", 1);
-		const r3 = insertUser.run(userId3, "test_player@example.local", "hash-player", 1);
+		insertUser.run(userId1, "test_admin@example.local", "hash-admin", 1);
+		insertUser.run(userId2, "test_guest@example.local", "hash-guest", 1);
+		insertUser.run(userId3, "test_player@example.local", "hash-player", 1);
 
 		// --- Insert initial profiles for those users ---
 		const insertProfile = db.prepare(`
@@ -114,7 +106,7 @@ describe("UserProfiles wrapper", () => {
 		// create a new user first to satisfy FK
 		const newUserId = uuidv7();
 		const addUser = db.prepare(`INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)`);
-		const r = addUser.run(newUserId, "test_random@example.local", "hash-random", 1);
+		addUser.run(newUserId, "test_random@example.local", "hash-random", 1);
 
 		// create profile for that new user
 		const newProfile = createProfile(
@@ -138,7 +130,7 @@ describe("UserProfiles wrapper", () => {
 		// create another user
 		const newUserId = uuidv7();
 		const addUser = db.prepare(`INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)`);
-		const r = addUser.run(newUserId, "test_random2@example.local", "hash-random2", 1);
+		addUser.run(newUserId, "test_random2@example.local", "hash-random2", 1);
 
 		// attempt to create a profile with an already used username => should fail (returns undefined)
 		const duplicate = createProfile(newUserId, "random_player", "Another", "/avatars/another.png", 1, "bio");
