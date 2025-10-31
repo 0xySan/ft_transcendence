@@ -28,7 +28,7 @@ describe("session utilities", () => {
 		}));
 		getSessionByTokenHashSpy = vi.spyOn(dbModule, "getSessionByTokenHash").mockImplementation((hash: string) => ({
 			id: 1,
-			user_id: 42,
+			user_id: "42",
 			session_token_hash: "dummyToken_hashed",
 			expires_at: Math.floor(Date.now() / 1000) + 1000,
 			is_persistent: false,
@@ -45,19 +45,19 @@ describe("session utilities", () => {
 	});
 
 	it("createNewSession should return session and token", () => {
-		const result = sessionModule.createNewSession(42, { ip: "127.0.0.1", userAgent: "test-agent" });
+		const result = sessionModule.createNewSession("42", { ip: "127.0.0.1", userAgent: "test-agent" });
 
 		expect(result).toBeDefined();
 		expect(result?.token).toBe("dummyToken");
 		expect(result?.session).toHaveProperty("id");
 		expect(createSessionSpy).toHaveBeenCalled();
-		expect(randomTokenSpy).toHaveBeenCalledWith(32);
+		expect(randomTokenSpy).toHaveBeenCalledWith(128);
 		expect(encryptSecretSpy).toHaveBeenCalledWith("dummyToken");
 	});
 
 	it("createNewSession should return undefined if DB creation fails", () => {
 		createSessionSpy.mockReturnValueOnce(undefined);
-		const result = sessionModule.createNewSession(42);
+		const result = sessionModule.createNewSession("42");
 		expect(result).toBeUndefined();
 	});
 

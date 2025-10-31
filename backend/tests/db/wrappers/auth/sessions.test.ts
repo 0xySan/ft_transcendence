@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../src/db/index.js";
 import {
 	createSession,
@@ -11,20 +13,16 @@ import {
 } from "../../../../src/db/wrappers/auth/sessions.js";
 
 describe("sessions wrapper - extended tests", () => {
-	let userId: number;
+	let userId: string;
 	let createdSessionId: number | undefined;
 
 	beforeAll(() => {
-		try {
-			db.prepare(`INSERT OR IGNORE INTO user_roles (role_id, name) VALUES (?, ?)`).run(1, "testRole");
-		} catch {}
-
+			userId = uuidv7();
 		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
 		`);
-		const res = insertUser.run("extended_user@example.local", "hashed-password", 1);
-		userId = Number(res.lastInsertRowid);
+		insertUser.run(userId, "extended_user@example.local", "hashed-password", 1);
 	});
 
 	it("should store very long user agent string", () => {

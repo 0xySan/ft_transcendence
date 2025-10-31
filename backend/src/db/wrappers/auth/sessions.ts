@@ -3,11 +3,10 @@
  * Provides retrieval, creation, and listing utilities.
 */
 
-import { numericToAlpha2 } from "i18n-iso-countries";
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface session {
-	user_id:	    	    number;
+	user_id:	    	    string;
 	session_token_hash:		string;
 	created_at:		        number;
 	expires_at:		        number;
@@ -39,7 +38,7 @@ export function getSessionByTokenHash(token_hash: string): session | undefined {
  * @param user_id - The user ID to filter sessions
  * @returns An array of sessions objects, or an empty array if none found
  */
-export function getSessionsByUserId(user_id: number): session[] {
+export function getSessionsByUserId(user_id: string): session[] {
     const stmt = db.prepare("SELECT * FROM sessions WHERE user_id = ?");
     return (stmt.all(user_id) as session[]);
 }
@@ -49,7 +48,7 @@ export function getSessionsByUserId(user_id: number): session[] {
  * @param user_id - The user ID to filter sessions
  * @returns An array of active sessions objects, or an empty array if none found
  */
-export function getActiveSessionsByUserId(user_id: number): session[] {
+export function getActiveSessionsByUserId(user_id: string): session[] {
 	try {
 		const currentTime = Math.floor(Date.now() / 1000);
 		const stmt = db.prepare(`SELECT * FROM sessions WHERE user_id = ? AND expires_at > ?`);

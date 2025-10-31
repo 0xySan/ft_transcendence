@@ -13,7 +13,7 @@ export interface Game {
 	mode: "local" | "online" | "tournament";
 	status: "completed" | "ongoing" | "abandoned" | "waiting";
 	score_limit: number;
-	winner_id?: number;
+	winner_id?: string;
 	max_players: number;
 }
 

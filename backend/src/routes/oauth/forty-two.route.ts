@@ -65,7 +65,7 @@ export function ftRoutes(fastify: FastifyInstance) {
             const oauthAccount = getOauthAccountByProviderAndUserId('42', userInfo.id);
 
             if (oauthAccount)
-                return returnOauthSession(oauthAccount, request, reply);
+                return await returnOauthSession(oauthAccount, request, reply);
 
             const existingUser = getUserByEmail(userInfo.email);
 			const query = new URLSearchParams({

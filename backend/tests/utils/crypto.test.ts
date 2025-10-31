@@ -1,6 +1,6 @@
 /**
  * @file crypto.test.ts
- * Tests for crypto.ts
+ * Tests for crypto.ts (argon2 + AES)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -11,10 +11,9 @@ describe('crypto utilities', () => {
 
 	beforeEach(async () => {
 		vi.restoreAllMocks();
-		// Set a dummy 32-byte key (hex) for AES-256
 		process.env.ENCRYPTION_KEY =
 			'0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-		vi.resetModules(); // Re-import module to take new ENCRYPTION_KEY into account
+		vi.resetModules();
 		cryptoModule = await import('../../src/utils/crypto.js');
 	});
 
@@ -33,14 +32,15 @@ describe('crypto utilities', () => {
 		expect(decrypted).toBe(secret);
 	});
 
-	it('decryptSecret should return raw string if ENCRYPTION_KEY is missing', async () => {
+	it('decryptSecret should return the original secret', () => {
 		process.env.ENCRYPTION_KEY = '';
 		vi.resetModules();
-		cryptoModule = await import('../../src/utils/crypto.js');
 
-		const buffer = Buffer.from('plaintext', 'utf8');
-		const decrypted = cryptoModule.decryptSecret(buffer);
-		expect(decrypted).toBe('plaintext');
+		const secret = 'anotherSecret';
+		const encrypted = cryptoModule.encryptSecret(secret);
+
+		const decrypted = cryptoModule.decryptSecret(encrypted);
+		expect(decrypted).toBe(secret);
 	});
 
 	it('encryptSecret should throw if ENCRYPTION_KEY is missing', async () => {
@@ -56,7 +56,7 @@ describe('crypto utilities', () => {
 	it('generateRandomToken should produce hex string of correct length', () => {
 		const token = cryptoModule.generateRandomToken(16); // 16 bytes
 		expect(token).toMatch(/^[0-9a-f]+$/);
-		expect(token.length).toBe(32); // 16 bytes = 32 hex chars
+		expect(token.length).toBe(32);
 
 		const token2 = cryptoModule.generateRandomToken(8);
 		expect(token2.length).toBe(16);
@@ -70,24 +70,32 @@ describe('crypto utilities', () => {
 		expect(enc1.equals(enc2)).toBe(false);
 	});
 
-	it('hashPassword should generate a valid bcrypt hash', async () => {
+	it('hashString should generate a valid argon2id hash', async () => {
 		const password = 'MySuperPassword';
-		const hash = await cryptoModule.hashPassword(password);
+		const hash = await cryptoModule.hashString(password);
 
-		expect(hash).toMatch(/^\$2[aby]\$/);
+		expect(hash).toMatch(/^\$argon2id\$v=\d+\$m=\d+,t=\d+,p=\d+\$/);
 		expect(hash.length).toBeGreaterThan(50);
 		expect(hash).not.toBe(password);
 	});
 
-	it('verifyPassword should correctly validate hashed passwords', async () => {
+	it('verifyHashedString should correctly validate hashed passwords', async () => {
 		const password = 'SecurePass123!';
-		const hash = await cryptoModule.hashPassword(password);
+		const hash = await cryptoModule.hashString(password);
 
-		const isValid = await cryptoModule.verifyPassword(password, hash);
-		const isInvalid = await cryptoModule.verifyPassword('wrongPassword', hash);
+		const isValid = await cryptoModule.verifyHashedString(password, hash);
+		const isInvalid = await cryptoModule.verifyHashedString('wrongPassword', hash);
 
 		expect(isValid).toBe(true);
 		expect(isInvalid).toBe(false);
 	});
 
+	it('verifyHashedString should reject invalid inputs', async () => {
+		const hash = await cryptoModule.hashString('password');
+		expect(await cryptoModule.verifyHashedString('', hash)).toBe(false);
+		expect(await cryptoModule.verifyHashedString('a'.repeat(65), hash)).toBe(false);
+		expect(await cryptoModule.verifyHashedString('password', '')).toBe(false);
+		expect(await cryptoModule.verifyHashedString('password', null as any)).toBe(false);
+		expect(await cryptoModule.verifyHashedString(null as any, hash)).toBe(false);
+	});
 });

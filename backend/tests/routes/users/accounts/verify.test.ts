@@ -1,27 +1,58 @@
 /**
  * backend/tests/routes/users/accounts/verify.test.ts
- * Tests for src/routes/users/accounts/verify.route.ts
+ * Tests for src/routes/users/accounts/verify.route.ts (updated for Argon2 + rate limit + timing)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
+import { v7 as uuidv7 } from "uuid";
 
-describe("GET /accounts/verify", () => {
+describe("GET /accounts/verify (Argon2 + rate limit + timing)", () => {
 	let fastify: ReturnType<typeof Fastify>;
 	let mocks: {
 		auth: any;
 		main: any;
-		crypto: any;
 	};
-
 	const TEST_TOKEN = "fixed_test_token";
-	const STORED_BASE64 = Buffer.from(TEST_TOKEN, "utf8").toString("base64"); // what we store in DB
+	let STORED_HASH: string;
 
 	beforeEach(async () => {
 		vi.resetModules();
 		vi.restoreAllMocks();
 
-		// Mock auth wrappers (DB)
+		// --- Prepare a real Argon2 hash for TEST_TOKEN (use real crypto utils) ---
+		const cryptoUtils = await import("../../../../src/utils/crypto.js");
+		STORED_HASH = await cryptoUtils.hashString(TEST_TOKEN);
+
+		// --- Mock utils/security to avoid waiting during tests and provide deterministic rate limiting ---
+		vi.doMock("../../../../src/utils/security.js", () => ({
+			__esModule: true,
+			// A simple test-friendly checkRateLimit that mirrors the behaviour used by the route.
+			checkRateLimit: (requestCount: Record<string, { count: number; lastReset: number }>,
+							 clientIp: string,
+							 reply: any,
+							 rateLimit: number,
+							 rateWindow: number) => {
+				const now = Date.now();
+				const rate = requestCount[clientIp] || { count: 0, lastReset: now };
+				if (now - rate.lastReset > rateWindow) {
+					rate.count = 0;
+					rate.lastReset = now;
+				}
+				rate.count++;
+				requestCount[clientIp] = rate;
+				if (rate.count > rateLimit) {
+					reply.header("Retry-After", Math.ceil(rateWindow / 1000));
+					reply.status(429).send({ message: "Too many verification attempts. Try again later." });
+					return false;
+				}
+				return true;
+			},
+			// Make delayResponse a no-op in tests to speed them up
+			delayResponse: async (_startTime: number, _minDelay: number) => { /* no-op */ },
+		}));
+
+		// Mock auth wrappers (DB access)
 		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
 			__esModule: true,
 			getEmailVerificationsByUserId: vi.fn(),
@@ -35,20 +66,7 @@ describe("GET /accounts/verify", () => {
 			updateUserRole: vi.fn(),
 		}));
 
-		// Mock crypto utils (decryptSecret)
-		vi.doMock("../../../../src/utils/crypto.js", () => ({
-			__esModule: true,
-			// decryptSecret should accept Buffer and return original plaintext
-			decryptSecret: vi.fn((buf: Buffer | string) => {
-				if (typeof buf === "string") {
-					// if accidentally passed a base64 string
-					return Buffer.from(buf, "base64").toString("utf8");
-				}
-				return buf.toString("utf8");
-			}),
-		}));
-
-		// Import route AFTER mocks are registered
+		// Import and register route AFTER mocks are in place
 		const mod = await import("../../../../src/routes/users/accounts/verify.route.js");
 		const { verifyUserAccountRoutes } = mod;
 
@@ -56,12 +74,11 @@ describe("GET /accounts/verify", () => {
 		fastify.register(verifyUserAccountRoutes);
 		await fastify.ready();
 
-		// import mocks so we can inspect them
+		// import mocks so we can inspect calls
 		const auth = await import("../../../../src/db/wrappers/auth/index.js");
 		const main = await import("../../../../src/db/wrappers/main/index.js");
-		const crypto = await import("../../../../src/utils/crypto.js");
 
-		mocks = { auth, main, crypto };
+		mocks = { auth, main };
 	});
 
 	afterEach(async () => {
@@ -81,61 +98,79 @@ describe("GET /accounts/verify", () => {
 	});
 
 	it("returns 400 when user id invalid", async () => {
-		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=abc&token=${encodeURIComponent(TEST_TOKEN)}` });
+		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=invalid-uuid&token=${encodeURIComponent(TEST_TOKEN)}` });
 		expect(res.statusCode).toBe(400);
 		expect(res.payload).toContain("Invalid user id");
 	});
 
-	it("returns 404 when no records for user", async () => {
+	it("returns generic 202 when no records for user", async () => {
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([]);
-		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=1&token=${encodeURIComponent(TEST_TOKEN)}` });
-		expect(res.statusCode).toBe(404);
-		expect(res.payload).toContain("Verification record not found");
+		const validUuid = uuidv7();
+		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=${validUuid}&token=${encodeURIComponent(TEST_TOKEN)}` });
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("message");
 	});
 
-	it("returns 404 when decrypt doesn't match any record", async () => {
-		// record exists but with different token
+	it("returns generic 202 when token does not match any record", async () => {
+		const validUuid = uuidv7();
+		// record exists but token hash is for a different token
+		const otherHash = await (await import("../../../../src/utils/crypto.js")).hashString("other_token");
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([
-			{ id: 7, user_id: 1, token: Buffer.from("other_token").toString("base64"), expires_at: Date.now() + 10000 },
+			{ id: 1, user_id: validUuid, token: otherHash, expires_at: Date.now() + 10000 },
 		]);
-		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=1&token=${encodeURIComponent(TEST_TOKEN)}` });
-		expect(res.statusCode).toBe(404);
-		expect(res.payload).toContain("Verification record not found");
+		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=${validUuid}&token=${encodeURIComponent(TEST_TOKEN)}` });
+		expect(res.statusCode).toBe(202);
+		expect(mocks.auth.markEmailAsVerified).not.toHaveBeenCalled();
 	});
 
-	it("returns 400 when token is expired", async () => {
-		// record present and decrypt matches but expired
+	it("returns generic 202 when token matches but is expired", async () => {
+		const validUuid = uuidv7();
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([
-			{ id: 8, user_id: 1, token: STORED_BASE64, expires_at: Date.now() - 1000 },
+			{ id: 2, user_id: validUuid, token: STORED_HASH, expires_at: Date.now() - 1000 },
 		]);
-		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=1&token=${encodeURIComponent(TEST_TOKEN)}` });
-		expect(res.statusCode).toBe(400);
-		expect(res.payload).toContain("Verification token has expired");
+		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=${validUuid}&token=${encodeURIComponent(TEST_TOKEN)}` });
+		// route verifies hash, sees expiration, then returns generic 202 (no enumeration)
+		expect(res.statusCode).toBe(202);
+		expect(mocks.auth.markEmailAsVerified).not.toHaveBeenCalled();
 	});
 
-	it("verifies successfully and updates role", async () => {
-		// good record
-		const rec = { id: 9, user_id: 1, token: STORED_BASE64, expires_at: Date.now() + 10000 };
+	it("verifies successfully and updates role (calls markEmailAsVerified & updateUserRole)", async () => {
+		const validUuid = uuidv7();
+		const rec = { id: 3, user_id: validUuid, token: STORED_HASH, expires_at: Date.now() + 10000 };
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([rec]);
 
-		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=1&token=${encodeURIComponent(TEST_TOKEN)}` });
-		expect(res.statusCode).toBe(200);
-		expect(res.payload).toContain("Email verified successfully");
-
-		// markEmailAsVerified called with stored token
-		expect((mocks.auth.markEmailAsVerified as any)).toHaveBeenCalled();
-		// updateUserRole called with correct user_id and role_id from getRoleByName
-		expect((mocks.main.updateUserRole as any)).toHaveBeenCalledWith(1, 2);
+		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=${validUuid}&token=${encodeURIComponent(TEST_TOKEN)}` });
+		// route uses generic response to avoid enumeration, but side-effects must have run
+		expect(res.statusCode).toBe(202);
+		expect((mocks.auth.markEmailAsVerified as any)).toHaveBeenCalledWith(rec.token);
+		expect((mocks.main.updateUserRole as any)).toHaveBeenCalledWith(validUuid, 2);
 	});
 
 	it("returns 500 when markEmailAsVerified throws", async () => {
-		const rec = { id: 10, user_id: 1, token: STORED_BASE64, expires_at: Date.now() + 10000 };
+		const validUuid = uuidv7();
+		const rec = { id: 4, user_id: validUuid, token: STORED_HASH, expires_at: Date.now() + 10000 };
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([rec]);
-
 		(mocks.auth.markEmailAsVerified as any).mockImplementation(() => { throw new Error("db fail"); });
 
-		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=1&token=${encodeURIComponent(TEST_TOKEN)}` });
+		const res = await fastify.inject({ method: "GET", url: `/accounts/verify?user=${validUuid}&token=${encodeURIComponent(TEST_TOKEN)}` });
 		expect(res.statusCode).toBe(500);
 		expect(res.payload).toContain("Failed to verify email");
+	});
+
+	it("enforces rate limit (returns 429 after too many requests)", async () => {
+		// Use same ip; route's in-test checkRateLimit increments per request
+		const validUuid = uuidv7();
+		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([]);
+
+		// number of allowed requests is module constant; replicate behavior from route
+		const RATE_LIMIT = 10;
+		// Fire RATE_LIMIT requests (should pass), then one more which should be 429
+		let lastRes;
+		for (let i = 0; i < (RATE_LIMIT + 1); i++) {
+			lastRes = await fastify.inject({ method: "GET", url: `/accounts/verify?user=${validUuid}&token=${encodeURIComponent(TEST_TOKEN)}` });
+		}
+		expect(lastRes).toBeDefined();
+		expect(lastRes!.statusCode).toBe(429);
+		expect(lastRes!.json()).toHaveProperty("message");
 	});
 });

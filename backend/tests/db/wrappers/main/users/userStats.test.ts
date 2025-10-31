@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../../src/db/index.js";
 import {
 	createStats,
@@ -20,7 +22,7 @@ import {
 } from "../../../../../src/db/wrappers/main/users/userStats.js";
 
 describe("UserStats wrapper", () => {
-	let testUserId: number;
+	let testUserId: string;
 	let statsId: number;
 
 	// --- Setup test user_stats row ---------------------------------------
@@ -30,12 +32,12 @@ describe("UserStats wrapper", () => {
 		db.prepare(`DELETE FROM users WHERE user_id > 0`).run();
 
 		// --- Insert test user ---
+		testUserId = uuidv7();
 		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
 		`);
-		const info = insertUser.run("test@example.com", "hashedpassword", 1);
-		testUserId = Number(info.lastInsertRowid);
+		insertUser.run(testUserId, "test@example.com", "hashedpassword", 1);
 
 		// --- Insert test stats for that user ---
 		const row = createStats(testUserId);
@@ -54,7 +56,7 @@ describe("UserStats wrapper", () => {
 	});
 
 	it("should return undefined for non-existing user ID", () => {
-		const stats = getStatsByUserId(9999);
+		const stats = getStatsByUserId("9999");
 		expect(stats).toBeUndefined();
 	});
 

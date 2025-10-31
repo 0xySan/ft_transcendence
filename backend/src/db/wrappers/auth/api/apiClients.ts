@@ -6,7 +6,7 @@
 import { db, insertRow, getRow } from "../../../index.js";
 
 export interface apiClient {
-    owner_id:                   number;
+    owner_id:                   string;
     name:                       string;
     client_secret_encrypted:    string;
     redirect_url:               string;
@@ -40,7 +40,7 @@ export function listApiClient(): apiClient[] {
  * @param owner_id - The user ID of the owner
  * @returns An array of apiClient objects owned by the specified owner
  */
-export function getApiClientByOwnerId(owner_id: number): apiClient[] {
+export function getApiClientByOwnerId(owner_id: string): apiClient[] {
     const stmt = db.prepare("SELECT * FROM api_clients WHERE owner_id = ?");
     return stmt.all(owner_id) as apiClient[];
 }

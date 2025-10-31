@@ -3,13 +3,13 @@
  * Provides creation, retrieval, updating, and listing utilities for participants in games.
  */
 
-import { db, insertRow, getRow } from "../../../index.js";
+import { db, getRow } from "../../../index.js";
 
 // --- Types ---
 export interface GameParticipant {
 	participant_id: number;
 	game_id: number;
-	user_id: number;
+	user_id: string;
 	team?: number;
 	score: number;
 	result?: "win" | "loss" | "draw";
@@ -48,7 +48,7 @@ export function getParticipantsByGameId(gameId: number): GameParticipant[] {
  */
 export function addParticipant(
 	gameId: number,
-	userId: number,
+	userId: string,
 	team?: number
 ): GameParticipant | undefined {
 	try {

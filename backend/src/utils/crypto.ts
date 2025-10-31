@@ -5,9 +5,7 @@
 
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
-
-const SALT_ROUNDS = 12;
+import argon2 from 'argon2';
 
 dotenv.config({ quiet: true });
 
@@ -44,8 +42,7 @@ export function encryptSecret(secret: string): Buffer {
  */
 export function decryptSecret(encrypted: Buffer): string {
 	if (!ENCRYPTION_KEY) {
-		// Dev mode: return raw secret
-		return encrypted.toString('utf8');
+		return '';
 	}
 
 	const iv = encrypted.subarray(0, IV_LENGTH);
@@ -68,12 +65,46 @@ export function generateRandomToken(length: number): string {
 	return crypto.randomBytes(length).toString('hex');
 }
 
-// Hash a password
-export async function hashPassword(password: string): Promise<string> {
-	return await bcrypt.hash(password, SALT_ROUNDS);
+/**
+ * Hash a string using Argon2id (memory-hard hashing algorithm).
+ * 
+ * @param password - Plaintext password to hash.
+ * @returns string - Argon2id hash including parameters & salt.
+ */
+export async function hashString(password: string): Promise<string> {
+	return await argon2.hash(password, {
+		type: argon2.argon2id,
+		memoryCost: 19456, // ~19 MB
+		timeCost: 2,
+		parallelism: 1,
+	});
 }
 
-// Verify a password
-export async function verifyPassword(password: string, hashed: string): Promise<boolean> {
-	return await bcrypt.compare(password, hashed);
+/**
+ * Verify a password against its Argon2id hash.
+ * 
+ * @param password - Plaintext password to verify.
+ * @param hashed - Stored Argon2id hash.
+ * @returns boolean - True if valid, false otherwise.
+ */
+export async function verifyHashedString(password: string, hashed: string): Promise<boolean> {
+	if (typeof password !== 'string' || typeof hashed !== 'string') return false;
+	if (password.length === 0 || password.length > 64) return false; // avoid doS with extremely long passwords
+
+	try {
+		return await argon2.verify(hashed, password);
+	} catch {
+		return false;
+	}
+}
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate if a string is a valid UUID v7.
+ * @param uuid - The string to validate.
+ * @returns boolean - True if valid UUID v7, false otherwise.
+ */
+export function isValidUUIDv7(uuid: string): boolean {
+	return uuidRegex.test(uuid);
 }

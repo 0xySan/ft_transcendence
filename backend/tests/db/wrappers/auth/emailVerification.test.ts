@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../src/db/index.js";
 import {
 	createEmailVerification,
@@ -11,17 +13,17 @@ import {
 } from "../../../../src/db/wrappers/auth/emailVerification.js";
 
 describe("emailVerification wrapper - tests", () => {
-	let userId: number;
+	let userId: string;
 	let createdVerification: any;
 	let validToken: string;
 
 	beforeAll(() => {
+		userId = uuidv7();
 		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
 		`);
-		const res = insertUser.run("verify_test_user@example.com", "hashed-pass", 1);
-		userId = Number(res.lastInsertRowid);
+		insertUser.run(userId, "verify_test_user@example.com", "hashed-pass", 1);
 	});
 
 	it("should create a new email verification entry", () => {

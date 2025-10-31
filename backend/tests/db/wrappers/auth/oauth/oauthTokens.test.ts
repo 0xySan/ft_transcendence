@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 
 import {
 	createOauthToken,
@@ -23,15 +24,15 @@ describe("OauthTokens wrapper", () => {
 
 	beforeAll(() => {
 		const insertUserStmt = db.prepare(
-			`INSERT INTO users (email, password_hash, role_id) VALUES (?, ?, ?)`
+			`INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)`
 		);
-		const u = insertUserStmt.run("OauthTokenUsers@test.com", "hashed-pass", 1);
-		const userId = Number(u.lastInsertRowid);
+		const userId = uuidv7();
+		insertUserStmt.run(userId, "OauthTokenUsers@test.com", "hashed-pass", 1);
 
 		const insertProviderStmt = db.prepare(
 			`INSERT INTO oauth_providers (name, discovery_url, client_id, is_enabled) VALUES (?, ?, ?, ?)`
 		);
-		const p = insertProviderStmt.run("TestProvider", "https://testprovider.com/.well-known/openid-configuration", "client-id-123", 1);
+		insertProviderStmt.run("TestProvider", "https://testprovider.com/.well-known/openid-configuration", "client-id-123", 1);
 		const providerName = "TestProvider";
 
 		const insertAccountStmt = db.prepare(

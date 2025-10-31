@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { v7 as uuidv7 } from "uuid";
+
 import { db } from "../../../../../src/db/index.js";
 import {
 	createUser2faTotp,
@@ -12,18 +14,18 @@ import {
 	create2FaMethods
 } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
-let userId: number;
+let userId: string;
 let methodId: number;
 let totpId: number;
 
 describe("user_2fa_totp wrapper – with FK setup", () => {
 	beforeAll(() => {
+		userId = uuidv7();
 		const insertUser = db.prepare(`
-			INSERT INTO users (email, password_hash, role_id)
-			VALUES (?, ?, ?)
+			INSERT INTO users (user_id, email, password_hash, role_id)
+			VALUES (?, ?, ?, ?)
 		`);
-		const userRes = insertUser.run("totp@example.local", "hashed-password", 1);
-		userId = Number(userRes.lastInsertRowid);
+		insertUser.run(userId, "totp@example.local", "hashed-password", 1);
 
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
