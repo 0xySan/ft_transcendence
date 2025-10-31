@@ -38,7 +38,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             const role_id = getRoleById(user.role_id);
             if (!role_id || role_id.role_name == "banned" || role_id.role_name == "unverified") {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ error: "Email has been send 1" }));
+                return (reply.status(202).send({ error: "Email has been send " + role_id?.role_name }));
             }
 
             const token = generateRandomToken(32);
