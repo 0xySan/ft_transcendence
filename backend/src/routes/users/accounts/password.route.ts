@@ -7,14 +7,15 @@ import { FastifyInstance } from "fastify";
 import { delayResponse, checkRateLimit } from "../../../utils/security.js";
 import { getUserByEmail, getRoleById, updateUser } from '../../../db/wrappers/main/index.js';
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
-import { createEmailVerification, getEmailVerificationByToken } from '../../../db/wrappers/auth/index.js';
+import { createEmailVerification, getEmailVerificationByToken, getEmailVerificationsByUserId } from '../../../db/wrappers/auth/index.js';
 import { sendMail } from "../../../utils/mail/mail.js";
+import { error } from "console";
 
-const requestCount_email: Record<string, { count: number; lastReset: number }> = {};
-const requestCount_ip: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 100;
+const requestCount_email: Record<string, { count: number; lastReset: number, use: boolean }> = {};
+const requestCount_ip: Record<string, { count: number; lastReset: number, use: boolean }> = {};
+const RATE_LIMIT = 5;
 const MIN_DELAY = 500;
-const RATE_WINDOW = 15 * 60 * 1000;
+const RATE_WINDOW = 5 * 60 * 1000;
 
 export async function newPasswordReset(fastify: FastifyInstance) {
     const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
@@ -45,13 +46,26 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             const user = getUserByEmail(email);
             if (!user) {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ duck: "Email has been sent" }));
+                return (reply.status(202).send({ duck: "Email has been sent code" }));
             }
 
             const role_id = getRoleById(user.role_id);
             if (!role_id || role_id.role_name == "banned" || role_id.role_name == "unverified") {
                 await delayResponse(startTime, MIN_DELAY);
                 return (reply.status(202).send({ duck: "Email has been sent" }));
+            }
+
+            const verifications = getEmailVerificationsByUserId(user.user_id);
+
+            for (let i = 0; i < verifications.length; i++) {
+                if (!verifications[i].verified) {
+                    if (verifications[i].expires_at < startTime) {
+                        verifications[i].verified = true;
+                        break;
+                    }
+                    await delayResponse(startTime, MIN_DELAY);
+                    return reply.status(400).send({ error: "You already have an active verification link" });
+                }
             }
 
             const token = generateRandomToken(32);
@@ -115,10 +129,10 @@ export async function passwordReset(fastify: FastifyInstance) {
                 return (reply.status(400).send({ error: "The confirm password is different" }));
             }
 
-            updateUser(email.user_id, { password_hash: new_password });
+            updateUser(email.user_id, { password_hash: await hashString(new_password) });
 
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(202).send({ duck: "Password has been change GOOD"}));
+            return (reply.status(202).send({ duck: "Password has been change"}));
         } catch (err) {
             await delayResponse(startTime, MIN_DELAY);
             return (reply.status(500).send({ error: "Internal error" }));

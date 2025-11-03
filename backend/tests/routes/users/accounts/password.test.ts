@@ -28,13 +28,17 @@ describe("GET & POST /accounts/reset-password", () => {
 			getRoleById: vi.fn(),
 			updateUser: vi.fn(),
 		}));
-
-		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
-			__esModule: true,
-			createEmailVerification: vi.fn(),
-			getEmailVerificationByToken: vi.fn(),
-		}));
-
+		vi.mock("../../../../src/db/wrappers/auth/index.js", async (importOriginal) => {
+			const actual = await importOriginal();
+			return {
+				__esModule: true,
+				createEmailVerification: vi.fn(),
+				getEmailVerificationByToken: vi.fn(),
+				getEmailVerificationsByUserId: vi.fn(() => [
+				{ user_id: "123", verified: false, expires_at: Date.now() - 1000 },
+				]),
+			};
+		});
 		vi.doMock("../../../../src/utils/crypto.js", () => ({
 			__esModule: true,
 			hashString: vi.fn(async (plain: string) => `hashed_${plain}`),
@@ -155,6 +159,54 @@ describe("GET & POST /accounts/reset-password", () => {
         expect((mocks.mail.sendMail as any)).toHaveBeenCalled();
     });
 
+	it("returns 400 if an active verification link exists", async () => {
+		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([
+			{ user_id: 1, verified: false, expires_at: Date.now() + 10000 } // non expiré
+		]);
+
+		const res = await fastify.inject({
+			method: "GET",
+			url: "/accounts/reset-password?email=exists@example.com"
+		});
+
+		expect(res.statusCode).toBe(400);
+		expect(res.json()).toHaveProperty("error");
+		expect(res.json().error).toMatch(/You already have an active verification link/i);
+	});
+
+	it("marks expired verification as verified and proceeds", async () => {
+		const expiredTime = Date.now() - 1000;
+		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([
+			{ user_id: 1, verified: false, expires_at: expiredTime }
+		]);
+
+		const res = await fastify.inject({
+			method: "GET",
+			url: "/accounts/reset-password?email=exists@example.com"
+		});
+
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("duck");
+		expect(res.json().duck).toMatch(/Email has been sent/i);
+
+		// Vérifie que le lien est marqué comme vérifié
+		const verifications = (mocks.auth.getEmailVerificationsByUserId as any)();
+		expect(verifications[0].verified).toBe(true);
+	});
+
+	it("proceeds normally if no existing verification", async () => {
+		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([]);
+
+		const res = await fastify.inject({
+			method: "GET",
+			url: "/accounts/reset-password?email=exists@example.com"
+		});
+
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("duck");
+		expect(res.json().duck).toMatch(/Email has been sent/i);
+	});
+
     it("GET /accounts/reset-password should return 500 on internal error", async () => {
         (mocks.main.getUserByEmail as any).mockImplementation(() => { throw new Error("DB fail"); });
 
@@ -207,13 +259,23 @@ describe("GET & POST /accounts/reset-password", () => {
 		expect(res.json().error).toMatch(/Password invalid/i);
 	});
 
-	it("updates password successfully", async () => {
-		const payload = { new_password: "Aa1!aaaa!", new_password_confirm: "Aa1!aaaa!", token: "fixed_test_token_1234567890" };
+	it("updates password successfully and verifies hashed password", async () => {
+		const payload = { 
+			new_password: "Aa1!aaaa!", 
+			new_password_confirm: "Aa1!aaaa!", 
+			token: "fixed_test_token_1234567890" 
+		};
+
+		const hashSpy = vi.spyOn(mocks.crypto, "hashString");
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
+
 		expect(res.statusCode).toBe(202);
 		expect(res.json()).toHaveProperty("duck");
-		expect(res.json().duck).toMatch(/Password has been change GOOD/i);
-		expect((mocks.main.updateUser as any)).toHaveBeenCalledWith(1, { password_hash: "Aa1!aaaa!" });
+		expect(res.json().duck).toMatch(/Password has been change/i);
+
+		const hashedPassword = await hashSpy.mock.results[0].value;
+		expect(mocks.main.updateUser).toHaveBeenCalledWith(1, { password_hash: hashedPassword });
+		expect(hashedPassword).not.toBe(payload.new_password);
 	});
 
     it("POST /accounts/reset-password should return 500 on internal error in getEmailVerificationByToken", async () => {
