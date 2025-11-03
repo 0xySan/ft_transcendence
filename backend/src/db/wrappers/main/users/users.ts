@@ -111,3 +111,36 @@ export function getAllUsers(): User[] {
 	`);
 	return stmt.all() as User[];
 }
+
+/**
+ * Update user.
+ * Only updates the provided fields.
+ * 
+ * @param user_id - The reset ID
+ * @param options - Partial information to update
+ * @returns true if updated, false otherwise
+ */
+export function updateUser(user_id: string, options: Partial<User>): boolean {
+	const keys = Object.keys(options).filter(
+		key => options[key as keyof User] !== undefined && options[key as keyof User] !== null
+	);
+
+	if (keys.length === 0) return false;
+
+	const setClause = keys.map(key => `${key} = @${key}`).join(", ");
+
+	const params: Record<string, unknown> = { user_id };
+	for (const key of keys) {
+		params[key] = options[key as keyof User];
+	}
+
+	const stmt = db.prepare(`
+		UPDATE users
+		SET ${setClause}
+		WHERE user_id = @user_id
+	`);
+
+	const result = stmt.run(params);
+
+	return (result.changes > 0);
+}

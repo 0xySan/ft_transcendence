@@ -18,6 +18,7 @@ import {
 	updateLastLogin,
 	updateUserRole,
 	getAllUsers,
+	updateUser
 } from "../../../../../src/db/wrappers/main/users/users.js";
 
 describe("Users wrapper", () => {
@@ -111,7 +112,7 @@ describe("Users wrapper", () => {
 	});
 
 	it("should update user role successfully", () => {
-		const updated = updateUserRole(guestId, 2); // change Guest -> User
+		const updated = updateUserRole(guestId, 2);
 		expect(updated).toBe(true);
 
 		const user = getUserById(guestId);
@@ -131,5 +132,20 @@ describe("Users wrapper", () => {
 		const emails = users.map(u => u.email);
 		const isSorted = emails.every((v, i, arr) => !i || arr[i - 1] <= v);
 		expect(isSorted).toBe(true);
+	});
+
+	it("should update password_hash successfully", () => {
+		const user = getUserById(userId)!;
+		const result = updateUser(user.user_id, { password_hash: "new_hashed_pass" });
+		expect(result).toBe(true);
+
+		const updated = getUserById(user.user_id)!;
+		expect(updated.password_hash).toBe("new_hashed_pass");
+	});
+
+	it("should return false if no fields provided", () => {
+		const user = getUserById(adminId)!;
+		const result = updateUser(user.user_id, {});
+		expect(result).toBe(false);
 	});
 });

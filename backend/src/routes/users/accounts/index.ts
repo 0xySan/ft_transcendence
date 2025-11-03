@@ -6,10 +6,11 @@
 import { FastifyInstance } from 'fastify';
 import { newUserAccountRoutes } from './register.route.js';
 import { verifyUserAccountRoutes } from './verify.route.js';
-import { newPasswordReset } from './password.route.js';
+import { newPasswordReset, passwordReset } from './password.route.js';
 
 export function userAccountRoutes(fastify: FastifyInstance) {
 	newUserAccountRoutes(fastify);
 	verifyUserAccountRoutes(fastify);
 	newPasswordReset(fastify);
+	passwordReset(fastify);
 }

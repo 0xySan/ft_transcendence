@@ -5,9 +5,9 @@
 
 import { FastifyInstance } from "fastify";
 import { delayResponse, checkRateLimit } from "../../../utils/security.js";
-import { getUserByEmail, getRoleById } from '../../../db/wrappers/main/index.js';
+import { getUserByEmail, getRoleById, updateUser } from '../../../db/wrappers/main/index.js';
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
-import { createEmailVerification } from '../../../db/wrappers/auth/index.js';
+import { createEmailVerification, getEmailVerificationByToken } from '../../../db/wrappers/auth/index.js';
 import { sendMail } from "../../../utils/mail/mail.js";
 
 const requestCount_email: Record<string, { count: number; lastReset: number }> = {};
@@ -45,13 +45,13 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             const user = getUserByEmail(email);
             if (!user) {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ duck: "Email has been send" }));
+                return (reply.status(202).send({ duck: "Email has been sent" }));
             }
 
             const role_id = getRoleById(user.role_id);
             if (!role_id || role_id.role_name == "banned" || role_id.role_name == "unverified") {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ duck: "Email has been send " + role_id?.role_name }));
+                return (reply.status(202).send({ duck: "Email has been sent" }));
             }
 
             const token = generateRandomToken(32);
@@ -59,8 +59,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             createEmailVerification({
                 user_id: user.user_id,
                 token: encryptedToken,
-                expires_at: Date.now() + 60 * 60 * 1000,
-                
+                expires_at: Date.now() + 60 * 60 * 1000
             });
 
             sendMail(
@@ -75,11 +74,54 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 			).catch(err => console.error("Failed to send email:", err));
 
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(202).send({ duck: "Email send " + token + " " + email }));
+            return (reply.status(202).send({ duck: "Email has been sent"}));
         } catch (err) {
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(500).send({ error: "Error interne" }));
+            return (reply.status(500).send({ error: "Internal error" }));
         }
 
     })
+}
+
+export async function passwordReset(fastify: FastifyInstance) {
+    const passwordRegex = /^.{8,64}$/;
+
+    fastify.post("/accounts/reset-password", async (request, reply) => {
+        const { new_password } = request.body as { new_password: string };
+        const { new_password_confirm } = request.body as { new_password_confirm: string };
+        const { token } = request.body as { token: string };
+        const startTime = Date.now();
+
+        try {
+            const email = getEmailVerificationByToken(token);
+
+            if (!token || email == undefined) {
+                await delayResponse(startTime, MIN_DELAY);
+                return (reply.status(202).send({ error: "Password has been change" }));
+            }
+
+            if (!new_password || !new_password_confirm) {
+                await delayResponse(startTime, MIN_DELAY);
+                return (reply.status(400).send({ error: "Field not completed" }));
+            }
+
+            if (!passwordRegex.test(new_password)) {
+                await delayResponse(startTime, MIN_DELAY);
+                return (reply.status(400).send({ error: "Password invalid" }));
+            }
+
+            if (new_password != new_password_confirm) {
+                await delayResponse(startTime, MIN_DELAY);
+                return (reply.status(400).send({ error: "The confirm password is different" }));
+            }
+
+            updateUser(email.user_id, { password_hash: new_password });
+
+            await delayResponse(startTime, MIN_DELAY);
+            return (reply.status(202).send({ duck: "Password has been change GOOD"}));
+        } catch (err) {
+            await delayResponse(startTime, MIN_DELAY);
+            return (reply.status(500).send({ error: "Internal error" }));
+        }
+    });
 }
