@@ -20,25 +20,36 @@
 	<body class="flex-space-between background-color-base">
 		<header class="nav-bar">
 			<nav>
-				<a href="/">Home</a>
+				<div class="nav-left-links">
+					<a href="/" class="font-poppins-regular">Home</a>
+					<div class="nav-game-links">
+						<a href="/" class="font-poppins-regular">Play</a>
+						<a href="/" class="font-poppins-regular">Leaderboard</a>
+						<a href="/" class="font-poppins-regular">Profile</a>
+					</div>
+				</div>
+				<div class="nav-right-links">
+					<button type="button" class="button background-color-crust button-border text-color-text font-poppins-regular" onclick="window.location.href='/login'">Login</button>
+					<button type="button" class="button background-color-overlay2 font-poppins-regular" onclick="window.location.href='/register'">Register</button>
+				</div>
 			</nav>
 		</header>
 
-		<div id="content" class="flex-1 p-4">
+		<div id="content">
 			<!-- Dynamic content goes here -->
 		</div>
 
 		<div class="footer">
 	    	<div id="link-text">
-	    	    <a href="/home" class="footer-link">Home</a>
+	    	    <a href="/home" class="footer-link font-poppins-regular">Home</a>
 	    	    <span class="divider"></span>
-	    	    <a href="/privacy" class="footer-link">Privacy Policy</a>
+	    	    <a href="/privacy" class="footer-link font-poppins-regular">Privacy Policy</a>
 	    	    <span class="divider"></span>
-	    	    <a href="https://github.com/0xySan/ft_transcendence" class="footer-link">GitHub</a>
+	    	    <a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load footer-link font-poppins-regular">GitHub</a>
 	    	    <span class="divider"></span>
-	    	    <a href="/about" class="footer-link">About</a>
+	    	    <a href="/about" class="footer-link font-poppins-regular">About</a>
 	    	</div>
-	    	<div id="copyright-text">
+	    	<div id="copyright-text" class="font-poppins-regular">
 	    	    © 2025 Transcendence 42. All rights reserved.
 			</div>
 	    </div>
