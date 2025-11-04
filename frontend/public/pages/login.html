@@ -1,17 +1,21 @@
 <div class="auth-pages-container">
   <h1 class="text-color-text font-poppins-regular">Login</h1>
-  <div class="auth-form-container">
+  <form class="auth-form-container">
     <div class="div-title-and-text-input">
       <label for="username" class="text-color-text font-poppins-regular">Username:</label>
-      <input type="text" id="username" name="username" class="form-input-field font-poppins-regular"/>
+      <input type="text" id="username-text-input" name="username" class="form-input-field font-poppins-regular"/>
       <span id="login-username-error-text" class="error-message multiline text-color-red font-poppins-regular" aria-hidden="true">
       </span>
     </div>
     <div class="div-title-and-text-input">
       <label for="password" class="text-color-text font-poppins-regular">Password:</label>
-      <input type="password" id="password" name="password" class="form-input-field font-poppins-regular"/>
+      <input type="password" id="password-text-input" name="password" class="form-input-field font-poppins-regular"/>
       <span id="login-password-error-text" class="error-message multiline text-color-red font-poppins-regular" aria-hidden="true">
       </span>
+      <div class="checkbox-container">
+        <input type="checkbox" id="remember-me-checkbox" class="checkbox-input"/>
+        <label for="remember-me-checkbox" class="text-color-text font-poppins-regular">Remember me</label>
+      </div>
     </div>
     <div>
       <button type="submit" class="button button-fit-div-width background-color-lavender font-poppins-regular">
@@ -37,14 +41,72 @@
     <div>
       <p class="text-color-text font-poppins-regular">
         Forgot your password?
-        <a href="/forgot-password" class="link-peach-to-maroon"
-          >Reset it here</a
-        >
+        <a href="/forgot-password" class="link-peach-to-maroon">Reset it here</a>
       </p>
       <p class="text-color-text font-poppins-regular">
         Don't have an account?
         <a href="/register" class="link-peach-to-maroon">Register here</a>
       </p>
     </div>
-  </div>
+  </form>
 </div>
+<script src="/js/pages/loginPage.js" type="module" defer></script>
+
+
+<!-- <script>
+    // Always use the addListener function from index.html to ensure proper cleanup
+  const loginForm = document.querySelector('.auth-form-container');
+  const usernameInput = document.getElementById('username-text-input');
+  const passwordInput = document.getElementById('password-text-input');
+  const loginButton = document.querySelector('button[type="submit"]');
+
+  function handleLogin(event) {
+    event.preventDefault();
+    const isUsernameValid = verifyUsernameValidity();
+    const isPasswordValid = verifyPasswordValidity();
+
+    if (isUsernameValid && isPasswordValid) {
+      // Proceed with form submission or further processing
+      console.log('Form is valid. Submitting...');
+      // loginForm.submit();
+    } else {
+      console.log('Form is invalid. Please correct the errors and try again.');
+    }
+  }
+
+  function verifyUsernameValidity() {
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+
+    const username = usernameInput.value;
+    const errorTextElement = document.getElementById('login-username-error-text');
+    if (!usernameRegex.test(username)) {
+      errorTextElement.textContent = 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.';
+      errorTextElement.setAttribute('aria-hidden', 'false');
+      return false;
+    } else {
+      errorTextElement.textContent = '';
+      errorTextElement.setAttribute('aria-hidden', 'true');
+      return true;
+    }
+  }
+
+  function verifyPasswordValidity() {
+    const passwordRegex = /^.{8,64}$/;
+
+    const password = passwordInput.value;
+    const errorTextElement = document.getElementById('login-password-error-text');
+    if (!passwordRegex.test(password)) {
+      errorTextElement.textContent = 'Password must be between 8 and 64 characters long.';
+      errorTextElement.setAttribute('aria-hidden', 'false');
+      return false;
+    } else {
+      errorTextElement.textContent = '';
+      errorTextElement.setAttribute('aria-hidden', 'true');
+      return true;
+    }
+  }
+
+  addListener(loginForm, 'submit', handleLogin);
+  addListener(usernameInput, 'input', verifyUsernameValidity);
+  addListener(passwordInput, 'input', verifyPasswordValidity);
+</script> -->
