@@ -9,13 +9,12 @@ import { getUserByEmail, getRoleById, updateUser } from '../../../db/wrappers/ma
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
 import { createEmailVerification, getEmailVerificationByToken, getEmailVerificationsByUserId } from '../../../db/wrappers/auth/index.js';
 import { sendMail } from "../../../utils/mail/mail.js";
-import { error } from "console";
 
-const requestCount_email: Record<string, { count: number; lastReset: number, use: boolean }> = {};
-const requestCount_ip: Record<string, { count: number; lastReset: number, use: boolean }> = {};
+const requestCount_email: Record<string, { count: number; lastReset: number }> = {};
+const requestCount_ip: Record<string, { count: number; lastReset: number }> = {};
 const RATE_LIMIT = 5;
 const MIN_DELAY = 500;
-const RATE_WINDOW = 5 * 60 * 1000;
+const RATE_WINDOW = 15 * 60 * 1000;
 
 export async function newPasswordReset(fastify: FastifyInstance) {
     const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
@@ -73,7 +72,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             createEmailVerification({
                 user_id: user.user_id,
                 token: encryptedToken,
-                expires_at: Date.now() + 60 * 60 * 1000
+                expires_at: Date.now() + 10 * 60 * 1000
             });
 
             sendMail(

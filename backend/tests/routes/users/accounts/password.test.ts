@@ -159,9 +159,43 @@ describe("GET & POST /accounts/reset-password", () => {
         expect((mocks.mail.sendMail as any)).toHaveBeenCalled();
     });
 
+	it ("check the rate with ip", async () => {
+		(mocks.main.getUserByEmail as any).mockReturnValue({ user_id: 4, role_id: 1, email: "user@example.com" });
+        (mocks.main.getRoleById as any).mockReturnValue({ role_name: "user" });
+
+		const res = await fastify.inject({
+            method: "GET",
+            url: "/accounts/reset-password?email=user@example.com"
+        });
+	});
+
+	it("applies rate limit by IP (too many requests from same IP)", async () => {
+		(mocks.main.getUserByEmail as any).mockReturnValue({ user_id: 4, role_id: 1, email: "iplimit@example.com" });
+        (mocks.main.getRoleById as any).mockReturnValue({ role_name: "user" });
+
+        for (let i = 0; i < RATE_LIMIT; i++) {
+            const res = await fastify.inject({
+                method: "GET",
+                url: "/accounts/reset-password?email=iplimit@example.com",
+                headers: { "x-forwarded-for": "1.2.3.4" },
+            });
+            expect(res.statusCode).toBe(202);
+        }
+
+        const resBlocked = await fastify.inject({
+            method: "GET",
+            url: "/accounts/reset-password?email=iplimit@example.com",
+            headers: { "x-forwarded-for": "1.2.3.4" },
+        });
+
+        expect([429, 400]).toContain(resBlocked.statusCode);
+        expect(resBlocked.json()).toHaveProperty("message");
+        expect(resBlocked.json().message).toMatch(/Too many requests. Try again later./i);
+	});
+
 	it("returns 400 if an active verification link exists", async () => {
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([
-			{ user_id: 1, verified: false, expires_at: Date.now() + 10000 } // non expiré
+			{ user_id: 1, verified: false, expires_at: Date.now() + 10000 }
 		]);
 
 		const res = await fastify.inject({
@@ -189,7 +223,6 @@ describe("GET & POST /accounts/reset-password", () => {
 		expect(res.json()).toHaveProperty("duck");
 		expect(res.json().duck).toMatch(/Email has been sent/i);
 
-		// Vérifie que le lien est marqué comme vérifié
 		const verifications = (mocks.auth.getEmailVerificationsByUserId as any)();
 		expect(verifications[0].verified).toBe(true);
 	});
