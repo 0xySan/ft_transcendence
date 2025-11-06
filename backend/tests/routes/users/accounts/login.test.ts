@@ -109,7 +109,7 @@ describe("POST /accounts/login", () => {
 		expect(res.cookies).toBeDefined();
 	});
 
-	it("returns 200 on successful login without 2FA", async () => {
+	it("returns 202 on successful login without 2FA", async () => {
 		const payload = { email: "ok@example.com", password: "CorrectPass1" };
 		
 		// Setup mocks with proper return values
@@ -131,7 +131,7 @@ describe("POST /accounts/login", () => {
 		console.log('Response status:', res.statusCode); // Debug
 		console.log('Response body:', res.json()); // Debug
 
-		expect(res.statusCode).toBe(200);
+		expect(res.statusCode).toBe(202);
 		expect(res.json()).toHaveProperty("message");
 		expect(res.json().message).toMatch(/Login successful/i);
 		expect(res.cookies).toBeDefined();
@@ -149,7 +149,7 @@ describe("POST /accounts/login", () => {
 		// RATE_LIMIT is 5 in route
 		for (let i = 0; i < 5; i++) {
 			const r = await fastify.inject({ method: "POST", url: "/accounts/login", payload, ip: testIp });
-			expect([200,202,400,429,500]).toContain(r.statusCode); // just ensure route responds; mostly 200 here
+			expect([202, 400, 429, 500]).toContain(r.statusCode); // just ensure route responds; mostly 202 here
 		}
 
 		const r6 = await fastify.inject({ method: "POST", url: "/accounts/login", payload, ip: testIp });
@@ -206,7 +206,7 @@ describe("POST /accounts/login", () => {
 				payload,
 				remoteAddress: testIps[i],
 			});
-			expect([200, 202, 400, 429, 500]).toContain(r.statusCode);
+			expect([202, 400, 429, 500]).toContain(r.statusCode);
 		}
 
 		// Sixth request from one of the previous IPs should hit the per-user rate limit.

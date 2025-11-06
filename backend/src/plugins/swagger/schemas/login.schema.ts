@@ -36,13 +36,6 @@ export const loginAccountSchema = {
 		],
 	},
 	response: {
-		200: {
-			description: "Login accepted.",
-			type: "object",
-			properties: {
-				message: { type: "string" },
-			},
-		},
 		202: {
 			description: "Login accepted (requires 2FA verification).",
 			type: "object",

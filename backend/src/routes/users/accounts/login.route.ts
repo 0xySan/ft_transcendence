@@ -40,12 +40,9 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 
 			if (!password || !passwordRegex.test(password)) {
 				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(400).send({
-					message: "Login failed. Please try again later."
-				});
+				return reply.status(400).send({message: "Login failed. Please try again later."});
 			}
 
-			// Await database calls
 			let existingUser;
 			if (email) {
 				existingUser = getUserByEmail(email);
@@ -55,16 +52,13 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 
 			if (!existingUser) {
 				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(400).send({
-					message: "Login failed. Please try again later."
-				});
+				return reply.status(400).send({message: "Login failed. Please try again later."});
 			}
 
 			if (!checkRateLimit(requestCount, existingUser.user_id, reply, RATE_LIMIT, RATE_WINDOW)) {
 				return;
 			}
 
-			// Await password hash retrieval
 			const passwordHash = getPasswordHashByUserId(existingUser.user_id);
 			if (!passwordHash) {
 				await delayResponse(startTime, MIN_DELAY);
@@ -78,7 +72,6 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 				return reply.status(400).send({ message: "Login failed. Please try again later." });
 			}
 
-			// Await 2FA methods check
 			const user2FaMethods = getUser2FaMethodsByUserId(existingUser.user_id);
 			
 			if (user2FaMethods && user2FaMethods.length > 0) {
@@ -116,7 +109,7 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 					maxAge: maxAge
 				});
 				
-				return reply.status(200).send({ 
+				return reply.status(202).send({ 
 					message: "Login successful.",
 					user: { id: existingUser.user_id }
 				});
