@@ -263,8 +263,8 @@ describe("GET & POST /accounts/reset-password", () => {
 		const payload = { new_password: "Aa1!aaaa", new_password_confirm: "Aa1!aaaa", token: "bhjvhhkvvh" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
 		expect(res.statusCode).toBe(202);
-		expect(res.json()).toHaveProperty("error");
-		expect(res.json().error).toMatch(/Password has been change/i);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/Password has been change/i);
 	});
 
 	it("returns 202 when passwords do not match in POST", async () => {

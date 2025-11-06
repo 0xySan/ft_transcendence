@@ -9,6 +9,7 @@ import { getUserByEmail, getRoleById, updateUser } from '../../../db/wrappers/ma
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
 import { createEmailVerification, getEmailVerificationByToken, getEmailVerificationsByUserId } from '../../../db/wrappers/auth/index.js';
 import { sendMail } from "../../../utils/mail/mail.js";
+import { resetPasswordGetSchema, resetPasswordPostSchema } from "../../../plugins/swagger/schemas/passwordReset.schema.js";
 
 const requestCount_email: Record<string, { count: number; lastReset: number }> = {};
 const requestCount_ip: Record<string, { count: number; lastReset: number }> = {};
@@ -20,7 +21,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
     const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
     const passwordRegex = /^.{8,64}$/;
 
-    fastify.get("/accounts/reset-password", async (request, reply) => {
+    fastify.get("/accounts/reset-password", {schema: resetPasswordGetSchema, validatorCompiler: ({ schema }) => {return () => true;}}, async (request, reply) => {
         const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
         const startTime = Date.now();
 
@@ -96,12 +97,10 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 
     })
 
-    fastify.post("/accounts/reset-password", async (request, reply) => {
-        const { new_password } = request.body as { new_password: string };
-        const { new_password_confirm } = request.body as { new_password_confirm: string };
-        const { token } = request.body as { token: string };
+    fastify.post("/accounts/reset-password", {schema: resetPasswordPostSchema, validatorCompiler: ({ schema }) => {return () => true;}}, async (request, reply) => {
+        const { new_password, new_password_confirm, token } = request.body as { new_password: string, new_password_confirm: string, token: string };
         const startTime = Date.now();
-
+ 
         try {
             if (!new_password || !new_password_confirm || !token) {
                 await delayResponse(startTime, MIN_DELAY);
@@ -112,7 +111,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 
             if (email == undefined) {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ error: "Password has been change" }));
+                return (reply.status(202).send({ success: "Password has been change" }));
             }
 
             if (!passwordRegex.test(new_password)) {
