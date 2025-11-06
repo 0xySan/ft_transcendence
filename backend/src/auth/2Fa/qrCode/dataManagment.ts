@@ -45,14 +45,6 @@ export function splitIntoBlocks(
 	const totalExpected = entry.G1Blocks * entry.G1DataCW + entry.G2Blocks * entry.G2DataCW;
 	if (offset !== totalExpected) throw new Error(`Mismatch in total data codewords: expected ${totalExpected}, got ${offset}`);
 
-	console.log(
-		`Split into ${blocks.length} blocks: `,
-		blocks.map((b, i) => `Block ${i + 1}: ${b.data.length} data bytes, ${b.eccCount} ECC bytes`).join('; ')
-	);
-	console.log("Raw data length (bits):", dataCodewords.length * 8);
-	console.log("Raw data length (bytes):", Math.ceil(dataCodewords.length));
-	console.log("Last 16 bytes of final data:", dataCodewords.slice(-16).map(x=>x.toString(16).padStart(2,'0')).join(' '));
-
 	return blocks;
 }
 
@@ -108,7 +100,6 @@ export function placeDataAndEcc(
 		upward = !upward;
 	}
 
-	console.log('bits placed:', bitIndex, 'total bits:', finalBits.length);
 	if (bitIndex < finalBits.length) console.warn('NOT ALL BITS PLACED - remaining:', finalBits.length - bitIndex);
 
 	return matrix;
