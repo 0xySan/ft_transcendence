@@ -27,6 +27,7 @@ describe("GET & POST /accounts/reset-password", () => {
 			getUserByEmail: vi.fn(),
 			getRoleById: vi.fn(),
 			updateUser: vi.fn(),
+			getProfileByUserId: vi.fn()
 		}));
 		vi.mock("../../../../src/db/wrappers/auth/index.js", async (importOriginal) => {
 			const actual = await importOriginal();
@@ -192,7 +193,7 @@ describe("GET & POST /accounts/reset-password", () => {
         expect(resBlocked.json().message).toMatch(/Too many requests. Try again later./i);
 	});
 
-	it("returns 400 if an active verification link exists", async () => {
+	it("returns 202 if an active verification link exists", async () => {
 		(mocks.auth.getEmailVerificationsByUserId as any).mockReturnValue([
 			{ user_id: 1, verified: false, expires_at: Date.now() + 10000 }
 		]);
@@ -202,9 +203,9 @@ describe("GET & POST /accounts/reset-password", () => {
 			url: "/accounts/reset-password?email=exists@example.com"
 		});
 
-		expect(res.statusCode).toBe(400);
-		expect(res.json()).toHaveProperty("error");
-		expect(res.json().error).toMatch(/You already have an active verification link/i);
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
 	});
 
 	it("marks expired verification as verified and proceeds", async () => {
@@ -264,23 +265,23 @@ describe("GET & POST /accounts/reset-password", () => {
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
 		expect(res.statusCode).toBe(202);
 		expect(res.json()).toHaveProperty("success");
-		expect(res.json().success).toMatch(/Password has been change/i);
+		expect(res.json().success).toMatch(/If the request is valid, the password will be changed shortly./i);
 	});
 
 	it("returns 202 when passwords do not match in POST", async () => {
 		const payload = { new_password: "Aa1!aaaa", new_password_confirm: "Bb2!bbbb", token: "fixed_test_token_1234567890" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
-		expect(res.statusCode).toBe(400);
-		expect(res.json()).toHaveProperty("error");
-		expect(res.json().error).toMatch(/The confirm password is different/i);
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/If the request is valid, the password will be changed shortly./i);
 	});
 
     it("returns 202 when passwords do not match in POST", async () => {
 		const payload = { new_password: "Aa1!aaaa", new_password_confirm: "", token: "fixed_test_token_1234567890" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
-		expect(res.statusCode).toBe(400);
-		expect(res.json()).toHaveProperty("error");
-		expect(res.json().error).toMatch(/Field not completed/i);
+		expect(res.statusCode).toBe(202);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/If the request is valid, the password will be changed shortly./i);
 	});
 
     it("returns 202 when passwords is incorrect in POST", async () => {
@@ -303,7 +304,7 @@ describe("GET & POST /accounts/reset-password", () => {
 
 		expect(res.statusCode).toBe(202);
 		expect(res.json()).toHaveProperty("success");
-		expect(res.json().success).toMatch(/Password has been change/i);
+		expect(res.json().success).toMatch(/If the request is valid, the password will be changed shortly./i);
 
 		const hashedPassword = await hashSpy.mock.results[0].value;
 		expect(mocks.main.updateUser).toHaveBeenCalledWith(1, { password_hash: hashedPassword });

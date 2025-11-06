@@ -83,11 +83,11 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             sendMail(
 				email,
 				"Password reset request for ft_transcendence",
-				"password.html",
+				"passwordReset.html",
 				{
 					HEADER: "Password reset request for ft_transcendence",
-					VERIFICATION_LINK: `https://moutig.sh/verify?user=${user.user_id}&token=${encodeURIComponent(token)}`,
-					USERNAME: username
+					USERNAME: username,
+					VERIFICATION_LINK: `https://moutig.sh/verify?user=${user.user_id}&token=${encodeURIComponent(token)}`
 				},
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 			).catch(err => console.error("Failed to send email:", err));
@@ -115,8 +115,8 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 
             if (email == undefined) {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ success: "Password has been changed" }));
-            }
+                return (reply.status(202).send({ success: "If the request is valid, the password will be changed shortly." }));
+			}
 
             if (!passwordRegex.test(new_password)) {
                 await delayResponse(startTime, MIN_DELAY);
@@ -126,7 +126,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             updateUser(email.user_id, { password_hash: await hashString(new_password) });
 
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(202).send({ success: "Password has been changed"}));
+            return (reply.status(202).send({ success: "If the request is valid, the password will be changed shortly." }));
         } catch (err) {
             await delayResponse(startTime, MIN_DELAY);
             return (reply.status(500).send({ error: "Internal error" }));
