@@ -5,7 +5,7 @@
 
 import { FastifyInstance } from "fastify";
 import { delayResponse, checkRateLimit } from "../../../utils/security.js";
-import { getUserByEmail, getRoleById, updateUser } from '../../../db/wrappers/main/index.js';
+import { getUserByEmail, getRoleById, updateUser, getProfileByUserId } from '../../../db/wrappers/main/index.js';
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
 import { createEmailVerification, getEmailVerificationByToken, getEmailVerificationsByUserId } from '../../../db/wrappers/auth/index.js';
 import { sendMail } from "../../../utils/mail/mail.js";
@@ -65,7 +65,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
                         break;
                     }
                     await delayResponse(startTime, MIN_DELAY);
-                    return reply.status(400).send({ error: "You already have an active verification link" });
+                    return reply.status(202).send({ success: "If the request is valid, an email will be sent shortly." });
                 }
             }
 
@@ -77,6 +77,9 @@ export async function newPasswordReset(fastify: FastifyInstance) {
                 expires_at: Date.now() + 10 * 60 * 1000
             });
 
+			const userProfile = getProfileByUserId(user.user_id);
+			const username = userProfile ? (userProfile.display_name || userProfile.username) : "User";
+
             sendMail(
 				email,
 				"Password reset request for ft_transcendence",
@@ -84,6 +87,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 				{
 					HEADER: "Password reset request for ft_transcendence",
 					VERIFICATION_LINK: `https://moutig.sh/verify?user=${user.user_id}&token=${encodeURIComponent(token)}`,
+					USERNAME: username
 				},
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 			).catch(err => console.error("Failed to send email:", err));
@@ -98,11 +102,11 @@ export async function newPasswordReset(fastify: FastifyInstance) {
     })
 
     fastify.post("/accounts/reset-password", {schema: resetPasswordPostSchema, validatorCompiler: ({ schema }) => {return () => true;}}, async (request, reply) => {
-        const { new_password, new_password_confirm, token } = request.body as { new_password: string, new_password_confirm: string, token: string };
+        const { new_password, token } = request.body as { new_password: string, token: string };
         const startTime = Date.now();
  
         try {
-            if (!new_password || !new_password_confirm || !token) {
+            if (!new_password || !token) {
                 await delayResponse(startTime, MIN_DELAY);
                 return (reply.status(400).send({ error: "Field not completed" }));
             }
@@ -111,7 +115,7 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 
             if (email == undefined) {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ success: "Password has been change" }));
+                return (reply.status(202).send({ success: "Password has been changed" }));
             }
 
             if (!passwordRegex.test(new_password)) {
@@ -119,15 +123,10 @@ export async function newPasswordReset(fastify: FastifyInstance) {
                 return (reply.status(400).send({ error: "Password invalid" }));
             }
 
-            if (new_password != new_password_confirm) {
-                await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(400).send({ error: "The confirm password is different" }));
-            }
-
             updateUser(email.user_id, { password_hash: await hashString(new_password) });
 
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(202).send({ success: "Password has been change"}));
+            return (reply.status(202).send({ success: "Password has been changed"}));
         } catch (err) {
             await delayResponse(startTime, MIN_DELAY);
             return (reply.status(500).send({ error: "Internal error" }));
