@@ -6,17 +6,18 @@ export const new2faRoutesSchema = {
 		type: 'object',
 		properties: {
 			email: { type: 'string', format: 'email' },
-			username: { type: 'string', minLength: 3, maxLength: 20 }
+			username: { type: 'string', minLength: 3, maxLength: 20 },
+			twofa_type: { type : 'string', enum: ['totp', 'eotp', 'botp'] }
 		},
-		required: ["email", "username"]
+		required: ["email", "username", "twofa_type"]
 	},
 	response: {
 		200: {
 			description: '2FA secret generated successfully',
 			type: 'object',
 			properties: {
-				otpauth_url: { type: 'string', description: 'URL for QR code generation' },
-				secret: { type: 'string', description: 'Base32 encoded secret key' }
+				otpauth_url: { type: 'string', format: 'uri' },
+				secret: { type: 'string' }
 			},
 			example: {
 				otpauth_url: 'otpauth://totp/YourApp:username?secret=JBSWY3DPEHPK3PXP&issuer=YourApp',

@@ -80,25 +80,16 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 
 			// Await 2FA methods check
 			const user2FaMethods = getUser2FaMethodsByUserId(existingUser.user_id);
-
-			const result = createNewSession(existingUser.user_id, {
-				ip: request.ip,
-				userAgent: request.headers['user-agent']
-			});
-				
-			if (!result) {
-				throw new Error("Failed to create session");
-			}
 			
 			if (user2FaMethods && user2FaMethods.length > 0) {
 				const maxAge = 60 * 15; // 15 minutes for 2FA verification
-				reply.setCookie('2fa', result.token, {
+				reply.setCookie('2fa', JSON.stringify(user2FaMethods), { // example: setting 'totp' as the 2FA method
 					path: '/',
-					httpOnly: true,
 					secure: process.env.NODE_ENV !== 'test',
 					sameSite: 'strict',
 					maxAge: maxAge
 				});
+
 				return reply.status(202).send({
 					message: "Login requires 2FA verification.",
 					requires2fa: true 
@@ -106,6 +97,16 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 			}
 
 			else {
+				const result = createNewSession(existingUser.user_id, {
+					ip: request.ip,
+					userAgent: request.headers['user-agent']
+				});
+
+				if (!result) {
+					await delayResponse(startTime, MIN_DELAY);
+					return reply.status(500).send({ message: "Login failed. Please try again later." });
+				}
+
 				const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2; // 30 days or 2 hours
 				reply.setCookie('session', result.token, {
 					path: '/',
