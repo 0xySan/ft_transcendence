@@ -123,13 +123,7 @@ export function getMinimalVersion(
 ): { version: number; mode: QrEncodingMode } | undefined {
 	const isNumeric = (s: string) => /^[0-9]*$/.test(s);
 	const isAlphanumeric = (s: string) => /^[0-9A-Z $%*+\-./:]*$/.test(s);
-	const isKanji = (s: string) => {
-		// Check if all characters are Shift-JIS double byte kanji
-		return [...s].every(c => {
-			const code = c.charCodeAt(0);
-			return (code >= 0x8140 && code <= 0x9FFC) || (code >= 0xE040 && code <= 0xEBBF);
-		});
-	};
+	const isKanji = (s: string) => encoding === 'Shift_JIS' && s.length > 0;
 
 	// Determine the QR mode
 	let mode: QrEncodingMode;
@@ -140,8 +134,7 @@ export function getMinimalVersion(
 		mode = 'alphanumeric';
 	} else if (isKanji(data) && encoding === 'Shift_JIS') {
 		mode = 'kanji';
-	} else if (encoding === 'UTF-8' || encoding === 'ISO-8859-1') {
-		// Standard encodings → use byte mode
+	} else if (encoding === 'UTF-8' || encoding === 'ISO-8859-1' || encoding === 'UTF-16BE') {		// Standard encodings → use byte mode
 		mode = 'byte';
 	} else {
 		// Non-standard encodings → use ECI mode
