@@ -1,5 +1,5 @@
 /**
- * src/routes/password.route.ts
+ * src/routes/passwordReset.route.ts
  * soon
  */
 
@@ -12,12 +12,13 @@ import { sendMail } from "../../../utils/mail/mail.js";
 
 const requestCount_email: Record<string, { count: number; lastReset: number }> = {};
 const requestCount_ip: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5;
-const MIN_DELAY = 500;
 const RATE_WINDOW = 15 * 60 * 1000;
+const MIN_DELAY = 500;
+const RATE_LIMIT = 5;
 
 export async function newPasswordReset(fastify: FastifyInstance) {
     const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
+    const passwordRegex = /^.{8,64}$/;
 
     fastify.get("/accounts/reset-password", async (request, reply) => {
         const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
@@ -45,13 +46,13 @@ export async function newPasswordReset(fastify: FastifyInstance) {
             const user = getUserByEmail(email);
             if (!user) {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ duck: "Email has been sent code" }));
+                return (reply.status(202).send({ success: "if the request is valid, an email will be sent shortly." }));
             }
 
             const role_id = getRoleById(user.role_id);
             if (!role_id || role_id.role_name == "banned" || role_id.role_name == "unverified") {
                 await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ duck: "Email has been sent" }));
+                return (reply.status(202).send({ success: "If the request is valid, an email will be sent shortly." }));
             }
 
             const verifications = getEmailVerificationsByUserId(user.user_id);
@@ -87,17 +88,13 @@ export async function newPasswordReset(fastify: FastifyInstance) {
 			).catch(err => console.error("Failed to send email:", err));
 
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(202).send({ duck: "Email has been sent"}));
+            return (reply.status(202).send({ success: "If the request is valid, an email will be sent shortly."}));
         } catch (err) {
             await delayResponse(startTime, MIN_DELAY);
             return (reply.status(500).send({ error: "Internal error" }));
         }
 
     })
-}
-
-export async function passwordReset(fastify: FastifyInstance) {
-    const passwordRegex = /^.{8,64}$/;
 
     fastify.post("/accounts/reset-password", async (request, reply) => {
         const { new_password } = request.body as { new_password: string };
@@ -106,16 +103,16 @@ export async function passwordReset(fastify: FastifyInstance) {
         const startTime = Date.now();
 
         try {
-            const email = getEmailVerificationByToken(token);
-
-            if (!token || email == undefined) {
-                await delayResponse(startTime, MIN_DELAY);
-                return (reply.status(202).send({ error: "Password has been change" }));
-            }
-
-            if (!new_password || !new_password_confirm) {
+            if (!new_password || !new_password_confirm || !token) {
                 await delayResponse(startTime, MIN_DELAY);
                 return (reply.status(400).send({ error: "Field not completed" }));
+            }
+
+            const email = getEmailVerificationByToken(token);
+
+            if (email == undefined) {
+                await delayResponse(startTime, MIN_DELAY);
+                return (reply.status(202).send({ error: "Password has been change" }));
             }
 
             if (!passwordRegex.test(new_password)) {
@@ -131,7 +128,7 @@ export async function passwordReset(fastify: FastifyInstance) {
             updateUser(email.user_id, { password_hash: await hashString(new_password) });
 
             await delayResponse(startTime, MIN_DELAY);
-            return (reply.status(202).send({ duck: "Password has been change"}));
+            return (reply.status(202).send({ success: "Password has been change"}));
         } catch (err) {
             await delayResponse(startTime, MIN_DELAY);
             return (reply.status(500).send({ error: "Internal error" }));

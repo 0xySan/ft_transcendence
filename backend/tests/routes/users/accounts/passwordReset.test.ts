@@ -50,12 +50,11 @@ describe("GET & POST /accounts/reset-password", () => {
 			sendMail: vi.fn().mockResolvedValue(true),
 		}));
 
-		const mod = await import("../../../../src/routes/users/accounts/password.route.js");
-		const { newPasswordReset, passwordReset } = mod;
+		const mod = await import("../../../../src/routes/users/accounts/passwordReset.route.js");
+		const { newPasswordReset } = mod;
 
 		fastify = Fastify();
 		fastify.register(newPasswordReset);
-		fastify.register(passwordReset);
 		await fastify.ready();
 
 		const main = await import("../../../../src/db/wrappers/main/index.js");
@@ -102,15 +101,15 @@ describe("GET & POST /accounts/reset-password", () => {
 	it("returns 202 if user does not exist (prevents enumeration)", async () => {
 		const res = await fastify.inject({ method: "GET", url: "/accounts/reset-password?email=unknown@example.com" });
 		expect(res.statusCode).toBe(202);
-		expect(res.json()).toHaveProperty("duck");
-		expect(res.json().duck).toMatch(/Email has been sent/i);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
 	});
 
 	it("returns 202 and sends email if user exists", async () => {
 		const res = await fastify.inject({ method: "GET", url: "/accounts/reset-password?email=exists@example.com" });
 		expect(res.statusCode).toBe(202);
-		expect(res.json()).toHaveProperty("duck");
-		expect(res.json().duck).toMatch(/Email has been sent/i);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
 		expect((mocks.mail.sendMail as any)).toHaveBeenCalled();
 	});
 
@@ -124,8 +123,8 @@ describe("GET & POST /accounts/reset-password", () => {
         });
 
         expect(res.statusCode).toBe(202);
-        expect(res.json()).toHaveProperty("duck");
-        expect(res.json().duck).toMatch(/Email has been sent/i);
+        expect(res.json()).toHaveProperty("success");
+        expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
         expect((mocks.mail.sendMail as any)).not.toHaveBeenCalled();
     });
 
@@ -139,8 +138,8 @@ describe("GET & POST /accounts/reset-password", () => {
         });
 
         expect(res.statusCode).toBe(202);
-        expect(res.json()).toHaveProperty("duck");
-        expect(res.json().duck).toMatch(/Email has been sent/i);
+        expect(res.json()).toHaveProperty("success");
+        expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
         expect((mocks.mail.sendMail as any)).not.toHaveBeenCalled();
     });
 
@@ -154,8 +153,8 @@ describe("GET & POST /accounts/reset-password", () => {
         });
 
         expect(res.statusCode).toBe(202);
-        expect(res.json()).toHaveProperty("duck");
-        expect(res.json().duck).toMatch(/Email has been sent/i);
+        expect(res.json()).toHaveProperty("success");
+        expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
         expect((mocks.mail.sendMail as any)).toHaveBeenCalled();
     });
 
@@ -220,8 +219,8 @@ describe("GET & POST /accounts/reset-password", () => {
 		});
 
 		expect(res.statusCode).toBe(202);
-		expect(res.json()).toHaveProperty("duck");
-		expect(res.json().duck).toMatch(/Email has been sent/i);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
 
 		const verifications = (mocks.auth.getEmailVerificationsByUserId as any)();
 		expect(verifications[0].verified).toBe(true);
@@ -236,8 +235,8 @@ describe("GET & POST /accounts/reset-password", () => {
 		});
 
 		expect(res.statusCode).toBe(202);
-		expect(res.json()).toHaveProperty("duck");
-		expect(res.json().duck).toMatch(/Email has been sent/i);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/if the request is valid, an email will be sent shortly./i);
 	});
 
     it("GET /accounts/reset-password should return 500 on internal error", async () => {
@@ -255,9 +254,9 @@ describe("GET & POST /accounts/reset-password", () => {
 	it("returns 202 when token missing in POST", async () => {
 		const payload = { new_password: "Aa1!aaaa", new_password_confirm: "Aa1!aaaa", token: "" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
-		expect(res.statusCode).toBe(202);
+		expect(res.statusCode).toBe(400);
 		expect(res.json()).toHaveProperty("error");
-		expect(res.json().error).toMatch(/Password has been change/i);
+		expect(res.json().error).toMatch(/Field not completed/i);
 	});
 
     it("returns 202 when token invalid in POST", async () => {
@@ -303,8 +302,8 @@ describe("GET & POST /accounts/reset-password", () => {
 		const res = await fastify.inject({ method: "POST", url: "/accounts/reset-password", payload });
 
 		expect(res.statusCode).toBe(202);
-		expect(res.json()).toHaveProperty("duck");
-		expect(res.json().duck).toMatch(/Password has been change/i);
+		expect(res.json()).toHaveProperty("success");
+		expect(res.json().success).toMatch(/Password has been change/i);
 
 		const hashedPassword = await hashSpy.mock.results[0].value;
 		expect(mocks.main.updateUser).toHaveBeenCalledWith(1, { password_hash: hashedPassword });
