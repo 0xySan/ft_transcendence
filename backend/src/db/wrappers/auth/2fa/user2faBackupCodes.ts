@@ -6,7 +6,7 @@
 import { db, insertRow, getRow } from "../../../index.js";
 
 export interface user2faBackupCodes {
-    method_id:  number;
+    method_id:  string;
     code_json:  string;
     created_at: number;
 }

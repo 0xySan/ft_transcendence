@@ -7,7 +7,7 @@ import { db, insertRow, getRow } from "../../../index.js";
 
 export interface user_2fa_totp {
 	totp_id:                number;
-    method_id:              number;
+    method_id:              string;
     secret_encrypted:       string;
     secret_meta:            string;
     last_used:              number;
@@ -27,7 +27,7 @@ export function getUser2faTotpById(id: number): user_2fa_totp | undefined {
  * @param method_id - This id of the user_2fa_totp 
  * @returns The user_2fa_totp object if found, otherwise undefined
  */
-export function getUser2faTotpByMethodId(method_id: number): user_2fa_totp | undefined {
+export function getUser2faTotpByMethodId(method_id: string): user_2fa_totp | undefined {
     return (getRow<user_2fa_totp>("user_2fa_totp", "method_id", method_id));
 }
 

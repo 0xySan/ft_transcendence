@@ -9,7 +9,7 @@ import {
 
 describe("user2faEmailOtp wrapper - tests", () => {
   let userId: string;
-  let methodId: number;
+  const methodId = uuidv7();
   const now = Date.now();
 
   beforeAll(() => {
@@ -21,11 +21,10 @@ describe("user2faEmailOtp wrapper - tests", () => {
 	insertUser.run(userId, "user2fa@example.com", "hashed_pass", 1);
 
     const insertMethod = db.prepare(`
-      INSERT INTO user_2fa_methods (user_id, method_type, label, is_primary, is_verified)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO user_2fa_methods (method_id, user_id, method_type, label, is_primary, is_verified)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const resMethod = insertMethod.run(userId, 1, "email", 1, 1);
-    methodId = Number(resMethod.lastInsertRowid);
+    insertMethod.run(methodId, userId, 1, "email", 1, 1);
   });
 
   it("should create a new user2faEmailOtp with all required fields", () => {

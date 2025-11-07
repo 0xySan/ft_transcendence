@@ -1,7 +1,7 @@
 -- Table: user_2fa_methods
 -- Store different methods of 2fa
 CREATE TABLE user_2fa_methods (
-	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	method_id				TEXT		PRIMARY KEY,										--- Unique UIDentifier
 	user_id					TEXT,																--- ID of the user (FK)
 	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
 	label					TEXT,																--- 2fa method name
@@ -16,7 +16,7 @@ CREATE TABLE user_2fa_methods (
 -- Store the email otp
 CREATE TABLE user_2fa_email_otp (
 	email_otp_id			INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	method_id				INTEGER,															--- method id (FK)
+	method_id				TEXT,																--- method id (FK)
 	last_sent_code_hash		TEXT		NOT NULL,												--- the last code in hash
 	last_sent_at			DATETIME,															--- timestamp of the last sent email otp
 	attempts				INTEGER		DEFAULT 0,												--- store the number of attempts
