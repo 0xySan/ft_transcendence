@@ -100,12 +100,12 @@ describe("POST /accounts/login", () => {
 		(mocks.db.getProfileByUsername as any).mockReturnValue({ user_id: 3 });
 		(mocks.db.getPasswordHashByUserId as any).mockReturnValue("hashed_test_CorrectPass1");
 		(mocks.crypto.verifyHashedString as any).mockResolvedValue(true);
-		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([{ method: 'totp' }]); // simulate existing 2FA methods
+		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([{ method_type: "totp", is_verified: true, label: "Auth App", is_primary: true }]);
 
 		const res = await fastify.inject({ method: "POST", url: "/accounts/login", payload });
 		expect(res.statusCode).toBe(202);
 		expect(res.json()).toHaveProperty("message");
-		expect(res.json().message).toMatch(/2FA verification/i);
+		expect(res.json().message).toMatch(/2FA required./i);
 		expect(res.cookies).toBeDefined();
 	});
 

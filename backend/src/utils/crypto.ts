@@ -10,7 +10,13 @@ import argon2 from 'argon2';
 dotenv.config({ quiet: true });
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || ''; // hex string
+const TOKEN_HMAC_KEY = process.env.TOKEN_HMAC_KEY || ENCRYPTION_KEY;
 const IV_LENGTH = 16; // AES block size
+
+export function tokenHash(token: string): string {
+	if (!TOKEN_HMAC_KEY) throw new Error('TOKEN_HMAC_KEY missing');
+	return crypto.createHmac('sha256', Buffer.from(TOKEN_HMAC_KEY, 'hex')).update(token).digest('hex');
+}
 
 /**
  * Encrypt a string using AES-256-CBC.

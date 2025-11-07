@@ -72,27 +72,48 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 				return reply.status(400).send({ message: "Login failed. Please try again later." });
 			}
 
-			const user2FaMethods = getUser2FaMethodsByUserId(existingUser.user_id);
+			const user2FaMethods = getUser2FaMethodsByUserId(existingUser.user_id)
+				.filter(method => method.is_verified) // Only include verified methods
+				.map(method => ({
+					method_type: method.method_type,
+					label: method.label,
+					is_primary: method.is_primary
+				}));
 			
 			if (user2FaMethods && user2FaMethods.length > 0) {
-				const maxAge = 60 * 15; // 15 minutes for 2FA verification
-				reply.setCookie('2fa', JSON.stringify(user2FaMethods), { // example: setting 'totp' as the 2FA method
+				const session = await createNewSession(existingUser.user_id, {
+					ip: request.ip,
+					userAgent: request.headers['user-agent'],
+					ttlMs: 10 * 60 * 1000, // 10 minutes
+					stage: 'partial'
+				});
+
+				if (!session) {
+					await delayResponse(startTime, MIN_DELAY);
+					return reply.status(500).send({ message: "Login failed. Please try again later." });
+				}
+
+				reply.setCookie('session', session.token, {
 					path: '/',
+					httpOnly: true,
 					secure: process.env.NODE_ENV !== 'test',
 					sameSite: 'strict',
-					maxAge: maxAge
+					maxAge: 10 * 60 // 10 minutes
 				});
 
 				return reply.status(202).send({
-					message: "Login requires 2FA verification.",
-					requires2fa: true 
+					message: "2FA required.",
+					twoFactorRequired: true,
+					twoFactorMethods: user2FaMethods
 				});
 			}
 
 			else {
 				const result = createNewSession(existingUser.user_id, {
 					ip: request.ip,
-					userAgent: request.headers['user-agent']
+					userAgent: request.headers['user-agent'],
+					stage: 'active',
+					isPersistent: rememberMe || false
 				});
 
 				if (!result) {

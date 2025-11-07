@@ -25,14 +25,14 @@ export function createNewSession(userId: string, opts?: {
 
 	// Generate session token
 	const token = crypto.generateRandomToken(128);
-	const tokenHash = crypto.encryptSecret(token);
+	const tokenHash = crypto.tokenHash(token);
 
 	const expiresAt = new Date(Date.now() + ttlMs);
 
 	// Create session in DB
 	const newSession = createSession({
 		user_id: userId,
-		session_token_hash: tokenHash.toString('hex'), // Store only the hash
+		session_token_hash: tokenHash,
 		expires_at: Math.floor(expiresAt.getTime() / 1000),
 		stage: opts?.stage || 'active',
 		ip: opts?.ip || undefined,
@@ -48,12 +48,12 @@ export function createNewSession(userId: string, opts?: {
 }
 
 
-export function checkTokenValidity(token: string): boolean {
-	const tokenHash = crypto.encryptSecret(token).toString('hex');
+export function checkTokenValidity(token: string): { isValid: boolean, session: session | null } {
+	const tokenHash = crypto.tokenHash(token);
 	const session = getSessionByTokenHash(tokenHash);
 	if (!session) {
-		return false;
+		return { isValid: false, session: null };
 	}
 	const currentTime = Math.floor(Date.now() / 1000);
-	return session.expires_at > currentTime;
+	return { isValid: session.expires_at > currentTime && session.stage === 'active', session };
 }
