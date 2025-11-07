@@ -138,6 +138,8 @@ CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
 	user_id					TEXT		NOT NULL,												--- ID of the user (FK)
 	session_token_hash		TEXT		UNIQUE NOT NULL,										--- the hashed session token
+	stage					TEXT		NOT NULL DEFAULT 'active'
+										CHECK(stage IN ('partial', 'active', 'expired')),		--- session stage
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
 	last_used_at			DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the last used session

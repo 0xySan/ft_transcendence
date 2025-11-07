@@ -8,7 +8,19 @@ import * as crypto from "./crypto.js";
 
 const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
-export function createNewSession(userId: string, opts?: { ip?: string; userAgent?: string; ttlMs?: number; isPersistent?: boolean; }): { session: session; token: string } | undefined {
+/**
+ * Creates a new user session and stores it in the database.
+ * @param userId The ID of the user for whom the session is being created
+ * @param opts Optional parameters for session creation
+ * @returns An object containing the session and the raw token, or undefined on failure
+ */
+export function createNewSession(userId: string, opts?: {
+	ip?: string;
+	userAgent?: string;
+	ttlMs?: number;
+	isPersistent?: boolean;
+	stage?: 'partial' | 'active' | 'expired';
+}): { session: session; token: string } | undefined {
 	const ttlMs = (opts && opts.ttlMs) || DEFAULT_TTL_MS;
 
 	// Generate session token
@@ -22,6 +34,7 @@ export function createNewSession(userId: string, opts?: { ip?: string; userAgent
 		user_id: userId,
 		session_token_hash: tokenHash.toString('hex'), // Store only the hash
 		expires_at: Math.floor(expiresAt.getTime() / 1000),
+		stage: opts?.stage || 'active',
 		ip: opts?.ip || undefined,
 		user_agent: opts?.userAgent || undefined,
 		last_used_at: Math.floor(Date.now() / 1000),

@@ -9,12 +9,13 @@ import {
 	getSessionByTokenHash,
 	getActiveSessionsByIp,
 	getActiveSessionsByUserId,
-	getSessionsByUserId
+	getSessionsByUserId,
+	promoteSessionToActive,
+	expireOldSessions
 } from "../../../../src/db/wrappers/auth/sessions.js";
 
 describe("sessions wrapper - extended tests", () => {
 	let userId: string;
-	let createdSessionId: number | undefined;
 
 	beforeAll(() => {
 			userId = uuidv7();
@@ -92,7 +93,7 @@ describe("sessions wrapper - extended tests", () => {
 		expect(session).toBeDefined();
 
 		const found = getSessionByTokenHash(token);
-        if (!found)throw new Error("Expected an OAuth account from getSessionByTokenHash, but got undefined.");
+		if (!found)throw new Error("Expected an OAuth account from getSessionByTokenHash, but got undefined.");
 		expect(found).toBeDefined();
 		expect(found.session_token_hash).toBe(token);
 	});
@@ -186,7 +187,7 @@ describe("sessions wrapper - extended tests", () => {
 		expect(active.every(s => s.expires_at > now)).toBe(true);
 	});
 
-    it("should reject non-number inputs where numbers are expected", () => {
+	it("should reject non-number inputs where numbers are expected", () => {
 		const session = createSession({
 			user_id: userId,
 			session_token_hash: "invalid_types",
@@ -210,7 +211,7 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "IPv6Tester",
 			is_persistent: false
 		});
-        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
+		if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
 		expect(session.ip).toBe("::1");
 	});
@@ -226,7 +227,7 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "ExpiredAgent",
 			is_persistent: false
 		});
-        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
+		if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
 		expect(session.expires_at).toBeLessThan(now);
 	});
@@ -252,7 +253,7 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
 		expect(fetched.ip).toBe("4.3.2.1");
 		expect(fetched.user_agent).toBe("UpdatedAgent");
 		expect(fetched.is_persistent).toBe(1);
@@ -328,7 +329,7 @@ describe("sessions wrapper - extended tests", () => {
 			ip: "127.0.0.1",
 			user_agent: "defaultPersistent"
 		});
-        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
+		if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
 		expect(session.is_persistent).toBe(0);
 	});
@@ -344,7 +345,7 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "persistentTrue",
 			is_persistent: true
 		});
-        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
+		if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
 		expect(session.is_persistent).toBe(1);
 	});
@@ -360,7 +361,7 @@ describe("sessions wrapper - extended tests", () => {
 			user_agent: "persistentFalse",
 			is_persistent: false
 		});
-        if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
+		if (!session)throw new Error("Expected an sessions from createSession(), but got undefined.");
 		expect(session).toBeDefined();
 		expect(session.is_persistent).toBe(0);
 	});
@@ -383,7 +384,7 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
 		expect(fetched.is_persistent).toBe(1);
 	});
 
@@ -405,7 +406,7 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
 		expect(fetched.is_persistent).toBe(0);
 	});
 
@@ -431,7 +432,7 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(false);
 
 		const fetched = getSessionById(sessionId);
-        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
 		expect(fetched.ip).toBe("9.9.9.9");
 		expect(fetched.user_agent).toBe("ignoreUndefined");
 	});
@@ -458,9 +459,95 @@ describe("sessions wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getSessionById(sessionId);
-        if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
+		if (!fetched)throw new Error("Expected an sessions from getSessionById(), but got undefined.");
 		expect(fetched.ip).toBe("2.2.2.2");
 		expect(fetched.user_agent).toBe("updatedAgent");
 		expect(fetched.is_persistent).toBe(1);
+	});
+
+	it("should default stage to 'partial' when not provided", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const session = createSession({
+			user_id: userId,
+			session_token_hash: "stage_default_partial",
+			expires_at: now + 3600,
+			last_used_at: now,
+			ip: "127.0.0.5",
+			user_agent: "StageDefault",
+			is_persistent: false
+		});
+		if (!session) throw new Error("Expected session, got undefined");
+		expect((session as any).stage ?? 'partial').toBe('partial');
+
+		const fetched = getSessionById((session as any).session_id);
+		if (!fetched) throw new Error("Expected session from getSessionById");
+		expect(fetched.stage).toBe('partial');
+	});
+
+	it("promoteSessionToActive promotes a partial session and updates last_used_at", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = "to_promote_token";
+		const session = createSession({
+			user_id: userId,
+			session_token_hash: token,
+			expires_at: now + 3600,
+			last_used_at: now - 1000,
+			ip: "127.0.0.6",
+			user_agent: "PromoteTest",
+			is_persistent: false,
+		});
+		if (!session) throw new Error("Expected session, got undefined");
+		const before = getSessionByTokenHash(token);
+		if (!before) throw new Error("Expected session before promotion");
+		expect(before.stage).toBe('partial');
+
+		const ok = promoteSessionToActive(token);
+		expect(ok).toBe(true);
+
+		const after = getSessionByTokenHash(token);
+		if (!after) throw new Error("Expected session after promotion");
+		expect(after.stage).toBe('active');
+		expect(after.last_used_at).toBeGreaterThanOrEqual(before.last_used_at);
+	});
+
+	it("promoteSessionToActive returns false when session is not 'partial'", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const token = "already_active_token";
+		const session = createSession({
+			user_id: userId,
+			session_token_hash: token,
+			expires_at: now + 3600,
+			last_used_at: now,
+			ip: "127.0.0.7",
+			user_agent: "AlreadyActive",
+			is_persistent: false,
+			stage: 'active'
+		});
+		if (!session) throw new Error("Expected session, got undefined");
+		const res = promoteSessionToActive(token);
+		expect(res).toBe(false);
+	});
+
+	it("expireOldSessions marks expired sessions and returns count", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const expiredToken = "expired_token_for_cleanup";
+
+		const expired = createSession({
+			user_id: userId,
+			session_token_hash: expiredToken,
+			expires_at: now - 10,
+			last_used_at: now - 20,
+			ip: "127.0.0.8",
+			user_agent: "ExpiredForCleanup",
+			is_persistent: false
+		});
+		if (!expired) throw new Error("Expected session, got undefined");
+
+		const changed = expireOldSessions();
+		expect(changed).toBeGreaterThanOrEqual(1);
+
+		const fetched = getSessionByTokenHash(expiredToken);
+		if (!fetched) throw new Error("Expected session after expireOldSessions");
+		expect(fetched.stage).toBe('expired');
 	});
 });
