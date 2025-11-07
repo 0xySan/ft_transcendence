@@ -247,12 +247,27 @@ describe("POST /accounts/login", () => {
 		expect(body.message).toMatch(/Login failed/i);
 	});
 
-	it ("returns 500 if createNewSession fails", async () => {
+	it ("returns 500 if createNewSession fails without 2fa", async () => {
 		const payload = { email: "sessionfail@example.com", password: "AnyPass123" };
 		(mocks.db.getUserByEmail as any).mockReturnValue({ user_id: 40 });
 		(mocks.db.getPasswordHashByUserId as any).mockReturnValue("hashed_test_AnyPass123");
 		(mocks.crypto.verifyHashedString as any).mockResolvedValue(true);
 		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([]);
+		(mocks.session.createNewSession as any).mockReturnValue(null); // simulate failure
+
+		const res = await fastify.inject({ method: "POST", url: "/accounts/login", payload });
+		expect(res.statusCode).toBe(500);
+		const body = res.json();
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/Login failed/i);
+	});
+
+	it ("returns 500 if createNewSession fails with 2fa", async () => {
+		const payload = { email: "sessionfail@example.com", password: "AnyPass123" };
+		(mocks.db.getUserByEmail as any).mockReturnValue({ user_id: 40 });
+		(mocks.db.getPasswordHashByUserId as any).mockReturnValue("hashed_test_AnyPass123");
+		(mocks.crypto.verifyHashedString as any).mockResolvedValue(true);
+		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([{ is_verified: true }]);
 		(mocks.session.createNewSession as any).mockReturnValue(null); // simulate failure
 
 		const res = await fastify.inject({ method: "POST", url: "/accounts/login", payload });

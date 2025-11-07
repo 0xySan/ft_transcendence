@@ -13,11 +13,11 @@ export const loginAccountSchema = {
 			},
 			password: {
 				type: "string",
-				description: "User password (8–64 chars)",
+				description: "User password (8-64 chars)",
 			},
 			username: {
 				type: "string",
-				description: "Unique username (3–20 chars, letters, numbers, underscores)",
+				description: "Unique username (3-20 chars, letters, numbers, underscores)",
 			},
 			rememberMe: {
 				type: "boolean",

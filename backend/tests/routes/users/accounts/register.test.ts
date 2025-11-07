@@ -186,6 +186,26 @@ describe("POST /accounts/register", () => {
 		expect(body.message).toMatch(/registration failed/i);
 	});
 
+	it("returns 500 if an unexpected error occurs", async () => {
+		const payload = { username: "crashuser", email: "crash@example.com", password: "AnyPass123!" };
+
+		// Make one of the DB calls throw
+		(mocks.main.getUserByEmail as any).mockImplementation(() => {
+			throw new Error("DB failure");
+		});
+
+		const res = await fastify.inject({
+			method: "POST",
+			url: "/accounts/register",
+			payload,
+		});
+
+		expect(res.statusCode).toBe(500);
+		const body = res.json();
+		expect(body).toHaveProperty("message");
+		expect(body.message).toMatch(/registration failed/i);
+	});
+
 	it("sets countryId correctly based on request IP", async () => {
 		const testIp = "1.2.3.4";
 		const testCountry = { country_id: 99 };

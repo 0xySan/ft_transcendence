@@ -31,7 +31,7 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 				username?: string;
 				email?: string;
 				password: string;
-				rememberMe?: boolean;
+				rememberMe: boolean;
 			};
 
 			if (email && username) {
@@ -81,7 +81,7 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 				}));
 			
 			if (user2FaMethods && user2FaMethods.length > 0) {
-				const session = await createNewSession(existingUser.user_id, {
+				const session = createNewSession(existingUser.user_id, {
 					ip: request.ip,
 					userAgent: request.headers['user-agent'],
 					ttlMs: 10 * 60 * 1000, // 10 minutes
@@ -109,20 +109,20 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 			}
 
 			else {
-				const result = createNewSession(existingUser.user_id, {
+				const session = createNewSession(existingUser.user_id, {
 					ip: request.ip,
 					userAgent: request.headers['user-agent'],
 					stage: 'active',
 					isPersistent: rememberMe || false
 				});
 
-				if (!result) {
+				if (!session) {
 					await delayResponse(startTime, MIN_DELAY);
 					return reply.status(500).send({ message: "Login failed. Please try again later." });
 				}
 
 				const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2; // 30 days or 2 hours
-				reply.setCookie('session', result.token, {
+				reply.setCookie('session', session.token, {
 					path: '/',
 					httpOnly: true,
 					secure: process.env.NODE_ENV !== 'test',

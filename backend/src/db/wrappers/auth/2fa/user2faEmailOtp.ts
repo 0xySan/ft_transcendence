@@ -24,6 +24,11 @@ export function getUser2faEmailOtpById(id: number): user2faEmailOtp | undefined 
     return (getRow<user2faEmailOtp>("user_2fa_email_otp", "email_otp_id", id));
 }
 
+
+export function getUser2faEmailOtpByMethodId(method_id: string): user2faEmailOtp | undefined {
+    return (getRow<user2faEmailOtp>("user_2fa_email_otp", "method_id", method_id));
+}
+
 /**
  * Create a new user2faEmailOtp if it doesn't exist.
  * Default values will be applied for missing fields.
