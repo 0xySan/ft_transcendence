@@ -35,10 +35,17 @@ addListener(document, 'DOMContentLoaded', () => {
     });
 
     addListener(input, 'paste', (e) => {
-      const event = e as ClipboardEvent
+      const event = e as ClipboardEvent;
       e.preventDefault();
       const paste = event.clipboardData?.getData('text') ?? '';
-      const digits = paste.replace(/[^0-9]/g, '').slice(0, inputs.length);
+      
+      // Check if paste contains only numbers
+      const onlyNumbers = /^\d+$/.test(paste);
+      if (!onlyNumbers) return;
+
+      // Limit to number of inputs
+      const digits = paste.slice(0, inputs.length);
+      if (!digits.length) return;
 
       digits.split('').forEach((char, i) => {
         if (inputs[i]) inputs[i].value = char;

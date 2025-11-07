@@ -1,21 +1,21 @@
-<div>
+<div id="twoFA-container">
     <div>
         <h1 class="font-poppins-regular text-color-text">
             Check your mailbox
         </h1>
         <p class="font-poppins-regular text-color-text">
-            Enter the 6-digits verification code sent to
+            Enter the 6-digits verification code sent to <span class="font-poppins-semibold" id="verification-email" data-address="[ADDRESS]">[ADDRESS]</span>.
         </p>
         <p id="identification-method-text" class="font-poppins-semibold text-color-text"></p>
     </div>
-    <form>
+    <form id="twoFA-form-container">
         <div class="otp-container">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-regular" />
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-regular" />
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-regular" />
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-regular" />
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-regular" />
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-regular" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-semibold" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-semibold" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-semibold" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-semibold" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-semibold" />
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-input background-color-overlay2 font-poppins-semibold" />
         </div>
         <button type="submit" class="button background-color-lavender font-poppins-regular">
             Verify
