@@ -5,7 +5,7 @@ CREATE TABLE user_2fa_methods (
 	user_id					TEXT,																--- ID of the user (FK)
 	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
 	label					TEXT,																--- 2fa method name
-	is_primary				INTEGER		DEFAULT 0,												--- store the prymary
+	is_primary				BOOLEAN		DEFAULT 0,												--- store the prymary
 	is_verified				BOOLEAN		DEFAULT 0,												--- is verified ?
 	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the created method
 	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the updated method

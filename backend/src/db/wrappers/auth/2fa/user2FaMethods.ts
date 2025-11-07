@@ -10,7 +10,7 @@ export interface user2FaMethods {
 	user_id:	    	    string;
     method_type:            number;
     label:                  string;
-    is_primary:             number;
+    is_primary:             boolean;
     is_verified:            boolean;
     created_at:             number;
     updated_at:             number;
