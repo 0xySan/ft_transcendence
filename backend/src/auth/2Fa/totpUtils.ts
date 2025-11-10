@@ -4,6 +4,7 @@
  */
 
 import crypto from 'crypto';
+import { generateRandomToken } from '../../utils/crypto.js';
 
 /**
  * @brief Encodes a binary buffer into a Base32 string (RFC 4648 standard).
@@ -113,7 +114,12 @@ export function base32Decode(base32: string): Buffer {
  * const code = generateTotp(secret);
  * console.log(code); // e.g., "492039"
  */
-export function generateTotp(secretBase32: string, digits = 6, period = 30, timestamp = Date.now()): string {
+export function generateTotp(
+	secretBase32: string,
+	digits = 6,
+	period = 30,
+	algorithm: 'sha1' | 'sha256' | 'sha512' = 'sha1',
+	timestamp = Date.now()): string {
 	// Step 1: Decode the Base32 secret into a binary buffer
 	const secretBuffer = base32Decode(secretBase32);
 
@@ -129,7 +135,7 @@ export function generateTotp(secretBase32: string, digits = 6, period = 30, time
 	}
 
 	// Step 4: Compute HMAC-SHA1(secret, counter)
-	const hmac = crypto.createHmac('sha1', secretBuffer).update(buffer).digest();
+	const hmac = crypto.createHmac(algorithm, secretBuffer).update(buffer).digest();
 
 	// Step 5: Dynamic truncation (RFC 4226 §5.3)
 	/* THe last 4 bits of the last byte (nibble) of the HMAC
@@ -175,6 +181,7 @@ export function verifyTotp(
 	token: string | number,
 	digits = 6,
 	period = 30,
+	algorithm: 'sha1' | 'sha256' | 'sha512' = 'sha1',
 	window = 0,
 	timestamp = Date.now()
 ): boolean {
@@ -184,7 +191,7 @@ export function verifyTotp(
 	// Check the current time step and surrounding steps (clock drift)
 	for (let step = -window; step <= window; step++) {
 		const stepTime = (counter + step) * period * 1000; // convert back to ms
-		const generated = generateTotp(secretBase32, digits, period, stepTime);
+		const generated = generateTotp(secretBase32, digits, period, algorithm, stepTime);
 		// Use timing-safe comparison to prevent timing attacks
 		const codeBuffer = Buffer.from(code, 'utf-8');
 		const genBuffer = Buffer.from(generated, 'utf-8');
@@ -194,4 +201,45 @@ export function verifyTotp(
 	}
 
 	return false;
+}
+
+/**
+ * Generate a random TOTP secret encoded in Base32.
+ * @param algorithm The hashing algorithm to use ('sha1', 'sha256', 'sha512')
+ * @returns A Base32-encoded TOTP secret
+ */
+export function generateTotpSecret(algorithm: 'sha1' | 'sha256' | 'sha512'): string {
+	const lengths = {
+		sha1: 20,
+		sha256: 32,
+		sha512: 64,
+	};
+	const buf = generateRandomToken(lengths[algorithm]);
+	return base32Encode(Buffer.from(buf, 'hex'));
+}
+
+/**
+ * Create a TOTP URI for use with authenticator apps. RFC 6238 compliant.
+ * @param userEmail The user's email address
+ * @param secretBase32 The Base32-encoded TOTP secret
+ * @param issuer The service or issuer name
+ * @param algorithm The hashing algorithm ('sha1', 'sha256', 'sha512')
+ * @param digits Number of digits in the TOTP code
+ * @param duration Time step duration in seconds
+ * @returns The TOTP URI string
+ */
+export function createTotpUri(
+	userEmail: string,
+	secretBase32: string,
+	issuer: string,
+	algorithm: 'sha1' | 'sha256' | 'sha512',
+	digits: number,
+	duration: number
+): string {
+	// Encode safely for URI
+	const label = encodeURIComponent(`${issuer}:${userEmail}`);
+	const encodedIssuer = encodeURIComponent(issuer);
+	const upperAlgorithm = algorithm.toUpperCase();
+
+	return `otpauth://totp/${label}?secret=${secretBase32}&issuer=${encodedIssuer}&algorithm=${upperAlgorithm}&digits=${digits}&period=${duration}`;
 }

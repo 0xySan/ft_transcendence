@@ -10,7 +10,8 @@ import {
 	getUser2FaMethodsByUserId,
 	verify2FaMethod,
 	setPrimary2FaMethod,
-	delete2FaMethods
+	delete2FaMethods,
+	getAllMethodsByUserIdByType
 } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
 describe("user2FaMethods wrapper - extended tests", () => {
@@ -67,7 +68,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 99,
+			method_type: 2,
 			label: "ToDelete",
 			is_primary: false,
 			is_verified: false,
@@ -88,7 +89,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 7,
+			method_type: 2,
 			label: "NewPrimary",
 			is_primary: false,
 			is_verified: true,
@@ -102,7 +103,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 
 		const primary = getPrimary2FaMethodByUserId(userId);
 		if (!primary)throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
-		expect(primary.method_type).toBe(7);
+		expect(primary.method_type).toBe(2);
 		expect(primary.method_id).toBe(methodId);
 	});
 
@@ -110,7 +111,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 8,
+			method_type: 0,
 			label: "ToVerify",
 			is_primary: false,
 			is_verified: false,
@@ -165,7 +166,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const methodA = create2FaMethods({
 			user_id: userId,
-			method_type: 3,
+			method_type: 1,
 			label: "Backup Phone",
 			is_primary: false,
 			is_verified: false,
@@ -175,7 +176,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		if (!methodA)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		const methodB = create2FaMethods({
 			user_id: userId,
-			method_type: 4,
+			method_type: 1,
 			label: "Authenticator App",
 			is_primary: true,
 			is_verified: true,
@@ -230,7 +231,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 5,
+			method_type: 2,
 			label: "NumericVerified",
 			is_primary: false,
 			// @ts-ignore
@@ -247,7 +248,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 6,
+			method_type: 0,
 			label: "NoPrimary",
 			is_verified: true,
 			created_at: now,
@@ -271,7 +272,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 10,
+			method_type: 1,
 			label: "No Verified Field",
 			is_primary: false,
 			created_at: now,
@@ -286,7 +287,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 11,
+			method_type: 2,
 			label: "False Verified",
 			is_primary: false,
 			is_verified: false,
@@ -302,7 +303,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 12,
+			method_type: 1,
 			label: "True Verified",
 			is_primary: false,
 			is_verified: true,
@@ -317,7 +318,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 	it("should reject creation when created_at or updated_at are missing", () => {
 		let method = create2FaMethods({
 			user_id: userId,
-			method_type: 13,
+			method_type: 0,
 			label: "Missing created_at",
 			is_verified: true,
 			updated_at: Math.floor(Date.now() / 1000),
@@ -326,7 +327,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 
 		method = create2FaMethods({
 			user_id: userId,
-			method_type: 14,
+			method_type: 0,
 			label: "Missing updated_at",
 			is_verified: true,
 			created_at: Math.floor(Date.now() / 1000),
@@ -338,7 +339,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 15,
+			method_type: 1,
 			label: "Update Verified",
 			is_primary: false,
 			is_verified: true,
@@ -368,7 +369,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 16,
+			method_type: 2,
 			label: "Ignore Undefined",
 			is_primary: false,
 			is_verified: true,
@@ -390,7 +391,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 17,
+			method_type: 1,
 			label: "Update Timestamps",
 			is_primary: false,
 			is_verified: false,
@@ -412,5 +413,14 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetched.created_at).toBe(newTimestamp);
 		expect(fetched.updated_at).toBe(newTimestamp);
+	});
+
+	it("Should return a list of methods by user ID and type", () => {
+		const methods = getAllMethodsByUserIdByType(userId, 1);
+		expect(Array.isArray(methods)).toBe(true);
+		methods.forEach(method => {
+			expect(method.user_id).toBe(userId);
+			expect(method.method_type).toBe(1);
+		});
 	});
 });

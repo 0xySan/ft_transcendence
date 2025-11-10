@@ -12,7 +12,7 @@ import { v7 as uuidv7 } from "uuid";
 export interface user2FaMethods {
 	method_id:		string;
 	user_id:		string;
-	method_type:	number;
+	method_type:	0 | 1 | 2;
 	label:			string | null;
 	is_primary:		boolean;
 	is_verified:	boolean;
@@ -66,7 +66,7 @@ export function create2FaMethods(options: Partial<user2FaMethods>): user2FaMetho
 	const label = (typeof options.label === "string") ? options.label : null;
 	const is_primary = (options.is_primary ? 1 : 0);
 	const is_verified = (options.is_verified ? 1 : 0);
-	const created_at = options.created_at;
+	const created_at = (options.created_at ? options.created_at : Date.now());
 	const updated_at = options.updated_at;
 
 	try {
@@ -155,3 +155,14 @@ export function verify2FaMethod(method_id: string): boolean {
 	const result = stmt.run(method_id);
 	return (result.changes > 0);
 }
+
+/**
+ * Get all 2FA methods for a user by type
+ * @param user_id The user UUID
+ * @param method_type The method type (0 = Email, 1 = Authenticator App, 2 = Backup Codes)
+ * @returns An array of User 2FA Methods
+ */
+export function getAllMethodsByUserIdByType(user_id: string, method_type: 0 | 1 | 2): user2FaMethods[] {
+	const stmt = db.prepare("SELECT * FROM user_2fa_methods WHERE user_id = ? AND method_type = ?");
+	return stmt.all(user_id, method_type) as user2FaMethods[];
+};

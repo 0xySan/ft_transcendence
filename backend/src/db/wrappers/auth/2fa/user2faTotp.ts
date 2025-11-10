@@ -32,8 +32,8 @@ export function getUser2faTotpByMethodId(method_id: string): user_2fa_totp | und
 }
 
 /**
- * List all user_2fa_totp.
- * @returns An array of user_2fa_totp objects, or an empty array if none found
+ * List all user_2fa_totp records.
+ * @returns A list of all user_2fa_totp records.
  */
 export function listUser2faTotp(): user_2fa_totp[] {
 	const stmt = db.prepare(`SELECT * FROM user_2fa_totp`);
@@ -43,8 +43,7 @@ export function listUser2faTotp(): user_2fa_totp[] {
 /**
  * Create a new user_2fa_totp if it doesn't exist.
  * Default values will be applied for missing fields.
- * Uses the generic insertRow wrapper to insert and fetch the user_2fa_totp.
- * 
+ * [asdasd](https://moncul.com)
  * @param options - Partial user_2fa_totp object with totp_id, method_id, secret_encrypted, secret_meta, last_used
  * @returns The newly created or existing user_2fa_totp object, or undefined if insertion failed
  */

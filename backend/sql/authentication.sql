@@ -1,10 +1,12 @@
 -- Table: user_2fa_methods
 -- Store different methods of 2fa
 CREATE TABLE user_2fa_methods (
-	method_id				TEXT		PRIMARY KEY,										--- Unique UIDentifier
+	method_id				TEXT		PRIMARY KEY,											--- Unique UIDentifier
 	user_id					TEXT,																--- ID of the user (FK)
 	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
-	label					TEXT,																--- 2fa method name
+	label					TEXT
+							CHECK(	length(label) >= 3 AND 
+									length(label) <= 100),										--- 2fa method name
 	is_primary				BOOLEAN		DEFAULT 0,												--- store the prymary
 	is_verified				BOOLEAN		DEFAULT 0,												--- is verified ?
 	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the created method
@@ -16,12 +18,17 @@ CREATE TABLE user_2fa_methods (
 -- Store the email otp
 CREATE TABLE user_2fa_email_otp (
 	email_otp_id			INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	email					TEXT UNIQUE NOT NULL CHECK(
+								length(email) <= 255 AND 
+								email LIKE '%@%.%' AND 
+								email NOT LIKE '%@%@%'
+							),														    		-- User email with basic validation
 	method_id				TEXT,																--- method id (FK)
 	last_sent_code_hash		TEXT		NOT NULL,												--- the last code in hash
 	last_sent_at			DATETIME,															--- timestamp of the last sent email otp
 	attempts				INTEGER		DEFAULT 0,												--- store the number of attempts
 	consumed				INTEGER		DEFAULT 0,												--- store the number of consumed
-	expires_at				DATETIME	NOT NULL,												--- timestamp of the expired eamil otp
+	expires_at				DATETIME	NOT NULL,												--- timestamp of the expired email otp
 	FOREIGN KEY(method_id) REFERENCES user_2fa_methods(method_id) ON DELETE CASCADE				--- user_2fa_methods.method_id
 );
 

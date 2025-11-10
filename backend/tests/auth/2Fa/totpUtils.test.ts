@@ -32,22 +32,22 @@ describe('TOTP generation', () => {
 	const secret = 'JBSWY3DPEHPK3PXP'; // known test secret
 
 	it('should generate 6-digit code', () => {
-		const otp = generateTotp(secret, 6, 30, 1650000000000);
+		const otp = generateTotp(secret, 6, 30, 'sha1', 1650000000000);
 		expect(otp).toMatch(/^\d{6}$/);
 	});
 
 	it('should generate consistent code for same timestamp', () => {
 		const ts = 1650000000000;
-		const otp1 = generateTotp(secret, 6, 30, ts);
-		const otp2 = generateTotp(secret, 6, 30, ts);
+		const otp1 = generateTotp(secret, 6, 30, 'sha1', ts);
+		const otp2 = generateTotp(secret, 6, 30, 'sha1', ts);
 		expect(otp1).toBe(otp2);
 	});
 
 	it('should generate different codes for different timestamps', () => {
 		const ts1 = 1650000000000;
 		const ts2 = ts1 + 30000; // +1 period
-		const otp1 = generateTotp(secret, 6, 30, ts1);
-		const otp2 = generateTotp(secret, 6, 30, ts2);
+		const otp1 = generateTotp(secret, 6, 30, 'sha512', ts1);
+		const otp2 = generateTotp(secret, 6, 30, 'sha512', ts2);
 		expect(otp1).not.toBe(otp2);
 	});
 });
@@ -57,26 +57,26 @@ describe('TOTP verification', () => {
 	const ts = 1650000000000;
 
 	it('should verify correct code', () => {
-		const otp = generateTotp(secret, 6, 30, ts);
-		const result = verifyTotp(secret, otp, 6, 30, 1, ts);
+		const otp = generateTotp(secret, 6, 30, 'sha256', ts);
+		const result = verifyTotp(secret, otp, 6, 30, 'sha256', 1, ts);
 		expect(result).toBe(true);
 	});
 
 	it('should reject incorrect code', () => {
 		const wrongOtp = '123456';
-		const result = verifyTotp(secret, wrongOtp, 6, 30, 1, ts);
+		const result = verifyTotp(secret, wrongOtp, 6, 30, 'sha1', 1, ts);
 		expect(result).toBe(false);
 	});
 
 	it('should accept code within window', () => {
-		const otpPrev = generateTotp(secret, 6, 30, ts - 30000); // previous period
-		const otpNext = generateTotp(secret, 6, 30, ts + 30000); // next period
-		expect(verifyTotp(secret, otpPrev, 6, 30, 1, ts)).toBe(true);
-		expect(verifyTotp(secret, otpNext, 6, 30, 1, ts)).toBe(true);
+		const otpPrev = generateTotp(secret, 6, 30, 'sha1', ts - 30000); // previous period
+		const otpNext = generateTotp(secret, 6, 30, 'sha1', ts + 30000); // next period
+		expect(verifyTotp(secret, otpPrev, 6, 30, 'sha1', 1, ts)).toBe(true);
+		expect(verifyTotp(secret, otpNext, 6, 30, 'sha1', 1, ts)).toBe(true);
 	});
 
 	it('should reject code outside window', () => {
-		const otp = generateTotp(secret, 6, 30, ts + 90000); // 3 periods away
-		expect(verifyTotp(secret, otp, 6, 30, 1, ts)).toBe(false);
+		const otp = generateTotp(secret, 6, 30, 'sha1', ts + 90000); // 3 periods away
+		expect(verifyTotp(secret, otp, 6, 30, 'sha1', 1, ts)).toBe(false);
 	});
 });

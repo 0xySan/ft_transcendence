@@ -37,6 +37,8 @@
     "@types/node": "^22.0.0",
     "@types/nodemailer": "^7.0.2",
     "@vitest/coverage-v8": "^3.2.4",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3",
