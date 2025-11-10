@@ -4,7 +4,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { getTwoFaMethodsSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
+import { createTwoFaMethodsSchema, getTwoFaMethodsSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
 
 import { v7 as uuidv7 } from 'uuid';
 
@@ -232,7 +232,9 @@ function validateMethodInput(m: TwoFaMethodInput) {
 export default async function twoFaRoutes(fastify: FastifyInstance) {
 	fastify.get(
 		'/twofa/',
-		{ preHandler: requireAuth, schema: getTwoFaMethodsSchema, validatorCompiler: ({ schema }) => { return () => true; } },
+		{	preHandler: requireAuth,
+			schema: getTwoFaMethodsSchema,
+			validatorCompiler: ({ schema }) => { return () => true; }},
 		async (request, reply) => {
 			const session = (request as any).session;
 			const methods = getUser2FaMethodsByUserId(session.user_id)
@@ -251,7 +253,9 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 
 	fastify.post(
 		'/twofa/',
-		{ preHandler: requireAuth },
+		{	preHandler: requireAuth,
+			schema: createTwoFaMethodsSchema,
+			validatorCompiler: ({ schema }) => { return () => true; }},
 		async (request, reply) => {
 			const session = (request as any).session;
 			const body = request.body as TwoFaCreation;

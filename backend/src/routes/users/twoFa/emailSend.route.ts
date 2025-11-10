@@ -5,14 +5,14 @@
 
 import { FastifyInstance } from 'fastify';
 
-import { emailSendSchema } from '../../../plugins/swagger/schemas/emailSend.schema.js';
+import { emailSendSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
 
 import { requireAuth } from '../../../middleware/auth.middleware.js';
 import { getUser2faEmailOtpByMethodId, getUser2FaMethodsByUserId, getUserById, updateUser2faEmailOtp, getProfileByUserId } from '../../../db/index.js';
 import { generateRandomToken, tokenHash } from '../../../utils/crypto.js';
 
 import { sendMail } from "../../../utils/mail/mail.js";
-import { checkRateLimit, delayResponse } from '../../../utils/security.js';
+import { checkRateLimit } from '../../../utils/security.js';
 
 enum TwoFaMethodType {
 	EMAIL = 0,
