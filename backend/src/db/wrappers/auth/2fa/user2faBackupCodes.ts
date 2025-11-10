@@ -31,7 +31,7 @@ export function getApiTokensById(id: number): user2faBackupCodes | undefined {
 export function createUser2faBackupCodes(options: Partial<user2faBackupCodes>): user2faBackupCodes | undefined {
     const   method_id = (options.method_id);
     const   code_json = (options.code_json);
-    const   created_at = (options.created_at);
+    const   created_at = (options.created_at ?? Date.now());
 
     return (insertRow<user2faBackupCodes>("user_2fa_backup_codes", {
         method_id: method_id,

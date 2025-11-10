@@ -1,5 +1,6 @@
 export * from "./2fa/user2FaMethods.js";
 export * from "./2fa/user2faEmailOtp.js";
+export * from "./2fa/user2faBackupCodes.js";
 export * from "./2fa/user2faTotp.js";
 export * from "./oauth/oauthAccounts.js";
 export * from "./oauth/oauthProviders.js";
