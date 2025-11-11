@@ -36,7 +36,7 @@ CREATE TABLE user_2fa_email_otp (
 -- Store the different information of the 2fa application
 CREATE TABLE user_2fa_totp (
 	totp_id					INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	method_id				INTEGER,															--- method id (FK)
+	method_id				TEXT,															--- method id (FK)
 	secret_encrypted		BLOB		NOT NULL,												--- secret to use to decrypt one time code
 	secret_meta				TEXT,																--- configuration of codes
 	last_used				DATETIME,															--- timestamp of the last used 2fa totp
@@ -47,7 +47,7 @@ CREATE TABLE user_2fa_totp (
 -- Store the backup codes
 CREATE TABLE user_2fa_backup_codes (
 	backup_code_id			INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
-	method_id				INTEGER,															-- method id (FK)
+	method_id				TEXT,															-- method id (FK)
 	code_json				TEXT		NOT NULL ,												-- Store the json codes
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						-- timestamp of the created backup code
 	FOREIGN KEY(method_id) REFERENCES user_2fa_methods(method_id) ON DELETE CASCADE				-- user_2fa_methods.method_id

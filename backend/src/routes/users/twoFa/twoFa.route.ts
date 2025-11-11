@@ -137,7 +137,7 @@ async function createEmailMethod(user: User, methodId: string, session: session,
 		'2faVerification.html',
 		{
 			HEADER: 'Address 2FA Verification',
-			USER_NAME: userProfile ? userProfile.username : params.mail.split('@')[0],
+			USER_NAME: userProfile ? userProfile.username : params.email.split('@')[0],
 			VERIFICATION_CODE: code,
 			RESET_PASSWORD_URL: `${process.env.MAIL_DOMAIN || 'https://pong.moutig.sh'}/reset-password`,
 			CLIENT_INFO: `${session.ip || 'Unknown IP'}`,
@@ -145,12 +145,13 @@ async function createEmailMethod(user: User, methodId: string, session: session,
 		`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 	);
 
-	createUser2faEmailOtp({
+	const result = createUser2faEmailOtp({
 		method_id: methodId,
 		email: params.email,
 		last_sent_code_hash: codeHash,
-		// last_sent_at, expires_at handled by DB default if needed
 	});
+	if (!result)
+		return { success: false, message: 'Failed to create Email OTP method in database.' };
 
 	return { success: true, message: 'Email OTP method created successfully.' };
 }
@@ -171,11 +172,13 @@ async function createTotpMethod(userEmail: string, methodId: string, label: stri
 
 	const secretStored = typeof encrypted === 'string' ? encrypted : encrypted.toString('hex');
 
-	createUser2faTotp({
+	const result = createUser2faTotp({
 		method_id: methodId,
 		secret_encrypted: secretStored,
 		secret_meta: JSON.stringify({ duration, algorithm, digits }),
 	});
+	if (!result)
+		return { success: false, message: 'Failed to create TOTP method in database.' };
 
 	const otpauthUrl = createTotpUri(userEmail, secretBase32, 'Transcendence', algorithm, digits, duration);
 	const qrMatrix = generateQrCode(otpauthUrl);
@@ -202,10 +205,12 @@ async function createBackupMethod(methodId: string) {
 		}))
 	);
 
-	createUser2faBackupCodes({
+	const result = createUser2faBackupCodes({
 		method_id: methodId,
 		code_json: JSON.stringify(hashedCodes)
 	});
+	if (!result)
+		return { success: false, message: 'Failed to create Backup Codes method in database.' };
 
 	return {
 		success: true,
@@ -238,11 +243,12 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 		async (request, reply) => {
 			const session = (request as any).session;
 			const methods = getUser2FaMethodsByUserId(session.user_id)
-				.filter(m => m.is_verified)
 				.map(m => ({
 					method_type: m.method_type,
 					label: m.label,
-					is_primary: m.is_primary
+					is_primary: m.is_primary,
+					is_verified: m.is_verified,
+					created_at: m.created_at
 				}));
 			if (methods.length === 0) {
 				return reply.status(404).send({ message: '2Fa is not set up for your account.' });
@@ -317,13 +323,22 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 
 				// persist base method row
 				try {
-					create2FaMethods({
+					const dbMethod = create2FaMethods({
 						method_id: methodId,
 						user_id: userId,
 						method_type: method.methodType,
 						label: method.label,
 						is_verified: false,
 					});
+					if (!dbMethod) {
+						results.push({
+							methodType: method.methodType,
+							label: method.label,
+							success: false,
+							message: 'Failed to create 2FA method in database.'
+						});
+						continue;
+					}
 				} catch (err: any) {
 					results.push({
 						methodType: method.methodType,

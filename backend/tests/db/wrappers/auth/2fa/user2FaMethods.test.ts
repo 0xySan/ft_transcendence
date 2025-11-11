@@ -213,20 +213,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(updated).toBe(false);
 	});
 
-	it("should reject creation with invalid timestamps", () => {
-		const method = create2FaMethods({
-			user_id: userId,
-			method_type: 2,
-			label: "InvalidTime",
-			is_primary: false,
-			is_verified: true,
-			// @ts-expect-error
-			created_at: "not-a-timestamp",
-			update_at: null
-		});
-		expect(method).toBeUndefined();
-	});
-
 	it("should accept is_verified as number 0/1", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
@@ -313,26 +299,6 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
 		expect(method.is_verified).toBe(1);
-	});
-
-	it("should reject creation when created_at or updated_at are missing", () => {
-		let method = create2FaMethods({
-			user_id: userId,
-			method_type: 0,
-			label: "Missing created_at",
-			is_verified: true,
-			updated_at: Math.floor(Date.now() / 1000),
-		});
-		expect(method).toBeUndefined();
-
-		method = create2FaMethods({
-			user_id: userId,
-			method_type: 0,
-			label: "Missing updated_at",
-			is_verified: true,
-			created_at: Math.floor(Date.now() / 1000),
-		});
-		expect(method).toBeUndefined();
 	});
 
 	it("should update is_verified correctly (true to false)", () => {

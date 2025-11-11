@@ -37,9 +37,9 @@ describe('twoFaRoutes', () => {
 
 	it('should return 200 with verified 2FA methods', async () => {
 		mockedGetUser2FaMethodsByUserId.mockReturnValue([
-			{ method_type: 0, label: 'Email', is_verified: true, is_primary: true, method_id: 1, user_id: 'user123', created_at: 0, updated_at: 0 },
-			{ method_type: 1, label: 'TOTP', is_verified: true, is_primary: false, method_id: 2, user_id: 'user123', created_at: 0, updated_at: 0 },
-			{ method_type: 2, label: 'Backup', is_verified: false, is_primary: false, method_id: 3, user_id: 'user123', created_at: 0, updated_at: 0 },
+			{ method_type: 0, label: 'Email', is_verified: true, is_primary: true, method_id: "0", user_id: 'user123', created_at: 0, updated_at: 0 },
+			{ method_type: 1, label: 'TOTP', is_verified: true, is_primary: false, method_id: "1", user_id: 'user123', created_at: 0, updated_at: 0 },
+			{ method_type: 2, label: 'Backup', is_verified: false, is_primary: false, method_id: "2", user_id: 'user123', created_at: 0, updated_at: 0 },
 		]);
 
 		const response = await app.inject({
@@ -49,7 +49,7 @@ describe('twoFaRoutes', () => {
 
 		expect(response.statusCode).toBe(200);
 		const body = JSON.parse(response.body);
-		expect(body.twoFaMethods).toHaveLength(2);
+		expect(body.twoFaMethods).toHaveLength(3);
 		expect(body.twoFaMethods[0]).toEqual({
 			method_type: 0,
 			label: 'Email',
@@ -60,21 +60,6 @@ describe('twoFaRoutes', () => {
 			label: 'TOTP',
 			is_primary: false,
 		});
-	});
-
-	it('should return 404 if no verified 2FA methods', async () => {
-		mockedGetUser2FaMethodsByUserId.mockReturnValue([
-			{ method_type: 0, label: 'Email', is_verified: false, is_primary: true, method_id: 1, user_id: 'user123', created_at: 0, updated_at: 0 },
-		]);
-
-		const response = await app.inject({
-			method: 'GET',
-			url: '/twofa/',
-		});
-
-		expect(response.statusCode).toBe(404);
-		const body = JSON.parse(response.body);
-		expect(body.message).toBe('2Fa is not set up for your account.');
 	});
 
 	it('should call requireAuth preHandler', async () => {

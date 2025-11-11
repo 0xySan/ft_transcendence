@@ -168,7 +168,7 @@ export function generateTotp(
  * @param token The TOTP code entered by the user (string or number).
  * @param digits Number of digits in the TOTP (default: 6).
  * @param period Time step in seconds (default: 30).
- * @param window Number of periods before/after current to check (default: 1).
+ * @param window Number of periods before/after current to check (default: 0).
  * @param timestamp Optional timestamp override in milliseconds.
  * @return True if the code is valid, false otherwise.
  *

@@ -1,4 +1,4 @@
-import { db, getRow } from "../../../index.js";
+import { db, getRow, user2faBackupCodes, user2faEmailOtp, user2faTotp } from "../../../index.js";
 import { v7 as uuidv7 } from "uuid";
 
 /**
@@ -19,6 +19,11 @@ export interface user2FaMethods {
 	created_at:		number;
 	updated_at:		number;
 }
+
+export type User2FaMethodRecord = 
+	| user2faEmailOtp
+	| user2faTotp
+	| user2faBackupCodes;
 
 /**
  * Get User 2FA Method by ID
@@ -55,19 +60,16 @@ export function getPrimary2FaMethodByUserId(user_id: string): user2FaMethods | u
  * @returns The created User 2FA Method or undefined on failure
  */
 export function create2FaMethods(options: Partial<user2FaMethods>): user2FaMethods | undefined {
-	// required: user_id:string, method_type:number, created_at:number, updated_at:number
-	if (typeof options.user_id !== "string") return undefined;
-	if (typeof options.method_type !== "number") return undefined;
-	if (typeof options.created_at !== "number" || typeof options.updated_at !== "number") return undefined;
-
 	const method_id = (typeof options.method_id === "string" && options.method_id.length > 0) ? options.method_id : uuidv7();
 	const user_id = options.user_id;
 	const method_type = options.method_type;
 	const label = (typeof options.label === "string") ? options.label : null;
 	const is_primary = (options.is_primary ? 1 : 0);
 	const is_verified = (options.is_verified ? 1 : 0);
-	const created_at = (options.created_at ? options.created_at : Date.now());
-	const updated_at = options.updated_at;
+	const created_at = (typeof options.created_at === "number") ? options.created_at : Date.now();
+	const updated_at = (typeof options.updated_at === "number") ? options.updated_at : created_at;
+
+	if (typeof user_id !== "string" || typeof method_type !== "number") return undefined;
 
 	try {
 		const stmt = db.prepare(`
@@ -77,7 +79,7 @@ export function create2FaMethods(options: Partial<user2FaMethods>): user2FaMetho
 		`);
 		stmt.run(method_id, user_id, method_type, label, is_primary, is_verified, created_at, updated_at);
 	} catch (err) {
-		// insertion failed (constraint, type mismatch...) -> return undefined for tests
+		console.error("Error creating 2FA method:", err);
 		return undefined;
 	}
 

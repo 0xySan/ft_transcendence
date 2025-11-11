@@ -15,10 +15,10 @@ import {
 } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
 let userId: string;
-let methodId: number;
+let methodId: string;
 let totpId: number;
 
-describe("user_2fa_totp wrapper – with FK setup", () => {
+describe("user2faTotp wrapper – with FK setup", () => {
 	beforeAll(() => {
 		userId = uuidv7();
 		const insertUser = db.prepare(`
@@ -32,7 +32,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 			user_id: userId,
 			method_type: 2,
 			label: "App Authenticator",
-			is_primary: 1,
+			is_primary: true,
 			is_verified: true,
 			created_at: now,
 			updated_at: now
@@ -42,7 +42,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		if (!methodId) throw new Error("Throw error (undefined)");
 	});
 
-	it("should create a user_2fa_totp entry with valid FK", () => {
+	it("should create a user2faTotp entry with valid FK", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const created = createUser2faTotp({
 			method_id: methodId,
@@ -60,7 +60,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		expect(typeof totpId).toBe("number");
 	});
 
-	it("should retrieve a user_2fa_totp entry by ID", () => {
+	it("should retrieve a user2faTotp entry by ID", () => {
 		const totp = getUser2faTotpById(totpId);
 		expect(totp).toBeDefined();
         if (!totp)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
@@ -88,7 +88,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 
 	it("should not allow creation without valid method_id", () => {
 		const result = createUser2faTotp({
-			method_id: 99999,
+			method_id: "non-existent-method-id",
             // @ts-expect-error
 			secret_encrypted: Buffer.from("bad"),
 			secret_meta: "fail"
@@ -96,7 +96,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		expect(result).toBeUndefined();
 	});
 
-	it("should retrieve user_2fa_totp by method_id", () => {
+	it("should retrieve user2faTotp by method_id", () => {
         const totp = getUser2faTotpByMethodId(methodId);
         if (!totp)throw new Error("Expected an user2faTotp from getUser2faTotpByMethodId(), but got undefined.");
         expect(totp).toBeDefined();
@@ -104,7 +104,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
         expect(totp.secret_encrypted).toBeInstanceOf(Buffer);
     });
 
-	it("should list all user_2fa_totp entries", () => {
+	it("should list all user2faTotp entries", () => {
 		const allTotps = listUser2faTotp();
 		expect(Array.isArray(allTotps)).toBe(true);
 		expect(allTotps.length).toBeGreaterThan(0);

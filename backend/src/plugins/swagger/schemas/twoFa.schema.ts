@@ -1,7 +1,7 @@
 export const getTwoFaMethodsSchema = {
 	summary: "Get verified Two-Factor Authentication methods for the current user",
 	description:
-		"Retrieves all 2FA methods that have been set up and verified for the authenticated user. Each method includes its type, label, and whether it is the primary method.",
+		"Retrieves all 2FA methods that have been set up for the authenticated user. Each method includes its type, label, if it is verified, when it was created, and whether it is the primary method.",
 	tags: ["Users: Two-Factor Authentication"],
 	response: {
 		200: {
@@ -25,14 +25,22 @@ export const getTwoFaMethodsSchema = {
 								type: "boolean",
 								description: "Indicates whether this method is the primary 2FA method",
 							},
+							is_verified: {
+								type: "boolean",
+								description: "Indicates whether this 2FA method has been verified",
+							},
+							created_at: {
+								type: "integer",
+								description: "Timestamp (ms since epoch) when the 2FA method was created",
+							}
 						},
-						required: ["method_type", "label", "is_primary"],
+						required: ["method_type", "label", "is_primary", "is_verified", "created_at"],
 					},
 				},
 			},
 		},
 		404: {
-			description: "No verified 2FA methods found for the user",
+			description: "No 2FA methods found for the user",
 			type: "object",
 			properties: {
 				message: { type: "string", example: "2Fa is not set up for your account." },
@@ -198,7 +206,7 @@ export const emailSendSchema = {
 	summary: "Send a verification email",
 	description:
 		"Sends a 2fa verification email to the user.",
-	tags: ["Email", "2FA"],
+	tags: ["Users: Two-Factor Authentication"],
 	body: {
 		type: "object",
 		required: ["email"],
@@ -232,6 +240,64 @@ export const emailSendSchema = {
 			description: "Internal server error",
 			type: "object",
 			properties: { message: { type: "string" } },
+		},
+	},
+};
+
+/*	=======================================================
+		Validate TOTP Code Schema
+	=======================================================	*/
+export const validateTotpSchema = {
+	summary: "Validate a TOTP code for a 2FA method",
+	description:
+		"Validates a Time-based One-Time Password (TOTP) code provided by the user for a specific 2FA method.",
+	tags: ["Users: Two-Factor Authentication"],
+	body: {
+		type: "object",
+		required: ["twofa_uuid", "totp_code"],
+		properties: {
+			twofa_uuid: {
+				type: "string",
+				description: "The UUID of the 2FA method to validate against",
+			},
+			totp_code: {
+				type: "string",
+				description: "The TOTP code provided by the user",
+			},
+		},
+	},
+	response: {
+		200: {
+			description: "TOTP code validated successfully",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "TOTP code validated successfully." },
+			},
+		},
+		400: {
+			description: "Bad request — missing or invalid fields",
+			type: "object",
+			properties: { message: { type: "string" } },
+		},
+		401: {
+			description: "Unauthorized — invalid TOTP code",
+			type: "object",
+			properties: { message: { type: "string", example: "Invalid TOTP code." } },
+		},
+		404: {
+			description: "2FA method not found",
+			type: "object",
+			properties: { message: { type: "string", example: "TOTP method not found." } },
+		},
+		429: {
+			description: "Too many attempts — rate limit exceeded",
+			type: "object",
+			properties: { message: { type: "string" } },
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { message: { type: "string", example: "Internal server error." } },
 		},
 	},
 };
