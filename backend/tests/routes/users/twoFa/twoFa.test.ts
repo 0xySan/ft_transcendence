@@ -54,11 +54,15 @@ describe('twoFaRoutes', () => {
 			method_type: 0,
 			label: 'Email',
 			is_primary: true,
+			created_at: 0,
+			is_verified: true
 		});
 		expect(body.twoFaMethods[1]).toEqual({
 			method_type: 1,
 			label: 'TOTP',
 			is_primary: false,
+			created_at: 0,
+			is_verified: true
 		});
 	});
 
