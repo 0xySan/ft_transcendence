@@ -1,7 +1,7 @@
 export const userImgsSchema = {
 	summary: "Get user images",
 	description: "Retrieves a user profile picture by its name.",
-	tags: ["Users"],
+	tags: ["Users: Data"],
 	params: {
 		type: "object",
 		required: ["fileName"],

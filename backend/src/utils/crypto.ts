@@ -11,11 +11,93 @@ dotenv.config({ quiet: true });
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || ''; // hex string
 const TOKEN_HMAC_KEY = process.env.TOKEN_HMAC_KEY || ENCRYPTION_KEY;
+const SIGN_KEY = process.env.SIGN_KEY || ENCRYPTION_KEY;
 const IV_LENGTH = 16; // AES block size
 
+export const twofaTokens: Map<string, number> = new Map();
+
+export function cleanUsedTokens() {
+	const now = Date.now()
+	for (const [sig, exp] of twofaTokens) {
+		if (exp < now) twofaTokens.delete(sig)
+	}
+}
+
+setInterval(() => cleanUsedTokens(), 10_000);
+
+interface SignedTokenPayload {
+	payload: string;
+	timestamp: number;
+}
+
+/**
+ * Hash a token using HMAC-SHA256
+ * @param token - string to hash
+ * @returns hex string of the hash
+ */
 export function tokenHash(token: string): string {
 	if (!TOKEN_HMAC_KEY) throw new Error('TOKEN_HMAC_KEY missing');
 	return crypto.createHmac('sha256', Buffer.from(TOKEN_HMAC_KEY, 'hex')).update(token).digest('hex');
+}
+
+/**
+ * Create a signed token with optional expiration in seconds
+ * @param payload - string data to encode
+ * @param expiresInSec - optional, default 60s
+ * @returns token string
+ * 
+ * @example
+ * ```ts
+ * const token = signToken("user:1234", 120); // valid for 120 seconds
+ * console.log(token); // prints the signed token
+ * ```
+ */
+export function signToken(payload: string, expiresInSec = 60): string {
+	const timestamp = Date.now() + expiresInSec * 1000;
+	const data = JSON.stringify({ payload, timestamp });
+	const hmac = crypto.createHmac('sha256', Buffer.from(SIGN_KEY, 'hex')).update(data).digest('hex');
+	const token = Buffer.from(JSON.stringify({ data, hmac })).toString('base64');
+	return token;
+}
+
+/**
+ * Verify a signed token and ensure it is used only once
+ * @param token - token string
+ * @returns the original payload if valid and not used before, or null
+ * 
+ * @example
+ * ```ts
+ * const token = signToken("user:1234", 60);
+ * const payload = verifyToken(token);
+ * if (payload)
+ *   console.log("Token valid for payload:", payload);
+ * else
+ *   console.log("Token invalid or already used");
+ * ```
+ */
+export function verifyToken(token: string): string | null {
+	try {
+		const decoded = Buffer.from(token, 'base64').toString('utf8');
+		const { data, hmac } = JSON.parse(decoded);
+
+		// Check if token HMAC is already used
+		if (twofaTokens.has(hmac)) return null;
+
+		// Validate HMAC
+		const expectedHmac = crypto.createHmac('sha256', Buffer.from(SIGN_KEY, 'hex')).update(data).digest('hex');
+		if (!crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))) return null;
+
+		// Validate timestamp
+		const { payload, timestamp } = JSON.parse(data) as SignedTokenPayload;
+		if (Date.now() > timestamp) return null;
+
+		// Mark token as used
+		twofaTokens.set(hmac, timestamp);
+
+		return payload;
+	} catch {
+		return null;
+	}
 }
 
 /**

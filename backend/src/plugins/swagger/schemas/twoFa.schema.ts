@@ -2,7 +2,7 @@ export const getTwoFaMethodsSchema = {
 	summary: "Get verified Two-Factor Authentication methods for the current user",
 	description:
 		"Retrieves all 2FA methods that have been set up for the authenticated user. Each method includes its type, label, if it is verified, when it was created, and whether it is the primary method.",
-	tags: ["Users: Two-Factor Authentication"],
+	tags: ["Users: 2FA"],
 	response: {
 		200: {
 			description: "List of verified 2FA methods",
@@ -71,7 +71,7 @@ export const createTwoFaMethodsSchema = {
 	description:
 		"Allows the authenticated user to create new 2FA methods (Email OTP, Authenticator App TOTP, or Backup Codes). " +
 		"Each method can include custom parameters, such as email address, TOTP algorithm, or duration.",
-	tags: ["Users: Two-Factor Authentication"],
+	tags: ["Users: 2FA"],
 	body: {
 		type: "object",
 		required: ["methods"],
@@ -206,7 +206,7 @@ export const emailSendSchema = {
 	summary: "Send a verification email",
 	description:
 		"Sends a 2fa verification email to the user.",
-	tags: ["Users: Two-Factor Authentication"],
+	tags: ["Users: 2FA - Email"],
 	body: {
 		type: "object",
 		required: ["email"],
@@ -251,7 +251,7 @@ export const validateTotpSchema = {
 	summary: "Validate a TOTP code for a 2FA method",
 	description:
 		"Validates a Time-based One-Time Password (TOTP) code provided by the user for a specific 2FA method.",
-	tags: ["Users: Two-Factor Authentication"],
+	tags: ["Users: 2FA - TOTP"],
 	body: {
 		type: "object",
 		required: ["twofa_uuid", "totp_code"],
