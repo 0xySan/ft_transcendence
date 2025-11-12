@@ -220,6 +220,10 @@
                           BACKGROUND COLOR DEFINITION
    ========================================================================== */
 
+.background-color-peach {
+  background-color: rgb(var(--peach));
+}
+
 .background-color-lavender {
   background-color: rgb(var(--lavender));
 }
@@ -263,6 +267,17 @@ body {
 
 :root {
   transition: background-color 0.5s ease;
+}
+
+/* utility hidden class (use on any element that should be visually hidden but keep layout reserve) */
+.hidden {
+  height: 2rem;
+  visibility: hidden;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: opacity 0.15s ease;
+  opacity: 0;
 }
 
 /* ==========================================================================
@@ -415,10 +430,11 @@ body {
 
   /* smaller reserved height so it doesn't look too big */
   font-size: 0.875rem;
-  height: 2rem;         /* reserved space when hidden */
+  height: 2rem;         /* reserved space */
   line-height: 2rem;
 
-  visibility: hidden;
+  /* visible by default */
+  visibility: visible;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -426,7 +442,7 @@ body {
   margin: 0;
   padding: 0;
   transition: opacity 0.15s ease;
-  opacity: 0;
+  opacity: 1;
 }
 
 /* two-line clamped multiline message (won't grow beyond max-height) */
@@ -442,12 +458,6 @@ body {
 
   max-height: 2rem; /* 2 * line-height */
   overflow: hidden;
-}
-
-/* show the error */
-.error-message.visible {
-  visibility: visible;
-  opacity: 1;
 }
 
 .form-input-field {
@@ -517,6 +527,60 @@ body {
   flex-direction: column;
   gap: 0rem;
   margin-bottom: 2rem;
+}
+
+/* ==========================================================================
+                            LOBBY PAGE STYLES 
+   ========================================================================== */
+
+#lobby-page {
+  display: flex;
+  flex-direction: column;      /* column layout (Figma: vertical) */
+  justify-content: flex-start; /* top alignment */
+  align-items: flex-end;       /* right alignment */
+  gap: 16px;                   /* spacing (Figma: 16) */
+}
+
+.join-box {
+  display: flex;
+  align-items: center;
+  border: 2px solid rgb(var(--surface1));
+  border-radius: 9999px; /* full pill shape */
+  overflow: hidden;
+  width: 320px;
+  height: 52px;
+  padding: 0 8px 0 8px; /* spacing inside */
+}
+
+.join-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  outline: none;
+  min-width: 0; /* allow input to shrink inside .join-box so .join-button isn't pushed out */
+}
+
+.join-input::placeholder {
+  color: rgb(var(--overlay1))
+}
+
+.join-button {
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.join-button:hover {
+  transform: scale(1.03);
+}
+
+.join-button:active {
+  transform: scale(0.98);
 }
 
 /* ==========================================================================

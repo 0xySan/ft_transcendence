@@ -28,13 +28,13 @@ function verifyEmailValidity(): boolean {
 
   if (!emailRegex.test(email)) {
     errorTextElement.textContent = 'Please enter a valid email address.';
-    errorTextElement.classList.add('visible');
+    errorTextElement.classList.remove('hidden');
     errorTextElement.setAttribute('aria-hidden', 'false');
     console.log('Invalid email:', email);
     return false;
   } else {
     errorTextElement.textContent = '';
-    errorTextElement.classList.remove('visible');
+    errorTextElement.classList.add('hidden');
     errorTextElement.setAttribute('aria-hidden', 'true');
     return true;
   }
