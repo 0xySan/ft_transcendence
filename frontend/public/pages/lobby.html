@@ -1,43 +1,50 @@
 <div id="lobby-page">
-    <div>
-        <div>
-            <div>
+    <div id="lobby-info-boxes">
+        <div id="lobby-player-box">
+            <div id="lobby-player-info-count">
                 <p>Players</p>
                 <p>X</p>
                 <p>/</p>
                 <p>Y</p>
             </div>
-            <div>
+            <div id="lobby-player-list">
                 <!-- TODO Player List -->
             </div>
         </div>
-        <div>
-            <div>
+        <div id="lobby-mode-setting">
+            <div id="lobby-mode-buttons">
                 <button>Multiplayer</button>
                 <button>Custom Game</button>
                 <button>Tournament</button>
             </div>
-            <div>
-                <div>
+            <div id="lobby-setting-box">
+                <div id="lobby-setting-box-title">
                     <p>Settings</p>
-                    <div>
+                    <div id="lobby-private-checkbox">
                         <label for="">Private</label>
                         <input type="checkbox" name="private-checkbox" id="private-checkbox">
                     </div>
                 </div>
-                <div>
+                <div id="lobby-setting-type">
+
+                </div>
+                <div class="lobby-setting-list" id="lobby-basic-settings">
+
+                </div>
+                <div class="lobby-setting-list" id="lobby-advanced-settings">
 
                 </div>
             </div>
         </div>
     </div>
-    <div>
-        <div class="join-box">
+    <div id="lobby-action-buttons">
+        <div id="lobby-join-box">
             <input type="text" placeholder="Enter code" class="join-input font-poppins-regular text-color-text" />
-            <button class="join-button background-color-peach">Join</button>
+            <button class="join-button background-color-peach">JOIN</button>
         </div>
-        <div>
-            <!-- LEAVE & LAUNCH BUTTON -->
+        <div id="lobby-leave-launch-buttons">
+            <button class="background-color-red">LEAVE</button>
+            <button class="background-color-blue">LAUNCH</button>
         </div>
     </div>
 </div>
