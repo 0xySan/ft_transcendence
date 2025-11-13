@@ -247,10 +247,12 @@ export const emailSendSchema = {
 /*	=======================================================
 		Validate TOTP Code Schema
 	=======================================================	*/
+/* =======================================================
+   Validate TOTP Code Schema
+   ======================================================= */
 export const validateTotpSchema = {
 	summary: "Validate a TOTP code for a 2FA method",
-	description:
-		"Validates a Time-based One-Time Password (TOTP) code provided by the user for a specific 2FA method.",
+	description: "Validates a Time-based One-Time Password (TOTP) code provided by the user for a specific 2FA method.",
 	tags: ["Users: 2FA - TOTP"],
 	body: {
 		type: "object",
@@ -262,42 +264,121 @@ export const validateTotpSchema = {
 			},
 			totp_code: {
 				type: "string",
-				description: "The TOTP code provided by the user",
+				description: "The TOTP code provided by the user (6–8 digits)",
+				example: "123456",
 			},
 		},
 	},
 	response: {
 		200: {
-			description: "TOTP code validated successfully",
+			description: "TOTP validated successfully",
 			type: "object",
 			properties: {
 				message: { type: "string", example: "TOTP code validated successfully." },
 			},
 		},
 		400: {
-			description: "Bad request — missing or invalid fields",
+			description: "Missing or invalid fields",
 			type: "object",
-			properties: { message: { type: "string" } },
+			properties: {
+				message: { type: "string", example: "twofa_uuid and totp_code are required." },
+			},
 		},
 		401: {
-			description: "Unauthorized — invalid TOTP code",
+			description: "Invalid or expired TOTP code",
 			type: "object",
-			properties: { message: { type: "string", example: "Invalid TOTP code." } },
+			properties: {
+				message: { type: "string", example: "Invalid or expired TOTP code." },
+			},
 		},
 		404: {
-			description: "2FA method not found",
+			description: "Generic error for nonexistent or unauthorized methods (anti-enumeration)",
 			type: "object",
-			properties: { message: { type: "string", example: "TOTP method not found." } },
+			properties: {
+				message: { type: "string", example: "TOTP method not found." },
+			},
 		},
 		429: {
-			description: "Too many attempts — rate limit exceeded",
+			description: "Too many requests (rate limit exceeded)",
 			type: "object",
-			properties: { message: { type: "string" } },
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." },
+			},
+		},
+		500: {
+			description: "Internal server error during TOTP verification",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Failed to process TOTP verification." },
+			},
+		},
+	},
+};
+
+/* =======================================================
+   Generate TOTP Token Schema
+   ======================================================= */
+export const generateTotpTokenSchema = {
+	summary: "Generate a TOTP session token for a verified 2FA method",
+	description: "Generates a signed short-lived token after a successful TOTP verification.",
+	tags: ["Users: 2FA - TOTP"],
+	body: {
+		type: "object",
+		required: ["twofa_uuid", "totp_code"],
+		properties: {
+			twofa_uuid: {
+				type: "string",
+				description: "The UUID of the verified 2FA method",
+			},
+			totp_code: {
+				type: "string",
+				description: "The TOTP code provided by the user (6–8 digits)",
+				example: "123456",
+			},
+		},
+	},
+	response: {
+		200: {
+			description: "TOTP token generated successfully",
+			type: "object",
+			properties: {
+				token: { type: "string", example: "eyJkYXRhIjoie1wicGF5bG9hZFwiOiI..." },
+			},
+		},
+		400: {
+			description: "Missing or invalid fields",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "twofa_uuid and totp_code are required." },
+			},
+		},
+		401: {
+			description: "Invalid or expired TOTP code",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Invalid or expired TOTP code." },
+			},
+		},
+		404: {
+			description: "Generic error for nonexistent or unauthorized methods (anti-enumeration)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "TOTP method not found." },
+			},
+		},
+		429: {
+			description: "Too many requests (rate limit exceeded)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." },
+			},
 		},
 		500: {
 			description: "Internal server error",
 			type: "object",
-			properties: { message: { type: "string", example: "Internal server error." } },
+			properties: {
+				message: { type: "string", example: "Failed to process TOTP verification." },
+			},
 		},
 	},
 };
