@@ -13,6 +13,10 @@ export const getTwoFaMethodsSchema = {
 					items: {
 						type: "object",
 						properties: {
+							id: {
+								type: "string",
+								description: "UUID of the 2FA method",
+							},
 							method_type: {
 								type: "integer",
 								description: "Type of 2FA method (0 = email, 1 = TOTP, etc.)",

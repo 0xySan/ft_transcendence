@@ -1,91 +1,122 @@
 /**
  * @file login.route.ts
- * @description Secure user login route (OWASP-compliant, prevents user enumeration).
+ * @description Secure user login route (OWASP-compliant, with 2FA support and partial session upgrade).
  */
 
 import { FastifyInstance } from "fastify";
-import { loginAccountSchema } from "../../../plugins/swagger/schemas/login.schema.js";
+import { loginAccountSchema, loginPatchSchema } from "../../../plugins/swagger/schemas/login.schema.js";
 import { checkRateLimit, delayResponse } from "../../../utils/security.js";
-import { getPasswordHashByUserId, getProfileByUsername, getUser2FaMethodsByUserId, getUserByEmail } from "../../../db/index.js";
-import { verifyHashedString } from "../../../utils/crypto.js";
+import {
+	getPasswordHashByUserId,
+	getProfileByUsername,
+	getUser2FaMethodsByUserId,
+	getUserByEmail,
+	updateSession
+} from "../../../db/index.js";
+import { verifyHashedString, verifyToken } from "../../../utils/crypto.js";
 import { createNewSession } from "../../../utils/session.js";
+import { requirePartialAuth } from "../../../middleware/auth.middleware.js";
 
+// ---------- Rate limiting ----------
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5; // max 5 registrations per 15 minutes per IP or per email/username
-const RATE_WINDOW = 15 * 60 * 1000;
-const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
+const RATE_LIMIT = 5; // max 5 tentatives
+const RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MIN_DELAY = 500;
 
-export async function newUserLoginRoutes(fastify: FastifyInstance) {
+// ---------- Common Verification Logic ----------
+async function handleUserLoginValidation(
+	request: any,
+	reply: any,
+	startTime: number,
+	clientIp: string
+) {
 	const passwordRegex = /^.{8,64}$/;
+	const { username, email, password, rememberMe } = request.body as {
+		username?: string;
+		email?: string;
+		password: string;
+		rememberMe: boolean;
+	};
 
-	fastify.post("/accounts/login", { schema: loginAccountSchema }, async (request, reply) => {
+	// --- Rate limit par IP avant toute autre vérification ---
+	if (!checkRateLimit(requestCount, clientIp, reply, RATE_LIMIT, RATE_WINDOW)) {
+		return null;
+	}
+
+	// --- Validation du format des credentials ---
+	if (email && username)
+		return reply.status(400).send({ message: "Provide either email or username, not both." });
+
+	if (!password || !passwordRegex.test(password)) {
+		await delayResponse(startTime, MIN_DELAY);
+		return reply.status(400).send({ message: "Login failed. Please try again later." });
+	}
+
+	// --- Recherche de l’utilisateur ---
+	let existingUser;
+	if (email) existingUser = getUserByEmail(email);
+	else if (username) existingUser = getProfileByUsername(username);
+
+	if (!existingUser) {
+		await delayResponse(startTime, MIN_DELAY);
+		return reply.status(400).send({ message: "Login failed. Please try again later." });
+	}
+
+	// --- Rate limit par utilisateur (user_id) ---
+	if (!checkRateLimit(requestCount, existingUser.user_id, reply, RATE_LIMIT, RATE_WINDOW)) {
+		return null;
+	}
+
+	// --- Vérification du mot de passe ---
+	const passwordHash = getPasswordHashByUserId(existingUser.user_id);
+	if (!passwordHash) {
+		await delayResponse(startTime, MIN_DELAY);
+		return reply.status(400).send({ message: "Login failed. Please try again later." });
+	}
+
+	const isMatch = await verifyHashedString(password, passwordHash);
+	if (!isMatch) {
+		await delayResponse(startTime, MIN_DELAY);
+		return reply.status(400).send({ message: "Login failed. Please try again later." });
+	}
+
+	return { existingUser, rememberMe };
+}
+
+// ---------- Routes ----------
+export async function newUserLoginRoutes(fastify: FastifyInstance) {
+
+	// --- [POST] /accounts/login ---
+	fastify.post(
+		"/accounts/login",
+		{
+			schema: loginAccountSchema,
+			validatorCompiler: () => () => true
+		}, async (request, reply) => {
 		const startTime = Date.now();
-		const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
-		
-		if (!checkRateLimit(requestCount, clientIp, reply, RATE_LIMIT, RATE_WINDOW)) {
-			return;
-		}
+		const clientIp = request.ip || request.headers["x-forwarded-for"]?.toString() || "unknown";
 
 		try {
-			const { username, email, password, rememberMe } = request.body as {
-				username?: string;
-				email?: string;
-				password: string;
-				rememberMe: boolean;
-			};
+			const result = await handleUserLoginValidation(request, reply, startTime, clientIp);
+			if (!result) return;
 
-			if (email && username) {
-				return reply.status(400).send({ message: "Provide either email or username, not both." });
-			}
-
-			if (!password || !passwordRegex.test(password)) {
-				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(400).send({message: "Login failed. Please try again later."});
-			}
-
-			let existingUser;
-			if (email) {
-				existingUser = getUserByEmail(email);
-			} else if (username) {
-				existingUser = getProfileByUsername(username);
-			}
-
-			if (!existingUser) {
-				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(400).send({message: "Login failed. Please try again later."});
-			}
-
-			if (!checkRateLimit(requestCount, existingUser.user_id, reply, RATE_LIMIT, RATE_WINDOW)) {
-				return;
-			}
-
-			const passwordHash = getPasswordHashByUserId(existingUser.user_id);
-			if (!passwordHash) {
-				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(400).send({ message: "Login failed. Please try again later." });
-			}
-
-			const isMatch = await verifyHashedString(password, passwordHash);
-			
-			if (!isMatch) {
-				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(400).send({ message: "Login failed. Please try again later." });
-			}
+			const { existingUser, rememberMe } = result;
 
 			const user2FaMethods = getUser2FaMethodsByUserId(existingUser.user_id)
-				.filter(method => method.is_verified) // Only include verified methods
+				.filter(method => method.is_verified)
 				.map(method => ({
 					method_type: method.method_type,
 					label: method.label,
 					is_primary: method.is_primary
 				}));
-			
+
+			// ---- 2FA required ----
 			if (user2FaMethods && user2FaMethods.length > 0) {
 				const session = createNewSession(existingUser.user_id, {
 					ip: request.ip,
-					userAgent: request.headers['user-agent'],
-					ttlMs: 10 * 60 * 1000, // 10 minutes
-					stage: 'partial'
+					userAgent: request.headers["user-agent"],
+					ttlMs: 10 * 60 * 1000, // 10 min
+					stage: "partial"
 				});
 
 				if (!session) {
@@ -93,12 +124,12 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 					return reply.status(500).send({ message: "Login failed. Please try again later." });
 				}
 
-				reply.setCookie('session', session.token, {
-					path: '/',
+				reply.setCookie("session", session.token, {
+					path: "/",
 					httpOnly: true,
-					secure: process.env.NODE_ENV !== 'test',
-					sameSite: 'strict',
-					maxAge: 10 * 60 // 10 minutes
+					secure: process.env.NODE_ENV !== "test",
+					sameSite: "strict",
+					maxAge: 10 * 60
 				});
 
 				return reply.status(202).send({
@@ -108,38 +139,83 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			else {
-				const session = createNewSession(existingUser.user_id, {
-					ip: request.ip,
-					userAgent: request.headers['user-agent'],
-					stage: 'active',
-					isPersistent: rememberMe || false
-				});
+			// ---- Normal login ----
+			const session = createNewSession(existingUser.user_id, {
+				ip: request.ip,
+				userAgent: request.headers["user-agent"],
+				stage: "active",
+				isPersistent: rememberMe || false
+			});
 
-				if (!session) {
-					await delayResponse(startTime, MIN_DELAY);
-					return reply.status(500).send({ message: "Login failed. Please try again later." });
-				}
-
-				const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2; // 30 days or 2 hours
-				reply.setCookie('session', session.token, {
-					path: '/',
-					httpOnly: true,
-					secure: process.env.NODE_ENV !== 'test',
-					sameSite: 'strict',
-					maxAge: maxAge
-				});
-				
-				return reply.status(202).send({ 
-					message: "Login successful.",
-					user: { id: existingUser.user_id }
-				});
+			if (!session) {
+				await delayResponse(startTime, MIN_DELAY);
+				return reply.status(500).send({ message: "Login failed. Please try again later." });
 			}
-			
+
+			const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2; // 30j ou 2h
+			reply.setCookie("session", session.token, {
+				path: "/",
+				httpOnly: true,
+				secure: process.env.NODE_ENV !== "test",
+				sameSite: "strict",
+				maxAge
+			});
+
+			return reply.status(202).send({
+				message: "Login successful.",
+				user: { id: existingUser.user_id }
+			});
+
 		} catch (error) {
 			console.error("Error in /accounts/login:", error);
-			await delayResponse(startTime, MIN_DELAY);
+			await delayResponse(Date.now(), MIN_DELAY);
 			return reply.status(500).send({ message: "Login failed. Please try again later." });
+		}
+	});
+
+	// --- [PATCH] /accounts/login ---
+	fastify.patch(
+		"/accounts/login",
+		{
+			preHandler: requirePartialAuth,
+			schema: loginPatchSchema,
+			validatorCompiler: () => () => true
+		},
+		async (request, reply) => {
+		try {
+			const { token } = request.body as { token?: string };
+
+			if (!token)
+				return reply.status(400).send({ message: "Missing 2FA token." });
+
+			const decoded = verifyToken(token);
+			if (!decoded)
+				return reply.status(401).send({ message: "Invalid or expired token." });
+
+			const session = (request as any).session;
+			if (!session || session.stage !== "partial")
+				return reply.status(400).send({ message: "No partial session to upgrade." });
+
+			const upgraded = updateSession(session.session_id, { stage: "active" });
+
+			if (!upgraded)
+				return reply.status(500).send({ message: "Failed to upgrade session." });
+
+			reply.setCookie("session", session.token, {
+				path: "/",
+				httpOnly: true,
+				secure: process.env.NODE_ENV !== "test",
+				sameSite: "strict",
+				maxAge: 60 * 60 * 2
+			});
+
+			return reply.status(200).send({
+				message: "2FA verification successful. Session upgraded.",
+				user: { id: session.user_id }
+			});
+		} catch (err) {
+			console.error("Error in PATCH /accounts/login:", err);
+			return reply.status(500).send({ message: "Unable to complete login process." });
 		}
 	});
 }

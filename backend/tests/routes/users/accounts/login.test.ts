@@ -28,20 +28,29 @@ describe("POST /accounts/login", () => {
 			getUser2FaMethodsByUserId: vi.fn(),
 			getUserByEmail: vi.fn(),
 			createNewSession: vi.fn(),
+			updateSession: vi.fn(),
 		}));
 
 		// Mock crypto verify
 		vi.doMock("../../../../src/utils/crypto.js", () => ({
 			__esModule: true,
-			verifyHashedString: vi.fn(async (plain: string, hashed: string) => hashed === `hashed_test_${plain}`),
+			verifyHashedString: vi.fn(),
+			verifyToken: vi.fn(),
 		}));
-
 		vi.doMock("../../../../src/utils/session.js", () => ({
 			__esModule: true,
 			createNewSession: vi.fn(() => ({
 				token: "tok",
 				session: { id: 1 },
 			})),
+		}));
+
+		vi.doMock("../../../../src/middleware/auth.middleware.js", () => ({
+			__esModule: true,
+			requirePartialAuth: vi.fn((req: any, res: any, done: any) => {
+				req.session = { session_id: "sid1", user_id: "uid1", stage: "partial", token: "tok" };
+				done();
+			}),
 		}));
 
 		// Import the route AFTER mocks
@@ -275,5 +284,68 @@ describe("POST /accounts/login", () => {
 		const body = res.json();
 		expect(body).toHaveProperty("message");
 		expect(body.message).toMatch(/Login failed/i);
+	});
+
+	describe("PATCH /accounts/login (2FA verification)", () => {
+		it("returns 400 if token is missing", async () => {
+			const res = await fastify.inject({
+				method: "PATCH",
+				url: "/accounts/login",
+				payload: {},
+			});
+			expect(res.statusCode).toBe(400);
+			expect(res.json().message).toMatch(/Missing 2FA token/i);
+		});
+
+		it("returns 401 if token is invalid or expired", async () => {
+			const res = await fastify.inject({
+				method: "PATCH",
+				url: "/accounts/login",
+				payload: { token: "invalid_token" },
+			});
+			expect(res.statusCode).toBe(401);
+			expect(res.json().message).toMatch(/Invalid or expired token/i);
+		});
+
+		it("returns 500 if updateSession fails", async () => {
+			mocks.crypto.verifyToken.mockReturnValue({ ok: true });
+			mocks.db.updateSession.mockReturnValue(false);
+
+			const res = await fastify.inject({
+				method: "PATCH",
+				url: "/accounts/login",
+				payload: { token: "valid_token" },
+			});
+			expect(res.statusCode).toBe(500);
+			expect(res.json().message).toMatch(/Failed to upgrade session/i);
+		});
+
+		it("returns 200 on successful 2FA verification", async () => {
+			mocks.crypto.verifyToken.mockReturnValue({ ok: true });
+			mocks.db.updateSession.mockReturnValue(true);
+
+			const res = await fastify.inject({
+				method: "PATCH",
+				url: "/accounts/login",
+				payload: { token: "valid_token" },
+			});
+			expect(res.statusCode).toBe(200);
+			const body = res.json();
+			expect(body.message).toMatch(/2FA verification successful/i);
+			expect(body.user).toHaveProperty("id");
+		});
+
+		it("returns 500 if unexpected error occurs", async () => {
+			mocks.crypto.verifyToken.mockImplementation(() => {
+				throw new Error("Crypto failure");
+			});
+			const res = await fastify.inject({
+				method: "PATCH",
+				url: "/accounts/login",
+				payload: { token: "valid_token" },
+			});
+			expect(res.statusCode).toBe(500);
+			expect(res.json().message).toMatch(/Unable to complete login process/i);
+		});
 	});
 });

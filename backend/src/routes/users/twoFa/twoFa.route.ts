@@ -8,7 +8,7 @@ import { createTwoFaMethodsSchema, getTwoFaMethodsSchema } from '../../../plugin
 
 import { v7 as uuidv7 } from 'uuid';
 
-import { requireAuth } from '../../../middleware/auth.middleware.js';
+import { requireAuth, requirePartialAuth } from '../../../middleware/auth.middleware.js';
 import {
 	create2FaMethods,
 	getAllMethodsByUserIdByType,
@@ -237,13 +237,14 @@ function validateMethodInput(m: TwoFaMethodInput) {
 export default async function twoFaRoutes(fastify: FastifyInstance) {
 	fastify.get(
 		'/twofa/',
-		{	preHandler: requireAuth,
+		{	preHandler: requirePartialAuth,
 			schema: getTwoFaMethodsSchema,
 			validatorCompiler: ({ schema }) => { return () => true; }},
 		async (request, reply) => {
 			const session = (request as any).session;
 			const methods = getUser2FaMethodsByUserId(session.user_id)
 				.map(m => ({
+					id: m.method_id,
 					method_type: m.method_type,
 					label: m.label,
 					is_primary: m.is_primary,
@@ -282,8 +283,8 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 				const validationErr = validateMethodInput(method);
 				if (validationErr) {
 					results.push({
-						methodType: method.methodType,
-						label: method.label,
+						methodType: undefined,
+						label: undefined,
 						success: false,
 						message: validationErr
 					});

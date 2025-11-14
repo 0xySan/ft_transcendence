@@ -8,7 +8,7 @@ import {
 	generateTotpTokenSchema,
 	validateTotpSchema
 } from '../../../plugins/swagger/schemas/twoFa.schema.js';
-import { requireAuth } from '../../../middleware/auth.middleware.js';
+import { requirePartialAuth } from '../../../middleware/auth.middleware.js';
 
 import { checkRateLimit } from '../../../utils/security.js';
 import {
@@ -109,17 +109,17 @@ export async function totpRoutes(fastify: FastifyInstance) {
 	fastify.post(
 		'/twofa/totp/validate',
 		{
-			preHandler: requireAuth,
+			preHandler: requirePartialAuth,
 			schema: validateTotpSchema,
 			validatorCompiler: () => () => true
 		},
-		async (req, rep) => handleTotpValidation(req, rep, { requireVerified: false })
+		async (req, rep) => handleTotpValidation(req, rep, {})
 	);
 
 	fastify.post(
 		'/twofa/totp/token',
 		{
-			preHandler: requireAuth,
+			preHandler: requirePartialAuth,
 			schema: generateTotpTokenSchema,
 			validatorCompiler: () => () => true
 		},

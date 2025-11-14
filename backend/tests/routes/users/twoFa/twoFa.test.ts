@@ -1,78 +1,217 @@
-/**
- * @file backend/tests/routes/users/twoFa/twoFa.test.ts
- * @description Tests for Two-Factor Authentication (2FA) routes.
- */
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fastify from 'fastify';
 
-// --- Mock middleware requireAuth pour injecter session ---
+// --- Mocks for external modules / DB wrappers ---
+vi.mock('../../../../src/plugins/swagger/schemas/twoFa.schema.js', () => ({
+	createTwoFaMethodsSchema: {},
+	getTwoFaMethodsSchema: {},
+}));
+
 vi.mock('../../../../src/middleware/auth.middleware.js', () => ({
-	requireAuth: vi.fn((req, reply, done) => {
-		(req as any).session = { user_id: 'user123' };
+	requirePartialAuth: vi.fn((req: any, reply: any, done: any) => {
+		req.session = { user_id: 'user123' };
+		done();
+	}),
+	requireAuth: vi.fn((req: any, reply: any, done: any) => {
+		req.session = { user_id: 'user123' };
 		done();
 	}),
 }));
 
-// --- Mock DB wrapper ---
 vi.mock('../../../../src/db/wrappers/auth/2fa/user2FaMethods.js', () => ({
-	getUser2FaMethodsByUserId: vi.fn(),
+	create2FaMethods: vi.fn(() => ({ /* fake db row */ })),
+	getAllMethodsByUserIdByType: vi.fn(() => []),
+	getUser2FaMethodsByUserId: vi.fn(() => []),
 }));
 
+vi.mock('../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js', () => ({
+	createUser2faEmailOtp: vi.fn(() => true),
+	getUser2faEmailOtpsByMethodIds: vi.fn(() => []),
+}));
+
+vi.mock('../../../../src/utils/crypto.js', () => ({
+	encryptSecret: vi.fn((s: string) => `enc:${s}`),
+	generateRandomToken: vi.fn(() => 'deadbeef'),
+	hashString: vi.fn(async (s: string) => `hash:${s}`),
+}));
+
+vi.mock('../../../../src/auth/2Fa/totpUtils.js', () => ({
+	createTotpUri: vi.fn(() => 'otpauth://totp/Transcendence:user@example.com?secret=SECRET'),
+	generateTotpSecret: vi.fn(() => 'SECRET'),
+}));
+
+vi.mock('../../../../src/db/index.js', () => ({
+	createUser2faTotp: vi.fn(() => true),
+	createUser2faBackupCodes: vi.fn(() => true),
+	getUserById: vi.fn((id: string) => ({ user_id: id, email: 'user@example.com' })),
+	getProfileByUserId: vi.fn((id: string) => ({ username: 'testuser' })),
+}));
+
+vi.mock('../../../../src/auth/2Fa/qrCode/qrCode.js', () => ({
+	generateQrCode: vi.fn(() => 'QR_DATA'),
+}));
+
+vi.mock('../../../../src/utils/mail/mail.js', () => ({
+	sendMail: vi.fn(() => true),
+}));
+
+// --- Imports under test ---
 import twoFaRoutes from '../../../../src/routes/users/twoFa/twoFa.route.js';
-import { getUser2FaMethodsByUserId } from '../../../../src/db/wrappers/auth/2fa/user2FaMethods.js';
-import { requireAuth } from '../../../../src/middleware/auth.middleware.js';
+import { getUser2FaMethodsByUserId, getAllMethodsByUserIdByType, create2FaMethods } from '../../../../src/db/wrappers/auth/2fa/user2FaMethods.js';
+import { getUser2faEmailOtpsByMethodIds, createUser2faEmailOtp } from '../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js';
+import { requireAuth, requirePartialAuth } from '../../../../src/middleware/auth.middleware.js';
+import { createUser2faTotp, createUser2faBackupCodes, getUserById } from '../../../../src/db/index.js';
+import { generateTotpSecret, createTotpUri } from '../../../../src/auth/2Fa/totpUtils.js';
+import { generateQrCode } from '../../../../src/auth/2Fa/qrCode/qrCode.js';
 
-// --- Typage correct des mocks ---
+// typed mocked helpers
 const mockedGetUser2FaMethodsByUserId = vi.mocked(getUser2FaMethodsByUserId);
-const mockedRequireAuth = vi.mocked(requireAuth);
+const mockedGetAllMethodsByUserIdByType = vi.mocked(getAllMethodsByUserIdByType);
+const mockedCreate2FaMethods = vi.mocked(create2FaMethods);
+const mockedGetUser2faEmailOtpsByMethodIds = vi.mocked(getUser2faEmailOtpsByMethodIds);
+const mockedCreateUser2faEmailOtp = vi.mocked(createUser2faEmailOtp);
+const mockedRequirePartialAuth = vi.mocked(requirePartialAuth);
+const mockedCreateUser2faTotp = vi.mocked(createUser2faTotp);
+const mockedCreateUser2faBackupCodes = vi.mocked(createUser2faBackupCodes);
+const mockedGetUserById = vi.mocked(getUserById);
+const mockedGenerateTotpSecret = vi.mocked(generateTotpSecret);
+const mockedCreateTotpUri = vi.mocked(createTotpUri);
+const mockedGenerateQrCode = vi.mocked(generateQrCode);
 
-describe('twoFaRoutes', () => {
+describe('twoFaRoutes (routes/users/twoFa)', () => {
 	let app: ReturnType<typeof fastify>;
 
 	beforeEach(async () => {
+		vi.resetAllMocks();
 		app = fastify();
+		// register routes
 		await twoFaRoutes(app);
 	});
 
-	it('should return 200 with verified 2FA methods', async () => {
+	it('GET /twofa/ returns 200 with mapped twoFaMethods when present', async () => {
 		mockedGetUser2FaMethodsByUserId.mockReturnValue([
-			{ method_type: 0, label: 'Email', is_verified: true, is_primary: true, method_id: "0", user_id: 'user123', created_at: 0, updated_at: 0 },
-			{ method_type: 1, label: 'TOTP', is_verified: true, is_primary: false, method_id: "1", user_id: 'user123', created_at: 0, updated_at: 0 },
-			{ method_type: 2, label: 'Backup', is_verified: false, is_primary: false, method_id: "2", user_id: 'user123', created_at: 0, updated_at: 0 },
+			{ method_type: 0, label: 'Email', is_verified: true, is_primary: true, method_id: 'm0', user_id: 'user123', created_at: 123, updated_at: 124 },
+			{ method_type: 1, label: 'TOTP', is_verified: true, is_primary: false, method_id: 'm1', user_id: 'user123', created_at: 124, updated_at: 125 },
 		]);
 
-		const response = await app.inject({
-			method: 'GET',
-			url: '/twofa/',
-		});
-
-		expect(response.statusCode).toBe(200);
-		const body = JSON.parse(response.body);
-		expect(body.twoFaMethods).toHaveLength(3);
-		expect(body.twoFaMethods[0]).toEqual({
-			method_type: 0,
-			label: 'Email',
-			is_primary: true,
-			created_at: 0,
-			is_verified: true
-		});
-		expect(body.twoFaMethods[1]).toEqual({
-			method_type: 1,
-			label: 'TOTP',
-			is_primary: false,
-			created_at: 0,
-			is_verified: true
-		});
+		const res = await app.inject({ method: 'GET', url: '/twofa/' });
+		expect(res.statusCode).toBe(200);
+		const body = JSON.parse(res.body);
+		expect(Array.isArray(body.twoFaMethods)).toBe(true);
+		expect(body.twoFaMethods).toHaveLength(2);
+		expect(body.twoFaMethods[0]).toMatchObject({ id: 'm0', method_type: 0, label: 'Email', is_primary: true, is_verified: true, created_at: 123 });
+		expect(body.twoFaMethods[1]).toMatchObject({ id: 'm1', method_type: 1, label: 'TOTP', is_primary: false, is_verified: true });
 	});
 
-	it('should call requireAuth preHandler', async () => {
+	it('GET /twofa/ returns 404 when no methods exist', async () => {
 		mockedGetUser2FaMethodsByUserId.mockReturnValue([]);
-		await app.inject({
-			method: 'GET',
-			url: '/twofa/',
-		});
+		const res = await app.inject({ method: 'GET', url: '/twofa/' });
+		expect(res.statusCode).toBe(404);
+		const body = JSON.parse(res.body);
+		expect(body).toMatchObject({ message: '2Fa is not set up for your account.' });
+	});
 
-		expect(mockedRequireAuth).toHaveBeenCalled();
+	it('GET /twofa/ calls requirePartialAuth preHandler', async () => {
+		mockedGetUser2FaMethodsByUserId.mockReturnValue([]);
+		await app.inject({ method: 'GET', url: '/twofa/' });
+		expect(mockedRequirePartialAuth).toHaveBeenCalled();
+	});
+
+	// ---------------- POST route tests ----------------
+	it('POST /twofa/ returns 400 when no methods provided', async () => {
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload: {} });
+		expect(res.statusCode).toBe(400);
+		const body = JSON.parse(res.body);
+		expect(body).toMatchObject({ message: 'No 2FA methods provided.' });
+	});
+
+	it('POST /twofa/ handles invalid method object and returns result with error', async () => {
+		const payload = { methods: [null] } as any;
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(Array.isArray(body.results)).toBe(true);
+		expect(body.results[0]).toMatchObject({ success: false, message: 'Invalid method object.' });
+	});
+
+	it('POST /twofa/ rejects when user not found', async () => {
+		mockedGetUserById.mockReturnValue(undefined as any);
+		const payload = { methods: [{ methodType: 1 }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(404);
+		const body = JSON.parse(res.body);
+		expect(body).toMatchObject({ message: 'User not found.' });
+	});
+
+	it('POST /twofa/ enforces max methods per type', async () => {
+		// mock a valid user
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		// simulate existing methods >= limit
+		mockedGetAllMethodsByUserIdByType.mockReturnValue(new Array(10).fill(0).map((_, i) => ({ method_id: `existing${i}` })) as any);
+
+		const payload = { methods: [{ methodType: 1 }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ success: false, message: 'Maximum number of this 2FA method type reached.' });
+	});
+
+	it('POST /twofa/ rejects duplicate email OTP for same user', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		// one existing method id
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([{ method_id: 'mExist' }] as any);
+		// existing otp uses same email
+		mockedGetUser2faEmailOtpsByMethodIds.mockReturnValue([{ method_id: 'mExist', email: 'dup@example.com' } as any]);
+
+		const payload = { methods: [{ methodType: 0, params: { email: 'dup@example.com' } }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ success: false, message: 'An Email OTP method with this email already exists.' });
+	});
+
+	it('POST /twofa/ creates Email OTP method successfully', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);
+		mockedCreate2FaMethods.mockReturnValue({ method_id: 'new1' } as any);
+		mockedCreateUser2faEmailOtp.mockReturnValue(true as any);
+
+		const payload = { methods: [{ methodType: 0, params: { email: 'ok@example.com' }, label: 'My Email' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ methodType: 0, success: true });
+		expect(mockedCreateUser2faEmailOtp).toHaveBeenCalled();
+	});
+
+	it('POST /twofa/ creates TOTP method successfully', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);
+		mockedCreate2FaMethods.mockReturnValue({ method_id: 'new2' } as any);
+		mockedCreateUser2faTotp.mockReturnValue(true as any);
+		mockedGenerateTotpSecret.mockReturnValue('SECRET');
+		mockedCreateTotpUri.mockReturnValue('otpauth://totp/Transcendence:user@example.com?secret=SECRET');
+		mockedGenerateQrCode.mockReturnValue([[true]])
+
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ methodType: 1, success: true });
+		expect(mockedCreateUser2faTotp).toHaveBeenCalled();
+	});
+
+	it('POST /twofa/ creates Backup Codes successfully', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);
+		mockedCreate2FaMethods.mockReturnValue({ method_id: 'new3' } as any);
+		mockedCreateUser2faBackupCodes.mockReturnValue(true as any);
+
+		const payload = { methods: [{ methodType: 2, label: 'Backup Codes' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ methodType: 2, success: true });
+		expect(mockedCreateUser2faBackupCodes).toHaveBeenCalled();
 	});
 });

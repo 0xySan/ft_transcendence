@@ -9,7 +9,7 @@ import { v7 as uuidv7 } from "uuid";
 
 vi.mock("../../../../src/middleware/auth.middleware.js", () => ({
 	__esModule: true,
-	requireAuth: vi.fn((req, reply, done) => {
+	requirePartialAuth: vi.fn((req, reply, done) => {
 		(req as any).session = { user_id: "user123", ip: "127.0.0.1" };
 		done();
 	}),
@@ -230,6 +230,30 @@ describe("TOTP 2FA routes", () => {
 				payload: { twofa_uuid: uuidv7(), totp_code: "123456" },
 			});
 			expect(res.statusCode).toBe(404);
+		});
+
+		it("returns 200 with token if valid", async () => {
+			const id = uuidv7();
+
+			(getUserTotpMethodById as Mock).mockReturnValue({
+				method: { method_id: id, method_type: 1, user_id: "user123", is_verified: true },
+				totp: { secret_encrypted: "abcd", secret_meta: "{}" },
+			});
+			(decryptSecret as Mock).mockReturnValue("secret");
+			(verifyTotp as Mock).mockReturnValue(true);
+			(generateRandomToken as Mock).mockReturnValue("randomToken123");
+			(signToken as Mock).mockReturnValue("signedTokenXYZ");
+
+			const res = await fastify.inject({
+				method: "POST",
+				url: "/twofa/totp/token",
+				payload: { twofa_uuid: id, totp_code: "123456" },
+			});
+
+			expect(res.statusCode).toBe(200);
+			const body = JSON.parse(res.body);
+			expect(body).toHaveProperty("token");
+			expect(body.token).toBe("signedTokenXYZ");
 		});
 	});
 });
