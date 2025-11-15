@@ -2,10 +2,10 @@
     <div id="lobby-info-boxes">
         <div id="lobby-player-box">
             <div id="lobby-player-info-count">
-                <p>Players</p>
-                <p>X</p>
-                <p>/</p>
-                <p>Y</p>
+                <p class="font-poppins-medium text-2xl text-color-text">Players</p>
+                <div>
+                    <p class="font-poppins-medium text-2xl text-color-subtext0"><span id="player-current-count">X</span>/<span id="player-max-count">Y</span></p>
+                </div>
             </div>
             <div id="lobby-player-list">
                 <!-- TODO Player List -->
@@ -13,25 +13,43 @@
         </div>
         <div id="lobby-mode-setting">
             <div id="lobby-mode-buttons">
-                <button>Multiplayer</button>
-                <button>Custom Game</button>
-                <button>Tournament</button>
+                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semi-bold text-color-text" id="multiplayer-button">MULTIPLAYER</button>
+                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semi-bold text-color-text" id="custom-game-button">CUSTOM GAME</button>
+                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semi-bold text-color-text" id="tournament-button">TOURNAMENT</button>
             </div>
-            <div id="lobby-setting-box">
-                <div id="lobby-setting-box-title">
+            <div id="custom-game-tab" class="lobby-setting-box">
+                <div class="lobby-setting-box-title">
                     <p>Settings</p>
-                    <div id="lobby-private-checkbox">
+                    <div class="lobby-private-checkbox">
                         <label for="">Private</label>
                         <input type="checkbox" name="private-checkbox" id="private-checkbox">
                     </div>
                 </div>
-                <div id="lobby-setting-type">
+                <div class="lobby-setting-type">
 
                 </div>
-                <div class="lobby-setting-list" id="lobby-basic-settings">
+                <div class="lobby-setting-list" id="lobby-custom-game-basic-settings">
 
                 </div>
-                <div class="lobby-setting-list" id="lobby-advanced-settings">
+                <div class="lobby-setting-list" id="lobby-custom-game-advanced-settings">
+
+                </div>
+            </div>
+            <div id="tournament-tab" class="lobby-setting-box unloaded">
+                <div class="lobby-setting-box-title">
+                    <p>Settings</p>
+                    <div class="lobby-private-checkbox">
+                        <label for="">Private</label>
+                        <input type="checkbox" name="private-checkbox" id="private-checkbox">
+                    </div>
+                </div>
+                <div class="lobby-setting-type">
+
+                </div>
+                <div class="lobby-setting-list" id="lobby-tournament-basic-settings">
+
+                </div>
+                <div class="lobby-setting-list" id="lobby-tournament-advanced-settings">
 
                 </div>
             </div>
@@ -48,3 +66,4 @@
         </div>
     </div>
 </div>
+<script src="/js/pages/lobby.js">
