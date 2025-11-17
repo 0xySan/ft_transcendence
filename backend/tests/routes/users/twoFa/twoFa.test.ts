@@ -1,3 +1,8 @@
+/**
+ * @file twoFa.test.ts
+ * @description Unit and integration tests for 2FA routes.
+ */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fastify from 'fastify';
 

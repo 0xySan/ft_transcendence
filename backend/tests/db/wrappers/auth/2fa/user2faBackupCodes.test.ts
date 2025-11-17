@@ -4,13 +4,15 @@ import { db } from "../../../../../src/db/index.js";
 import {
     createUser2faBackupCodes,
     getApiTokensById,
-    updateApiTokens,
+    getBackupCodesByMethodId,
+    getUserBCodesMethodById,
+    updateBCodes,
 } from "../../../../../src/db/wrappers/auth/2fa/user2faBackupCodes.js";
 
 import { create2FaMethods } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
 let userId: string;
-let methodId: number;
+let methodId: string;
 let backupCodeId: number;
 
 describe("user_2fa_backup_codes wrapper – with FK setup", () => {
@@ -29,9 +31,9 @@ describe("user_2fa_backup_codes wrapper – with FK setup", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const method = create2FaMethods({
 			user_id: userId,
-			method_type: 3,
+			method_type: 2,
 			label: "Backup Codes",
-			is_primary: 0,
+			is_primary: false,
 			is_verified: true,
 			created_at: now,
 			updated_at: now,
@@ -71,7 +73,7 @@ describe("user_2fa_backup_codes wrapper – with FK setup", () => {
         const newCodeJson = JSON.stringify(["newcode1", "newcode2"]);
         const newCreatedAt = Math.floor(Date.now() / 1000) + 1000;
 
-        const updated = updateApiTokens(backupCodeId, {
+        const updated = updateBCodes(backupCodeId, {
             code_json: newCodeJson,
             created_at: newCreatedAt,
         });
@@ -84,16 +86,37 @@ describe("user_2fa_backup_codes wrapper – with FK setup", () => {
     });
 
     it("should return false when trying to update nothing", () => {
-        const result = updateApiTokens(backupCodeId, {});
+        const result = updateBCodes(backupCodeId, {});
         expect(result).toBe(false);
     });
 
     it("should not allow creation without valid method_id", () => {
         const result = createUser2faBackupCodes({
-            method_id: 99999,
+            method_id: "99999",
             code_json: JSON.stringify(["fail"]),
             created_at: Math.floor(Date.now() / 1000),
         });
         expect(result).toBeUndefined();
     });
+
+	it("should retrieve a user_2fa_backup_codes entry by method_id", () => {
+		const backup = getBackupCodesByMethodId(methodId);
+		expect(backup).toBeDefined();
+		if (!backup) throw new Error("Expected user2faBackupCodes from getBackupCodesByMethodId(), but got undefined.");
+		expect(backup.method_id).toBe(methodId);
+		expect(backup.code_json).toContain("newcode1");
+	});
+
+	it("getUserBCodesMethodById should return undefined for non-existent method_id", () => {
+		const backup = getUserBCodesMethodById("non-existent-method-id");
+		expect(backup).toBeUndefined();
+	});
+
+	it("getUserBCodesMethodById should return the correct backup codes for existing method_id", () => {
+		const backup = getUserBCodesMethodById(methodId);
+		expect(backup).toBeDefined();
+		if (!backup) throw new Error("Expected user2faBackupCodes from getUserBCodesMethodById(), but got undefined.");
+		expect(backup.method.method_id).toBe(methodId);
+		expect(backup.codes.code_json).toContain("newcode1");
+	});
 });
