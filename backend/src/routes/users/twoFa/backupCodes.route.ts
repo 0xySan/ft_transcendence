@@ -20,7 +20,7 @@ interface GetBackupCodeRequestBody {
 
 export async function backupCodesRoute(fastify: FastifyInstance) {
 	fastify.get(
-		'twofa/backup-codes',
+		'/twofa/backup-codes',
 		{
 			schema: {},
 			preHandler: requirePartialAuth,
@@ -33,22 +33,20 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 			if (!userId)
 				return reply.status(401).send({ message: 'Unauthorized' });
 
-			const body = request.body as GetBackupCodeRequestBody;
-			if (!body?.uuid || !body?.token)
+			const query = request.query as GetBackupCodeRequestBody;
+			if (!query?.uuid || !query?.token)
 				return reply.status(400).send({ message: 'Invalid request body' });
 
-			// Verify token
 			try {
-				const status = verifyToken(body.token);
+				const status = verifyToken(query.token);
 				if (!status)
 					return reply.status(400).send({ message: 'Invalid token' });
-			}
-			catch (err) {
+			} catch {
 				return reply.status(400).send({ message: 'Invalid token' });
 			}
 
 			// Load method
-			const codeMethod = getUserBCodesMethodById(body.uuid);
+			const codeMethod = getUserBCodesMethodById(query.uuid);
 			if (!codeMethod || codeMethod.method.user_id !== userId)
 				return reply.status(404).send({ message: 'Backup codes not found' });
 
