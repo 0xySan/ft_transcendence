@@ -386,3 +386,149 @@ export const generateTotpTokenSchema = {
 		},
 	},
 };
+
+/*	=======================================================
+		Get Backup Codes Schema
+	=======================================================	*/
+export const getBackupCodesSchema = {
+	summary: "Retrieve backup codes for 2FA",
+	description:
+		"Retrieves the list of backup codes for a specified 2FA method after verifying the provided token. Indicates for each code whether it has been used.",
+	tags: ["Users: 2FA - Backup Codes"],
+	querystring: {
+		type: "object",
+		required: ["uuid", "token"],
+		properties: {
+			uuid: {
+				type: "string",
+				description: "UUID of the backup codes 2FA method",
+			},
+			token: {
+				type: "string",
+				description: "Verification token to authorize retrieval of backup codes",
+			},
+		},
+	},
+	response: {
+		200: {
+			description: "Backup codes retrieved successfully",
+			type: "object",
+			properties: {
+				codes: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							code: { type: "string", description: "The backup code" },
+							used: { type: "boolean", description: "Indicates if the code has been used" },
+						},
+					},
+				},
+			},
+		},
+		400: {
+			description: "Invalid request or token",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Invalid request body" },
+			},
+		},
+		401: {
+			description: "Unauthorized — user not authenticated",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Unauthorized" },
+			},
+		},
+		404: {
+			description: "Backup codes not found",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Backup codes not found" },
+			},
+		},
+		429: {
+			description: "Too many requests (rate limit exceeded)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." },
+			},
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Internal server error." },
+			},
+		},
+	},
+};
+
+/*	=======================================================
+		Post Verify Backup Code Schema
+	=======================================================	*/
+export const verifyBackupCodeSchema = {
+	summary: "Verify a backup code for 2FA",
+	description:
+		"Verifies a provided backup code against the stored codes for a specified 2FA method. Marks the code as used if valid.",
+	tags: ["Users: 2FA - Backup Codes"],
+	body: {
+		type: "object",
+		required: ["uuid", "code"],
+		properties: {
+			uuid: {
+				type: "string",
+				description: "UUID of the backup codes 2FA method",
+			},
+			code: {
+				type: "string",
+				description: "The backup code to verify",
+			},
+		},
+	},
+	response: {
+		200: {
+			description: "Backup code verified successfully",
+			type: "object",
+			properties: {
+				token: { type: "string", example: "eyJkYXRhIjoie1wicGF5bG9hZFwiOiI..." },
+				remaining: { type: "integer", example: 5 },
+			},
+		},
+		400: {
+			description: "Invalid request or code",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Invalid request body" },
+			},
+		},
+		401: {
+			description: "Unauthorized — user not authenticated",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Unauthorized" },
+			},
+		},
+		404: {
+			description: "Backup codes not found or code already used",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Backup codes not found" },
+			},
+		},
+		429: {
+			description: "Too many requests (rate limit exceeded)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." },
+			},
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Internal server error." },
+			},
+		},
+	},
+};

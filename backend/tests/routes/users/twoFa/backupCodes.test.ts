@@ -29,6 +29,11 @@ vi.mock("../../../../src/utils/crypto.js", () => ({
 	verifyToken: vi.fn(),
 }));
 
+vi.mock("../../../../src/utils/security.js", () => ({
+	__esModule: true,
+	checkRateLimit: vi.fn(() => true),
+}));
+
 import { backupCodesRoute } from "../../../../src/routes/users/twoFa/backupCodes.route.js";
 import { getUserBCodesMethodById, updateBCodes } from "../../../../src/db/index.js";
 import { hashString, generateRandomToken, signToken, verifyToken } from "../../../../src/utils/crypto.js";
@@ -120,21 +125,21 @@ describe("Backup Codes 2FA routes", () => {
 			expect(res.statusCode).toBe(404);
 		});
 
-		it("returns 400 if code invalid or already used", async () => {
+		it("returns 404 if code invalid or already used", async () => {
 			const method = { method: { user_id: "user123" }, codes: { backup_code_id: backupCodeId, code_json: JSON.stringify(fakeCodes) } };
 			(getUserBCodesMethodById as Mock).mockReturnValue(method);
 			(hashString as Mock).mockResolvedValue("notMatching");
 			const res = await fastify.inject({ method: "POST", url: "/twofa/backup-codes", payload: { uuid: fakeMethodId, code: "wrong" } });
-			expect(res.statusCode).toBe(400);
+			expect(res.statusCode).toBe(404);
 		});
 
-		it("returns 400 if code already used", async () => {
+		it("returns 404 if code already used", async () => {
 			const usedCodes = [{ hash: "hashedCode1", used: true }, { hash: "hashedCode2", used: false }];
 			const method = { method: { user_id: "user123" }, codes: { backup_code_id: backupCodeId, code_json: JSON.stringify(usedCodes) } };
 			(getUserBCodesMethodById as Mock).mockReturnValue(method);
 			(hashString as Mock).mockResolvedValue("hashedCode1");
 			const res = await fastify.inject({ method: "POST", url: "/twofa/backup-codes", payload: { uuid: fakeMethodId, code: "any" } });
-			expect(res.statusCode).toBe(400);
+			expect(res.statusCode).toBe(404);
 		});
 
 		it("returns 200 and marks code as used", async () => {
