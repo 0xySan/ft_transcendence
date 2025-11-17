@@ -10,6 +10,7 @@ import { v7 as uuidv7 } from "uuid";
  * 	2 = Backup Codes
  */
 export interface user2FaMethods {
+	update(updatedFields: any): unknown;
 	method_id:		string;
 	user_id:		string;
 	method_type:	0 | 1 | 2;
@@ -168,3 +169,53 @@ export function getAllMethodsByUserIdByType(user_id: string, method_type: 0 | 1 
 	const stmt = db.prepare("SELECT * FROM user_2fa_methods WHERE user_id = ? AND method_type = ?");
 	return stmt.all(user_id, method_type) as user2FaMethods[];
 };
+
+/**
+ * Batch update multiple 2FA methods.
+ * @param updates Array of user2FaMethods objects WITH updated fields already applied
+ * @returns true if all updates succeeded, false otherwise
+ */
+export function updateBatch2FaMethods(updates: user2FaMethods[]): boolean {
+	if (!updates || updates.length === 0) {
+		return true;
+	}
+
+	const allowed = new Set([
+		"label",
+		"is_verified",
+		"is_primary",
+		"updated_at"
+	]);
+
+	const updateStmt = db.prepare(`
+		UPDATE user_2fa_methods
+		SET label = @label,
+		    is_verified = @is_verified,
+		    is_primary = @is_primary,
+		    updated_at = @updated_at
+		WHERE method_id = @method_id
+	`);
+
+	const transaction = db.transaction((rows: user2FaMethods[]) => {
+		for (const row of rows) {
+			const params: Record<string, unknown> = { method_id: row.method_id };
+
+			for (const key of allowed) {
+				if (key === "is_verified" || key === "is_primary")
+					params[key] = row[key] ? 1 : 0;
+				else
+					params[key] = row[key as keyof user2FaMethods];
+			}
+
+			updateStmt.run(params);
+		}
+	});
+
+	try {
+		transaction(updates);
+		return true;
+	} catch (err) {
+		console.error("Error while updating 2FA methods:", err);
+		return false;
+	}
+}

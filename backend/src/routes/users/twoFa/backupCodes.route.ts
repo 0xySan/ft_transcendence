@@ -142,6 +142,9 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 			const codeMethod = getAndValidateMethod(body.uuid, userId, reply);
 			if (!codeMethod) return;
 
+			if (codeMethod.method.method_type !== 2 || !codeMethod.method.is_verified)
+				return reply.status(404).send({ message: 'Backup codes not found' });
+
 			const codes = JSON.parse(codeMethod.codes.code_json) as Array<{ hash: string; used: boolean }>;
 			const hashedInput = await hashString(body.code);
 

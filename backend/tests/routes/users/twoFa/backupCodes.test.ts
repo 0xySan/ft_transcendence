@@ -143,7 +143,7 @@ describe("Backup Codes 2FA routes", () => {
 		});
 
 		it("returns 200 and marks code as used", async () => {
-			const method = { method: { user_id: "user123" }, codes: { backup_code_id: backupCodeId, code_json: JSON.stringify(fakeCodes) } };
+			const method = { method: { user_id: "user123", is_verified: true, method_type: 2 }, codes: { backup_code_id: backupCodeId, code_json: JSON.stringify(fakeCodes) } };
 			(getUserBCodesMethodById as Mock).mockReturnValue(method);
 			(hashString as Mock).mockResolvedValue("hashedCode1");
 			(generateRandomToken as Mock).mockReturnValue("random");
@@ -155,6 +155,20 @@ describe("Backup Codes 2FA routes", () => {
 			expect(body.token).toBe("signedToken");
 			expect(body.remaining).toBe(1);
 			expect(updateBCodes).toHaveBeenCalled();
+		});
+
+		it("Return 404 if method not verified", async () => {
+			const method = { method: { user_id: "user123", is_verified: false, method_type: 2 }, codes: { backup_code_id: backupCodeId, code_json: JSON.stringify(fakeCodes) } };
+			(getUserBCodesMethodById as Mock).mockReturnValue(method);
+			const res = await fastify.inject({ method: "POST", url: "/twofa/backup-codes", payload: { uuid: fakeMethodId, code: "any" } });
+			expect(res.statusCode).toBe(404);
+		});
+
+		it("Return 404 if method not backup codes", async () => {
+			const method = { method: { user_id: "user123", is_verified: true, method_type: 1 }, codes: { backup_code_id: backupCodeId, code_json: JSON.stringify(fakeCodes) } };
+			(getUserBCodesMethodById as Mock).mockReturnValue(method);
+			const res = await fastify.inject({ method: "POST", url: "/twofa/backup-codes", payload: { uuid: fakeMethodId, code: "any" } });
+			expect(res.statusCode).toBe(404);
 		});
 	});
 });

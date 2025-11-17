@@ -13,6 +13,8 @@ import {
 	create2FaMethods,
 	getAllMethodsByUserIdByType,
 	getUser2FaMethodsByUserId,
+	update2FaMethods,
+	updateBatch2FaMethods,
 } from '../../../db/wrappers/auth/2fa/user2FaMethods.js';
 import {
 	createUser2faEmailOtp,
@@ -36,6 +38,15 @@ interface	TwoFaMethodInput {
 interface	TwoFaCreation {
 	methods:		TwoFaMethodInput[];
 	twoFaToken?:	string;
+}
+
+interface TwofaPatchBody {
+	token: string;
+	changes: Record<string, {
+		disable?:		boolean;
+		label?:			string;
+		is_primary?:	boolean;
+	}>;
 }
 
 /* ---------- Constants ---------- */
@@ -348,7 +359,7 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 						user_id: userId,
 						method_type: method.methodType,
 						label: method.label,
-						is_verified: false,
+						is_verified: method.methodType === 2 ? true : false, // backup codes are already verified
 					});
 					if (!dbMethod) {
 						results.push({
@@ -394,4 +405,90 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 			return reply.status(201).send({ results });
 		}
 	);
+
+	fastify.patch(
+		'/twofa',
+		{
+			preHandler: requireAuth,
+		},
+		async (req, reply) => {
+			const userId = (req as any).session.user_id;
+			const body = req.body as TwofaPatchBody;
+
+			if (!body || typeof body !== 'object' || typeof body.token !== 'string' || typeof body.changes !== 'object')
+				return reply.code(400).send({ error: 'invalid request body' });
+
+			if (!body.changes || Object.keys(body.changes).length === 0)
+				return reply.code(400).send({ error: 'No changes provided' });
+
+			if (!verifyToken(body.token))
+				return reply.code(400).send({ error: 'invalid token' });
+
+			const methods = getUser2FaMethodsByUserId(userId);
+
+			// Fast lookup
+			const byId = new Map(methods.map(m => [m.method_id, m]));
+
+			const results: any[] = [];
+
+			// Apply local changes
+			for (const methodId of Object.keys(body.changes)) {
+				const update = body.changes[methodId];
+				const method = byId.get(methodId);
+				if (!method) {
+					results.push({ methodId, success: false, message: 'Method not found' });
+					continue;
+				}
+
+				if (update.label !== undefined) {
+					if (!isValidLabel(update.label)) {
+						results.push({ methodId, success: false, message: 'Invalid label' });
+						continue;
+					}
+					method.label = update.label;
+				}
+
+				if (update.disable === true)
+					method.is_verified = false;
+				else if (update.disable === false) {
+					results.push({ methodId, success: false, message: 'Re-enabling 2FA methods is not allowed.' });
+					continue;
+				}
+
+				if (update.is_primary === true)
+					method.is_primary = true;
+				else if (update.is_primary === false)
+					method.is_primary = false;
+
+				byId.set(methodId, method);
+				results.push({ methodId, success: true });
+			}
+
+			// Ensure at least one verified method remains
+			const stillActive = [...byId.values()].filter(m => m.is_verified).length;
+			if (stillActive === 0)
+				return reply.code(400).send({ error: 'At least one verified 2FA method must remain active.' });
+
+			// Ensure only one primary method
+			const primaries = [...byId.values()].filter(m => m.is_primary);
+			if (primaries.length === 0) {
+				// Auto-assign primary if none
+				const firstVerified = [...byId.values()].find(m => m.is_verified);
+				if (firstVerified)
+					firstVerified.is_primary = true;
+			} else if (primaries.length > 1)
+				return reply.code(400).send({ error: 'Only one primary 2FA method can be set.' });
+
+			// Determine which methods were modified
+			const modified = methods.filter((old) => {
+				const now = byId.get(old.method_id);
+				return now && (now.label !== old.label || now.is_verified !== old.is_verified);
+			});
+
+			if (modified.length > 0) {
+				updateBatch2FaMethods(modified);
+			}
+
+			return reply.code(200).send({ results });
+	});
 }

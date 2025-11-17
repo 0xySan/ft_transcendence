@@ -11,7 +11,8 @@ import {
 	verify2FaMethod,
 	setPrimary2FaMethod,
 	delete2FaMethods,
-	getAllMethodsByUserIdByType
+	getAllMethodsByUserIdByType,
+	updateBatch2FaMethods
 } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
 describe("user2FaMethods wrapper - extended tests", () => {
@@ -388,5 +389,47 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			expect(method.user_id).toBe(userId);
 			expect(method.method_type).toBe(1);
 		});
+	});
+
+	it ("updateBatch2FaMethods should update multiple methods", () => {
+		const now = Math.floor(Date.now() / 1000);
+		const methodA = create2FaMethods({
+			user_id: userId,
+			method_type: 0,
+			label: "Batch Method A",
+			is_primary: false,
+			is_verified: false,
+			created_at: now,
+			updated_at: now
+		});
+		const methodB = create2FaMethods({
+			user_id: userId,
+			method_type: 2,
+			label: "Batch Method B",
+			is_primary: false,
+			is_verified: false,
+			created_at: now,
+			updated_at: now
+		});
+		if (!methodA)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!methodB)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+
+		const modified = [
+			{ ...methodA, label: "Updated Batch Method A", is_verified: true },
+			{ ...methodB, label: "Updated Batch Method B", is_primary: true }
+		];
+
+		const result = updateBatch2FaMethods(modified);
+		expect(result).toBe(true);
+
+		const fetchedA = getUser2FaMethodsById(methodA.method_id);
+		if (!fetchedA)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(fetchedA.label).toBe("Updated Batch Method A");
+		expect(fetchedA.is_verified).toBe(1);
+
+		const fetchedB = getUser2FaMethodsById(methodB.method_id);
+		if (!fetchedB)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		expect(fetchedB.label).toBe("Updated Batch Method B");
+		expect(fetchedB.is_primary).toBe(1);
 	});
 });
