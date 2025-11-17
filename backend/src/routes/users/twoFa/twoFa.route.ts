@@ -18,7 +18,7 @@ import {
 	createUser2faEmailOtp,
 	getUser2faEmailOtpsByMethodIds,
 } from '../../../db/wrappers/auth/2fa/user2faEmailOtp.js';
-import { encryptSecret, generateRandomToken, hashString } from '../../../utils/crypto.js';
+import { encryptSecret, generateRandomToken, hashString, verifyToken } from '../../../utils/crypto.js';
 import { createTotpUri, generateTotpSecret } from '../../../auth/2Fa/totpUtils.js';
 import { createUser2faTotp, createUser2faBackupCodes, getUserById, User, getProfileByUserId, session } from '../../../db/index.js';
 import { generateQrCode } from '../../../auth/2Fa/qrCode/qrCode.js';
@@ -27,22 +27,23 @@ import { sendMail } from '../../../utils/mail/mail.js';
 
 type MethodType = 0 | 1 | 2;
 
-interface TwoFaMethodInput {
-	methodType: MethodType;
-	label?: string;
-	params?: Record<string, any>;
+interface	TwoFaMethodInput {
+	methodType:	MethodType;
+	label?:		string;
+	params?:	Record<string, any>;
 }
 
-interface TwoFaCreation {
-	methods: TwoFaMethodInput[];
+interface	TwoFaCreation {
+	methods:		TwoFaMethodInput[];
+	twoFaToken?:	string;
 }
 
 /* ---------- Constants ---------- */
 const MAX_METHODS_PER_TYPE = 10;
-const DEFAULT_TOTP_DURATION = 30;
-const ALLOWED_TOTP_ALGOS = ['sha1', 'sha256', 'sha512'] as const;
+export const DEFAULT_TOTP_DURATION = 30;
+export const ALLOWED_TOTP_ALGOS = ['sha1', 'sha256', 'sha512'] as const;
 type TotpAlgo = typeof ALLOWED_TOTP_ALGOS[number];
-const ALLOWED_TOTP_DIGITS = [6, 8];
+export const ALLOWED_TOTP_DIGITS = [6, 8];
 
 /* ---------- Helpers ---------- */
 
@@ -60,7 +61,7 @@ function isValidLabel(label?: unknown): label is string {
  * @param params The input parameters
  * @returns Normalized parameters
  */
-function normalizeTotpParams(params?: Record<string, any>) {
+export function normalizeTotpParams(params?: Record<string, any>) {
 	const duration =
 		typeof params?.duration === 'number' && params.duration >= 15 && params.duration <= 60
 			? params.duration
@@ -121,9 +122,9 @@ function generateBackupCodes(count = 10, len = 8): string[] {
  * @returns Result object with success status and message
  */
 async function createEmailMethod(user: User, methodId: string, session: session, params: Record<string, any>) {
-	if (!params || typeof params.email !== 'string') {
+	if (!params || typeof params.email !== 'string' || !params.email.includes('@'))
 		return { success: false, message: 'Missing or invalid email parameter.' };
-	}
+
 
 	// code generation + store hash
 	const code = generateNumericCode();
@@ -268,12 +269,33 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 			const body = request.body as TwoFaCreation;
 			const userId = session.user_id;
 			const user = getUserById(userId);
-			if (!user) {
+			if (!user)
 				return reply.status(404).send({ message: 'User not found.' });
-			}
 
-			if (!body?.methods?.length) {
+			if (!body?.methods?.length)
 				return reply.status(400).send({ message: 'No 2FA methods provided.' });
+
+			const methods = getUser2FaMethodsByUserId(session.user_id)
+				.map(m => ({
+					id: m.method_id,
+					method_type: m.method_type,
+					label: m.label,
+					is_primary: m.is_primary,
+					is_verified: m.is_verified,
+					created_at: m.created_at
+				}));
+			for (const m of methods) {
+				if (m.is_verified) {
+					if (!body.twoFaToken)
+						return reply.status(400).send({ message: '2FA token required to add more methods.' });
+					else {
+						const valid = verifyToken(body.twoFaToken);
+						if (!valid)
+							return reply.status(400).send({ message: 'Invalid or expired 2FA token.' });
+						else
+							break;
+					}
+				}
 			}
 
 			const results: any[] = [];
@@ -353,7 +375,7 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 				// create specific subtype
 				try {
 					if (method.methodType === 0) {
-						const res = await createEmailMethod(userId, methodId, session, method.params || {});
+						const res = await createEmailMethod(user, methodId, session, method.params || {});
 						results.push({ methodType: 0, label: method.label, methodId, ...res });
 					} else if (method.methodType === 1) {
 						const res = await createTotpMethod(user.email, methodId, method.label, method.params || {});

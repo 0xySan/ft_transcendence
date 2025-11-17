@@ -7,9 +7,9 @@ import { FastifyInstance } from 'fastify';
 
 import { emailSendSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
 
-import { requireAuth } from '../../../middleware/auth.middleware.js';
+import { requirePartialAuth } from '../../../middleware/auth.middleware.js';
 import { getUser2faEmailOtpByMethodId, getUser2FaMethodsByUserId, getUserById, updateUser2faEmailOtp, getProfileByUserId } from '../../../db/index.js';
-import { generateRandomToken, tokenHash } from '../../../utils/crypto.js';
+import { generateRandomToken, hashString } from '../../../utils/crypto.js';
 
 import { sendMail } from "../../../utils/mail/mail.js";
 import { checkRateLimit } from '../../../utils/security.js';
@@ -23,13 +23,12 @@ enum TwoFaMethodType {
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
 const RATE_LIMIT = 5; // max 5 registrations per 15 minutes per IP
 const RATE_WINDOW = 15 * 60 * 1000;
-const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 
 export default async function emailSendRoutes(fastify: FastifyInstance) {
 	fastify.post(
 		'/twofa/email/send',
 		{
-			preHandler: requireAuth,
+			preHandler: requirePartialAuth,
 			schema: emailSendSchema,
 			validatorCompiler: ({ schema }) => {
 				return () => true;
@@ -42,46 +41,35 @@ export default async function emailSendRoutes(fastify: FastifyInstance) {
 			try {
 				const { email } = request.body as { email?: string };
 
-				if (!email) {
+				if (!email)
 					return reply.status(400).send({ message: 'Email is required.' });
-				}
 
-				if (!checkRateLimit(requestCount, session.ip || 'unknown', reply, RATE_LIMIT, RATE_WINDOW)) {
+				if (!checkRateLimit(requestCount, session.ip || 'unknown', reply, RATE_LIMIT, RATE_WINDOW))
 					return reply.status(429).send({ message: 'Rate limit exceeded. Please try again later.' });
-				}
 
-				if (!checkRateLimit(requestCount, email, reply, RATE_LIMIT, RATE_WINDOW)) {
+				if (!checkRateLimit(requestCount, email, reply, RATE_LIMIT, RATE_WINDOW))
 					return reply.status(429).send({ message: 'Rate limit exceeded. Please try again later.' });
-				}
-
-				if (session.stage !== 'partial') {
-					return reply.status(400).send({ message: 'Forbidden: Invalid session stage.' });
-				}
 
 				const user = getUserById(session.user_id);
-				if (!user) {
+				if (!user)
 					return reply.status(400).send({ message: 'User not found.' });
-				}
 
 				const userProfile = getProfileByUserId(session.user_id);
-				if (!userProfile) {
+				if (!userProfile)
 					return reply.status(400).send({ message: 'User profile not found.' });
-				}
 
-				const twofaMethods = await getUser2FaMethodsByUserId(session.user_id); // idk why but making it await fixes some test issues
+				const twofaMethods = getUser2FaMethodsByUserId(session.user_id); // idk why but making it await fixes some test issues
 				let emailMethod = twofaMethods.find((m: any) => m.method_type === TwoFaMethodType.EMAIL);
 
-				if (!emailMethod) {
+				if (!emailMethod)
 					return reply.status(400).send({ message: 'No email 2FA method configured for this account.' });
-				}
 
 				const emailOtpRecord = getUser2faEmailOtpByMethodId(emailMethod.method_id);
-				if (!emailOtpRecord) {
+				if (!emailOtpRecord)
 					return reply.status(400).send({ message: 'No email OTP record found for this 2FA method.' });
-				}
 
 				const otp_code = generateRandomToken(6).toUpperCase();
-				const hashed_otp = tokenHash(otp_code);
+				const hashed_otp = await hashString(otp_code);
 
 				updateUser2faEmailOtp(emailOtpRecord.email_otp_id, {
 					last_sent_code_hash: hashed_otp,

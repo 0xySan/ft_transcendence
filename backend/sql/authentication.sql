@@ -229,3 +229,12 @@ BEGIN
   SET last_used_at = CURRENT_TIMESTAMP
   WHERE token_id = OLD.token_id;
 END;
+
+-- Cleanup expired sessions after a new session is created
+CREATE TRIGGER delete_expired_sessions
+AFTER INSERT ON sessions
+WHEN NEW.expires_at >= strftime('%s','now')
+BEGIN
+    DELETE FROM sessions
+    WHERE expires_at < strftime('%s','now');
+END;

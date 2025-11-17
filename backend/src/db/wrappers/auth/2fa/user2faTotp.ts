@@ -106,7 +106,7 @@ export function updateUser2faTotp(totp_id: number, options: Partial<user2faTotp>
     return (result.changes > 0);
 }
 
-export function getUserTotpMethodById(method_id: string): User2FaTotpDetails | null {
+export function getUserTotpMethodById(method_id: string): User2FaTotpDetails | undefined {
 	const stmt = db.prepare(`
 		SELECT 
 			m.*, 
@@ -117,7 +117,7 @@ export function getUserTotpMethodById(method_id: string): User2FaTotpDetails | n
 	`);
 
 	const row = stmt.get(method_id) as TotpRow | undefined;
-	if (!row) return null;
+	if (!row) return undefined;
 
 	const method: user2FaMethods = {
 		method_id: row.method_id,

@@ -23,7 +23,6 @@ const RATE_LIMIT = 5; // max 5 tentatives
 const RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
 const MIN_DELAY = 500;
 
-// ---------- Common Verification Logic ----------
 async function handleUserLoginValidation(
 	request: any,
 	reply: any,
@@ -38,12 +37,10 @@ async function handleUserLoginValidation(
 		rememberMe: boolean;
 	};
 
-	// --- Rate limit par IP avant toute autre vérification ---
-	if (!checkRateLimit(requestCount, clientIp, reply, RATE_LIMIT, RATE_WINDOW)) {
+	if (!checkRateLimit(requestCount, clientIp, reply, RATE_LIMIT, RATE_WINDOW))
 		return null;
-	}
 
-	// --- Validation du format des credentials ---
+	// --- Input validation ---
 	if (email && username)
 		return reply.status(400).send({ message: "Provide either email or username, not both." });
 
@@ -52,7 +49,6 @@ async function handleUserLoginValidation(
 		return reply.status(400).send({ message: "Login failed. Please try again later." });
 	}
 
-	// --- Recherche de l’utilisateur ---
 	let existingUser;
 	if (email) existingUser = getUserByEmail(email);
 	else if (username) existingUser = getProfileByUsername(username);
@@ -62,10 +58,8 @@ async function handleUserLoginValidation(
 		return reply.status(400).send({ message: "Login failed. Please try again later." });
 	}
 
-	// --- Rate limit par utilisateur (user_id) ---
-	if (!checkRateLimit(requestCount, existingUser.user_id, reply, RATE_LIMIT, RATE_WINDOW)) {
+	if (!checkRateLimit(requestCount, existingUser.user_id, reply, RATE_LIMIT, RATE_WINDOW))
 		return null;
-	}
 
 	// --- Vérification du mot de passe ---
 	const passwordHash = getPasswordHashByUserId(existingUser.user_id);

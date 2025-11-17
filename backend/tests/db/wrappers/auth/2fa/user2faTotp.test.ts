@@ -7,7 +7,8 @@ import {
 	getUser2faTotpById,
 	updateUser2faTotp,
 	listUser2faTotp,
-	getUser2faTotpByMethodId
+	getUser2faTotpByMethodId,
+	getUserTotpMethodById
 } from "../../../../../src/db/wrappers/auth/2fa/user2faTotp.js";
 
 import {
@@ -115,5 +116,10 @@ describe("user2faTotp wrapper – with FK setup", () => {
             const secretString = totp.secret_encrypted.toString("base64");
             expect(typeof secretString).toBe("string");
         });
+	});
+
+	it("getUserTotpMethodById should return undefined for non-existent ID", () => {
+		const totp = getUserTotpMethodById("non-existent-method-id");
+		expect(totp).toBeUndefined();
 	});
 });

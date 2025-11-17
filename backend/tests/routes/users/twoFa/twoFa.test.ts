@@ -30,7 +30,7 @@ vi.mock('../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js', () => ({
 }));
 
 vi.mock('../../../../src/utils/crypto.js', () => ({
-	encryptSecret: vi.fn((s: string) => `enc:${s}`),
+	encryptSecret: vi.fn((s: string) => `${s}`),
 	generateRandomToken: vi.fn(() => 'deadbeef'),
 	hashString: vi.fn(async (s: string) => `hash:${s}`),
 }));
@@ -55,12 +55,16 @@ vi.mock('../../../../src/utils/mail/mail.js', () => ({
 	sendMail: vi.fn(() => true),
 }));
 
+vi.mock('uuid', () => ({
+	v7: vi.fn(() => 'fixed-uuid-1234')
+}));
+
 // --- Imports under test ---
 import twoFaRoutes from '../../../../src/routes/users/twoFa/twoFa.route.js';
 import { getUser2FaMethodsByUserId, getAllMethodsByUserIdByType, create2FaMethods } from '../../../../src/db/wrappers/auth/2fa/user2FaMethods.js';
 import { getUser2faEmailOtpsByMethodIds, createUser2faEmailOtp } from '../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js';
-import { requireAuth, requirePartialAuth } from '../../../../src/middleware/auth.middleware.js';
-import { createUser2faTotp, createUser2faBackupCodes, getUserById } from '../../../../src/db/index.js';
+import { requirePartialAuth } from '../../../../src/middleware/auth.middleware.js';
+import { createUser2faTotp, createUser2faBackupCodes, getUserById, getProfileByUserId } from '../../../../src/db/index.js';
 import { generateTotpSecret, createTotpUri } from '../../../../src/auth/2Fa/totpUtils.js';
 import { generateQrCode } from '../../../../src/auth/2Fa/qrCode/qrCode.js';
 
@@ -213,5 +217,69 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 		const body = JSON.parse(res.body);
 		expect(body.results[0]).toMatchObject({ methodType: 2, success: true });
 		expect(mockedCreateUser2faBackupCodes).toHaveBeenCalled();
+	});
+
+	it('creates Email OTP successfully', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);
+		mockedCreate2FaMethods.mockReturnValue({ method_id: 'new1' } as any);
+		mockedCreateUser2faEmailOtp.mockReturnValue(true as any);
+
+		const payload = { methods: [{ methodType: 0, params: { email: 'user@example.com' }, label: 'My Email' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ methodType: 0, success: true });
+		expect(mockedCreateUser2faEmailOtp).toHaveBeenCalled();
+	});
+
+	it("Return Database error while creating subtype when DB wrapper throws", async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'auser@example.com' } as any);
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);
+		mockedCreate2FaMethods.mockReturnValue({ method_id: 'new1' } as any);
+		mockedCreateUser2faEmailOtp.mockImplementation(() => { throw new Error('DB failure'); });
+
+		const payload = { methods: [{ methodType: 0, params: { email: 'auser@example.com' }, label: 'My Email' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({
+			methodType: 0,
+			label: 'My Email',
+			methodId: 'fixed-uuid-1234',
+			success: false,
+			message: 'Database error while creating subtype: DB failure'
+		});
+	});
+
+	it('Return Database error while creating method row: when DB wrapper throws', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		mockedCreate2FaMethods.mockImplementation(() => { throw new Error('DB failure'); });
+
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({
+			methodType: 1,
+			label: 'Authenticator App',
+			success: false,
+			message: 'Database error while creating method row: DB failure'
+		});
+	});
+	it('Return Failed to create 2FA method in database. when create2FaMethods returns null', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
+		mockedCreate2FaMethods.mockReturnValue(null as any);
+		
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({
+			methodType: 1,
+			label: 'Authenticator App',
+			success: false,
+			message: 'Failed to create 2FA method in database.'
+		});
 	});
 });
