@@ -38,7 +38,7 @@ export async function requirePartialAuth(request: FastifyRequest, reply: Fastify
 	const tokenHash = crypto.tokenHash(token);
 	const session = getSessionByTokenHash(tokenHash);
 	if (!session) {
-		return { isValid: false, session: null };
+		return reply.status(401).send({ message: 'Unauthorized: Invalid or expired partial session' });
 	}
 	const currentTime = Math.floor(Date.now() / 1000);
 	if (session.expires_at <= currentTime || session.stage !== 'partial') {

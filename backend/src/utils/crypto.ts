@@ -95,9 +95,7 @@ export function verifyToken(token: string): string | null {
 		twofaTokens.set(hmac, timestamp);
 
 		return payload;
-	} catch {
-		return null;
-	}
+	} catch { return null; }
 }
 
 /**
@@ -129,9 +127,7 @@ export function encryptSecret(secret: string): Buffer {
  * @return string - The decrypted plaintext string.
  */
 export function decryptSecret(encrypted: Buffer): string {
-	if (!ENCRYPTION_KEY) {
-		return '';
-	}
+	if (!ENCRYPTION_KEY) { return ''; }
 
 	const iv = encrypted.subarray(0, IV_LENGTH);
 	const data = encrypted.subarray(IV_LENGTH);

@@ -33,6 +33,9 @@ vi.mock('../../../../src/utils/crypto.js', () => ({
 	encryptSecret: vi.fn((s: string) => `${s}`),
 	generateRandomToken: vi.fn(() => 'deadbeef'),
 	hashString: vi.fn(async (s: string) => `hash:${s}`),
+	verifyToken: vi.fn((token: string) => {
+		return token === 'validtoken';
+	}),
 }));
 
 vi.mock('../../../../src/auth/2Fa/totpUtils.js', () => ({
@@ -67,6 +70,7 @@ import { requirePartialAuth } from '../../../../src/middleware/auth.middleware.j
 import { createUser2faTotp, createUser2faBackupCodes, getUserById, getProfileByUserId } from '../../../../src/db/index.js';
 import { generateTotpSecret, createTotpUri } from '../../../../src/auth/2Fa/totpUtils.js';
 import { generateQrCode } from '../../../../src/auth/2Fa/qrCode/qrCode.js';
+import { verifyToken } from '../../../../src/utils/crypto.js';
 
 // typed mocked helpers
 const mockedGetUser2FaMethodsByUserId = vi.mocked(getUser2FaMethodsByUserId);
@@ -267,6 +271,7 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 			message: 'Database error while creating method row: DB failure'
 		});
 	});
+
 	it('Return Failed to create 2FA method in database. when create2FaMethods returns null', async () => {
 		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
 		mockedCreate2FaMethods.mockReturnValue(null as any);
@@ -281,5 +286,75 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 			success: false,
 			message: 'Failed to create 2FA method in database.'
 		});
+	});
+
+	it("Return 2FA token required to add more methods. when adding method without token and user has existing methods", async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'test@test.test' } as any);
+		// simulate existing methods
+		mockedGetUser2FaMethodsByUserId.mockReturnValue([{
+			method_id: 'existing1',
+			method_type: 1,
+			label: 'Authenticator App',
+			is_verified: true,
+			is_primary: true,
+			user_id: 'user123',
+			created_at: 123,
+			updated_at: 124
+		}] as any);
+		//mock verify token to return false
+		const mockedVerifyToken = vi.mocked(verifyToken);
+		mockedVerifyToken.mockReturnValue(null);
+
+
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(400);
+		const body = JSON.parse(res.body);
+		expect(body).toMatchObject({ message: '2FA token required to add more methods.' });
+	});
+
+	it ("Return Invalid or expired 2FA token. when verifyToken fails", async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'test@test.test' } as any);
+		// simulate existing methods
+		mockedGetUser2FaMethodsByUserId.mockReturnValue([{
+			method_id: 'existing1',
+			method_type: 1,
+			label: 'Authenticator App',
+			is_verified: true,
+			is_primary: true,
+			user_id: 'user123',
+			created_at: 123,
+			updated_at: 124
+		}])
+
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }], twoFaToken: 'invalidtoken' };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(400);
+		const body = JSON.parse(res.body);
+		expect(body).toMatchObject({ message: 'Invalid or expired 2FA token.' });
+	});
+
+	it("Validates 2FA token successfully when adding method and user has existing methods", async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'test@test.test' } as any);
+		// simulate existing methods
+		mockedGetUser2FaMethodsByUserId.mockReturnValue([{
+			method_id: 'existing1',
+			method_type: 1,
+			label: 'Authenticator App',
+			is_verified: true,
+			is_primary: true,
+			user_id: 'user123',
+			created_at: 123,
+			updated_at: 124
+		}] as any);
+		//mock verify token to return true
+		const mockedVerifyToken = vi.mocked(verifyToken);
+		mockedVerifyToken.mockReturnValue("valid");
+
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }], twoFaToken: 'validtoken' };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ methodType: 1, success: true });
 	});
 });

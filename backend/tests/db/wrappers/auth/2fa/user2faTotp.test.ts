@@ -122,4 +122,39 @@ describe("user2faTotp wrapper – with FK setup", () => {
 		const totp = getUserTotpMethodById("non-existent-method-id");
 		expect(totp).toBeUndefined();
 	});
+
+	it("getUserTotpMethodById should return correct data for existing ID", () => {
+		const insertMethod = db.prepare(`
+			INSERT INTO user_2fa_methods (method_id, user_id, method_type, label, is_primary, is_verified, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		`);
+		const now = Math.floor(Date.now() / 1000);
+		const newMethodId = "test-method-123";
+		insertMethod.run(
+			newMethodId,
+			userId,
+			1,
+			"Test TOTP Method",
+			0,
+			1,
+			now,
+			now
+		);
+		const insertTotp = db.prepare(`
+			INSERT INTO user_2fa_totp (method_id, secret_encrypted, secret_meta, last_used)
+			VALUES (?, ?, ?, ?)
+		`);
+		insertTotp.run(
+			newMethodId,
+			Buffer.from("another-secret"),
+			"digits=6;period=30",
+			now
+		);
+
+		const result = getUserTotpMethodById(newMethodId);
+		if (!result)throw new Error("Expected a User2FaTotpDetails from getUserTotpMethodById(), but got undefined.");
+		expect(result).toBeDefined();
+		expect(result.method.method_id).toBe(newMethodId);
+		expect(result.totp.secret_meta).toBe("digits=6;period=30");
+	});
 });

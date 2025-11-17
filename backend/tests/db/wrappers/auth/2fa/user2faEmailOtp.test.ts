@@ -4,6 +4,7 @@ import { db } from "../../../../../src/db/index.js";
 import {
 	createUser2faEmailOtp,
 	getUser2faEmailOtpById,
+	getUser2faEmailOtpByMethodId,
 	getUser2faEmailOtpsByMethodIds,
 	updateUser2faEmailOtp,
 } from "../../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js";
@@ -172,5 +173,24 @@ describe("user2faEmailOtp wrapper - tests", () => {
 		const hashes = otps.map(otp => otp.last_sent_code_hash);
 		expect(hashes).toContain("hash1");
 		expect(hashes).toContain("hash2");
+	});
+
+	it("getUser2faEmailOtpByMethodId should return undefined for non-existent method_id", () => {
+		const otp = getUser2faEmailOtpByMethodId("non-existent-method-id");
+		expect(otp).toBeUndefined();
+	});
+
+	it("getUser2faEmailOtpByMethodId should return correct data for existing method_id", () => {
+		createUser2faEmailOtp({
+			method_id: methodId,
+		email: "example@example.example",
+			last_sent_code_hash: "hash1",
+			last_sent_at: now,
+			expires_at: now + 60000,
+		});
+
+		const otp = getUser2faEmailOtpByMethodId(methodId);
+		if (!otp) throw new Error("Throw error (undefined)");
+		expect(otp.last_sent_code_hash).toBe("hash1");
 	});
 });

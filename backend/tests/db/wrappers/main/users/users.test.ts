@@ -18,6 +18,7 @@ import {
 	updateLastLogin,
 	updateUserRole,
 	getAllUsers,
+	getPasswordHashByUserId,
 } from "../../../../../src/db/wrappers/main/users/users.js";
 
 describe("Users wrapper", () => {
@@ -131,5 +132,10 @@ describe("Users wrapper", () => {
 		const emails = users.map(u => u.email);
 		const isSorted = emails.every((v, i, arr) => !i || arr[i - 1] <= v);
 		expect(isSorted).toBe(true);
+	});
+
+	it("getPasswordHashByUserId should return correct password hash", () => {
+		const hash = getPasswordHashByUserId(adminId);
+		expect(hash).toBe("hashed_admin");
 	});
 });

@@ -64,18 +64,15 @@ function isValidLabel(label?: unknown): label is string {
 export function normalizeTotpParams(params?: Record<string, any>) {
 	const duration =
 		typeof params?.duration === 'number' && params.duration >= 15 && params.duration <= 60
-			? params.duration
-			: DEFAULT_TOTP_DURATION;
+			? params.duration: DEFAULT_TOTP_DURATION;
 
 	const algorithm =
 		typeof params?.algorithm === 'string' && ALLOWED_TOTP_ALGOS.includes(params.algorithm as TotpAlgo)
-			? (params.algorithm as TotpAlgo)
-			: 'sha1';
+			? (params.algorithm as TotpAlgo): 'sha1';
 
 	const digits =
 		typeof params?.digits === 'number' && ALLOWED_TOTP_DIGITS.includes(params.digits)
-			? params.digits
-			: 6;
+			? params.digits: 6;
 
 	return { duration, algorithm, digits };
 }
