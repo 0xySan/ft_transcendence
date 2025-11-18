@@ -1,7 +1,8 @@
 import Fastify from "fastify";
 import cookie from '@fastify/cookie';
 import swaggerPlugin from "./plugins/swagger/index.js";
-import { Server as SocketIOServer } from "socket.io";
+import { WebSocketServer } from 'ws';
+import http from 'http';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -11,8 +12,8 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length !== 64)) {
-  	console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
-  	process.exit(1);
+	console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
+	process.exit(1);
 }
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
@@ -26,7 +27,7 @@ async function buildServer() {
 
 	// Register cookie plugin
 	app.register(cookie, {
-		secret: process.env.COOKIE_SECRET, // for signing cookies
+		secret: process.env.COOKIE_SECRET,
 	});
 
 	await app.register(swaggerPlugin);
@@ -35,24 +36,31 @@ async function buildServer() {
 }
 
 async function start() {
-	const app = await buildServer();
+	try{
+		const app = await buildServer();
 
-	const io = new SocketIOServer(app.server, {
-		path: "/socket.io",
-		cors: { origin: "*" },
-	});
+		const server = http.createServer(app as any);
 
-	// TODO delete this soon
-	io.on("connection", (socket) => {
-		app.log.info(`Client connecté: ${socket.id}`);
-		socket.on("ping", () => socket.emit("pong"));
-	});
+		const wss = new WebSocketServer({ server });
 
-	try {
-		await app.listen({ port: SERVER_PORT, host: HOST });
-		app.log.info(`Backend listening on http://${HOST}:${SERVER_PORT}`);
+		wss.on('connection', (ws) => {
+			console.log('WebSocket connected');
+
+			ws.on('message', (msg) => {
+				console.log('Received message:', msg.toString());
+				ws.send(`echo: ${msg}`);
+			});
+
+			ws.on('close', () => {
+				console.log('WebSocket disconnected');
+			});
+		});
+
+		server.listen(SERVER_PORT, HOST, () => {
+			console.log(`Server listening on http://${HOST}:${SERVER_PORT}`);
+		});
 	} catch (err) {
-		app.log.error(err);
+		console.error('Error starting server:', err);
 		process.exit(1);
 	}
 }
