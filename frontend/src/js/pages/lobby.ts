@@ -1,45 +1,48 @@
 export {};
 
-declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
+declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject, options?: boolean): void;
 
-const multiplayerButton = document.getElementById("multiplayer-button") as HTMLButtonElement | null;
-const customGameButton = document.getElementById("custom-game-button") as HTMLButtonElement | null;
-const tournamentButton = document.getElementById("tournament-button") as HTMLButtonElement | null;
+const multiplayerButton = document.getElementById("lobby-multiplayer-button") as HTMLButtonElement | null;
+const customGameButton = document.getElementById("lobby-custom-game-button") as HTMLButtonElement | null;
+const tournamentButton = document.getElementById("lobby-tournament-button") as HTMLButtonElement | null;
 
-function deactivateOtherButtonsThan(button: HTMLButtonElement) {
-    if (!button)
-        return;
-    if (button != multiplayerButton && multiplayerButton)
-        multiplayerButton.removeAttribute("current-mode");
-    if (button != customGameButton && customGameButton)
-        customGameButton.removeAttribute("current-mode");
-    if (button != tournamentButton && tournamentButton)
-        tournamentButton.removeAttribute("current-mode");
+function deactivateOtherButtonsThan(button: HTMLButtonElement | null) {
+    if (!button) return;
+    if (multiplayerButton && multiplayerButton !== button) multiplayerButton.classList.remove("current-mode");
+    if (customGameButton && customGameButton !== button) customGameButton.classList.remove("current-mode");
+    if (tournamentButton && tournamentButton !== button) tournamentButton.classList.remove("current-mode");
 }
 
-function handleMultiplayerButtonClick(button: HTMLButtonElement) {
-    if (multiplayerButton?.hasAttribute("current-mode"))
-        return;
+function handleMultiplayerButtonClick(evt: Event) {
+    const button = evt.currentTarget as HTMLButtonElement | null;
+    if (!button) return;
+    if (button.classList.contains("current-mode")) return;
+    console.log("Multiplayer button clicked");
     deactivateOtherButtonsThan(button);
-    button.setAttribute("current-mode");
-    //TODO Implement the switching of divs using the unloaded CSS class
+    button.classList.add("current-mode");
+    // TODO: Implement the switching of divs using the unloaded CSS class
 }
 
-function handleCustomGameButtonClick(button: HTMLButtonElement) {
-    if (customGameButton?.hasAttribute("current-mode"))
-        return;
-    button.setAttribute("current-mode");
-    //TODO Implement the switching of divs using the unloaded CSS class
-
+function handleCustomGameButtonClick(evt: Event) {
+    const button = evt.currentTarget as HTMLButtonElement | null;
+    if (!button) return;
+    if (button.classList.contains("current-mode")) return;
+    console.log("Custom game button clicked");
+    deactivateOtherButtonsThan(button);
+    button.classList.add("current-mode");
+    // TODO: Implement the switching of divs using the unloaded CSS class
 }
 
-function handleTournamentButtonClick(button: HTMLButtonElement) {
-    if (tournamentButton?.hasAttribute("current-mode"))
-        return;
-    button.setAttribute("current-mode");
-    //TODO Implement the switching of divs using the unloaded CSS class
+function handleTournamentButtonClick(evt: Event) {
+    const button = evt.currentTarget as HTMLButtonElement | null;
+    if (!button) return;
+    if (button.classList.contains("current-mode")) return;
+    console.log("Tournament button clicked");
+    deactivateOtherButtonsThan(button);
+    button.classList.add("current-mode");
+    // TODO: Implement the switching of divs using the unloaded CSS class
 }
 
-addListener(multiplayerButton, 'click', handleMultiplayerButtonClick)
-addListener(customGameButton, 'click', handleCustomGameButtonClick)
-addListener(tournamentButton, 'click', handleTournamentButtonClick)
+addListener(multiplayerButton, 'click', handleMultiplayerButtonClick);
+addListener(customGameButton, 'click', handleCustomGameButtonClick);
+addListener(tournamentButton, 'click', handleTournamentButtonClick);
