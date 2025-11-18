@@ -57,6 +57,13 @@ export const getTwoFaMethodsSchema = {
 				message: { type: "string", example: "Authentication required." },
 			},
 		},
+		429: {
+			description: "Too many requests (rate limit exceeded)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." }
+			}
+		},
 		500: {
 			description: "Internal server error",
 			type: "object",
@@ -184,6 +191,13 @@ export const createTwoFaMethodsSchema = {
 			properties: {
 				message: { type: "string", example: "Authentication required." },
 			},
+		},
+		429: {
+			description: "Too many requests (rate limit exceeded)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." }
+			}
 		},
 		404: {
 			description: "User not found",
@@ -531,4 +545,87 @@ export const verifyBackupCodeSchema = {
 			},
 		},
 	},
+};
+
+/*	=======================================================
+		Patch Two-Factor Authentication Methods Schema
+	=======================================================	*/
+
+export const patchTwoFaSchema = {
+	summary: "Update user's Two-Factor Authentication methods",
+	description:
+		"Allows the authenticated user to update their existing 2FA methods: change labels, disable methods, or set a primary method.",
+	tags: ["Users: 2FA"],
+	body: {
+		type: "object",
+		required: ["token", "changes"],
+		properties: {
+			token: {
+				type: "string",
+				description: "A valid 2FA token for verification",
+				example: "123456"
+			},
+			changes: {
+				type: "object",
+				description: "Mapping of 2FA method IDs to updates",
+				additionalProperties: {
+					type: "object",
+					properties: {
+						label: { type: "string", description: "New label for the method (optional)" },
+						disable: { type: "boolean", description: "Set to true to disable the method" },
+						is_primary: { type: "boolean", description: "Set to true to mark this as the primary 2FA method" }
+					},
+					additionalProperties: false
+				}
+			}
+		}
+	},
+	response: {
+		200: {
+			description: "2FA methods updated successfully",
+			type: "object",
+			properties: {
+				results: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							methodId: { type: "string", description: "ID of the 2FA method" },
+							success: { type: "boolean", description: "Indicates whether the update was applied" },
+							message: { type: "string", nullable: true, description: "Error message if update failed" }
+						}
+					}
+				},
+				modified: { type: "integer", description: "Number of methods actually modified" }
+			}
+		},
+		400: {
+			description: "Invalid request body or business rule violation",
+			type: "object",
+			properties: {
+				error: { type: "string", example: "At least one verified 2FA method must remain active." }
+			}
+		},
+		401: {
+			description: "Unauthorized — user not authenticated",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Authentication required." }
+			}
+		},
+		429: {
+			description: "Too many requests (rate limit exceeded)",
+			type: "object",
+			properties: {
+				message: { type: "string", example: "Too many requests. Try again later." }
+			}
+		},
+		500: {
+			description: "Internal server error when updating DB",
+			type: "object",
+			properties: {
+				error: { type: "string", example: "Failed to update 2FA methods in database." }
+			}
+		}
+	}
 };

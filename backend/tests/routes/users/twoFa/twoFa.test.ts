@@ -10,6 +10,7 @@ import fastify from 'fastify';
 vi.mock('../../../../src/plugins/swagger/schemas/twoFa.schema.js', () => ({
 	createTwoFaMethodsSchema: {},
 	getTwoFaMethodsSchema: {},
+	patchTwoFaSchema: {},
 }));
 
 vi.mock('../../../../src/middleware/auth.middleware.js', () => ({
@@ -27,6 +28,7 @@ vi.mock('../../../../src/db/wrappers/auth/2fa/user2FaMethods.js', () => ({
 	create2FaMethods: vi.fn(() => ({ /* fake db row */ })),
 	getAllMethodsByUserIdByType: vi.fn(() => []),
 	getUser2FaMethodsByUserId: vi.fn(() => []),
+	updateBatch2FaMethods: vi.fn(() => true),
 }));
 
 vi.mock('../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js', () => ({
@@ -67,9 +69,15 @@ vi.mock('uuid', () => ({
 	v7: vi.fn(() => 'fixed-uuid-1234')
 }));
 
+// Mock rate limit
+vi.mock('../../../../src/utils/security.js', () => ({
+	checkRateLimit: vi.fn(() => true),
+	delayResponse: vi.fn(async () => {}),
+}));
+
 // --- Imports under test ---
 import twoFaRoutes from '../../../../src/routes/users/twoFa/twoFa.route.js';
-import { getUser2FaMethodsByUserId, getAllMethodsByUserIdByType, create2FaMethods } from '../../../../src/db/wrappers/auth/2fa/user2FaMethods.js';
+import { getUser2FaMethodsByUserId, getAllMethodsByUserIdByType, create2FaMethods, updateBatch2FaMethods } from '../../../../src/db/wrappers/auth/2fa/user2FaMethods.js';
 import { getUser2faEmailOtpsByMethodIds, createUser2faEmailOtp } from '../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js';
 import { requirePartialAuth } from '../../../../src/middleware/auth.middleware.js';
 import { createUser2faTotp, createUser2faBackupCodes, getUserById, getProfileByUserId } from '../../../../src/db/index.js';
@@ -382,7 +390,7 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 				payload: { token: 'bad', changes: { m1: { disable: true } } }
 			});
 			expect(res.statusCode).toBe(400);
-			expect(JSON.parse(res.body)).toMatchObject({ error: 'invalid token' });
+			expect(JSON.parse(res.body)).toMatchObject({ error: 'invalid request body' });
 		});
 
 		it('updates label + primary successfully', async () => {
@@ -408,6 +416,7 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 			expect(res.statusCode).toBe(200);
 			const body = JSON.parse(res.body);
 			expect(body.results).toEqual([{ methodId: 'm1', success: true }, { methodId: 'm2', success: true }]);
+			console.log(body);
 		});
 
 		it('returns 400 when disabling all methods', async () => {
@@ -477,6 +486,7 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 				}
 			});
 
+			console.log(res.body);
 			expect(res.statusCode).toBe(200);
 			const body = JSON.parse(res.body);
 			expect(body.results).toEqual([{ methodId: 'm1', success: true }, { methodId: 'm2', success: true }]);
@@ -496,7 +506,7 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 				payload: {
 					token: 'validtoken',
 					changes: {
-						m1: { is_verified: true }
+						m1: { disable: false }
 					}
 				}
 			});
@@ -505,7 +515,59 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 			expect(body.results).toEqual([{
 				methodId: 'm1',
 				success: false,
-				message: 'Cannot verify this 2FA method via this route.'
+				message: 'Re-enabling 2FA methods is not allowed.'
+			}]);
+		});
+
+		it('Invalid label length is handled gracefully', async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', is_verified: true, is_primary: true }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("true");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: {
+						m1: { label: 'A'.repeat(300) } // too long
+					}
+				}
+			});
+			expect(res.statusCode).toBe(200);
+			const body = JSON.parse(res.body);
+			expect(body.results).toEqual([{
+				methodId: 'm1',
+				success: false,
+				message: 'Invalid label'
+			}]);
+		});
+
+		it("Non-existent methodId in changes is handled gracefully", async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', is_verified: true, is_primary: true }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("true");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: {
+						nonexistent: { label: 'NewLabel' }
+					}
+				}
+			});
+			expect(res.statusCode).toBe(200);
+			const body = JSON.parse(res.body);
+			expect(body.results).toEqual([{
+				methodId: 'nonexistent',
+				success: false,
+				message: 'Method not found'
 			}]);
 		});
 	});

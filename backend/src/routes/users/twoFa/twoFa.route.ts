@@ -4,7 +4,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { createTwoFaMethodsSchema, getTwoFaMethodsSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
+import { createTwoFaMethodsSchema, getTwoFaMethodsSchema, patchTwoFaSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
 
 import { v7 as uuidv7 } from 'uuid';
 
@@ -13,9 +13,10 @@ import {
 	create2FaMethods,
 	getAllMethodsByUserIdByType,
 	getUser2FaMethodsByUserId,
-	update2FaMethods,
 	updateBatch2FaMethods,
 } from '../../../db/wrappers/auth/2fa/user2FaMethods.js';
+import type { user2FaMethods } from '../../../db/wrappers/auth/2fa/user2FaMethods.js';
+
 import {
 	createUser2faEmailOtp,
 	getUser2faEmailOtpsByMethodIds,
@@ -26,6 +27,7 @@ import { createUser2faTotp, createUser2faBackupCodes, getUserById, User, getProf
 import { generateQrCode } from '../../../auth/2Fa/qrCode/qrCode.js';
 import { randomBytes } from 'crypto';
 import { sendMail } from '../../../utils/mail/mail.js';
+import { checkRateLimit } from '../../../utils/security.js';
 
 type MethodType = 0 | 1 | 2;
 
@@ -55,6 +57,13 @@ export const DEFAULT_TOTP_DURATION = 30;
 export const ALLOWED_TOTP_ALGOS = ['sha1', 'sha256', 'sha512'] as const;
 type TotpAlgo = typeof ALLOWED_TOTP_ALGOS[number];
 export const ALLOWED_TOTP_DIGITS = [6, 8];
+
+/* ---------- Rate Limiting ---------- */
+const ipRequestCount: Record<string, { count: number; lastReset: number }> = {};
+const userRequestCount: Record<string, { count: number; lastReset: number }> = {};
+const RATE_LIMIT = 5;
+const IP_RATE_WINDOW = 60_000;
+const USER_RATE_WINDOW = 300_000;
 
 /* ---------- Helpers ---------- */
 
@@ -251,6 +260,15 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 			validatorCompiler: ({ schema }) => { return () => true; }},
 		async (request, reply) => {
 			const session = (request as any).session;
+			const ip = (request.ip || 'unknown').toString();
+
+			// --- Rate limit ---
+			if (!checkRateLimit(ipRequestCount, ip, reply, RATE_LIMIT, IP_RATE_WINDOW))
+				return reply.status(429).send({ message: 'Too many requests. Try again later.' });
+			
+			if (!checkRateLimit(userRequestCount, session.user_id, reply, RATE_LIMIT, USER_RATE_WINDOW))
+				return reply.status(429).send({ message: 'Too many requests. Try again later.' });
+
 			const methods = getUser2FaMethodsByUserId(session.user_id)
 				.map(m => ({
 					id: m.method_id,
@@ -277,6 +295,16 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 			const body = request.body as TwoFaCreation;
 			const userId = session.user_id;
 			const user = getUserById(userId);
+			const ip = (request.ip || 'unknown').toString();
+
+			// --- Rate limit ---
+			if (!checkRateLimit(ipRequestCount, ip, reply, RATE_LIMIT, IP_RATE_WINDOW))
+				return reply.status(429).send({ message: 'Too many requests. Try again later.' });
+			
+			if (!checkRateLimit(userRequestCount, userId, reply, RATE_LIMIT, USER_RATE_WINDOW))
+				return reply.status(429).send({ message: 'Too many requests. Try again later.' });
+
+			// --- Basic validation ---
 			if (!user)
 				return reply.status(404).send({ message: 'User not found.' });
 
@@ -407,87 +435,103 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 	);
 
 	fastify.patch(
-		'/twofa',
+		"/twofa",
 		{
 			preHandler: requireAuth,
+			schema: patchTwoFaSchema,
+			validatorCompiler: ({ schema }) => { return () => true; }
 		},
 		async (req, reply) => {
-			const userId = (req as any).session.user_id;
-			const body = req.body as TwofaPatchBody;
+			const userId = (req as any).session.user_id
+			const body = req.body as TwofaPatchBody
+			const ip = (req.ip || 'unknown').toString();
 
-			if (!body || typeof body !== 'object' || typeof body.token !== 'string' || typeof body.changes !== 'object')
-				return reply.code(400).send({ error: 'invalid request body' });
+			// --- Rate limit ---
+			if (!checkRateLimit(ipRequestCount, ip, reply, RATE_LIMIT, IP_RATE_WINDOW))
+				return reply.status(429).send({ message: 'Too many requests. Try again later.' });
+			
+			if (!checkRateLimit(userRequestCount, userId, reply, RATE_LIMIT, USER_RATE_WINDOW))
+				return reply.status(429).send({ message: 'Too many requests. Try again later.' });
 
-			if (!body.changes || Object.keys(body.changes).length === 0)
-				return reply.code(400).send({ error: 'No changes provided' });
+			// Basic validation
+			if (!body || typeof body !== "object")
+				return reply.code(400).send({ error: "invalid request body" })
+
+			if (typeof body.token !== "string")
+				return reply.code(400).send({ error: "invalid request body" })
+
+			if (!body.changes || typeof body.changes !== "object")
+				return reply.code(400).send({ error: "No changes provided" })
+
+			if (Object.keys(body.changes).length === 0)
+				return reply.code(400).send({ error: "No changes provided" })
 
 			if (!verifyToken(body.token))
-				return reply.code(400).send({ error: 'invalid token' });
+				return reply.code(400).send({ error: "invalid request body" })
 
-			const methods = getUser2FaMethodsByUserId(userId);
+			// Load current methods
+			const methods = getUser2FaMethodsByUserId(userId)
+			const byId = new Map(methods.map(m => [m.method_id, m]))
 
-			// Fast lookup
-			const byId = new Map(methods.map(m => [m.method_id, m]));
+			const results = []
+			const updated: user2FaMethods[] = []
 
-			const results: any[] = [];
+			// Apply changes
+			for (const [methodId, update] of Object.entries(body.changes)) {
+				const method = byId.get(methodId)
 
-			// Apply local changes
-			for (const methodId of Object.keys(body.changes)) {
-				const update = body.changes[methodId];
-				const method = byId.get(methodId);
 				if (!method) {
-					results.push({ methodId, success: false, message: 'Method not found' });
-					continue;
+					results.push({ methodId, success: false, message: "Method not found" })
+					continue
 				}
 
+				// label
 				if (update.label !== undefined) {
 					if (!isValidLabel(update.label)) {
-						results.push({ methodId, success: false, message: 'Invalid label' });
-						continue;
+						results.push({ methodId, success: false, message: "Invalid label" })
+						continue
 					}
-					method.label = update.label;
+					method.label = update.label
 				}
 
+				// disable
 				if (update.disable === true)
-					method.is_verified = false;
+					method.is_verified = false
 				else if (update.disable === false) {
-					results.push({ methodId, success: false, message: 'Re-enabling 2FA methods is not allowed.' });
-					continue;
+					results.push({ methodId, success: false, message: "Re-enabling 2FA methods is not allowed." })
+					continue
 				}
 
-				if (update.is_primary === true)
-					method.is_primary = true;
-				else if (update.is_primary === false)
-					method.is_primary = false;
+				// is_primary
+				if (update.is_primary === true || update.is_primary === false)
+					method.is_primary = update.is_primary === true
 
-				byId.set(methodId, method);
-				results.push({ methodId, success: true });
+				results.push({ methodId, success: true })
+				updated.push(method)
 			}
 
-			// Ensure at least one verified method remains
-			const stillActive = [...byId.values()].filter(m => m.is_verified).length;
-			if (stillActive === 0)
-				return reply.code(400).send({ error: 'At least one verified 2FA method must remain active.' });
+			// Must have at least one active 2FA left
+			if (![...byId.values()].some(m => m.is_verified))
+				return reply.code(400).send({ error: "At least one verified 2FA method must remain active." })
 
-			// Ensure only one primary method
-			const primaries = [...byId.values()].filter(m => m.is_primary);
+			// Ensure only one primary
+			const primaries = [...byId.values()].filter(m => m.is_primary)
 			if (primaries.length === 0) {
-				// Auto-assign primary if none
-				const firstVerified = [...byId.values()].find(m => m.is_verified);
+				const firstVerified = [...byId.values()].find(m => m.is_verified)
 				if (firstVerified)
-					firstVerified.is_primary = true;
+					firstVerified.is_primary = true
 			} else if (primaries.length > 1)
-				return reply.code(400).send({ error: 'Only one primary 2FA method can be set.' });
+				return reply.code(400).send({ error: "Only one primary 2FA method can be set." })
 
-			// Determine which methods were modified
-			const modified = methods.filter((old) => {
-				const now = byId.get(old.method_id);
-				return now && (now.label !== old.label || now.is_verified !== old.is_verified);
-			});
+			// Save DB changes
+			if (updated.length > 0) {
+				const ok = updateBatch2FaMethods(updated)
+				if (!ok)
+					return reply.code(500).send({ error: "Failed to update 2FA methods in database." })
+			}
 
-			if (modified.length > 0)
-				updateBatch2FaMethods(modified);
+			return reply.code(200).send({results})
+		}
+	)
 
-			return reply.code(200).send({ results });
-	});
 }
