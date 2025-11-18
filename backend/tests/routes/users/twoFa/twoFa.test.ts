@@ -362,4 +362,152 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 		const body = JSON.parse(res.body);
 		expect(body.results[0]).toMatchObject({ methodType: 1, success: true });
 	});
+
+	describe('PATCH /twofa/', () => {
+		it('returns 400 when body is invalid', async () => {
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: { changes: {} } // missing token
+			});
+			expect(res.statusCode).toBe(400);
+			expect(JSON.parse(res.body)).toMatchObject({ error: 'invalid request body' });
+		});
+
+		it('returns 400 when token is invalid', async () => {
+			vi.mocked(verifyToken).mockReturnValue(null);
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: { token: 'bad', changes: { m1: { disable: true } } }
+			});
+			expect(res.statusCode).toBe(400);
+			expect(JSON.parse(res.body)).toMatchObject({ error: 'invalid token' });
+		});
+
+		it('updates label + primary successfully', async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', label: 'Old', is_verified: true, is_primary: false },
+				{ method_id: 'm2', label: 'Other', is_verified: true, is_primary: true }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("valid");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: {
+						m1: { label: 'NewLabel', is_primary: true },
+						m2: { is_primary: false }
+					}
+				}
+			});
+
+			expect(res.statusCode).toBe(200);
+			const body = JSON.parse(res.body);
+			expect(body.results).toEqual([{ methodId: 'm1', success: true }, { methodId: 'm2', success: true }]);
+		});
+
+		it('returns 400 when disabling all methods', async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', is_verified: true, is_primary: true }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("true");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: { m1: { disable: true } }
+				}
+			});
+
+			expect(res.statusCode).toBe(400);
+			expect(JSON.parse(res.body)).toMatchObject({
+				error: 'At least one verified 2FA method must remain active.'
+			});
+		});
+
+		it('returns 400 when multiple methods are set primary', async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', is_verified: true, is_primary: false },
+				{ method_id: 'm2', is_verified: true, is_primary: true }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("true");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: {
+						m1: { is_primary: true }
+					}
+				}
+			});
+
+			expect(res.statusCode).toBe(400);
+			expect(JSON.parse(res.body)).toMatchObject({
+				error: 'Only one primary 2FA method can be set.'
+			});
+		});
+
+		it('Auto assigns primary if none set after updates', async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', is_verified: true, is_primary: true },
+				{ method_id: 'm2', is_verified: true, is_primary: false }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("true");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: {
+						m1: { is_primary: false },
+						m2: { label: 'NewLabel' }
+					}
+				}
+			});
+
+			expect(res.statusCode).toBe(200);
+			const body = JSON.parse(res.body);
+			expect(body.results).toEqual([{ methodId: 'm1', success: true }, { methodId: 'm2', success: true }]);
+		});
+
+		it('Try to verify protected method and fails gracefully', async () => {
+			mockedGetUser2FaMethodsByUserId.mockReturnValue([
+				{ method_id: 'm1', is_verified: false, is_primary: true, method_type: 0 },
+				{ method_id: 'm2', is_verified: true, is_primary: false, method_type: 1 }
+			] as any);
+
+			vi.mocked(verifyToken).mockReturnValue("true");
+
+			const res = await app.inject({
+				method: 'PATCH',
+				url: '/twofa',
+				payload: {
+					token: 'validtoken',
+					changes: {
+						m1: { is_verified: true }
+					}
+				}
+			});
+			expect(res.statusCode).toBe(200);
+			const body = JSON.parse(res.body);
+			expect(body.results).toEqual([{
+				methodId: 'm1',
+				success: false,
+				message: 'Cannot verify this 2FA method via this route.'
+			}]);
+		});
+	});
+
 });

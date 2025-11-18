@@ -485,9 +485,8 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 				return now && (now.label !== old.label || now.is_verified !== old.is_verified);
 			});
 
-			if (modified.length > 0) {
+			if (modified.length > 0)
 				updateBatch2FaMethods(modified);
-			}
 
 			return reply.code(200).send({ results });
 	});

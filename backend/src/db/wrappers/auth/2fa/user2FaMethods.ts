@@ -10,7 +10,6 @@ import { v7 as uuidv7 } from "uuid";
  * 	2 = Backup Codes
  */
 export interface user2FaMethods {
-	update(updatedFields: any): unknown;
 	method_id:		string;
 	user_id:		string;
 	method_type:	0 | 1 | 2;
