@@ -2,7 +2,10 @@ import Fastify from "fastify";
 import cookie from '@fastify/cookie';
 import swaggerPlugin from "./plugins/swagger/index.js";
 import { WebSocketServer } from 'ws';
-import http from 'http';
+import { Worker } from 'worker_threads';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import os from 'os';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -35,6 +38,23 @@ async function buildServer() {
 	return app;
 }
 
+async function createThread() {
+	const core = os.cpus().length;
+
+	// --- Résoudre le chemin de base avec import.meta.url ---
+	const __filename = fileURLToPath(import.meta.url);
+	const __dirname = path.dirname(__filename);
+
+	// --- Créer le chemin absolu vers test.js ---
+	const workerPath = path.resolve(__dirname, './game/test.js');
+	
+	// --- Créer le worker avec le chemin absolu ---
+	const workers = [];
+	for (let i = 0; i < core; i++) {
+		workers[i] = new Worker(workerPath);
+	}
+}
+
 async function start() {
 	try{
 		const app = await buildServer();
@@ -43,6 +63,8 @@ async function start() {
 		const server = app.server;
 
 		const wss = new WebSocketServer({ server });
+
+		createThread();
 
 		wss.on('connection', (ws) => {
 			console.log('WebSocket connected');
