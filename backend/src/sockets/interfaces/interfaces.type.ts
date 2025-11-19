@@ -11,6 +11,10 @@
  * };
  */
 export interface sv_game {
+    /* uuid of the game */
+    uuid: string;
+    /* code of the game */
+    code: string;
     /* Map<user_id, paddle(x, y) */
     position_paddle: Record<string, position>;
     /* position of ball: position(x, y) */
