@@ -216,55 +216,6 @@ export const createTwoFaMethodsSchema = {
 	},
 };
 
-/*	=======================================================
-		Send 2FA Verification Email Schema
-	=======================================================	*/
-
-export const emailSendSchema = {
-	summary: "Send a verification email",
-	description:
-		"Sends a 2fa verification email to the user.",
-	tags: ["Users: 2FA - Email"],
-	body: {
-		type: "object",
-		required: ["email"],
-		properties: {
-			email: {
-				type: "string",
-				format: "email",
-				description: "User email address"
-			},
-		},
-	},
-	response: {
-		202: {
-			description: "Email sent successfully",
-			type: "object",
-			properties: {
-				message: { type: "string" },
-			},
-		},
-		400: {
-			description: "Bad request — missing or invalid fields",
-			type: "object",
-			properties: { message: { type: "string" } },
-		},
-		429: {
-			description: "Too many registration attempts",
-			type: "object",
-			properties: { message: { type: "string" } },
-		},
-		500: {
-			description: "Internal server error",
-			type: "object",
-			properties: { message: { type: "string" } },
-		},
-	},
-};
-
-/*	=======================================================
-		Validate TOTP Code Schema
-	=======================================================	*/
 /* =======================================================
    Validate TOTP Code Schema
    ======================================================= */
@@ -628,4 +579,180 @@ export const patchTwoFaSchema = {
 			}
 		}
 	}
+};
+
+/* =======================================================
+   Email 2FA schemas for /twofa/email routes
+   ======================================================= */
+
+export const emailSendSchema = {
+	summary: 'Send email OTP for 2FA',
+	description: 'Send a one-time code to the user email for the specified email 2FA method (by UUID).',
+	tags: ['Users: 2FA - Email'],
+	body: {
+		type: 'object',
+		required: ['uuid'],
+		properties: {
+			uuid: {
+				type: 'string',
+				description: 'UUID of the email 2FA method to send an OTP for',
+				example: 'method-uuid-1234',
+			},
+		},
+		additionalProperties: false,
+	},
+	response: {
+		202: {
+			description: 'OTP email sent',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: '2FA email sent successfully.' },
+			},
+		},
+		400: {
+			description: 'Bad request (missing UUID or 2FA not found)',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Method UUID is required.' },
+			},
+		},
+		429: {
+			description: 'Rate limit exceeded',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Rate limit exceeded. Please try again later.' },
+			},
+		},
+		500: {
+			description: 'Server error while sending OTP',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Failed to send 2FA email.' },
+			},
+		},
+	},
+};
+
+export const emailValidateSchema = {
+	summary: 'Validate email OTP and verify 2FA method',
+	description:
+		'Validate a provided email OTP for a method (uuid+code). If valid, mark the 2FA method as verified.',
+	tags: ['Users: 2FA - Email'],
+	body: {
+		type: 'object',
+		required: ['uuid', 'code'],
+		properties: {
+			uuid: {
+				type: 'string',
+				description: 'UUID of the email OTP record / method',
+				example: 'method-uuid-1234',
+			},
+			code: {
+				type: 'string',
+				description: 'The OTP code sent by email (6-8 chars, A-Z0-9 uppercase)',
+				pattern: '^[A-Z0-9]{6,8}$',
+				example: 'ABC123',
+			},
+		},
+		additionalProperties: false,
+	},
+	response: {
+		200: {
+			description: 'Email OTP validated and method verified',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Email code validated successfully.' },
+			},
+		},
+		400: {
+			description: 'Invalid request body or code format',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'UUID and code are required.' },
+			},
+		},
+		401: {
+			description: 'Invalid code / expired / attempts exceeded / unauthorized',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Invalid code.' },
+			},
+		},
+		429: {
+			description: 'Rate limit exceeded',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Rate limit exceeded. Please try again later.' },
+			},
+		},
+		500: {
+			description: 'Server error while verifying code or updating method',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Failed to verify 2FA method.' },
+			},
+		},
+	},
+};
+
+export const emailTokenSchema = {
+	summary: 'Validate email OTP and return auth token',
+	description:
+		'Validate a provided email OTP (uuid+code). If valid, consume the code and return a short-lived token for login/flow continuation.',
+	tags: ['Users: 2FA - Email'],
+	body: {
+		type: 'object',
+		required: ['uuid', 'code'],
+		properties: {
+			uuid: {
+				type: 'string',
+				description: 'UUID of the email OTP record / method',
+				example: 'method-uuid-1234',
+			},
+			code: {
+				type: 'string',
+				description: 'The OTP code sent by email (6-8 chars, A-Z0-9 uppercase)',
+				pattern: '^[A-Z0-9]{6,8}$',
+				example: 'ABC123',
+			},
+		},
+		additionalProperties: false,
+	},
+	response: {
+		200: {
+			description: 'OTP validated and token returned',
+			type: 'object',
+			properties: {
+				token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+			},
+		},
+		400: {
+			description: 'Invalid request body or code format',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'UUID and code are required.' },
+			},
+		},
+		401: {
+			description: 'Invalid code / expired / attempts exceeded',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Invalid code.' },
+			},
+		},
+		429: {
+			description: 'Rate limit exceeded',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Rate limit exceeded. Please try again later.' },
+			},
+		},
+		500: {
+			description: 'Server error while verifying code or generating token',
+			type: 'object',
+			properties: {
+				message: { type: 'string', example: 'Failed to verify code.' },
+			},
+		},
+	},
 };

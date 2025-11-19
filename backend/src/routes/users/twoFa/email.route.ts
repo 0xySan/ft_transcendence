@@ -5,7 +5,7 @@
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import { emailSendSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
+import { emailSendSchema, emailTokenSchema, emailValidateSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
 
 import { requirePartialAuth } from '../../../middleware/auth.middleware.js';
 import { getUser2faEmailOtpByMethodId, getUser2FaMethodsByUserId, getUserById, updateUser2faEmailOtp, getProfileByUserId, getUser2FaMethodsById, update2FaMethods, user2faEmailOtp } from '../../../db/index.js';
@@ -149,6 +149,10 @@ export default async function emailSendRoutes(fastify: FastifyInstance) {
 		'/twofa/email/validate',
 		{
 			preHandler: requirePartialAuth,
+			schema: emailValidateSchema,
+			validatorCompiler: ({ schema }) => {
+				return () => true;
+			},
 		},
 		async (request, reply) => {
 			const userId = (request as any).session?.user_id;
@@ -184,6 +188,10 @@ export default async function emailSendRoutes(fastify: FastifyInstance) {
 		'/twofa/email',
 		{
 			preHandler: requirePartialAuth,
+			schema: emailTokenSchema,
+			validatorCompiler: ({ schema }) => {
+				return () => true;
+			},
 		},
 		async (request, reply) => {
 			const emailMethod = await checkEmailOtpRequest(request, reply);
