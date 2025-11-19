@@ -112,7 +112,7 @@ describe("Users wrapper", () => {
 	});
 
 	it("should update user role successfully", () => {
-		const updated = updateUserRole(guestId, 2); // change Guest -> User
+		const updated = updateUserRole(guestId, 2);
 		expect(updated).toBe(true);
 
 		const user = getUserById(guestId);
