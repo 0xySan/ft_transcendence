@@ -38,8 +38,9 @@ async function buildServer() {
 async function start() {
 	try{
 		const app = await buildServer();
+		await app.ready();
 
-		const server = http.createServer(app as any);
+		const server = app.server;
 
 		const wss = new WebSocketServer({ server });
 
