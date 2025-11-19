@@ -5,7 +5,7 @@
 
 import { FastifyInstance } from 'fastify';
 import twoFaRoutes from './twoFa.route.js';
-import emailSendRoutes from './emailSend.route.js';
+import emailSendRoutes from './email.route.js';
 import { totpRoutes } from './totp.route.js';
 import { backupCodesRoute } from './backupCodes.route.js';
 
