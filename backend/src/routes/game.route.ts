@@ -6,17 +6,23 @@
 import { FastifyInstance } from "fastify";
 import { generateRandomToken } from '../utils/crypto.js';
 import { sv_game } from '../sockets/interfaces/interfaces.type.js';
-import { Position, Games } from '../sockets/games.classe.js';
+import { Games } from '../sockets/games.classe.js';
+import { workers } from '../server.js';
 
-const games: Games[] = [];
+export const games: Games[] = [];
 
 export async function gameRoutes(fastify: FastifyInstance) {
 
-    fastify.get("/game", async (request, reply) => {
+    fastify.get("/api/game", async (request, reply) => {
         return (reply.status(202).send({token: generateRandomToken(32)}));
     });
 
-    fastify.post("/game", async (request, reply) => {
+    fastify.post("/api/game", async (request, reply) => {
+
+        if (games.length >= 8) {
+            return (reply.status(501).send({ error: "server is full" }));
+        }
+
         const game = request.body as sv_game;
 
         if (game.position_paddle == null) {
@@ -61,7 +67,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
             game.code = generateRandomToken(2);
         }
 
-        games.push(new Games(
+        const new_game = new Games(
             game.position_paddle,
             game.score,
             game.position_ball,
@@ -69,7 +75,35 @@ export async function gameRoutes(fastify: FastifyInstance) {
             game.end_game,
             generateRandomToken(32),
             game.code
-        ));
+        )
+
+        games.push(new_game);
+
+        const game_data = {
+            position_paddle: new_game.position_paddle,
+            score: new_game.score,
+            position_ball: new_game.position_ball,
+            velocity_ball: new_game.velocity_ball,
+            end_game: new_game.end_game,
+            uuid: new_game.uuid,
+            code: new_game.code,
+        };
+
+        console.log("DEBUG: nombre de partie: " + games.length);
+
+        for (let i = 0; i < workers.length; i++) {
+            const worker = workers[i];
+
+            const state = await new Promise<boolean>((resolve) => {
+                worker.once("message", (msg) => resolve(msg));
+                worker.postMessage("getState");
+            });
+
+            if (state === false) {
+                worker.postMessage({ state: "changeState", game: game_data });
+                return (reply.status(202).send({ token: generateRandomToken(32), game: game }));
+            }
+        }
 
         return (reply.status(202).send({token: generateRandomToken(32), game: game}));
     });

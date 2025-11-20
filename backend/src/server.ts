@@ -21,6 +21,8 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
+export const workers: Worker[] = [];
+const parties_per_core = 1;
 
 async function buildServer() {
 	const app = Fastify({
@@ -49,8 +51,7 @@ async function createThread() {
 	const workerPath = path.resolve(__dirname, './game/test.js');
 	
 	// --- Créer le worker avec le chemin absolu ---
-	const workers = [];
-	for (let i = 0; i < core; i++) {
+	for (let i = 0; i < core * parties_per_core; i++) {
 		workers[i] = new Worker(workerPath);
 	}
 }
