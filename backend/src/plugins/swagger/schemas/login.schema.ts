@@ -100,6 +100,11 @@ export const loginPatchSchema = {
 			type: "object",
 			properties: { message: { type: "string" } },
 		},
+		429: {
+			description: "Too many login attempts",
+			type: "object",
+			properties: { message: { type: "string" } },
+		},
 		500: {
 			description: "Internal server error during 2FA verification.",
 			type: "object",

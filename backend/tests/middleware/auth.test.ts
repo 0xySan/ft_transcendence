@@ -132,13 +132,13 @@ describe("preHandlers (requireAuth & requirePartialAuth)", () => {
 		expect(res.json().message).toMatch(/Invalid or expired partial session/);
 	});
 
-	it("requirePartialAuth returns 401 if session is not in 'partial' stage", async () => {
+	it("requirePartialAuth returns 401 if session is in 'expired' stage", async () => {
 		const now = Math.floor(Date.now() / 1000);
 
 		mocks.tokenHash.mockReturnValue("hashed");
 		mocks.getSessionByTokenHash.mockReturnValue({
 			expires_at: now + 1000,
-			stage: "full",
+			stage: "expired",
 		});
 
 		const res = await fastify.inject({

@@ -52,10 +52,10 @@ describe("GET & POST /accounts/reset-password", () => {
 		}));
 
 		const mod = await import("../../../../src/routes/users/accounts/passwordReset.route.js");
-		const { newPasswordReset } = mod;
+		const { passwordResetRoutes } = mod;
 
 		fastify = Fastify();
-		fastify.register(newPasswordReset);
+		fastify.register(passwordResetRoutes);
 		await fastify.ready();
 
 		const main = await import("../../../../src/db/wrappers/main/index.js");

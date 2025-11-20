@@ -178,9 +178,20 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 		async (request, reply) => {
 		try {
 			const { token } = request.body as { token?: string };
+			const ipAddress = request.ip || request.headers["x-forwarded-for"]?.toString() || "unknown";
+			const userId = (request as any).session?.user_id;
 
 			if (!token)
 				return reply.status(400).send({ message: "Missing 2FA token." });
+
+			if (!checkRateLimit(requestCount, ipAddress, reply, RATE_LIMIT, RATE_WINDOW))
+				return reply.status(429).send({ message: "Too many login attempts. Please try again later." });
+
+			if (!userId)
+				return reply.status(400).send({ message: "Invalid session." });
+
+			if (!checkRateLimit(requestCount, userId, reply, RATE_LIMIT, RATE_WINDOW))
+				return reply.status(429).send({ message: "Too many login attempts. Please try again later." });
 
 			const decoded = verifyToken(token);
 			if (!decoded)
