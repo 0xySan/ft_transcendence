@@ -80,7 +80,7 @@ import twoFaRoutes from '../../../../src/routes/users/twoFa/twoFa.route.js';
 import { getUser2FaMethodsByUserId, getAllMethodsByUserIdByType, create2FaMethods, updateBatch2FaMethods } from '../../../../src/db/wrappers/auth/2fa/user2FaMethods.js';
 import { getUser2faEmailOtpsByMethodIds, createUser2faEmailOtp } from '../../../../src/db/wrappers/auth/2fa/user2faEmailOtp.js';
 import { requirePartialAuth } from '../../../../src/middleware/auth.middleware.js';
-import { createUser2faTotp, createUser2faBackupCodes, getUserById, getProfileByUserId } from '../../../../src/db/index.js';
+import { createUser2faTotp, createUser2faBackupCodes, getUserById } from '../../../../src/db/index.js';
 import { generateTotpSecret, createTotpUri } from '../../../../src/auth/2Fa/totpUtils.js';
 import { generateQrCode } from '../../../../src/auth/2Fa/qrCode/qrCode.js';
 import { verifyToken } from '../../../../src/utils/crypto.js';
@@ -570,6 +570,29 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 				message: 'Method not found'
 			}]);
 		});
+	});
+
+	it('PATCH return 500 if updateBatch2FaMethods throws', async () => {
+		mockedGetUser2FaMethodsByUserId.mockReturnValue([
+			{ method_id: 'm1', is_verified: true, is_primary: true }
+		] as any);
+
+		vi.mocked(verifyToken).mockReturnValue("true");
+		vi.mocked(updateBatch2FaMethods).mockImplementation(() => { throw new Error('DB failure'); });
+
+		const res = await app.inject({
+			method: 'PATCH',
+			url: '/twofa',
+			payload: {
+				token: 'validtoken',
+				changes: {
+					m1: { label: 'NewLabel' }
+				}
+			}
+		});
+		expect(res.statusCode).toBe(500);
+		const body = JSON.parse(res.body);
+		expect(body).toMatchObject({ error: 'Internal Server Error' });
 	});
 
 });

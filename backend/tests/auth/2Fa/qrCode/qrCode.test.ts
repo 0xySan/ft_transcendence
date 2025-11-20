@@ -5,7 +5,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { generateQrCode, getMinimalVersion, printMatrix } from '../../../../src/auth/2Fa/qrCode/qrCode.js';
-import { EcLevel } from '../../../../src/auth/2Fa/qrCode/qr.types.js';
 
 describe('getMinimalVersion extended coverage', () => {
 

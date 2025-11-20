@@ -6,9 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
 
-
 describe("POST /accounts/login", () => {
-	let userId: string;
 	let fastify: ReturnType<typeof Fastify>;
 		let mocks: {
 			db: any;

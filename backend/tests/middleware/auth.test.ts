@@ -22,7 +22,6 @@ vi.mock("../../src/db/wrappers/auth/index.js", () => ({
 
 // Import after mocks
 import { requireAuth, requirePartialAuth } from "../../src/middleware/auth.middleware.js";
-import { M } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 
 describe("preHandlers (requireAuth & requirePartialAuth)", () => {
 	let fastify: ReturnType<typeof Fastify>;

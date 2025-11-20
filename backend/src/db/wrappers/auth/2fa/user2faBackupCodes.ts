@@ -3,7 +3,6 @@
  * Provides retrieval, creation, and listing utilities.
 */
 
-import { get } from "http";
 import { db, insertRow, getRow, user2FaMethods } from "../../../index.js";
 
 export interface	user2faBackupCodes {
