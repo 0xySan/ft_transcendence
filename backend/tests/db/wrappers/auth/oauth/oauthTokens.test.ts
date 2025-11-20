@@ -62,7 +62,7 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		expect(newToken).toBeDefined();
-        if (!newToken)throw new Error("Expected an OAuthToken from newToken, but got undefined.");
+        if (!newToken) throw new Error("Expected an OAuthToken from newToken, but got undefined.");
 		expect(newToken.oauth_account_id).toBe(oauthAccountId);
 		expect(newToken.access_token_hash).toBe("access_hash_123");
 	});
@@ -74,7 +74,7 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		const fetched = getOauthTokenById((token as any).oauth_token_id);
-        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+        if (!fetched) throw new Error("Expected an OAuthToken from fetched, but got undefined.");
 		expect(fetched).toBeDefined();
 		expect(fetched.access_token_hash).toBe("hash_by_id");
 	});
@@ -86,7 +86,7 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		const result = getOauthTokenByAccessTokenHash("find_me_hash");
-        if (!result)throw new Error("Expected an OAuthToken from result, but got undefined.");
+        if (!result) throw new Error("Expected an OAuthToken from result, but got undefined.");
 		expect(result).toBeDefined();
 		expect(result.access_token_hash).toBe("find_me_hash");
 	});
@@ -175,7 +175,7 @@ describe("OauthTokens wrapper", () => {
 			access_token_hash: "default_expiry",
 			issued_at: now
 		});
-        if (!token)throw new Error("Expected an OAuthToken from createOauthToken(), but got undefined.");
+        if (!token) throw new Error("Expected an OAuthToken from createOauthToken(), but got undefined.");
 		expect(token.expires_at).toBe(now + 3600);
 	});
 
@@ -220,7 +220,7 @@ describe("OauthTokens wrapper", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getOauthTokenById(tokenId);
-        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+        if (!fetched) throw new Error("Expected an OAuthToken from fetched, but got undefined.");
 		expect(fetched.access_token_hash).toBe("updated_hash");
 	});
 
@@ -240,7 +240,7 @@ describe("OauthTokens wrapper", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getOauthTokenById(tokenId);
-        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+        if (!fetched) throw new Error("Expected an OAuthToken from fetched, but got undefined.");
 		expect(fetched.access_token_hash).toBe("multi_field_after");
 		expect(fetched.scopes).toBe("read write");
 		expect(fetched.revoked).toBe(1);
@@ -256,12 +256,12 @@ describe("OauthTokens wrapper", () => {
 
 		updateOauthToken(tokenId, { revoked: true });
 		let fetched = getOauthTokenById(tokenId);
-        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+        if (!fetched) throw new Error("Expected an OAuthToken from fetched, but got undefined.");
 		expect(fetched.revoked).toBe(1);
 
 		updateOauthToken(tokenId, { revoked: false });
 		fetched = getOauthTokenById(tokenId);
-        if (!fetched)throw new Error("Expected an OAuthToken from fetched, but got undefined.");
+        if (!fetched) throw new Error("Expected an OAuthToken from fetched, but got undefined.");
 		expect(fetched.revoked).toBe(0);
 	});
 
@@ -300,7 +300,7 @@ describe("OauthTokens wrapper", () => {
 		});
 
 		expect(token).toBeDefined();
-        if (!token)throw new Error("Expected an OAuthToken from token, but got undefined.");
+        if (!token) throw new Error("Expected an OAuthToken from token, but got undefined.");
 		expect(token.oauth_account_id).toBeNull();
 		expect(token.refresh_token_hash).toBeNull();
 		expect(token.scopes).toBeNull();

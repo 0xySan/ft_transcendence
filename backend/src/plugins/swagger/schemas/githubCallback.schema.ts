@@ -1,7 +1,7 @@
 export const githubCallbackSchema = {
 	summary: 'GitHub OAuth2 callback endpoint',
 	description: 'Handles the OAuth2 callback from GitHub after user authentication and redirects accordingly.',
-	tags: ['Auth: OAuth'],
+	tags: ['OAuth'],
 	querystring: {
 		type: 'object',
 		properties: {

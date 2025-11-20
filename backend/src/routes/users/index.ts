@@ -7,9 +7,11 @@ import { FastifyInstance } from 'fastify';
 import { userDataRoutes } from './data/index.js'
 import { userAccountRoutes } from './accounts/index.js';
 import { userProfileRoutes } from './profile.route.js';
+import { userTwoFaRoutes } from './twoFa/index.js';
 
 export function userRoutes(fastify: FastifyInstance) {
 	userDataRoutes(fastify);
 	userAccountRoutes(fastify);
 	userProfileRoutes(fastify);
+	userTwoFaRoutes(fastify);
 }

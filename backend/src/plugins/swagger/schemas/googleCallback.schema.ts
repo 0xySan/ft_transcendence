@@ -2,7 +2,7 @@ export const googleCallbackSchema = {
 	summary: "Google OAuth callback",
 	description:
 		"Handles the OAuth2 callback from the Google API. Exchanges authorization code for access token, retrieves user info, and redirects based on account linking or registration state.",
-	tags: ["Auth: OAuth"],
+	tags: ["OAuth"],
 	querystring: {
 		type: "object",
 		required: ["code"],

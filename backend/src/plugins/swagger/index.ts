@@ -24,8 +24,7 @@ export default async function swaggerPlugin(app: FastifyInstance) {
 			tags: [
 				{ name: "Users", description: "User-related endpoints (profiles, images...)" },
 				{ name: "Users: Accounts", description: "Account management endpoints (registration, login...)" },
-				{ name: "Auth", description: "Authentication endpoints" },
-				{ name: "Auth: OAuth", description: "OAuth provider integration endpoints" },
+				{ name: "OAuth", description: "OAuth provider integration endpoints" },
 				{ name: "Game", description: "Gameplay and match tracking endpoints" },
 			],
 		},

@@ -1,11 +1,13 @@
 -- Table: user_2fa_methods
 -- Store different methods of 2fa
 CREATE TABLE user_2fa_methods (
-	method_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
+	method_id				TEXT		PRIMARY KEY,											--- Unique UIDentifier
 	user_id					TEXT,																--- ID of the user (FK)
 	method_type				INTEGER		NOT NULL DEFAULT 0,										--- Store the method
-	label					TEXT,																--- 2fa method name
-	is_primary				INTEGER		DEFAULT 0,												--- store the prymary
+	label					TEXT
+							CHECK(	length(label) >= 3 AND 
+									length(label) <= 100),										--- 2fa method name
+	is_primary				BOOLEAN		DEFAULT 0,												--- store the prymary
 	is_verified				BOOLEAN		DEFAULT 0,												--- is verified ?
 	created_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the created method
 	updated_at				DATETIME	DEFAULT CURRENT_TIMESTAMP,								--- timestamp of the updated method
@@ -16,12 +18,17 @@ CREATE TABLE user_2fa_methods (
 -- Store the email otp
 CREATE TABLE user_2fa_email_otp (
 	email_otp_id			INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	method_id				INTEGER,															--- method id (FK)
+	email					TEXT UNIQUE NOT NULL CHECK(
+								length(email) <= 255 AND 
+								email LIKE '%@%.%' AND 
+								email NOT LIKE '%@%@%'
+							),														    		-- User email with basic validation
+	method_id				TEXT,																--- method id (FK)
 	last_sent_code_hash		TEXT		NOT NULL,												--- the last code in hash
 	last_sent_at			DATETIME,															--- timestamp of the last sent email otp
 	attempts				INTEGER		DEFAULT 0,												--- store the number of attempts
 	consumed				INTEGER		DEFAULT 0,												--- store the number of consumed
-	expires_at				DATETIME	NOT NULL,												--- timestamp of the expired eamil otp
+	expires_at				DATETIME	NOT NULL,												--- timestamp of the expired email otp
 	FOREIGN KEY(method_id) REFERENCES user_2fa_methods(method_id) ON DELETE CASCADE				--- user_2fa_methods.method_id
 );
 
@@ -29,7 +36,7 @@ CREATE TABLE user_2fa_email_otp (
 -- Store the different information of the 2fa application
 CREATE TABLE user_2fa_totp (
 	totp_id					INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
-	method_id				INTEGER,															--- method id (FK)
+	method_id				TEXT,															--- method id (FK)
 	secret_encrypted		BLOB		NOT NULL,												--- secret to use to decrypt one time code
 	secret_meta				TEXT,																--- configuration of codes
 	last_used				DATETIME,															--- timestamp of the last used 2fa totp
@@ -40,7 +47,7 @@ CREATE TABLE user_2fa_totp (
 -- Store the backup codes
 CREATE TABLE user_2fa_backup_codes (
 	backup_code_id			INTEGER		PRIMARY KEY AUTOINCREMENT,								-- Unique identifier
-	method_id				INTEGER,															-- method id (FK)
+	method_id				TEXT,															-- method id (FK)
 	code_json				TEXT		NOT NULL ,												-- Store the json codes
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						-- timestamp of the created backup code
 	FOREIGN KEY(method_id) REFERENCES user_2fa_methods(method_id) ON DELETE CASCADE				-- user_2fa_methods.method_id
@@ -138,6 +145,8 @@ CREATE TABLE sessions (
 	session_id				INTEGER		PRIMARY KEY AUTOINCREMENT,								--- Unique identifier
 	user_id					TEXT		NOT NULL,												--- ID of the user (FK)
 	session_token_hash		TEXT		UNIQUE NOT NULL,										--- the hashed session token
+	stage					TEXT		NOT NULL DEFAULT 'active'
+										CHECK(stage IN ('partial', 'active', 'expired')),		--- session stage
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
 	last_used_at			DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the last used session
@@ -219,4 +228,13 @@ BEGIN
   UPDATE api_tokens
   SET last_used_at = CURRENT_TIMESTAMP
   WHERE token_id = OLD.token_id;
+END;
+
+-- Cleanup expired sessions after a new session is created
+CREATE TRIGGER delete_expired_sessions
+AFTER INSERT ON sessions
+WHEN NEW.expires_at >= strftime('%s','now')
+BEGIN
+    DELETE FROM sessions
+    WHERE expires_at < strftime('%s','now');
 END;

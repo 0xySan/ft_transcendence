@@ -1,19 +1,20 @@
 /**
- * Wrapper functions for interacting with the `sessions` table.
- * Provides retrieval, creation, and listing utilities.
-*/
+ * @file db/wrappers/auth/sessions.ts
+ * @description Database wrapper functions for managing user sessions.
+ */
 
 import { db, insertRow, getRow } from "../../index.js";
 
 export interface session {
-	user_id:	    	    string;
+	user_id:				string;
 	session_token_hash:		string;
-	created_at:		        number;
-	expires_at:		        number;
-	last_used_at:		    number;
-	ip:                     string;
-    user_agent:	            string;
-    is_persistent:          boolean;
+	stage:				  'partial' | 'active' | 'expired';
+	created_at:				number;
+	expires_at:				number;
+	last_used_at:			number;
+	ip:					 string;
+	user_agent:				string;
+	is_persistent:		  boolean;
 }
 
 /**
@@ -22,7 +23,7 @@ export interface session {
  * @returns The session object if found, otherwise undefined
  */
 export function getSessionById(id: number): session | undefined {
-    return (getRow<session>("sessions", "session_id", id));
+	return (getRow<session>("sessions", "session_id", id));
 }
 
 /** Retrieve a session by its token hash.
@@ -39,8 +40,8 @@ export function getSessionByTokenHash(token_hash: string): session | undefined {
  * @returns An array of sessions objects, or an empty array if none found
  */
 export function getSessionsByUserId(user_id: string): session[] {
-    const stmt = db.prepare("SELECT * FROM sessions WHERE user_id = ?");
-    return (stmt.all(user_id) as session[]);
+	const stmt = db.prepare("SELECT * FROM sessions WHERE user_id = ?");
+	return (stmt.all(user_id) as session[]);
 }
 
 /**
@@ -50,11 +51,13 @@ export function getSessionsByUserId(user_id: string): session[] {
  */
 export function getActiveSessionsByUserId(user_id: string): session[] {
 	try {
-		const currentTime = Math.floor(Date.now() / 1000);
-		const stmt = db.prepare(`SELECT * FROM sessions WHERE user_id = ? AND expires_at > ?`);
-		const rows = stmt.all(user_id, currentTime);
-		return rows as session[];
-	} catch (error) {
+		const now = Math.floor(Date.now() / 1000);
+		const stmt = db.prepare(`
+			SELECT * FROM sessions 
+			WHERE user_id = ? AND expires_at > ? AND stage != 'expired'
+		`);
+		return stmt.all(user_id, now) as session[];
+	} catch {
 		return [];
 	}
 }
@@ -84,26 +87,28 @@ export function getActiveSessionsByIp(ip: string): session[] {
  * @returns The newly created or existing session object, or undefined if insertion failed
  */
 export function createSession(options: Partial<session>): session | undefined {
-    if (typeof options.expires_at !== 'number' || typeof options.last_used_at !== 'number') { return (undefined); }
-    const   user_id = options.user_id;
-    const   session_token_hash = options.session_token_hash;
-    const   created_at = Math.floor(Date.now() / 1000);
-    const   expires_at = options.expires_at;
-    const   last_used_at = options.last_used_at;
-    const   ip = options.ip;
-    const   user_agent = options.user_agent;
-    const   is_persistent = (options.is_persistent ?? 0);
+	if (typeof options.expires_at !== 'number' || typeof options.last_used_at !== 'number') { return (undefined); }
+	const	user_id = options.user_id;
+	const	session_token_hash = options.session_token_hash;
+	const	stage = options.stage || 'partial';
+	const	created_at = Math.floor(Date.now() / 1000);
+	const	expires_at = options.expires_at;
+	const	last_used_at = options.last_used_at;
+	const	ip = options.ip;
+	const	user_agent = options.user_agent;
+	const	is_persistent = (options.is_persistent ?? 0);
 
-    return (insertRow<session>("sessions", {
-        user_id: user_id,
+	return (insertRow<session>("sessions", {
+		user_id: user_id,
 		session_token_hash: session_token_hash,
+		stage: stage,
 		created_at: created_at,
 		expires_at: expires_at,
 		last_used_at: last_used_at,
 		ip: ip,
-        user_agent: user_agent,
-        is_persistent: is_persistent ? 1 : 0
-    }));
+		user_agent: user_agent,
+		is_persistent: is_persistent ? 1 : 0
+	}));
 }
 
 /**
@@ -115,30 +120,60 @@ export function createSession(options: Partial<session>): session | undefined {
  * @returns true if updated, false otherwise
  */
 export function updateSession(session_id: number, options: Partial<session>): boolean {
-    const keys = Object.keys(options).filter(
-        key => options[key as keyof session] !== undefined && options[key as keyof session] !== null
-    );
+	const keys = Object.keys(options).filter(
+		key => options[key as keyof session] !== undefined && options[key as keyof session] !== null
+	);
 
-    if (keys.length === 0) return false;
+	if (keys.length === 0) return false;
 
-    const setClause = keys.map(key => `${key} = @${key}`).join(", ");
+	const setClause = keys.map(key => `${key} = @${key}`).join(", ");
 
-    const params: Record<string, unknown> = { session_id };
-    for (const key of keys) {
-        if (key === "is_persistent") {
-            params[key] = options.is_persistent ? 1 : 0;
-        } else {
-            params[key] = options[key as keyof session];
-        }
-    }
+	const params: Record<string, unknown> = { session_id };
+	for (const key of keys) {
+		if (key === "is_persistent") {
+			params[key] = options.is_persistent ? 1 : 0;
+		} else {
+			params[key] = options[key as keyof session];
+		}
+	}
 
-    const stmt = db.prepare(`
-        UPDATE sessions
-        SET ${setClause}
-        WHERE session_id = @session_id
-    `);
+	const stmt = db.prepare(`
+		UPDATE sessions
+		SET ${setClause}
+		WHERE session_id = @session_id
+	`);
 
-    const result = stmt.run(params);
+	const result = stmt.run(params);
 
-    return (result.changes > 0);
+	return (result.changes > 0);
+}
+
+/**
+ * Promote a session from 'partial' to 'active' stage.
+ * @param session_token_hash - The token hash of the session to promote
+ * @returns true if the session was promoted, false otherwise
+ */
+export function promoteSessionToActive(session_token_hash: string): boolean {
+	const stmt = db.prepare(`
+		UPDATE sessions
+		SET stage = 'active', last_used_at = ?
+		WHERE session_token_hash = ? AND stage = 'partial'
+	`);
+	const result = stmt.run(Math.floor(Date.now() / 1000), session_token_hash);
+	return result.changes > 0;
+}
+
+/**
+ * Expire old sessions that have passed their expiration time.
+ * @returns The number of sessions expired
+ */
+export function expireOldSessions(): number {
+	const now = Math.floor(Date.now() / 1000);
+	const stmt = db.prepare(`
+		UPDATE sessions
+		SET stage = 'expired'
+		WHERE expires_at <= ? AND stage != 'expired'
+	`);
+	const result = stmt.run(now);
+	return result.changes;
 }

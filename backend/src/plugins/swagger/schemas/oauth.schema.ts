@@ -1,7 +1,7 @@
 export const oauthSchema = {
 	summary: 'OAuth login',
 	description: 'Redirects the user to the OAuth provider login page.',
-	tags: ['Auth: OAuth'],
+	tags: ['OAuth'],
 	params: {
 		type: 'object',
 		required: ['provider'],
