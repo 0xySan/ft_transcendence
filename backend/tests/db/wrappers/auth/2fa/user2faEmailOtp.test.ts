@@ -62,7 +62,7 @@ describe("user2faEmailOtp wrapper - tests", () => {
 	it("should retrieve user2faEmailOtp by ID", () => {
 		const created = createUser2faEmailOtp({
 			method_id: methodId,
-		email: "dasd@wdqwd.wd",
+			email: "dasd@wdqwd.wd",
 			last_sent_code_hash: "hashed_code_retrieve",
 			last_sent_at: now,
 			expires_at: now + 60000,
@@ -84,7 +84,7 @@ describe("user2faEmailOtp wrapper - tests", () => {
 	it("should update fields of user2faEmailOtp", () => {
 		const created = createUser2faEmailOtp({
 			method_id: methodId,
-		email: "dasdsad@dadd.asd",
+			email: "dasdsad@dadd.asd",
 			last_sent_code_hash: "hashed_code_update",
 			last_sent_at: now,
 			expires_at: now + 60000,
@@ -109,7 +109,7 @@ describe("user2faEmailOtp wrapper - tests", () => {
 	it("should return false when no valid fields are provided for update", () => {
 		const created = createUser2faEmailOtp({
 			method_id: methodId,
-		email: "sasad@dwq.wd",
+			email: "sasad@dwq.wd",
 			last_sent_code_hash: "hashed_code_no_update",
 			last_sent_at: now,
 			expires_at: now + 60000,
@@ -128,7 +128,7 @@ describe("user2faEmailOtp wrapper - tests", () => {
 	it("should cascade delete user2faEmailOtp when user_2fa_methods is deleted", () => {
 		const created = createUser2faEmailOtp({
 			method_id: methodId,
-		email: "fsffsf@as.asf",
+			email: "fsffsf@as.asf",
 			last_sent_code_hash: "hashed_code_cascade",
 			last_sent_at: now,
 			expires_at: now + 60000,
@@ -183,7 +183,7 @@ describe("user2faEmailOtp wrapper - tests", () => {
 	it("getUser2faEmailOtpByMethodId should return correct data for existing method_id", () => {
 		createUser2faEmailOtp({
 			method_id: methodId,
-		email: "example@example.example",
+			email: "example@example.example",
 			last_sent_code_hash: "hash1",
 			last_sent_at: now,
 			expires_at: now + 60000,

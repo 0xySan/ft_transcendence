@@ -115,7 +115,7 @@ describe("TOTP 2FA routes", () => {
 			expect(res.statusCode).toBe(404);
 		});
 
-		it("returns 404 if TOTP invalid", async () => {
+		it("returns 401 if TOTP invalid", async () => {
 			const id = uuidv7();
 			(getUserTotpMethodById as Mock).mockReturnValue({
 				method: { method_id: id, method_type: 1, user_id: "user123", is_verified: true },

@@ -198,13 +198,13 @@ async function createTotpMethod(userEmail: string, methodId: string, label: stri
 	if (!result)
 		return { success: false, message: 'Failed to create TOTP method in database.' };
 
-	const otpauthUrl = createTotpUri(userEmail, secretBase32, 'Transcendence', algorithm, digits, duration);
-	const qrMatrix = generateQrCode(otpauthUrl);
+	const otpAuthUrl = createTotpUri(userEmail, secretBase32, 'Transcendence', algorithm, digits, duration);
+	const qrMatrix = generateQrCode(otpAuthUrl);
 
 	return {
 		success: true,
 		message: 'TOTP method created successfully.',
-		params: { otpauthUrl, qrMatrix }
+		params: { otpAuthUrl, qrMatrix }
 	};
 }
 

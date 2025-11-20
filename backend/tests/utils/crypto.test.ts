@@ -105,63 +105,63 @@ describe('crypto utilities', () => {
 	});
 
 	it("signToken should produce a valid base64 token", () => {
-    const payload = "user:1234";
-    const token = cryptoModule.signToken(payload, 60);
+		const payload = "user:1234";
+		const token = cryptoModule.signToken(payload, 60);
 
-    expect(typeof token).toBe("string");
-    const decoded = JSON.parse(Buffer.from(token, "base64").toString("utf8"));
-    expect(decoded).toHaveProperty("data");
-    expect(decoded).toHaveProperty("hmac");
-  });
+		expect(typeof token).toBe("string");
+		const decoded = JSON.parse(Buffer.from(token, "base64").toString("utf8"));
+		expect(decoded).toHaveProperty("data");
+		expect(decoded).toHaveProperty("hmac");
+	});
 
-  it("verifyToken should return the payload if valid", () => {
-    const payload = "user:5678";
-    const token = cryptoModule.signToken(payload, 60);
+	it("verifyToken should return the payload if valid", () => {
+		const payload = "user:5678";
+		const token = cryptoModule.signToken(payload, 60);
 
-    const result = cryptoModule.verifyToken(token);
-    expect(result).toBe(payload);
-  });
+		const result = cryptoModule.verifyToken(token);
+		expect(result).toBe(payload);
+	});
 
-  it("verifyToken should return null for already used tokens", () => {
-    const payload = "user:9012";
-    const token = cryptoModule.signToken(payload, 60);
+	it("verifyToken should return null for already used tokens", () => {
+		const payload = "user:9012";
+		const token = cryptoModule.signToken(payload, 60);
 
-    const first = cryptoModule.verifyToken(token);
-    const second = cryptoModule.verifyToken(token);
+		const first = cryptoModule.verifyToken(token);
+		const second = cryptoModule.verifyToken(token);
 
-    expect(first).toBe(payload);
-    expect(second).toBeNull();
-  });
+		expect(first).toBe(payload);
+		expect(second).toBeNull();
+	});
 
-  it("verifyToken should return null for expired tokens", async () => {
-    const payload = "expiredUser";
-    const token = cryptoModule.signToken(payload, 0); // expire immediately
+	it("verifyToken should return null for expired tokens", async () => {
+		const payload = "expiredUser";
+		const token = cryptoModule.signToken(payload, 0); // expire immediately
 
-    await new Promise(r => setTimeout(r, 10));
-    const result = cryptoModule.verifyToken(token);
+		await new Promise(r => setTimeout(r, 10));
+		const result = cryptoModule.verifyToken(token);
 
-    expect(result).toBeNull();
-  });
+		expect(result).toBeNull();
+	});
 
-  it("verifyToken should return null for tampered tokens", () => {
-    const payload = "user:tamper";
-    const token = cryptoModule.signToken(payload, 60);
+	it("verifyToken should return null for tampered tokens", () => {
+		const payload = "user:tamper";
+		const token = cryptoModule.signToken(payload, 60);
 
-    const tampered = Buffer.from(token, "base64").toString("utf8").replace(payload, "hacker");
-    const tamperedToken = Buffer.from(tampered).toString("base64");
+		const tampered = Buffer.from(token, "base64").toString("utf8").replace(payload, "hacker");
+		const tamperedToken = Buffer.from(tampered).toString("base64");
 
-    const result = cryptoModule.verifyToken(tamperedToken);
-    expect(result).toBeNull();
-  });
+		const result = cryptoModule.verifyToken(tamperedToken);
+		expect(result).toBeNull();
+	});
 
-  it("tokenHash should produce consistent HMAC", () => {
-    const token = "mySecretToken";
-    const hash1 = cryptoModule.tokenHash(token);
-    const hash2 = cryptoModule.tokenHash(token);
+	it("tokenHash should produce consistent HMAC", () => {
+		const token = "mySecretToken";
+		const hash1 = cryptoModule.tokenHash(token);
+		const hash2 = cryptoModule.tokenHash(token);
 
-    expect(hash1).toBe(hash2);
-    expect(hash1).toMatch(/^[0-9a-f]{64}$/);
-  });
+		expect(hash1).toBe(hash2);
+		expect(hash1).toMatch(/^[0-9a-f]{64}$/);
+	});
 });
 
 describe("twofaTokens storage and cleanup", () => {

@@ -40,7 +40,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 				updated_at: now
 			});
 			expect(method).toBeDefined();
-			if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+			if (!method) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 			expect(method.user_id).toBe(userId);
 			expect(method.label).toBe("Phone");
 
@@ -52,7 +52,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		if (createdMethodId === undefined) return;
 		const method = getUser2FaMethodsById(createdMethodId);
 		expect(method).toBeDefined();
-		if (!method)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(method.user_id).toBe(userId);
 		expect(method.label).toBe("Phone");
 	});
@@ -60,7 +60,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 	it("should retrieve the primary 2FA method for a user", () => {
 		const method = getPrimary2FaMethodByUserId(userId);
 		expect(method).toBeDefined();
-		if (!method)throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
 		expect(method.user_id).toBe(userId);
 		expect(method.is_primary).toBe(1);
 	});
@@ -103,7 +103,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(success).toBe(true);
 
 		const primary = getPrimary2FaMethodByUserId(userId);
-		if (!primary)throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
+		if (!primary) throw new Error("Expected an user2FaMethods from getPrimary2FaMethodByUserId(), but got undefined.");
 		expect(primary.method_type).toBe(2);
 		expect(primary.method_id).toBe(methodId);
 	});
@@ -125,7 +125,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(verified).toBe(true);
 
 		const fetched = getUser2FaMethodsById(methodId);
-		if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!fetched) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetched.is_verified).toBe(1);
 	});
 
@@ -174,7 +174,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
-		if (!methodA)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!methodA) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		const methodB = create2FaMethods({
 			user_id: userId,
 			method_type: 1,
@@ -199,7 +199,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const method = getUser2FaMethodsById(createdMethodId);
-		if (!method)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(method.label).toBe("Updated Phone");
 		expect(method.is_verified).toBe(0);
 	});
@@ -226,7 +226,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
-		if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
 		expect(method.is_verified).toBe(1);
 	});
@@ -241,7 +241,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
-		if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
 		expect(method.is_primary ?? 0).toBe(0);
 	});
@@ -265,7 +265,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now,
 		});
-		if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
 		expect(method.is_verified).toBe(0);
 	});
@@ -281,7 +281,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now,
 		});
-		if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
 		expect(method.is_verified).toBe(0);
 	});
@@ -297,7 +297,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now,
 		});
-		if (!method)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!method) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 		expect(method).toBeDefined();
 		expect(method.is_verified).toBe(1);
 	});
@@ -321,14 +321,14 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		let fetched = getUser2FaMethodsById(methodId);
-		if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!fetched) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetched.is_verified).toBe(1);
 
 		updated = update2FaMethods(methodId, { is_verified: false });
 		expect(updated).toBe(true);
 
 		fetched = getUser2FaMethodsById(methodId);
-		if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!fetched) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetched.is_verified).toBe(0);
 	});
 
@@ -377,7 +377,7 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getUser2FaMethodsById(methodId);
-		if (!fetched)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!fetched) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetched.created_at).toBe(newTimestamp);
 		expect(fetched.updated_at).toBe(newTimestamp);
 	});
@@ -411,8 +411,8 @@ describe("user2FaMethods wrapper - extended tests", () => {
 			created_at: now,
 			updated_at: now
 		});
-		if (!methodA)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
-		if (!methodB)throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!methodA) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
+		if (!methodB) throw new Error("Expected an user2FaMethods from create2FaMethods(), but got undefined.");
 
 		const modified = [
 			{ ...methodA, label: "Updated Batch Method A", is_verified: true },
@@ -423,12 +423,12 @@ describe("user2FaMethods wrapper - extended tests", () => {
 		expect(result).toBe(true);
 
 		const fetchedA = getUser2FaMethodsById(methodA.method_id);
-		if (!fetchedA)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!fetchedA) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetchedA.label).toBe("Updated Batch Method A");
 		expect(fetchedA.is_verified).toBe(1);
 
 		const fetchedB = getUser2FaMethodsById(methodB.method_id);
-		if (!fetchedB)throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
+		if (!fetchedB) throw new Error("Expected an user2FaMethods from getUser2FaMethodsById(), but got undefined.");
 		expect(fetchedB.label).toBe("Updated Batch Method B");
 		expect(fetchedB.is_primary).toBe(1);
 	});

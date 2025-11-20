@@ -52,7 +52,7 @@ describe("user2faTotp wrapper – with FK setup", () => {
 			secret_meta: "digits=6;period=30",
 			last_used: now
 		});
-        if (!created)throw new Error("Expected an user2faTotp from createUser2faTotp(), but got undefined.");
+        if (!created) throw new Error("Expected an user2faTotp from createUser2faTotp(), but got undefined.");
 		expect(created).toBeDefined();
 		expect(created.method_id).toBe(methodId);
 		expect(created.secret_meta).toContain("digits");
@@ -64,7 +64,7 @@ describe("user2faTotp wrapper – with FK setup", () => {
 	it("should retrieve a user2faTotp entry by ID", () => {
 		const totp = getUser2faTotpById(totpId);
 		expect(totp).toBeDefined();
-        if (!totp)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
+        if (!totp) throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
 		expect(totp.method_id).toBe(methodId);
 		expect(totp.secret_meta).toMatch(/period=30/);
 	});
@@ -77,7 +77,7 @@ describe("user2faTotp wrapper – with FK setup", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getUser2faTotpById(totpId);
-        if (!fetched)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
+        if (!fetched) throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
 		expect(fetched.secret_meta).toContain("digits=8");
 		expect(fetched.last_used).toBe(1800000000);
 	});
@@ -99,7 +99,7 @@ describe("user2faTotp wrapper – with FK setup", () => {
 
 	it("should retrieve user2faTotp by method_id", () => {
         const totp = getUser2faTotpByMethodId(methodId);
-        if (!totp)throw new Error("Expected an user2faTotp from getUser2faTotpByMethodId(), but got undefined.");
+        if (!totp) throw new Error("Expected an user2faTotp from getUser2faTotpByMethodId(), but got undefined.");
         expect(totp).toBeDefined();
         expect(totp.method_id).toBe(methodId);
         expect(totp.secret_encrypted).toBeInstanceOf(Buffer);
@@ -152,7 +152,7 @@ describe("user2faTotp wrapper – with FK setup", () => {
 		);
 
 		const result = getUserTotpMethodById(newMethodId);
-		if (!result)throw new Error("Expected a User2FaTotpDetails from getUserTotpMethodById(), but got undefined.");
+		if (!result) throw new Error("Expected a User2FaTotpDetails from getUserTotpMethodById(), but got undefined.");
 		expect(result).toBeDefined();
 		expect(result.method.method_id).toBe(newMethodId);
 		expect(result.totp.secret_meta).toBe("digits=6;period=30");
