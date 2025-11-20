@@ -602,7 +602,7 @@ body {
   justify-content: flex-start; /* top */
   align-items: flex-start;   /* left */
   gap: 12px;                 /* gap 12 */
-  padding: 16px 4px;         /* vertical 16, horizontal 4 */
+  padding: 4px;
   border: 4px solid rgb(var(--surface0)); /* border size 4, color --surface0 */
   border-radius: 20px;       /* corner radius 20 */
   box-sizing: border-box;
@@ -618,6 +618,7 @@ body {
   gap: 0;
   padding: 0 12px;                /* horizontal padding 12 */
   width: 100%;                    /* allow the flex row to span full container so spacing works */
+  box-sizing: border-box;         /* <-- ensure padding stays inside the 100% width */
 }
 
 #lobby-player-list {
@@ -687,42 +688,65 @@ body {
 
 .lobby-setting-type {
   display: flex;
-  flex-direction: row;       /* flow horizontal */
-  justify-content: flex-start;
-  align-items: flex-start;   /* align left */
-  gap: 72px;                 /* gap 72 */
-  padding: 0 72px;           /* horizontal padding 72 */
-  border-radius: 5px;        /* corner radius 5 */
-  border: 2px solid rgb(var(--surface0)); /* weight 2, color surface0 */
-  box-sizing: border-box;
-  height: 36px;
-}
-
-.lobby-divider {
-  display: inline-block;
-  width: 1px;
-  height: 28px; /* or match Figma line height */
-  background-color: rgb(var(--subtext1)); /* line color */
-}
-
-.lobby-rocker-switch {
+  align-items: center;
+  justify-content: center;
   position: relative;
-  width: 50px;
-  height: 24px;
-  background-color: rgb(var(--base));
-  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: 5px;
+  border: 2px solid rgb(var(--surface0));
+  height: 44px; /* enforce the final (post-click) size as the default */
+  gap: 0;
+  overflow: hidden;          /* keep children inside rounded container */
+}
 
-  /* remove any default/button border */
-  border: none;
+/* buttons fill available space equally and are fully clickable */
+.lobby-setting-type > .lobby-rocker-switch {
+  flex: 1;                   /* equal width via flex (remove hard width) */
+  min-width: 0;              /* prevents flex overflow issues */
+  height: 100%;              /* full height of the container */
+  min-height: 44px;          /* ensure button never shrinks below container */
+  margin: 0;
+  display: inline-flex;      /* ensure the entire area is clickable even with no text */
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(var(--base)); /* default bg */
+  cursor: pointer;
+  border: none;              /* no border at all */
   box-shadow: none;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
-  padding: 0;
+  padding: 0 12px;           /* keep some horizontal breathing room for text */
+  box-sizing: border-box;
+  z-index: 1;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+  line-height: normal;       /* avoid implicit line-height changes on state toggle */
+  font-size: inherit;        /* keep font size stable */
 }
 
-.lobby-rocker-switch.selected {
+/* no visual layout jump on focus */
+.lobby-setting-type > .lobby-rocker-switch:focus {
+  outline: none;
+}
+
+/* selected state: only background changes */
+.lobby-setting-type > .lobby-rocker-switch.selected {
   background-color: rgb(var(--surface0));
+  color: inherit;
+}
+
+/* rounded outer corners for the two edge buttons */
+.lobby-setting-type > .lobby-rocker-switch:first-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.lobby-setting-type > .lobby-rocker-switch:last-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
 }
 
 .lobby-setting-list {

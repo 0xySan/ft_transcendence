@@ -13,9 +13,9 @@
         </div>
         <div id="lobby-mode-setting">
             <div id="lobby-mode-buttons">
-                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semi-bold text-color-text" id="lobby-multiplayer-button">MULTIPLAYER</button>
-                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semi-bold text-color-text current-mode" id="lobby-custom-game-button">CUSTOM GAME</button>
-                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semi-bold text-color-text" id="lobby-tournament-button">TOURNAMENT</button>
+                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semibold text-color-text" id="lobby-multiplayer-button">MULTIPLAYER</button>
+                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semibold text-color-text current-mode" id="lobby-custom-game-button">CUSTOM GAME</button>
+                <button class="button lobby-mode-button button-border-4px button-border-color-surface0 font-xl font-poppins-semibold text-color-text" id="lobby-tournament-button">TOURNAMENT</button>
             </div>
             <div id="lobby-multiplayer-tab" class="lobby-multiplayer-box unloaded">
 
@@ -29,9 +29,8 @@
                     </div>
                 </div>
                 <div class="lobby-setting-type">
-                    <button class="lobby-rocker-switch font-poppins-regular text-color-text">Room settings</button>
-                    <span class="lobby-divider"></span>
-                    <button class="lobby-rocker-switch font-poppins-regular text-color-text">Advanced settings</button>
+                    <button class="lobby-rocker-switch selected font-poppins-regular text-color-text" id="lobby-custom-game-basic-settings-button">Room settings</button>
+                    <button class="lobby-rocker-switch font-poppins-regular text-color-text" id="lobby-custom-game-advanced-settings-button">Advanced settings</button>
                 </div>
                 <div class="lobby-setting-list" id="lobby-custom-game-basic-settings">
 
@@ -44,14 +43,13 @@
                 <div class="lobby-setting-box-title">
                     <span class="font-poppins-regular text-color-text text-3xl">Settings</span>
                     <div class="lobby-private-checkbox">
-                        <label for="lobby-private-checkbox-tournament" class="font-poppins-regular text-color-text text-md">Private</label>
-                        <input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-tournament" class="lobby-checkbox">
+                        <label for="lobby-private-checkbox-custom-game" class="font-poppins-regular text-color-text text-md">Private</label>
+                        <input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-custom-game" class="lobby-checkbox">
                     </div>
                 </div>
                 <div class="lobby-setting-type">
-                    <button class="font-poppins-regular text-color-text">Room settings</button>
-                    <span class="lobby-divider"></span>
-                    <button class="font-poppins-regular text-color-text">Advanced settings</button>
+                    <button class="lobby-rocker-switch selected font-poppins-regular text-color-text" id="lobby-tournament-basic-settings-button">Room settings</button>
+                    <button class="lobby-rocker-switch font-poppins-regular text-color-text" id="lobby-tournament-advanced-settings-button">Advanced settings</button>
                 </div>
                 <div class="lobby-setting-list" id="lobby-tournament-basic-settings">
 
@@ -64,7 +62,7 @@
     </div>
     <div id="lobby-action-buttons">
         <div id="lobby-join-box">
-            <input type="text" placeholder="Enter code" class="join-input font-poppins-regular text-color-text" />
+            <input type="text" placeholder="Enter code" class="join-input font-poppins-semibold text-color-text" />
             <button class="join-button background-color-peach">JOIN</button>
         </div>
         <div id="lobby-leave-launch-buttons">
