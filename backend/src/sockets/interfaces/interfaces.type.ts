@@ -3,43 +3,12 @@
  * This interface is used to have the main parameters of the game management
  * @example ```ts
  * const gameState: sv_game = {
- *     position_paddle: { "player1": { pos_x: 1, pos_y: 5 }, "player2": { pos_x: 18, pos_y: 5 } },
- *     position_ball: { pos_x: 10, pos_y: 7 },
- *     velocity_ball: { pos_x: 1, pos_y: -1 },
- *     end_game: 0,
- *     score: { "player1": 3, "player2": 2 }
+ *     user_id: "019aa6b3-8520-749c-9fc6-6312e1d54979"
  * };
  */
 export interface sv_game {
-    /* uuid of the game */
-    uuid: string;
-    /* code of the game */
-    code: string;
-    /* Map<user_id, paddle(x, y) */
-    position_paddle: Record<string, position>;
-    /* position of ball: position(x, y) */
-    position_ball: position;
-    /* velocity of ball: position(x, y) */
-    velocity_ball: position;
-    /* timestamp if end of game */
-    end_game: number;
-    /* Map<user_id, score> */
-    score: Record<string, number>
-}
-
-/**
- * This interface is used for the coords
- * @example ```ts
- * const ballPosition: position = {
- *     pos_x: 12,
- *     pos_y: 7
- * };
- */
-export interface position {
-    /* horizontale position */
-    pos_x: number;
-    /* vertical position */
-    pos_y: number;
+    /* id of the user */
+    user_id: string
 }
 
 // ======= Interface file for (client -> server) ======= \\

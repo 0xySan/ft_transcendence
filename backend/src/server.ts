@@ -22,14 +22,13 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 
 export interface worker {
 	worker: Worker;
-	games: Games[];
 	players: number;
 }
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 export const workers: worker[] = [];
-export const parties_per_core = 1;
+export const parties_per_core = 2;
 
 async function buildServer() {
 	const app = Fastify({
@@ -55,13 +54,12 @@ async function createThread() {
 	const __dirname = path.dirname(__filename);
 
 	// --- Créer le chemin absolu vers test.js ---
-	const workerPath = path.resolve(__dirname, './game/test.js');
+	const workerPath = path.resolve(__dirname, './game/gamesLogic.js');
 	
 	// --- Créer le worker avec le chemin absolu ---
-	for (let i = 0; i < core * parties_per_core; i++) {
+	for (let i = 0; i < core; i++) {
 		workers.push({
 			worker: new Worker(workerPath),
-			games: [],
 			players: 0
 		});
 	}
