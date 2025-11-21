@@ -7,18 +7,28 @@ import { FastifyInstance } from "fastify";
 import { generateRandomToken } from '../utils/crypto.js';
 import { sv_game } from '../sockets/interfaces/interfaces.type.js';
 import { Games } from '../sockets/games.classe.js';
-import { workers, parties_per_core } from '../server.js';
+import { workers, parties_per_core, worker } from '../server.js';
 
-function getWorker() {
-    let count = 0;
-    let i = 0;
+const coef_games = 1;
+const coef_players = 2;
+
+function getWorker(): worker {
+
+    let best = workers[0];
+    let bestScore = workers[0].games.length * coef_games
+                  + workers[0].players * coef_players;
 
     for (const tmp of workers) {
-        if (tmp.games.length < workers[i].games.length)
-            i = count
-        count++;
+        const score = tmp.games.length * coef_games
+                    + tmp.players * coef_players;
+
+        if (score < bestScore) {
+            best = tmp;
+            bestScore = score;
+        }
     }
-    return (workers[i]);
+
+    return best;
 }
 
 export async function gameRoutes(fastify: FastifyInstance) {
