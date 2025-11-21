@@ -6,6 +6,7 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import { Games } from './sockets/games.classe.js'
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -19,10 +20,16 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
+export interface worker {
+	worker: Worker;
+	games: Games[];
+	players: number;
+}
+
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
-export const workers: Worker[] = [];
-const parties_per_core = 1;
+export const workers: worker[] = [];
+export const parties_per_core = 1;
 
 async function buildServer() {
 	const app = Fastify({
@@ -52,7 +59,11 @@ async function createThread() {
 	
 	// --- Créer le worker avec le chemin absolu ---
 	for (let i = 0; i < core * parties_per_core; i++) {
-		workers[i] = new Worker(workerPath);
+		workers.push({
+			worker: new Worker(workerPath),
+			games: [],
+			players: 0
+		});
 	}
 }
 

@@ -7,9 +7,19 @@ import { FastifyInstance } from "fastify";
 import { generateRandomToken } from '../utils/crypto.js';
 import { sv_game } from '../sockets/interfaces/interfaces.type.js';
 import { Games } from '../sockets/games.classe.js';
-import { workers } from '../server.js';
+import { workers, parties_per_core } from '../server.js';
 
-export const games: Games[] = [];
+function getWorker() {
+    let count = 0;
+    let i = 0;
+
+    for (const tmp of workers) {
+        if (tmp.games.length < workers[i].games.length)
+            i = count
+        count++;
+    }
+    return (workers[i]);
+}
 
 export async function gameRoutes(fastify: FastifyInstance) {
 
@@ -18,10 +28,6 @@ export async function gameRoutes(fastify: FastifyInstance) {
     });
 
     fastify.post("/api/game", async (request, reply) => {
-
-        if (games.length >= 8) {
-            return (reply.status(501).send({ error: "server is full" }));
-        }
 
         const game = request.body as sv_game;
 
@@ -77,7 +83,13 @@ export async function gameRoutes(fastify: FastifyInstance) {
             game.code
         )
 
-        games.push(new_game);
+        const worker = getWorker();
+
+        if (worker.games.length >= parties_per_core) {
+            return (reply.status(501).send({ error: "every server is full" }));
+        }
+
+        worker.games.push(new_game);
 
         const game_data = {
             position_paddle: new_game.position_paddle,
@@ -89,21 +101,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
             code: new_game.code,
         };
 
-        console.log("DEBUG: nombre de partie: " + games.length);
-
-        for (let i = 0; i < workers.length; i++) {
-            const worker = workers[i];
-
-            const state = await new Promise<boolean>((resolve) => {
-                worker.once("message", (msg) => resolve(msg));
-                worker.postMessage("getState");
-            });
-
-            if (state === false) {
-                worker.postMessage({ state: "changeState", game: game_data });
-                return (reply.status(202).send({ token: generateRandomToken(32), game: game }));
-            }
-        }
+        worker.worker.postMessage({ state: "changeState", game: game_data });
 
         return (reply.status(202).send({token: generateRandomToken(32), game: game}));
     });

@@ -1,25 +1,17 @@
 import { parentPort } from "worker_threads";
 import { Games } from '../sockets/games.classe.js';
 
-let state = false;
-let game: Games; 
+let game: Games[] = []; 
 
-let i = 0;
-function boucleInfinie() {
-  console.log("n: " + state);
-  i++;
-  setTimeout(boucleInfinie, 1000);
+function repeat() {
+  setTimeout(repeat, 1000);
 }
 
-boucleInfinie();
+repeat();
 
 parentPort?.on("message", (msg) => {
-    if (msg == "getState") {
-        parentPort?.postMessage(state);
-    }
-    else if (msg.state == "changeState" && msg.game) {
-        state = true;
-        game = new Games(
+    if (msg.state == "changeState" && msg.game) {
+        game.push(new Games(
             msg.game.position_paddle,
             msg.game.score,
             msg.game.position_ball,
@@ -27,7 +19,7 @@ parentPort?.on("message", (msg) => {
             msg.game.end_game,
             msg.game.uuid,
             msg.game.code
-        );
-        console.log("DEBUG: game = ", game);
+        ));
+        console.log("DEBUG: n = " + game.length + " | game = ", game[game.length - 1]);
     }
 });
