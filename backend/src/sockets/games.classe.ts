@@ -11,7 +11,7 @@ export class Position {
 export class Games {
     equip_a: string[] = [];
     equip_b: string[] = [];
-    uuid: string;
+    game_uuid: string;
     code: string;
 
     position_paddle: Record<string, Position>;
@@ -23,7 +23,7 @@ export class Games {
     constructor(user_id: string, uuid: string, code: string)
     {
         this.equip_a.push(user_id);
-        this.uuid = uuid;
+        this.game_uuid = uuid;
         this.code = code;
 
         this.position_paddle = { "player_1": { pos_x: 100, pos_y: 0 }, "player_2": { pos_x: 1000, pos_y: 0 } };

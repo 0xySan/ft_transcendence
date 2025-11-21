@@ -10,7 +10,7 @@ import { workers, worker, parties_per_core } from '../server.js';
 
 const coef_games = 1;
 const coef_players = 2;
-
+const clientToken = new Map<string, string>();
 let codes: string[] = [];
 
 function createCode(): string {
@@ -20,12 +20,9 @@ function createCode(): string {
 
     while (code == "" || codes.includes(code)) {
         code = "";
-
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 6; i++)
             code += codeRegex[Math.floor(Math.random() * size)];
-        }
     }
-
     return (code);
 }
 
@@ -46,13 +43,10 @@ async function getWorker(): Promise<worker | null> {
             tmp.worker.postMessage({ action: "getNumberParties" });
         });
 
-        if (game_parties_tmp == parties_per_core) {
+        if (game_parties_tmp == parties_per_core)
             continue;
-        }
-
         const score = game_parties_tmp * coef_games
                     + tmp.players * coef_players;
-
         if (score < bestScore) {
             best = tmp;
             bestScore = score;
@@ -64,41 +58,48 @@ async function getWorker(): Promise<worker | null> {
         best.worker.postMessage({ action: "getNumberParties" });
     });
 
-    if (game_parties_tmp == parties_per_core) {
+    if (game_parties_tmp == parties_per_core)
         return (null);
-    }
-
     return (best);
 }
 
 export async function gameRoutes(fastify: FastifyInstance) {
 
+    // ----------------     GET METHOD     ----------------------
     fastify.get("/api/game", async (request, reply) => {
-        return (reply.status(202).send({token: generateRandomToken(32)}));
+        const game = request.body as sv_game;
+        const token = generateRandomToken(32);
+
+        if (game.user_id == null)
+            return (reply.status(401).send({ error: "user_is is empty" }));
+        // stock uuid and token in map
+        clientToken.set(game.user_id, token);
+        // return party Token
+        return (reply.status(202).send({token}));
     });
 
+    // ----------------    POST METHOD    ----------------------
     fastify.post("/api/game", async (request, reply) => {
 
         const game = request.body as sv_game;
-
-        if (game.user_id == null) {
+        if (game.user_id == null)
             return (reply.status(401).send({ error: "user_is is empty" }));
-        }
-
         const worker = await getWorker();
-        if (worker == null) {
+        if (worker == null)
             return (reply.status(501).send({ error: "Every server is full" }));
-        }
 
         const code = createCode();
+        const token = generateRandomToken(32);
         codes.push(code);
 
         worker.worker.postMessage({ action: "createGame", game: {
             user_id: game.user_id,
-            uuid: generateRandomToken(32),
+            uuid: token,
             code: code,
         } });
-
-        return (reply.status(202).send({token: generateRandomToken(32), game: game}));
+        // stock uuid and token in map
+        clientToken.set(game.user_id, token);
+        // return party Token
+        return (reply.status(202).send({token}));
     });
 }
