@@ -10,7 +10,7 @@ parentPort?.on("message", (msg) => {
         game.push(new Games(
             msg.game.user_id,
             msg.game.uuid,
-            msg.game.score
+            msg.game.code
         ));
         console.log("DEBUG: n = " + game.length + " | games = ", game);
     }

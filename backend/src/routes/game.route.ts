@@ -11,6 +11,24 @@ import { workers, worker, parties_per_core } from '../server.js';
 const coef_games = 1;
 const coef_players = 2;
 
+let codes: string[] = [];
+
+function createCode(): string {
+    const codeRegex = "ABCDEFGHIJKLMNOPQRSTUVWXYZ012345789"
+    const size = codeRegex.length
+    let code = "";
+
+    while (code == "" || codes.includes(code)) {
+        code = "";
+
+        for (let i = 0; i < 6; i++) {
+            code += codeRegex[Math.floor(Math.random() * size)];
+        }
+    }
+
+    return (code);
+}
+
 async function getWorker(): Promise<worker | null> {
     let best = workers[0];
 
@@ -72,10 +90,13 @@ export async function gameRoutes(fastify: FastifyInstance) {
             return (reply.status(501).send({ error: "Every server is full" }));
         }
 
+        const code = createCode();
+        codes.push(code);
+
         worker.worker.postMessage({ action: "createGame", game: {
             user_id: game.user_id,
             uuid: generateRandomToken(32),
-            code: generateRandomToken(2),
+            code: code,
         } });
 
         return (reply.status(202).send({token: generateRandomToken(32), game: game}));
