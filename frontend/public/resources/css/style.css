@@ -140,23 +140,23 @@
 
 @font-face {
   font-family: "Poppins-Medium";
-  src: url("resources/fonts/Poppins-Medium.ttf") format("truetype");
-  font-weight: 400;
   font-style: normal;
+  font-weight: 400;
+  src: url("resources/fonts/Poppins-Medium.ttf") format("truetype");
 }
 
 @font-face {
   font-family: "Poppins-Regular";
-  src: url("resources/fonts/Poppins-Regular.ttf") format("truetype");
-  font-weight: 400;
   font-style: normal;
+  font-weight: 400;
+  src: url("resources/fonts/Poppins-Regular.ttf") format("truetype");
 }
 
 @font-face {
   font-family: "Poppins-SemiBold";
-  src: url("resources/fonts/Poppins-SemiBold.ttf") format("truetype");
-  font-weight: 400;
   font-style: normal;
+  font-weight: 400;
+  src: url("resources/fonts/Poppins-SemiBold.ttf") format("truetype");
 }
 
 /* ==========================================================================
@@ -230,9 +230,9 @@
 .text-end { text-align: end; }     /* logical end (useful for RTL) */
 
 .text-nowrap {
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .text-wrap {
@@ -292,8 +292,8 @@
    ========================================================================== */
 
 body {
-  overflow-x: hidden; /* Prevent horizontal scroll */
   margin: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 h1 {
@@ -308,12 +308,12 @@ h1 {
 /* utility hidden class (use on any element that should be visually hidden but keep layout reserve) */
 .hidden {
   height: 2rem;
-  visibility: hidden;
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
-  transition: opacity 0.15s ease;
+  visibility: hidden;
+  white-space: nowrap;
   opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .unloaded {
@@ -326,11 +326,11 @@ h1 {
 
 .button {
   /* color: rgb(var(--text)); */
+  cursor: pointer;
   border: none;
   border-radius: 20px;
   padding: 0.75em 2.5em; /* 12px top/bottom, 40px left/right */
   font-weight: 600;
-  cursor: pointer;
   transition: background-color var(--bg-transition), transform 0.2s;
 }
 
@@ -349,10 +349,10 @@ h1 {
 .button-fit-div-width {
   /* make the button fill the available width inside the flex container */
   display: block;
+  align-self: stretch;
+  box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  box-sizing: border-box;
-  align-self: stretch;
 }
 
 .button-border-1px {
@@ -395,10 +395,10 @@ h1 {
 }
 
 .gradient-text {
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text; /* for Firefox */
   color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Wrapper with gradient border */
@@ -421,18 +421,18 @@ h1 {
    ========================================================================== */
 
 #landing-div {
-  min-width: 75vw;
   display: flex;
+  flex-direction: column;
   justify-content: flex-start; /* horizontal: left */
   align-items: flex-start; /* vertical: top */
-  flex-direction: column;
   gap: 1rem;
+  min-width: 75vw;
 }
 
 #landing-descr {
+  line-height: 1.5; /* controls spacing between wrapped lines */
   max-width: 34rem;
   word-wrap: break-word; /* allows long words to break */
-  line-height: 1.5; /* controls spacing between wrapped lines */
 }
 
 /* ==========================================================================
@@ -441,25 +441,25 @@ h1 {
    ========================================================================== */
 
 .auth-pages-container {
-  min-height: 80vh;
   display: flex;
+  flex-direction: column;
   justify-content: center; /* horizontal: center */
   align-items: center; /* vertical: center */
-  flex-direction: column;
   gap: 1rem;
+  min-height: 80vh;
 }
 
 .auth-form-container {
-  border-radius: 8px;
-  border: 4px solid rgb(var(--surface0));
-  background-color: rgb(var(--mantle));
-  /* increased to comfortably fit a 470px input */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* vertical: center */
+  gap: 0rem;
   min-width: 31rem;
   max-width: 31rem;
-  display: flex;
-  align-items: center; /* vertical: center */
-  flex-direction: column;
-  gap: 0rem;
+  border: 4px solid rgb(var(--surface0));
+  border-radius: 8px;
+  background-color: rgb(var(--mantle));
+  /* increased to comfortably fit a 470px input */
   padding: 2rem;
 }
 
@@ -476,47 +476,46 @@ h1 {
   display: block;
 
   /* match input width so long messages don't push layout */
-  width: 470px;
-  max-width: 470px;
   box-sizing: border-box;
+  max-width: 470px;
+  width: 470px;
 
   /* smaller reserved height so it doesn't look too big */
-  font-size: 0.875rem;
   height: 2rem;         /* reserved space */
   line-height: 2rem;
+  font-size: 0.875rem;
 
   /* visible by default */
-  visibility: visible;
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
+  visibility: visible;
+  white-space: nowrap;
 
   margin: 0;
   padding: 0;
-  transition: opacity 0.15s ease;
   opacity: 1;
+  transition: opacity 0.15s ease;
 }
 
 /* two-line clamped multiline message (won't grow beyond max-height) */
 .error-message.multiline {
-  font-size: 0.875rem;
+  display: -webkit-box;
   line-height: 1rem;
+  font-size: 0.875rem;
+  max-height: 2rem; /* 2 * line-height */
+  overflow: hidden;
   white-space: normal;
 
   /* clamp to 2 lines visually and prevent container growth */
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-
-  max-height: 2rem; /* 2 * line-height */
-  overflow: hidden;
 }
 
 .form-input-field {
   /* fixed size requested: 470x36 */
+  box-sizing: border-box; /* include padding/border in the size */
   width: 470px;
   height: 36px;
-  box-sizing: border-box; /* include padding/border in the size */
   padding: 0.5rem;
   border: 2px solid rgb(var(--surface1));
   border-radius: 4px;
@@ -527,8 +526,8 @@ h1 {
 
 #reset-password-header {
   display: flex;
-  align-items: center; /* vertical: center */
   flex-direction: column;
+  align-items: center; /* vertical: center */
   gap: 0.5rem;
 }
 
@@ -537,20 +536,20 @@ h1 {
    ========================================================================== */
 
 #twoFA-container {
-  max-width: 32rem;
   display: flex;
+  flex-direction: column;
   justify-content: center; /* horizontal: center */
   align-items: center; /* vertical: center */
-  flex-direction: column;
   gap: 1rem;
+  max-width: 32rem;
   margin-bottom: 2rem;
 }
 
 #twoFA-form-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
   gap: 1rem;
 }
 
@@ -560,9 +559,9 @@ h1 {
 }
 
 .otp-input {
-  border-radius: 20%;
   width: 40px;
   height: 50px;
+  border-radius: 20%;
   text-align: center;
   font-size: 1.5rem;
 }
@@ -572,12 +571,12 @@ h1 {
    ========================================================================== */
 
 #about-container {
-  max-width: 65rem;
   display: flex;
+  flex-direction: column;
   justify-content: center; /* horizontal: center */
   align-items: center; /* vertical: center */
-  flex-direction: column;
   gap: 0rem;
+  max-width: 65rem;
   margin-bottom: 2rem;
 }
 
@@ -596,8 +595,8 @@ h1 {
 #lobby-info-boxes {
   display: flex;
   flex-direction: row;       /* flow horizontal */
-  align-items: flex-start;   /* top */
   justify-content: center;   /* center horizontally */
+  align-items: flex-start;   /* top */
   gap: 40px;                 /* gap 40 */
 }
 
@@ -607,12 +606,12 @@ h1 {
   justify-content: flex-start; /* top */
   align-items: flex-start;   /* left */
   gap: 12px;                 /* gap 12 */
-  padding: 4px;
-  border: 4px solid rgb(var(--surface0)); /* border size 4, color --surface0 */
-  border-radius: 20px;       /* corner radius 20 */
   box-sizing: border-box;
   width: 548px;
   height: 473px;
+  padding: 4px;
+  border: 4px solid rgb(var(--surface0)); /* border size 4, color --surface0 */
+  border-radius: 20px;       /* corner radius 20 */
 }
 
 #lobby-player-info-count {
@@ -621,9 +620,9 @@ h1 {
   justify-content: space-between; /* first item left, last item right */
   align-items: center;            /* vertically center the items */
   gap: 0;
-  padding: 0 12px;                /* horizontal padding 12 */
-  width: 100%;                    /* allow the flex row to span full container so spacing works */
   box-sizing: border-box;         /* <-- ensure padding stays inside the 100% width */
+  width: 100%;                    /* allow the flex row to span full container so spacing works */
+  padding: 0 12px;                /* horizontal padding 12 */
 }
 
 #lobby-player-list {
@@ -666,12 +665,12 @@ h1 {
   justify-content: flex-start; /* top */
   align-items: flex-start;   /* left */
   gap: 12px;                 /* gap 12 */
-  padding: 12px 16px;        /* padding vertical 12, horizontal 16 */
-  border-radius: 20px;       /* corner radius 20 */
-  border: 4px solid rgb(var(--surface0)); /* border size 4, color --surface0 */
   box-sizing: border-box;
   width: 100%;               /* fill available width of parent */
   height: 414px;
+  padding: 12px 16px;        /* padding vertical 12, horizontal 16 */
+  border: 4px solid rgb(var(--surface0)); /* border size 4, color --surface0 */
+  border-radius: 20px;       /* corner radius 20 */
 }
 
 .lobby-setting-box-title {
@@ -696,42 +695,42 @@ h1 {
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0;
-  border-radius: 5px;
-  border: 2px solid rgb(var(--surface0));
-  height: 44px; /* enforce the final (post-click) size as the default */
-  min-height: 44px;
   flex-shrink: 0;
   gap: 0;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  height: 44px; /* enforce the final (post-click) size as the default */
   overflow: hidden;          /* keep children inside rounded container */
+  padding: 0;
+  border: 2px solid rgb(var(--surface0));
+  border-radius: 5px;
 }
 
 /* buttons fill available space equally and are fully clickable */
 .lobby-setting-type > .lobby-rocker-switch {
-  flex: 1;                   /* equal width via flex (remove hard width) */
-  min-width: 0;              /* prevents flex overflow issues */
-  height: 44px !important;              /* full height of the container */
-  min-height: 44px;          /* ensure button never shrinks below container */
-  margin: 0;
   display: inline-flex;      /* ensure the entire area is clickable even with no text */
   align-items: center;
   justify-content: center;
-  background-color: rgb(var(--base)); /* default bg */
-  cursor: pointer;
+  flex: 1;                   /* equal width via flex (remove hard width) */
+  min-width: 0;              /* prevents flex overflow issues */
+  min-height: 44px;          /* ensure button never shrinks below container */
+  height: 44px !important;              /* full height of the container */
+  margin: 0;
+  box-sizing: border-box;
+  padding: 0 12px;           /* keep some horizontal breathing room for text */
   border: none;              /* no border at all */
-  box-shadow: none;
   outline: none;
   appearance: none;
-  -webkit-appearance: none;
-  padding: 0 12px;           /* keep some horizontal breathing room for text */
-  box-sizing: border-box;
+  box-shadow: none;
+  background-color: rgb(var(--base)); /* default bg */
+  cursor: pointer;
+  font-size: inherit;        /* keep font size stable */
+  line-height: normal;       /* avoid implicit line-height changes on state toggle */
+  user-select: none;
   z-index: 1;
   transition: background-color 0.15s ease, color 0.15s ease;
-  user-select: none;
-  line-height: normal;       /* avoid implicit line-height changes on state toggle */
-  font-size: inherit;        /* keep font size stable */
+  -webkit-appearance: none;
 }
 
 /* no visual layout jump on focus */
@@ -768,8 +767,8 @@ h1 {
 #lobby-action-buttons {
   display: flex;
   flex-direction: row;
-  align-items: center;       /* align center */
   justify-content: center;
+  align-items: center;       /* align center */
   gap: 32px;
 }
 
@@ -784,21 +783,21 @@ h1 {
 #lobby-join-box {
   display: flex;
   align-items: center;
-  border: 2px solid rgb(var(--surface1));
-  border-radius: 9999px; /* full pill shape */
   overflow: hidden;
   width: 240px;
   height: 48px;
   padding: 0 8px 0 8px; /* spacing inside */
+  border: 2px solid rgb(var(--surface1));
+  border-radius: 9999px; /* full pill shape */
 }
 
 .join-input {
   flex: 1;
+  min-width: 0; /* allow input to shrink inside .lobby-join-box so .join-button isn't pushed out */
   background: transparent;
   border: none;
   font-size: 1rem;
   outline: none;
-  min-width: 0; /* allow input to shrink inside .lobby-join-box so .join-button isn't pushed out */
 }
 
 .join-input::placeholder {
@@ -806,12 +805,12 @@ h1 {
 }
 
 .join-button {
+  cursor: pointer;
   border: none;
   border-radius: 9999px;
-  font-weight: 600;
-  font-size: 0.95rem;
   padding: 10px 20px;
-  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
   transition: background-color 0.2s, transform 0.1s;
 }
 
@@ -824,37 +823,35 @@ h1 {
 }
 
 .lobby-checkbox {
-    width: 20px;
-    height: 20px;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-
-    border: 2px solid rgb(var(--surface0));
-    background-color: rgb(var(--surface2));
-    border-radius: 4px; /* small rounding, optional */
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  appearance: none;
+  cursor: pointer;
+  border: 2px solid rgb(var(--surface0));
+  border-radius: 4px; /* small rounding, optional */
+  background-color: rgb(var(--surface2));
+  transition: background-color 0.15s ease;
+  -webkit-appearance: none;
 }
 
 /* Background when checked */
 .lobby-checkbox:checked {
-    background-color: rgb(var(--blue));
-    border-color: rgb(var(--blue));
+  background-color: rgb(var(--blue));
+  border-color: rgb(var(--blue));
 }
 
 /* White checkmark */
 .lobby-checkbox:checked::after {
-    content: "";
-    width: 10px;
-    height: 6px;
-    border: solid white;
-    border-width: 0 0 3px 3px;
-    transform: rotate(-45deg);
-    border-radius: 2px; /* makes the checkmark "a bit round" */
+  content: "";
+  width: 10px;
+  height: 6px;
+  border: solid white;
+  border-width: 0 0 3px 3px;
+  transform: rotate(-45deg);
+  border-radius: 2px; /* makes the checkmark "a bit round" */
 }
 
 /* ==========================================================================
@@ -862,12 +859,12 @@ h1 {
    ========================================================================== */
 
 #pong-board-page {
-  max-width: 920px;
   display: flex;
   flex-direction: column;
   justify-content: center; /* vertical */
   align-items: center;     /* horizontal */
   gap: 20px;
+  max-width: 920px;
 
   --custom-team-color1: rgb(var(--red));
   --custom-team-color2: rgb(var(--blue));
@@ -875,18 +872,18 @@ h1 {
 
 /* Inner board */
 #pong-board {
+  position: relative;
+  flex: 0 0 auto;             /* prevent flex stretching if parent is flex */
   width: 920px;
   height: 600px;
-  position: relative;
   border-radius: 10px;        /* inner radius = outer radius - padding */
   background-color: rgb(var(--base)); /* or transparent if needed */
   overflow: hidden;            /* keeps players/ball inside rounded corners */
-  flex: 0 0 auto;             /* prevent flex stretching if parent is flex */
 }
 
 #player1, #player2, #player3, #player4, #ball, #center-line {
-  position: absolute;
   display: block;
+  position: absolute;
 }
 
 #player1, #player2, #player3, #player4 {
@@ -904,23 +901,23 @@ h1 {
 }
 
 #player1 {
-  left: 20px;
   top: 160px;
+  left: 20px;
 }
 
 #player2 {
-  right: 20px;
   top: 160px;
+  right: 20px;
 }
 
 #player3 {
-  left: 20px;
   top: 480px;
+  left: 20px;
 }
 
 #player4 {
-  right: 20px;
   top: 480px;
+  right: 20px;
 }
 
 #ball {
@@ -946,10 +943,10 @@ h1 {
 
 #center-line {
   position: absolute;
+  top: 0;
+  left: 50%;
   width: 0; /* vertical line */
   height: 100%;
-  left: 50%;
-  top: 0;
   transform: translateX(-2px); /*half of 4px border width*/
 
   border-left: 4px dashed rgb(var(--surface0));
@@ -960,43 +957,42 @@ h1 {
 }
 
 .info-bar-pong-board {
-  align-content: top;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  width: 920px;
+  align-content: top;
   gap: auto;
+  width: 920px;
 }
 
 .left-side-username-info {
-  border: 2px solid var(--custom-team-color1);
-  border-radius: 5px;
   display: flex;
   flex-direction: row;
-  align-content: center;
   justify-content: center;
+  align-content: center;
   width: 240px;
   padding: 0.5rem;
+  border: 2px solid var(--custom-team-color1);
+  border-radius: 5px;
 }
 
 .right-side-username-info {
-  border: 2px solid var(--custom-team-color2);
-  border-radius: 5px;
   display: flex;
   flex-direction: row;
-  align-content: center;
   justify-content: center;
+  align-content: center;
   width: 240px;
   padding: 0.5rem;
+  border: 2px solid var(--custom-team-color2);
+  border-radius: 5px;
 }
 
 #score-counters {
-  align-content: center;
   display: flex;
   flex-direction: row;
   justify-content: center;
-
+  align-content: center;
   gap: 28px;
 }
 
@@ -1026,9 +1022,9 @@ nav {
   z-index: 100;
 
   /* use percent + border-box so padding doesn't cause overflow */
+  box-sizing: border-box;
   width: 100vw;
   max-width: 100vw;
-  box-sizing: border-box;
   padding: 1rem 2rem;
 
   display: flex;
@@ -1038,15 +1034,15 @@ nav {
 
 .nav-left-links {
   display: flex;               /* autolayout */
-  align-items: center;         /* centered vertically (centered left in Figma) */
   justify-content: flex-start; /* keep items left-aligned */
+  align-items: center;         /* centered vertically (centered left in Figma) */
   gap: 60px;                   /* gap: 60px */
 }
 
 .nav-game-links {
   display: flex;               /* autolayout for nested game links */
-  align-items: center;         /* vertical centering */
   justify-content: flex-start;
+  align-items: center;         /* vertical centering */
   gap: 60px;                   /* gap: 60px between game links */
 }
 
@@ -1086,15 +1082,15 @@ a:visited {
 
 #link-text {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   gap: 30px;
 }
 
 .footer {
-  margin-bottom: 0px;
   background-color: rgb(var(--crust));
   padding: 1rem 2rem;
+  margin-bottom: 0px;
 
   width: 100vw;
   text-align: center;
