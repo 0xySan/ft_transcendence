@@ -294,6 +294,7 @@
 body {
   margin: 0;
   overflow-x: hidden; /* Prevent horizontal scroll */
+  font-family: "Poppins-Regular", sans-serif;
 }
 
 h1 {
