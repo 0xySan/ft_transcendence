@@ -18,19 +18,17 @@
 		</script>
 	</head>
 	<body class="flex-space-between background-color-base">
-		<header class="nav-bar">
+		<header>
 			<nav>
-				<div class="nav-left-links">
+				<div id="nav-left-links">
 					<a href="/" >Home</a>
-					<div class="nav-game-links">
-						<a href="/" >Play</a>
-						<a href="/" >Leaderboard</a>
-						<a href="/" >Profile</a>
-					</div>
+					<a href="/" >Play</a>
+					<a href="/" >Leaderboard</a>
+					<a href="/" >Profile</a>
 				</div>
-				<div class="nav-right-links">
-					<button type="button" class="button background-color-crust button-border-1px text-color-text" onclick="window.location.href='/login'">Login</button>
-					<button type="button" class="button background-color-overlay2" onclick="window.location.href='/register'">Register</button>
+				<div id="nav-right-links">
+					<button type="button" id="nav-login-btn" onclick="window.location.href='/login'">Login</button>
+					<button type="button" class="background-color-surface1" onclick="window.location.href='/register'">Register</button>
 				</div>
 			</nav>
 		</header>
@@ -39,19 +37,19 @@
 			<!-- Dynamic content goes here -->
 		</div>
 
-		<div class="footer">
-	    	<div id="link-text">
-	    	    <a href="/home" class="footer-link">Home</a>
-	    	    <span class="footer-divider"></span>
-	    	    <a href="/privacy" class="footer-link">Privacy Policy</a>
-	    	    <span class="footer-divider"></span>
-	    	    <a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load footer-link">GitHub</a>
-	    	    <span class="footer-divider"></span>
-	    	    <a href="/about" class="footer-link">About</a>
-	    	</div>
-	    	<div id="copyright-text" >
-	    	    © 2025 Transcendence 42. All rights reserved.
+		<footer>
+			<div id="link-text">
+				<a href="/home">Home</a>
+				<span class="footer-divider"></span>
+				<a href="/privacy">Privacy Policy</a>
+				<span class="footer-divider"></span>
+				<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load">GitHub</a>
+				<span class="footer-divider"></span>
+				<a href="/about">About</a>
 			</div>
-	    </div>
+			<div id="copyright-text" >
+				© 2025 Transcendence 42. All rights reserved.
+			</div>
+		</footer>
 	</body>
 </html>
