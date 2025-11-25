@@ -5,8 +5,8 @@
 
 const GROUPS = {
 	layout: [
-		'display','position','top','right','bottom','left','z-index',
-		'float','clear','order','align-items','justify-content'
+		'visibility','position','top','right','bottom','left','z-index',
+		'float','clear','order',
 	],
 	size: [
 		'width','height','min-width','max-width','min-height','max-height'
@@ -16,11 +16,6 @@ const GROUPS = {
 		'padding','padding-top','padding-right','padding-bottom','padding-left',
 		'gap','row-gap','column-gap','box-sizing'
 	],
-	typography: [
-		'font','font-family','font-size','font-weight','font-style','line-height',
-		'letter-spacing','text-align','text-decoration','text-transform',
-		'white-space','word-spacing','color'
-	],
 	background: [
 		'background','background-color','background-image','background-position',
 		'background-repeat','background-size'
@@ -28,16 +23,18 @@ const GROUPS = {
 	border: [
 		'border','border-width','border-style','border-color','border-radius'
 	],
-	visual: [
-		'box-shadow','opacity','transition','transform','animation',
-		'outline','cursor','user-select','appearance'
-	],
 	flexGrid: [
-		'flex','flex-direction','flex-wrap','align-content','place-items','place-content'
+		'display', 'flex','flex-direction','flex-wrap','align-content','place-items','place-content', 'align-items','justify-content'
 	],
 	grid: [
 		'grid','grid-template','grid-template-rows','grid-template-columns',
 		'grid-area','grid-gap','grid-row','grid-column'
+	],
+	
+	typography: [
+		'font','font-family','font-size','font-weight','font-style','line-height',
+		'letter-spacing','text-align','text-decoration','text-transform',
+		'white-space','word-spacing','color'
 	],
 	others: []
 };
@@ -55,7 +52,7 @@ module.exports = () => ({
 			rule.walkDecls(decl => {
 				let currentGroup = 'others';
 
-				// detect group by matching prop in GROUPS (preserve order of GROUPS)
+				// detect group by matching prop in GROUPS (preserve order)
 				for (const [groupName, props] of Object.entries(GROUPS)) {
 					if (props.includes(decl.prop)) {
 						currentGroup = groupName;
@@ -63,22 +60,31 @@ module.exports = () => ({
 					}
 				}
 
-				// If this is the first declaration, don't insert an extra blank line:
+				// count existing tabs before this decl (if any)
+				let existingTabs = 0;
+				if (decl.raws.before) {
+					const match = decl.raws.before.match(/\t+$/m);
+					if (match) existingTabs = match[0].length;
+				}
+
+				// If first declaration, keep single newline + original tabs
 				if (decl === firstDecl) {
-					decl.raws.before = '\n\t'; // single tab right after selector
+					decl.raws.before = '\n' + '\t'.repeat(existingTabs || 1);
 					lastGroup = currentGroup;
 					return;
 				}
 
-				// If group changed, insert blank line + tab, otherwise only a tab
+				// insert extra blank line if group changed
 				if (currentGroup !== lastGroup) {
-					decl.raws.before = '\n\n\t';
+					decl.raws.before = '\n\n' + '\t'.repeat(existingTabs || 1);
 					lastGroup = currentGroup;
-				} else
-					decl.raws.before = '\n\t';
+				} else {
+					decl.raws.before = '\n' + '\t'.repeat(existingTabs || 1);
+				}
 			});
 		});
 	}
 });
 
 module.exports.postcss = true;
+module.exports.GROUPS = GROUPS;

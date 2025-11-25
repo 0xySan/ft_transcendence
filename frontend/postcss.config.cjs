@@ -1,19 +1,22 @@
 // postcss.config.cjs
-const sort = require('postcss-sorting');
-const groupNewline = require('./postcss-group-newline.cjs');
+const sorting = require("postcss-sorting");
+const propertyOrder = require("./postcss-property-order.cjs");
+const groupNewline = require("./postcss-group-newline.cjs");
 
 module.exports = {
 	plugins: [
-		sort({
-			order: [
+		sorting({
+			"order": [
 				"custom-properties",
 				"dollar-variables",
 				"declarations",
 				"rules",
 				"at-rules"
 			],
-			unspecifiedPropertiesPosition: "bottom"
+			"properties-order": propertyOrder,
+			"unspecified-properties-position": "bottom"
 		}),
+
 		groupNewline()
 	]
 };
