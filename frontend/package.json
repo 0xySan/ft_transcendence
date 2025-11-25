@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "scripts": {
     "build": "tsc",
-    "start": "node server.js"
+    "start": "node server.js",
+    "format:css": "npx prettier --write \"public/resources/css/**/*.css\" && npx postcss \"public/resources/css/**/*.css\" --no-map --replace"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "postcss-sorting": "^9.1.0",
+    "prettier": "3.6.2",
     "typescript": "^5.6.3"
   },
   "type": "module",
