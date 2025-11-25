@@ -13,5 +13,6 @@ parentPort?.on("message", (msg) => {
             msg.game.code
         ));
         console.log("DEBUG: n = " + game.length + " | games = ", game);
+        parentPort?.postMessage({ status: "ok" });
     }
 });

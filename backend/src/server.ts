@@ -6,7 +6,6 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
-import { Games } from './sockets/games.classe.js'
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -46,24 +45,45 @@ async function buildServer() {
 	return app;
 }
 
-async function createThread() {
-	const core = os.cpus().length;
+export async function createThread(options: { workerFile?: string, count?: number } = {}) {
+  const workerFile = options.workerFile ?? null;
+  const count = options.count ?? os.cpus().length;
 
-	// --- Résoudre le chemin de base avec import.meta.url ---
-	const __filename = fileURLToPath(import.meta.url);
-	const __dirname = path.dirname(__filename);
+  if (!workerFile && process.env.NODE_ENV === "test") return;
 
-	// --- Créer le chemin absolu vers test.js ---
-	const workerPath = path.resolve(__dirname, './game/gamesLogic.js');
-	
-	// --- Créer le worker avec le chemin absolu ---
-	for (let i = 0; i < core; i++) {
-		workers.push({
-			worker: new Worker(workerPath),
-			players: 0
-		});
-	}
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  const workerPath = workerFile ||
+    path.resolve(__dirname, './game/gamesLogic.js');
+
+  for (let i = 0; i < count; i++) {
+    workers.push({
+      worker: new Worker(workerPath),
+      players: 0
+    });
+  }
 }
+
+
+// async function createThread() {
+// 	const core = os.cpus().length;
+
+// 	// --- Résoudre le chemin de base avec import.meta.url ---
+// 	const __filename = fileURLToPath(import.meta.url);
+// 	const __dirname = path.dirname(__filename);
+
+// 	// --- Créer le chemin absolu vers test.js ---
+// 	const workerPath = path.resolve(__dirname, './game/gamesLogic.js');
+	
+// 	// --- Créer le worker avec le chemin absolu ---
+// 	for (let i = 0; i < core; i++) {
+// 		workers.push({
+// 			worker: new Worker(workerPath),
+// 			players: 0
+// 		});
+// 	}
+// }
 
 async function start() {
 	try{
