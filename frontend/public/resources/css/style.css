@@ -303,11 +303,13 @@ html, body {
 
 #content {
 	box-sizing: border-box; /* include padding/border in size */
-	margin-top: 5rem; /* account for fixed nav bar */
-	margin-bottom: 5rem; /* account for fixed footer bar */
 	width: 100%;
 	min-height: calc(100% - 10rem); /* account for fixed ui elements */
 	height: calc(100% - 10rem); /* account for fixed ui elements */
+	padding: 0rem 1rem;
+	margin-top: 5rem; /* account for fixed nav bar */
+	margin-bottom: 5rem; /* account for fixed footer bar */
+
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
@@ -315,6 +317,11 @@ html, body {
 
 	overflow-y: auto;
 	overflow-x: hidden;
+}
+
+#content > * { /*automatically center all future direct childrens of #content*/
+	margin-top: auto;
+	margin-bottom: auto;
 }
 
 h1 {
@@ -461,94 +468,79 @@ button:active {
    ========================================================================== */
 
 .auth-pages-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* horizontal: center */
-  align-items: center; /* vertical: center */
-  gap: 1rem;
-  min-height: 80vh;
+	width: 100%;
+	max-width: 700px;
+
+	padding: 0 1rem;
+	padding-bottom: 2rem;
+
+	gap: 1rem;
+
+	text-align: center;
 }
 
 .auth-form-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* vertical: center */
-  gap: 0rem;
-  min-width: 31rem;
-  max-width: 31rem;
-  border: 4px solid rgb(var(--surface0));
-  border-radius: 8px;
-  background-color: rgb(var(--mantle));
-  /* increased to comfortably fit a 470px input */
-  padding: 2rem;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+
+	border: 4px solid rgb(var(--surface0));
+	border-radius: 8px;
+	background-color: rgb(var(--mantle));
+
+	padding: 2rem;
 }
 
 .div-title-and-text-input {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* horizontal: center */
-  align-items: flex-start; /* vertical alignment corrected from 'left' */
-  gap: 0.25rem;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+
+	justify-content: flex-start;
+	align-items: flex-start;
+
+	gap: 0.25rem;
 }
 
-/* fixed-size, hidden-by-default error message */
+.auth-form-container input {
+	box-sizing: border-box;
+	width: 100%;
+
+	font-size: 1.1rem;
+	padding: 0.3rem;
+
+	border: 2px solid rgb(var(--surface1));
+	border-radius: 4px;
+
+	background-color: rgb(var(--base));
+	color: rgb(var(--text));
+}
+
 .error-message {
-  display: block;
+	display: block;
+	height: 2rem;
 
-  /* match input width so long messages don't push layout */
-  box-sizing: border-box;
-  max-width: 470px;
-  width: 470px;
+	font-size: 0.875rem;
+	line-height: 1rem;
 
-  /* smaller reserved height so it doesn't look too big */
-  height: 2rem;         /* reserved space */
-  line-height: 2rem;
-  font-size: 0.875rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	visibility: visible;
+	text-align: left;
 
-  /* visible by default */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  visibility: visible;
-  white-space: nowrap;
+	color: rgb(var(--red));
 
-  margin: 0;
-  padding: 0;
-  opacity: 1;
-  transition: opacity 0.15s ease;
+	transition: opacity 0.3s ease;
 }
 
-/* two-line clamped multiline message (won't grow beyond max-height) */
-.error-message.multiline {
-  display: -webkit-box;
-  line-height: 1rem;
-  font-size: 0.875rem;
-  max-height: 2rem; /* 2 * line-height */
-  overflow: hidden;
-  white-space: normal;
+.auth-btn {
+	width: 40%;
+	min-width: 8.7rem;
 
-  /* clamp to 2 lines visually and prevent container growth */
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.form-input-field {
-  /* fixed size requested: 470x36 */
-  box-sizing: border-box; /* include padding/border in the size */
-  width: 470px;
-  height: 36px;
-  padding: 0.5rem;
-  border: 2px solid rgb(var(--surface1));
-  border-radius: 4px;
-  background-color: rgb(var(--base));
-  color: rgb(var(--text));
-  flex: none;             /* prevent flexbox from stretching/shrinking it */
-}
-
-#reset-password-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* vertical: center */
-  gap: 0.5rem;
+	background-color: rgb(var(--lavender));
+	transition: background-color 0.3s ease;
 }
 
 /* ==========================================================================
@@ -591,8 +583,6 @@ button:active {
    ========================================================================== */
 
 #about-container {
-	margin-top: auto;
-	margin-bottom: auto;
 	display: flex;
 	height: fit-content;
 
