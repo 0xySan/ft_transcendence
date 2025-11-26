@@ -1,124 +1,133 @@
 export {};
 
-declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject, options?: boolean): void;
+declare function addListener(
+	target: EventTarget | null,
+	event: string,
+	handler: EventListenerOrEventListenerObject,
+	options?: boolean
+): void;
 
-const multiplayerButton = document.getElementById("lobby-multiplayer-button") as HTMLButtonElement | null;
-const customGameButton = document.getElementById("lobby-custom-game-button") as HTMLButtonElement | null;
-const tournamentButton = document.getElementById("lobby-tournament-button") as HTMLButtonElement | null;
-
-const multiplayerTab = document.getElementById("lobby-multiplayer-tab") as HTMLDivElement | null;
-const customGameTab = document.getElementById("lobby-custom-game-tab") as HTMLDivElement | null;
-const tournamentTab = document.getElementById("lobby-tournament-tab") as HTMLDivElement | null;
-
-const customGameBasicSettingButton = document.getElementById("lobby-custom-game-basic-settings-button") as HTMLButtonElement | null;
-const customGameAdvancedSettingButton = document.getElementById("lobby-custom-game-advanced-settings-button") as HTMLButtonElement | null;
-
-const tournamentBasicSettingButton = document.getElementById("lobby-tournament-basic-settings-button") as HTMLButtonElement | null;
-const tournamentAdvancedSettingButton = document.getElementById("lobby-tournament-advanced-settings-button") as HTMLButtonElement | null;
-
-const customGameBasicSettingsTab = document.getElementById("lobby-custom-game-basic-settings") as HTMLDivElement | null;
-const customGameAdvancedSettingsTab = document.getElementById("lobby-custom-game-advanced-settings") as HTMLDivElement | null;
-
-const tournamentBasicSettingsTab = document.getElementById("lobby-tournament-basic-settings") as HTMLDivElement | null;
-const tournamentAdvancedSettingsTab = document.getElementById("lobby-tournament-advanced-settings") as HTMLDivElement | null;
-
-function deactivateOtherButtonsThan(button: HTMLButtonElement | null) {
-    if (!button) return;
-    if (multiplayerButton && multiplayerButton !== button) multiplayerButton.classList.remove("current-mode");
-    if (customGameButton && customGameButton !== button) customGameButton.classList.remove("current-mode");
-    if (tournamentButton && tournamentButton !== button) tournamentButton.classList.remove("current-mode");
+/**
+ * Get element by ID or throw error if missing
+ * @param id The element ID
+ * @returns The HTMLElement
+ */
+function getEl<T extends HTMLElement>(id: string): T {
+	const el = document.getElementById(id);
+	if (!el) throw new Error(`Missing element: #${id}`);
+	return (el as T);
 }
 
-function showCorrectTab(tab: HTMLDivElement | null) {
-    if (!tab) return;
-    if (multiplayerTab && multiplayerTab !== tab) multiplayerTab.classList.add("unloaded");
-    if (customGameTab && customGameTab !== tab) customGameTab.classList.add("unloaded");
-    if (tournamentTab && tournamentTab !== tab) tournamentTab.classList.add("unloaded");
-    console.log("Showing tab:", tab.id);
-    tab.classList.remove("unloaded");
+/** Modes (multiplayer, custom, tournament) */
+type Mode = { button: HTMLButtonElement; tab: HTMLDivElement; };
+
+/**
+ * Mode elements
+ * @contains multiplayer, custom game, tournament
+ */
+const modes: Record<string, Mode> = {
+	multiplayer: {
+		button: getEl<HTMLButtonElement>("lobby-multiplayer-button"),
+		tab: getEl<HTMLDivElement>("lobby-multiplayer-tab")
+	},
+	custom: {
+		button: getEl<HTMLButtonElement>("lobby-custom-game-button"),
+		tab: getEl<HTMLDivElement>("lobby-custom-game-tab")
+	},
+	tournament: {
+		button: getEl<HTMLButtonElement>("lobby-tournament-button"),
+		tab: getEl<HTMLDivElement>("lobby-tournament-tab")
+	}
+};
+
+/**
+ * Sub-group of dual tabs (basic / advanced)
+ * @contains buttons and tabs
+ */
+type SubGroup = { basicBtn: HTMLButtonElement; advBtn: HTMLButtonElement; basicTab: HTMLDivElement; advTab: HTMLDivElement; };
+const subTabs: Record<string, SubGroup> = {
+	custom: {
+		basicBtn: getEl<HTMLButtonElement>("lobby-custom-game-basic-settings-button"),
+		advBtn: getEl<HTMLButtonElement>("lobby-custom-game-advanced-settings-button"),
+		basicTab: getEl<HTMLDivElement>("lobby-custom-game-basic-settings"),
+		advTab: getEl<HTMLDivElement>("lobby-custom-game-advanced-settings")
+	},
+	tournament: {
+		basicBtn: getEl<HTMLButtonElement>("lobby-tournament-basic-settings-button"),
+		advBtn: getEl<HTMLButtonElement>("lobby-tournament-advanced-settings-button"),
+		basicTab: getEl<HTMLDivElement>("lobby-tournament-basic-settings"),
+		advTab: getEl<HTMLDivElement>("lobby-tournament-advanced-settings")
+	}
+};
+
+/**
+ * Deactivate all mode buttons except the active one
+ * @param active The active button
+ */
+function deactivateAllModesExcept(active: HTMLButtonElement) {
+	Object.values(modes).forEach(m => {
+		if (m.button !== active) m.button.classList.remove("current-mode");
+	});
 }
 
-function handleMultiplayerButtonClick(evt: Event) {
-    console.log("0");
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    console.log("1");
-    if (!button) return;
-    console.log("2");
-    if (button.classList.contains("current-mode")) return;
-    console.log("Multiplayer button clicked");
-    deactivateOtherButtonsThan(button);
-    button.classList.add("current-mode");
-    showCorrectTab(multiplayerTab);
+/** Hide all mode tabs except the active one
+ * @param active The active tab
+ */
+function hideAllTabsExcept(active: HTMLDivElement) {
+	Object.values(modes).forEach(m => {
+		if (m.tab !== active) m.tab.classList.add("unloaded");
+	});
+	active.classList.remove("unloaded");
 }
 
-function handleCustomGameButtonClick(evt: Event) {
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    if (!button) return;
-    if (button.classList.contains("current-mode")) return;
-    console.log("Custom game button clicked");
-    deactivateOtherButtonsThan(button);
-    button.classList.add("current-mode");
-    showCorrectTab(customGameTab);
+/**
+ * Setup mode button handlers
+ */
+function setupModeHandlers() {
+	Object.values(modes).forEach(mode => {
+		addListener(mode.button, "click", () => {
+			if (mode.button.classList.contains("current-mode")) return;
+
+			mode.button.classList.add("current-mode");
+			deactivateAllModesExcept(mode.button);
+			hideAllTabsExcept(mode.tab);
+		});
+	});
 }
 
-function handleTournamentButtonClick(evt: Event) {
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    if (!button) return;
-    if (button.classList.contains("current-mode")) return;
-    console.log("Tournament button clicked");
-    deactivateOtherButtonsThan(button);
-    button.classList.add("current-mode");
-    showCorrectTab(tournamentTab);
+/**
+ * Setup dual tab switcher (basic / advanced)
+ * @param basicBtn The basic button
+ * @param basicTab The basic tab
+ * @param advBtn The advanced button
+ * @param advTab The advanced tab
+ */
+function setupDualTabSwitcher(basicBtn: HTMLButtonElement, basicTab: HTMLDivElement, advBtn: HTMLButtonElement, advTab: HTMLDivElement) {
+	addListener(basicBtn, "click", () => {
+		if (basicBtn.classList.contains("lobby-btn-active")) return;
+
+		basicBtn.classList.add("lobby-btn-active");
+		advBtn.classList.remove("lobby-btn-active");
+		basicTab.classList.remove("unloaded");
+		advTab.classList.add("unloaded");
+	});
+
+	addListener(advBtn, "click", () => {
+		if (advBtn.classList.contains("lobby-btn-active")) return;
+
+		advBtn.classList.add("lobby-btn-active");
+		basicBtn.classList.remove("lobby-btn-active");
+		advTab.classList.remove("unloaded");
+		basicTab.classList.add("unloaded");
+	});
 }
 
-function handleCustomGameBasicSettingsButtonClick(evt: Event) {
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    if (!button) return;
-    if (button !== customGameBasicSettingButton) return;
-    if (button.classList.contains("selected")) return;
-    button.classList.add("selected");
-    customGameAdvancedSettingButton?.classList.remove("selected");
-    customGameAdvancedSettingsTab?.classList.add("unloaded");
-    customGameBasicSettingsTab?.classList.remove("unloaded");
+function setupAllSubTabs() {
+	Object.values(subTabs).forEach(group => {
+		setupDualTabSwitcher(group.basicBtn, group.basicTab, group.advBtn, group.advTab);
+	});
 }
 
-function handleCustomGameAdvancedSettingsButtonClick(evt: Event) {
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    if (!button) return;
-    if (button !== customGameAdvancedSettingButton) return;
-    if (button.classList.contains("selected")) return;
-    button.classList.add("selected");
-    customGameBasicSettingButton?.classList.remove("selected");
-    customGameBasicSettingsTab?.classList.add("unloaded");
-    customGameAdvancedSettingsTab?.classList.remove("unloaded");
-}
-
-function handleTournamentBasicSettingsButtonClick(evt: Event) {
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    if (!button) return;
-    if (button !== tournamentBasicSettingButton) return;
-    if (button.classList.contains("selected")) return;
-    button.classList.add("selected");
-    tournamentAdvancedSettingButton?.classList.remove("selected");
-    tournamentAdvancedSettingsTab?.classList.add("unloaded");
-    tournamentBasicSettingsTab?.classList.remove("unloaded");
-}
-
-function handleTournamentAdvancedSettingsButtonClick(evt: Event) {
-    const button = evt.currentTarget as HTMLButtonElement | null;
-    if (!button) return;
-    if (button !== tournamentAdvancedSettingButton) return;
-    if (button.classList.contains("selected")) return;
-    button.classList.add("selected");
-    tournamentBasicSettingButton?.classList.remove("selected");
-    tournamentBasicSettingsTab?.classList.add("unloaded");
-    tournamentAdvancedSettingsTab?.classList.remove("unloaded");
-}
-
-addListener(multiplayerButton, 'click', handleMultiplayerButtonClick);
-addListener(customGameButton, 'click', handleCustomGameButtonClick);
-addListener(tournamentButton, 'click', handleTournamentButtonClick);
-addListener(customGameBasicSettingButton, 'click', handleCustomGameBasicSettingsButtonClick);
-addListener(customGameAdvancedSettingButton, 'click', handleCustomGameAdvancedSettingsButtonClick);
-addListener(tournamentBasicSettingButton, 'click', handleTournamentBasicSettingsButtonClick);
-addListener(tournamentAdvancedSettingButton, 'click', handleTournamentAdvancedSettingsButtonClick);
+/* Initialize handlers */
+setupModeHandlers();
+setupAllSubTabs();
