@@ -9,6 +9,8 @@
 export interface sv_game {
     /* id of the user */
     user_id: string
+    /* code of the game */
+    code: string;
 }
 
 // ======= Interface file for (client -> server) ======= \\

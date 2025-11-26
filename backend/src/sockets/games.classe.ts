@@ -33,6 +33,14 @@ export class Games {
         this.end_game = 3600;
     }
 
+    addPlayer(user_id: string) {
+        if (this.equip_b.length < this.equip_a.length) {
+            this.equip_b.push(user_id);
+        } else {
+            this.equip_a.push(user_id);
+        }
+    }
+
     init(position_paddle: Record<string, Position>, score: Record<string, number>, position_ball: Position, velocity_ball: Position, end_game: number) {
         this.position_paddle = position_paddle;
         this.position_ball = position_ball;

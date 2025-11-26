@@ -21,7 +21,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 
 export interface worker {
 	worker: Worker;
-	players: number;
+	players: string[];
 }
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
@@ -60,30 +60,10 @@ export async function createThread(options: { workerFile?: string, count?: numbe
   for (let i = 0; i < count; i++) {
     workers.push({
       worker: new Worker(workerPath),
-      players: 0
+      players: []
     });
   }
 }
-
-
-// async function createThread() {
-// 	const core = os.cpus().length;
-
-// 	// --- Résoudre le chemin de base avec import.meta.url ---
-// 	const __filename = fileURLToPath(import.meta.url);
-// 	const __dirname = path.dirname(__filename);
-
-// 	// --- Créer le chemin absolu vers test.js ---
-// 	const workerPath = path.resolve(__dirname, './game/gamesLogic.js');
-	
-// 	// --- Créer le worker avec le chemin absolu ---
-// 	for (let i = 0; i < core; i++) {
-// 		workers.push({
-// 			worker: new Worker(workerPath),
-// 			players: 0
-// 		});
-// 	}
-// }
 
 async function start() {
 	try{

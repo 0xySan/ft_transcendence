@@ -6,10 +6,9 @@
 import { FastifyInstance } from "fastify";
 import { generateRandomToken } from '../utils/crypto.js';
 import { sv_game } from '../sockets/interfaces/interfaces.type.js';
-import { workers, worker, parties_per_core } from '../server.js';
+import { workers, parties_per_core } from '../server.js';
+import { FastifyReply } from "fastify/types/reply.js";
 
-const coef_games = 1;
-const coef_players = 2;
 const clientToken = new Map<string, string>();
 let codes: string[] = [];
 
@@ -26,41 +25,90 @@ function createCode(): string {
     return (code);
 }
 
-async function getWorker(): Promise<worker | null> {
-    let best = workers[0];
-
-    let game_parties = await new Promise<number>((resolve) => {
-        best.worker.once("message", (msg) => resolve(msg));
-        best.worker.postMessage({ action: "getNumberParties" });
-    });
-
-    let bestScore = game_parties * coef_games
-                  + workers[0].players * coef_players;
+async function getWorker() {
+    let bestWorker = workers[0];
 
     for (const tmp of workers) {
-        let game_parties_tmp = await new Promise<number>((resolve) => {
+        const tmpPlayers = tmp.players.length;
+        const bestPlayers = bestWorker.players.length;
+
+        const tmpParties = await new Promise<number>((resolve) => {
             tmp.worker.once("message", (msg) => resolve(msg));
             tmp.worker.postMessage({ action: "getNumberParties" });
         });
 
-        if (game_parties_tmp == parties_per_core)
+        if (tmpPlayers >= parties_per_core) {
             continue;
-        const score = game_parties_tmp * coef_games
-                    + tmp.players * coef_players;
-        if (score < bestScore) {
-            best = tmp;
-            bestScore = score;
+        }
+
+        const bestParties = await new Promise<number>((resolve) => {
+            bestWorker.worker.once("message", (msg) => resolve(msg));
+            bestWorker.worker.postMessage({ action: "getNumberParties" });
+        });
+
+        if (
+            tmpParties < bestParties || 
+            (tmpParties === bestParties && tmpPlayers < bestPlayers)
+        ) {
+            bestWorker = tmp;
         }
     }
 
-    let game_parties_tmp = await new Promise<number>((resolve) => {
-        best.worker.once("message", (msg) => resolve(msg));
-        best.worker.postMessage({ action: "getNumberParties" });
+    const tmpParties = await new Promise<number>((resolve) => {
+        bestWorker.worker.once("message", (msg) => resolve(msg));
+        bestWorker.worker.postMessage({ action: "getNumberParties" });
     });
-
-    if (game_parties_tmp == parties_per_core)
+    if (tmpParties >= parties_per_core) {
         return (null);
-    return (best);
+    }
+
+    return (bestWorker);
+}
+
+async function gameCreate(game: sv_game, reply: FastifyReply) {
+    const worker = await getWorker();
+    if (worker == null)
+        return (reply.status(501).send({ error: "Every server is full" }));
+
+    const code = createCode();
+    codes.push(code);
+
+    worker.worker.postMessage({ action: "createGame", game: {
+        user_id: game.user_id,
+        uuid: generateRandomToken(32),
+        code: code,
+    } });
+
+    worker.players.push(game.user_id);
+
+    // stock uuid and token in map
+    const token = generateRandomToken(32);
+    clientToken.set(game.user_id, token);
+    // return party Token
+    return (reply.status(202).send({token}));
+}
+
+async function gameJoin(game: sv_game, reply: FastifyReply) {
+    if (!codes.includes(game.code)) {
+        return (reply.status(401).send({ error: "Code doesn't exist" }));
+    }
+
+    for (const target of workers) {
+        const result = await new Promise<string>((resolve) => {
+            target.worker.once("message", (msg) => resolve(msg));
+            target.worker.postMessage({ action: "getCode", game: game });
+        });
+
+        console.log("DEBUG: test");
+        console.log("DEBUG: result = ", result);
+        if (result != "null") {
+            target.players.push(game.user_id);
+            const token = generateRandomToken(32);
+            clientToken.set(game.user_id, token);
+            return (reply.status(202).send({token}));
+        }
+    }
+    return (reply.status(501).send({ error: "Game is full" }));
 }
 
 export async function gameRoutes(fastify: FastifyInstance) {
@@ -84,22 +132,11 @@ export async function gameRoutes(fastify: FastifyInstance) {
         const game = request.body as sv_game;
         if (game.user_id == null)
             return (reply.status(401).send({ error: "user_is is empty" }));
-        const worker = await getWorker();
-        if (worker == null)
-            return (reply.status(501).send({ error: "Every server is full" }));
 
-        const code = createCode();
-        const token = generateRandomToken(32);
-        codes.push(code);
-
-        worker.worker.postMessage({ action: "createGame", game: {
-            user_id: game.user_id,
-            uuid: token,
-            code: code,
-        } });
-        // stock uuid and token in map
-        clientToken.set(game.user_id, token);
-        // return party Token
-        return (reply.status(202).send({token}));
+        if (game.code == null) {
+            return (gameCreate(game, reply));
+        } else {
+            return (gameJoin(game, reply));
+        }
     });
 }
