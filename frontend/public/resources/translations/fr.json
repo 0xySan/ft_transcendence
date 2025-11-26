@@ -1,0 +1,38 @@
+{
+    "index": {
+
+    },
+    "about": {
+        "title": "À propos de Transcendence 42",
+        "description": "Transcendence est une application web moderne où le plaisir rencontre la fonctionnalité, une plateforme de jeux sociale conçue pour rassembler les joueurs autour de classiques intemporels.",
+        "challenge": "Défiez vos amis ou testez vos compétences contre d'autres dans Pong et Tetris, réimaginés pour le web avec un gameplay en temps réel fluide, des classements dynamiques et un design élégant.",
+        "built-by": "Développé en tant que projet full-stack de fin de cursus par :",
+        "combination-text": "Transcendence 42 combine des technologies modernes avec un gameplay nostalgique pour offrir une expérience en ligne immersive et compétitive.",
+        "catchphrase": "Jouer, se connecter et transcender l'ordinaire."
+    },
+    "forgot_password": {
+
+    },
+    "home": {
+        "landing-description": "Le Pong rencontre le Tetris sur une plateforme sociale créée pour vous permettre de profiter des jeux de votre enfance !",
+        "play-button": "JOUER"
+    },
+    "login": {
+
+    },
+    "mail-verification": {
+
+    },
+    "pong-board": {
+
+    },
+    "register": {
+
+    },
+    "reset-password": {
+
+    },
+    "twoFA": {
+
+    }
+}
