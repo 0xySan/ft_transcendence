@@ -19,6 +19,8 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
+import { clientToken } from "./routes/game.route.js";
+
 export interface worker {
 	worker: Worker;
 	players: string[];
@@ -76,16 +78,42 @@ async function start() {
 
 		createThread();
 
-		wss.on('connection', (ws) => {
-			console.log('WebSocket connected');
+		wss.on('connection', (ws, request) => {
+			const params = new URLSearchParams(request.url?.split('?')[1]);
+			const user_id = params.get('user_id'); 
+			const token = params.get('token'); 
 
-			ws.on('message', (msg) => {
-				console.log('Received message:', msg.toString());
+			if (!user_id || !token)
+			{
+				ws.close(1008, 'token or user_id not defined'); // 1008 = Policy Violation
+				console.log('WebSocket rejected: token or user_id not defined', token, user_id);
+				return;
+			}
+			else if (clientToken.get(user_id) !== token)
+			{
+				ws.close(1008, 'Invalid token or user_id'); // 1008 = Policy Violation
+				console.log('WebSocket rejected: invalid token/user_id', clientToken.get(user_id), token);
+				return;
+			}
+			else
+			{
+				ws.on('message', (msg) => { 
 				ws.send(`echo: ${msg}`);
+				let str =  msg.toString();
+			    let data;
+				try {
+					data = JSON.parse(str);
+					if (data.action === "move")
+						console.log("PLAYER MOVES:", data.direction);
+				}
+				catch (err) {
+					console.log("Invalid JSON");
+				}
 			});
-
+			}				
 			ws.on('close', () => {
 				console.log('WebSocket disconnected');
+				clientToken.delete(user_id);
 			});
 		});
 

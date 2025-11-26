@@ -9,7 +9,7 @@ import { sv_game } from '../sockets/interfaces/interfaces.type.js';
 import { workers, parties_per_core } from '../server.js';
 import { FastifyReply } from "fastify/types/reply.js";
 
-const clientToken = new Map<string, string>();
+export const clientToken = new Map<string, string>();
 let codes: string[] = [];
 
 function createCode(): string {
@@ -83,7 +83,7 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
 
     // stock uuid and token in map
     const token = generateRandomToken(32);
-    clientToken.set(game.user_id, token);
+    clientToken.set(String(game.user_id), token);
     // return party Token
     return (reply.status(202).send({token}));
 }
@@ -104,7 +104,7 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
         if (result != "null") {
             target.players.push(game.user_id);
             const token = generateRandomToken(32);
-            clientToken.set(game.user_id, token);
+            clientToken.set(String(game.user_id), token);
             return (reply.status(202).send({token}));
         }
     }
@@ -121,7 +121,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
         if (game.user_id == null)
             return (reply.status(401).send({ error: "user_is is empty" }));
         // stock uuid and token in map
-        clientToken.set(game.user_id, token);
+        clientToken.set(String(game.user_id), token);
         // return party Token
         return (reply.status(202).send({token}));
     });

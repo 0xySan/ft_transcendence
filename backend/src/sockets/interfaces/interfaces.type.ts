@@ -8,7 +8,7 @@
  */
 export interface sv_game {
     /* id of the user */
-    user_id: string
+    user_id: String;
     /* code of the game */
     code: string;
 }
