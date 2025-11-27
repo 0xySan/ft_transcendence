@@ -82,7 +82,7 @@ export function translatePage(
     const correlatedLanguage = correlateLangCode(language);
     const translationPromise = fetchTranslationJson(correlatedLanguage);
     if (!translationPromise) return;
-
+    
     translationPromise.then((json) => {
         if (json) {
             document.querySelectorAll<HTMLElement>("[data-translate-key]").forEach((element) => {
@@ -135,3 +135,5 @@ export function translateElement(language: string, element: HTMLElement) {
 window.translatePage = translatePage;
 window.translateElement = translateElement;
 window.getUserLang = getUserLang;
+
+translatePage(getUserLang());

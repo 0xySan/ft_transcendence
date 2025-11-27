@@ -94,7 +94,7 @@ app.get("/*", async (req, reply) => {
 		req.headers["x-requested-with"] === "XMLHttpRequest" ||
 		req.headers["x-dynamic"] === "1";
 
-	const contentHtml = fs.readFileSync(pageFile, "utf8");
+	const contentHtml = serveTranslatedHTML(pageFile);
 
 	if (isAjax) {
 		// --- Dynamic request: return only the page content ---
@@ -106,6 +106,12 @@ app.get("/*", async (req, reply) => {
 			const dupCheckerScript = fs.readFileSync(dupCheckerPath, "utf8");
 			html += `\n<script type="module">\n${dupCheckerScript}\n</script>`;
 		}
+
+// 		html += `
+// <script type="module">
+// window.translatePage(window.getUserLang(), true);
+// </script>
+// `;
 
 		reply.type("text/html").send(html);
 	} else {
@@ -146,6 +152,42 @@ app.get("/*", async (req, reply) => {
 		reply.type("text/html").send(indexHtml);
 	}
 });
+
+async function translateFn(key) {
+	const defaultLanguage = "en";
+	// let language =  | defaultLanguage;
+	let jsonFile = path.join(publicDir, "translations", `${defaultLanguage}.json`);
+	if (!fs.existsSync(jsonFile)) {
+		return `Can't find translation file for language '${defaultLanguage}'`; // Return an error message indicating missing file
+	}
+	const jsonContent = fs.readFileSync(jsonFile, "utf8");
+	const json = JSON.parse(jsonContent);
+
+	// Retrieve nested value
+	const keys = key.split(".");
+	let value = json;
+	for (const k of keys) {
+		if (value[k] === undefined) {
+			return `Can't find translation text for key '${key}' for language '${defaultLanguage}'`;
+		}
+		value = value[k];
+	}
+	return typeof value === "string" ? value : key;
+}
+
+function serveTranslatedHTML(filePath) {
+	console.log(`Serving translated HTML for: ${filePath}`);
+	let html = fs.readFileSync(filePath, "utf8");
+
+	const regex = /(<[^>]*data-translated-key="([^"]+)"[^>]*>)([\s\S]*?)(<\/[^>]+>)/g;
+
+	html = html.replace(regex, (match, openTag, key, innerContent, closeTag) => {
+		const translated = translateFn(key);  // Retrieve translation
+		return `${openTag}${translated}${closeTag}`;
+	});
+
+	return html;
+}
 
 // --- Start the server ---
 await app.listen({ port: 8080, host: "0.0.0.0" });
