@@ -8,6 +8,8 @@ import { generateRandomToken } from '../utils/crypto.js';
 import { sv_game } from '../sockets/interfaces/interfaces.type.js';
 import { workers, parties_per_core } from '../server.js';
 import { FastifyReply } from "fastify/types/reply.js";
+import { requirePartialAuth } from '../middleware/auth.middleware.js';
+import { patchGameSchema, postGameSchema, getGameSchema } from '../plugins/swagger/schemas/game.schema.js'
 
 /**
  * Set the clientToken and codes.
@@ -175,23 +177,25 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
 export async function gameRoutes(fastify: FastifyInstance) {
 
     // ------------------    GET METHOD    ----------------------- \\
-    fastify.get("/api/game", async (request, reply) => {
-        const game = request.body as sv_game;
-        const token = generateRandomToken(32);
+    // fastify.get("/api/game", { schema: getGameSchema }, async (request, reply) => {
+    //     const game = request.body as sv_game;
+    //     const token = generateRandomToken(32);
 
-        if (game.user_id == null)
-            return (reply.status(401).send({ error: "user_is is empty" }));
-        // stock uuid and token in map
-        clientToken.set(String(game.user_id), token);
-        // return party Token
-        return (reply.status(202).send({token}));
-    });
+    //     if (game.user_id == null)
+    //         return (reply.status(401).send({ error: "user_is is empty" }));
+    //     // stock uuid and token in map
+    //     clientToken.set(String(game.user_id), token);
+    //     // return party Token
+    //     return (reply.status(202).send({token}));
+    // });
 
     // -----------------    POST METHOD    ----------------------- \\
-    fastify.post("/api/game", async (request, reply) => {
+    fastify.post("/api/game", { preHandler: requirePartialAuth, schema: postGameSchema }, async (request, reply) => {
         const game = request.body as sv_game;
+        const session = (request as any).session;
+        const userId = session?.user_id;
 
-        if (game.user_id == null)
+        if (userId == null)
             return (reply.status(401).send({ error: "user_is is empty" }));
 
         // (code = null) == Create a game | (code != null) == Join a game
@@ -203,10 +207,12 @@ export async function gameRoutes(fastify: FastifyInstance) {
     });
 
     // ----------------    PATCH METHOD    ----------------------- \\
-    fastify.patch("/api/game", async (request, reply) => {
+    fastify.patch("/api/game", { schema: patchGameSchema }, async (request, reply) => {
         const game = request.body as sv_game;
+        const session = (request as any).session;
+        const userId = session?.user_id;
 
-        if (game.user_id == null)
+        if (userId == null)
             return (reply.status(401).send({ error: "user_id is empty" }));
 
         // Get the correct worker (thread)
