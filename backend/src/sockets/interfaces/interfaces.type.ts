@@ -29,7 +29,7 @@ export interface position {
  */
 export interface sv_game {
     /* id of the user */
-    user_id: String;
+    user_id: string;
     /* code of the game */
     code: string;
     /* Map<user_id, paddle(x, y) */
