@@ -21,15 +21,25 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 
 import { clientToken } from "./routes/game.route.js";
 
+/**
+ * This interface with a worker (thread) and a list of players in this.
+ */
 export interface worker {
+	/* This is the worker (thread) with 'parties_per_core' */
 	worker: Worker;
+	/* This is a list with every user_id in game in this worker (thread). */
 	players: string[];
 }
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
+
+/**
+ * Stock every worker (thread) here.
+ * Stock the number of parties here, "base: 8"
+ */
 export const workers: worker[] = [];
-export const parties_per_core = 2;
+export const parties_per_core = 8;
 
 async function buildServer() {
 	const app = Fastify({
@@ -47,24 +57,30 @@ async function buildServer() {
 	return app;
 }
 
+/**
+ * Create every thread for they games.
+ * @param options - Option with a path of a worker (thread) and the number of CPU core.
+ */
 export async function createThread(options: { workerFile?: string, count?: number } = {}) {
-  const workerFile = options.workerFile ?? null;
-  const count = options.count ?? os.cpus().length;
+	const workerFile = options.workerFile ?? null;
+	const count = options.count ?? os.cpus().length;
 
-  if (!workerFile && process.env.NODE_ENV === "test") return;
+	// This check is for the test with vitest.
+	if (!workerFile && process.env.NODE_ENV === "test") return;
 
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+	// Get the file path.
+	const __filename = fileURLToPath(import.meta.url);
+	const __dirname = path.dirname(__filename);
+	const workerPath = workerFile ||
+		path.resolve(__dirname, './game/gamesLogic.js');
 
-  const workerPath = workerFile ||
-    path.resolve(__dirname, './game/gamesLogic.js');
-
-  for (let i = 0; i < count; i++) {
-    workers.push({
-      worker: new Worker(workerPath),
-      players: []
-    });
-  }
+	// Create the worker (thread).
+	for (let i = 0; i < count; i++) {
+		workers.push({
+		worker: new Worker(workerPath),
+		players: []
+		});
+	}
 }
 
 async function start() {
