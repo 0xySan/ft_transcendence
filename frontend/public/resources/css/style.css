@@ -380,6 +380,86 @@ button:active {
 	word-wrap: break-word; /* allows long words to break */
 }
 
+/* CHAT PAGE STYLES*/
+
+/* Center the app and take full viewport vertically */
+.chat-pages-container {
+	display: flex;
+	flex: 1;
+	align-items: center;    /* vertically center the card - change to flex-start if you want it top-aligned */
+	justify-content: center;
+	padding: 1rem;
+}
+
+/* The card that contains the user list */
+.chat-form-container {
+  width: 100%;
+  height: calc(68vh - 2rem); /* full available height inside padding */
+  background-color: rgb(var(--mantle, 44,47,51));
+  border: 4px solid rgb(var(--surface0, 60,63,70));
+  border-radius: 8px;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* The scrollable user list: vertical only */
+.user-list {
+  width: 100%;
+  flex: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+}
+
+/* Each user row */
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Hover and active styles */
+.user-item:hover {
+  background: rgba(255,255,255,0.03);
+}
+.user-item:active {
+  transform: translateY(1px);
+}
+
+/* Avatar */
+.img_profile {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #2b2b2b;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+/* Username */
+.name_profile {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.user-list::-webkit-scrollbar {
+  width: 10px;
+}
+.user-list::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.3);
+  border-radius: 999px;
+}
+
+
 /* ==========================================================================
                               AUTH PAGES STYLES
                         LOGIN / REGISTER / RESET PASSWORD
