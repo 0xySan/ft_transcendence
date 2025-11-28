@@ -2,7 +2,6 @@ export {};
 
 declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
 
-const forgotPasswordForm = document.querySelector<HTMLFormElement>('.auth-form-container');
 const emailInput = document.getElementById('email-text-input') as HTMLInputElement | null;
 const resetButton = document.querySelector<HTMLButtonElement>('button[type="submit"]');
 
