@@ -471,18 +471,22 @@ button:active {
 .oauth-buttons-container {
 	padding: 0.5rem;
 
-	display: flex;
 	gap: 0.5rem;
+
+	display: flex;
 }
 
 .oauth-icon {
-	color: rgb(var(--lavender));
+
 	width: 2rem;
 	height: 2rem;
+	color: rgb(var(--lavender));
+
 	transition: color 0.2s ease;
 }
 
-.oauth-icon:hover, .oauth-icon:focus {
+.oauth-icon:hover,
+.oauth-icon:focus {
 	color: rgb(var(--blue));
 }
 
@@ -493,7 +497,6 @@ button:active {
 #twoFA-container {
 	max-width: 32rem;
 
-	margin-bottom: 2rem;
 	gap: 1rem;
 
 	display: flex;
@@ -513,6 +516,7 @@ button:active {
 
 .otp-container {
 	gap: 10px;
+
 	display: flex;
 }
 
@@ -524,6 +528,21 @@ button:active {
 
 	font-size: 1.5rem;
 	text-align: center;
+}
+
+#twofa-email-send,
+.auth-submit-btn {
+
+	background-color: rgb(var(--lavender));
+	color: rgb(var(--base));
+}
+
+#twofa-email-change {
+
+	background-color: rgb(var(--crust));
+
+	border: 2px solid rgb(var(--surface1));
+	color: rgb(var(--text));
 }
 
 /* ==========================================================================
@@ -637,7 +656,6 @@ button:active {
 
 #lobby-info-boxes {
 	width: 100%;
-	
 	height: 30rem;
 
 	margin-top: 1.5rem;
@@ -652,8 +670,8 @@ button:active {
 #lobby-player-box,
 #lobby-mode-setting {
 	width: 50%;
-	max-width: 45rem;
 	height: 30rem;
+	max-width: 45rem;
 	max-height: 30rem;
 }
 
@@ -908,7 +926,8 @@ button:active {
 	cursor: pointer;
 }
 
-.lobby-private-checkbox input[type="checkbox"], .checkbox-container input[type="checkbox"] {
+.lobby-private-checkbox input[type="checkbox"],
+.checkbox-container input[type="checkbox"] {
 	position: relative;
 
 	width: 1.25rem;
@@ -931,13 +950,15 @@ button:active {
 		border-color 0.2s ease;
 }
 
-.lobby-private-checkbox input[type="checkbox"]:checked {
+.lobby-private-checkbox input[type="checkbox"]:checked,
+.checkbox-container input[type="checkbox"]:checked {
 	background-color: rgb(var(--blue));
 
 	border-color: rgb(var(--blue));
 }
 
-.lobby-private-checkbox input[type="checkbox"]::after {
+.lobby-private-checkbox input[type="checkbox"]::after,
+.checkbox-container input[type="checkbox"]::after {
 	position: absolute;
 
 	width: 0;
@@ -956,7 +977,8 @@ button:active {
 		opacity 0.2s ease;
 }
 
-.lobby-private-checkbox input[type="checkbox"]:checked::after {
+.lobby-private-checkbox input[type="checkbox"]:checked::after,
+.checkbox-container input[type="checkbox"]:checked::after {
 	width: 0.6rem;
 	height: 0.3rem;
 
