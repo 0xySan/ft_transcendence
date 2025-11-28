@@ -21,6 +21,63 @@
 	<body class="flex-space-between background-color-base">
 		<header>
 			<nav>
+				<script defer type="module" src="/js/pages/index.js"></script>
+				<svg	id="nav-menu-svg"
+						viewBox="0 0 42 42"
+						width="50" height="50"
+						xmlns="http://www.w3.org/2000/svg"
+						role="img"
+						aria-label="nav menu icon">
+					<!-- PATH 1: Central circle -->
+					<path	id="nav-menu-p1"
+							d="M 17 21 A 4 4 90 0 0 25 21 A 4 4 90 0 0 17 21"
+							stroke="none" fill="currentColor" stroke-width="0.12">
+						<animate id="nav-menu-p1-morph"
+								 attributeName="d"
+								 dur="0.2s"
+								 fill="freeze"
+								 begin="indefinite"
+								 values="M 17 21 A 4 4 90 0 0 25 21 A 4 4 90 0 0 17 21;M 1 21 A 4 4 90 0 0 41 21 A 4 4 90 0 0 1 21" />
+					</path>
+					<!-- PATH 2: Upper circle rotation then morph into line -->
+					<path	id="nav-menu-p2"
+							d="M 17 9 C 17 13 21 13 21 13 C 25 13 25 9 25 9 C 25 5 21 5 21 5 C 17 5 17 9 17 9"
+							stroke="none" fill="currentColor" stroke-width="0.12">
+						<animateTransform	id="nav-menu-p2-rot"
+											attributeName="transform"
+											type="rotate"
+											from="0 21 21"
+											to="225 21 21"
+											dur="0.2s"
+											fill="freeze"
+											begin="indefinite" />
+						<animate	id="nav-menu-p2-morph"
+									attributeName="d"
+									dur="0.1s"
+									fill="freeze"
+									begin="indefinite"
+									values="M 17 9 C 17 13 21 13 21 13 C 25 13 25 9 25 9 C 25 5 21 5 21 5 C 17 5 17 9 17 9;M 18 9 C 18 9 18 33 18 33 C 18 37 24 37 24 33 C 24 33 24 9 24 9 C 24 4 18 4 18 9" />
+					</path>
+					<!-- PATH 3: Lower circle rotation then morph into line -->
+					<path	id="nav-menu-p3"
+							d="M 17 33 C 17 37 21 37 21 37 C 25 37 25 33 25 33 C 25 29 21 29 21 29 C 17 29 17 33 17 33"
+							stroke="none" fill="currentColor" stroke-width="0.12">
+						<animateTransform	id="nav-menu-p3-rot"
+											attributeName="transform"
+											type="rotate"
+											from="0 21 21"
+											to="135 21 21"
+											dur="0.2s"
+											fill="freeze"
+											begin="indefinite" />
+						<animate	id="nav-menu-p3-morph"
+									attributeName="d"
+									dur="0.1s"
+									fill="freeze"
+									begin="indefinite"
+									values="M 17 33 C 17 37 21 37 21 37 C 25 37 25 33 25 33 C 25 29 21 29 21 29 C 17 29 17 33 17 33;M 18 33 C 18 38 24 38 24 33 C 24 33 24 9 24 9 C 24 4 18 4 18 9 C 18 9 18 33 18 33" />
+					</path>
+				</svg>
 				<div id="nav-left-links">
 					<a href="/" >Home</a>
 					<a href="/" >Play</a>
@@ -33,24 +90,25 @@
 				</div>
 			</nav>
 		</header>
+		<div id="scroll-content">
+			<div id="content">
+				<!-- Dynamic content goes here -->
+			</div>
 
-		<div id="content">
-			<!-- Dynamic content goes here -->
+			<footer>
+				<div id="link-text">
+					<a href="/home">Home</a>
+					<span class="footer-divider"></span>
+					<a href="/privacy">Privacy Policy</a>
+					<span class="footer-divider"></span>
+					<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load">GitHub</a>
+					<span class="footer-divider"></span>
+					<a href="/about">About</a>
+				</div>
+				<div id="copyright-text" >
+					© 2025 Transcendence 42. All rights reserved.
+				</div>
+			</footer>
 		</div>
-
-		<footer>
-			<div id="link-text">
-				<a href="/home">Home</a>
-				<span class="footer-divider"></span>
-				<a href="/privacy">Privacy Policy</a>
-				<span class="footer-divider"></span>
-				<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load">GitHub</a>
-				<span class="footer-divider"></span>
-				<a href="/about">About</a>
-			</div>
-			<div id="copyright-text" >
-				© 2025 Transcendence 42. All rights reserved.
-			</div>
-		</footer>
 	</body>
 </html>

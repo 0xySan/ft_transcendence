@@ -202,25 +202,27 @@ body {
 	overflow: hidden;
 }
 
-#content {
+#scroll-content {
 	width: 100%;
-	height: calc(100% - 10rem); /* account for fixed ui elements */
-	min-height: calc(100% - 10rem); /* account for fixed ui elements */
-
-	margin-top: 5rem; /* account for fixed nav bar */
-	margin-bottom: 5rem; /* account for fixed footer bar */
-	padding: 0rem 1rem;
-	box-sizing: border-box; /* include padding/border in size */
+	height: calc(100% - 5rem);
 
 	background-color: rgb(var(--base));
+
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+#content {
+	width: fit-content;
+	min-height: calc(100% - 6rem); /* account for fixed ui elements */
+
+	padding: 1rem;
+	box-sizing: border-box; /* include padding/border in size */
 
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: flex-start;
-
-	overflow-y: auto;
-	overflow-x: hidden;
 }
 
 #content > * {
@@ -735,7 +737,6 @@ button:active {
 
 	border-bottom-left-radius: 0px;
 	border-bottom-right-radius: 0px;
-
 	border-bottom: 0px;
 }
 
@@ -769,6 +770,10 @@ button:active {
 	#lobby-tournament-button {
 		border-top-left-radius: 0px;
 		border-top-right-radius: 0px;
+	}
+
+	.lobby-setting-box {
+		min-height: 42rem;
 	}
 }
 
@@ -812,12 +817,11 @@ button:active {
 }
 
 .lobby-setting-type {
-
 	width: 100%;
 
 	background-color: rgb(var(--crust));
-	border: 2px solid rgb(var(--surface1));
 
+	border: 2px solid rgb(var(--surface1));
 	border-radius: 5px;
 
 	display: flex;
@@ -830,8 +834,8 @@ button:active {
 }
 
 .lobby-setting-type > button {
-
 	height: fit-content;
+
 	background-color: rgb(var(--crust));
 
 	border-radius: 0px;
@@ -967,7 +971,6 @@ button:active {
 
 #lobby-join-box > input {
 	width: 70%;
-
 	min-width: 0;
 
 	background: transparent;
@@ -977,7 +980,6 @@ button:active {
 	flex: 1;
 
 	font-size: 1rem;
-
 	color: rgb(var(--text));
 
 	outline: none;
@@ -988,8 +990,8 @@ button:active {
 }
 
 #lobby-join-box > button {
-
 	padding: 0.65rem 1.6rem;
+
 	background-color: rgb(var(--peach));
 
 	border: none;
@@ -1222,7 +1224,6 @@ nav {
 	position: fixed;
 	top: 0;
 	left: 0;
-	z-index: 100;
 
 	width: 100%;
 	height: 5rem;
@@ -1238,19 +1239,110 @@ nav {
 	justify-content: space-between;
 }
 
+#nav-menu-svg {
+	visibility: hidden;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 101;
+
+	width: 0;
+	height: 0;
+
+	background-color: rgb(var(--crust));
+}
+
 #nav-left-links,
 #nav-right-links {
-	gap: 1.5rem;
+	background-color: rgb(var(--crust));
 
-	display: flex; /* autolayout */
-	align-items: center; /* centered vertically*/
+	display: flex;
+	align-items: center;
+}
+#nav-left-links > a:first-of-type {
+	border-left: 0px solid;
+}
+#nav-right-links {
+	gap: 1.5rem;
 }
 
 #nav-left-links {
-	justify-content: flex-start;
+	gap: 0.5rem;
 }
-#nav-right-links {
-	justify-content: flex-end;
+
+#nav-left-links > a:hover,
+#nav-left-links > a:active {
+	background-color: rgb(var(--surface2)) !important;
+}
+
+#nav-left-links > a {
+	height: 80%;
+
+	padding-top: 1rem;
+	padding-right: 1rem;
+	padding-left: 1rem;
+
+	display: flex;
+	justify-content: center;
+
+	border-right: 0px solid;
+}
+
+@media (max-width: 700px) {
+	#nav-menu-svg {
+		visibility: visible;
+		position: relative;
+
+		width: 3rem;
+		height: 3rem;
+
+		margin-top: -1rem;
+		margin-left: -1rem;
+		padding-top: 1rem;
+
+		overflow: visible;
+	}
+	#nav-left-links {
+		visibility: hidden;
+		position: fixed;
+		top: -12rem;
+		left: 0;
+		z-index: -1;
+
+		padding: 1rem;
+		gap: 0;
+
+		background-color: rgb(var(--crust));
+
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+
+		transition:
+			top 0.3s ease-out,
+			visibility 0.3s linear;
+	}
+	#nav-left-links > a {
+		width: 100%;
+
+		padding-bottom: 1rem;
+
+		display: flex;
+		flex-direction: column;
+	}
+	#nav-left-links.nav-links-visible {
+		visibility: visible;
+		top: 4rem;
+	}
+}
+
+@media (max-width: 375px) {
+	#nav-right-links > button {
+		padding: 0.5rem;
+	}
+	#nav-right-links {
+		gap: 0.2rem;
+	}
 }
 
 #nav-login-btn {
@@ -1289,16 +1381,32 @@ a:visited {
 } */
 
 /* ==========================================================================
+                               LINK STYLES 
+   ========================================================================== */
+
+a {
+	text-decoration: none;
+	color: rgb(var(--blue));
+
+	transition:
+		color 0.2s ease,
+		text-decoration 0.2s ease;
+}
+
+a:hover {
+	text-decoration: underline;
+	color: rgb(var(--sapphire));
+}
+
+a:visited {
+	color: rgb(var(--lavender));
+}
+
+/* ==========================================================================
                               FOOTER STYLES 
    ========================================================================== */
 
 footer {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	z-index: 100;
-
-	width: 100%;
 	height: 4rem;
 
 	margin-bottom: 0px;
@@ -1315,6 +1423,22 @@ footer {
 	color: rgb(var(--text));
 }
 
+@media (max-width: 450px) {
+	footer {
+		height: 2rem;
+
+		font-size: 0.6rem;
+	}
+
+	#content {
+		min-height: calc(100% - 4rem);
+	}
+}
+@media (max-width: 250px) {
+	footer {
+		font-size: 0.4rem;
+	}
+}
 .footer-divider {
 	width: 1px;
 	height: 1.5rem;
@@ -1325,7 +1449,7 @@ footer {
 }
 
 #link-text {
-	width: 100%;
+	width: fit-content;
 	height: 2.5rem;
 
 	gap: 1rem;
