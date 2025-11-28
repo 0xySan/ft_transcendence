@@ -1,112 +1,49 @@
 <div class="auth-pages-container">
-  <h1 >Login</h1>
-  <form class="auth-form-container">
-    <div class="div-title-and-text-input">
-      <label for="username" >Username:</label>
-      <input type="text" id="username-text-input" name="username" class="form-input-field"/>
-      <span id="login-username-error-text" class="error-message hidden multiline text-color-red" aria-hidden="true">
-      </span>
-    </div>
-    <div class="div-title-and-text-input">
-      <label for="password" >Password:</label>
-      <input type="password" id="password-text-input" name="password" class="form-input-field"/>
-      <span id="login-password-error-text" class="error-message hidden multiline text-color-red" aria-hidden="true">
-      </span>
-      <div class="checkbox-container">
-        <input type="checkbox" id="remember-me-checkbox" class="checkbox-input"/>
-        <label for="remember-me-checkbox" >Remember me</label>
-      </div>
-    </div>
-    <div>
-      <button type="submit" class="button button-fit-div-width background-color-lavender">
-        Login
-      </button>
-    </div>
-    <div class="oauth-links">
-      <div class="oauth-buttons-container">
-        <button id="google-oauth" class="oauth-button background-color-lavender">
-          Google
-        </button>
-        <button id="github-oauth" class="oauth-button background-color-lavender">
-          GitHub
-        </button>
-        <button id="42-oauth" class="oauth-button background-color-lavender">
-          42
-        </button>
-        <button id="discord-oauth" class="oauth-button background-color-lavender">
-          Discord
-        </button>
-      </div>
-    </div>
-    <div>
-      <p >
-        Forgot your password?
-        <a href="/forgot-password" class="link-peach-to-maroon">Reset it here</a>
-      </p>
-      <p >
-        Don't have an account?
-        <a href="/register" class="link-peach-to-maroon">Register here</a>
-      </p>
-    </div>
-  </form>
+	<h1 >Login</h1>
+	<form class="auth-form-container">
+		<div class="div-title-and-text-input">
+			<label for="username" >Username:</label>
+			<input type="text" id="username-text-input" name="username" class="form-input-field"/>
+			<span id="login-username-error-text" class="error-message" aria-hidden="true" aria-hidden="true" style="opacity: 0;">
+			</span>
+		</div>
+		<div class="div-title-and-text-input">
+			<label for="password" >Password:</label>
+			<input type="password" id="password-text-input" name="password" class="form-input-field"/>
+			<span id="login-password-error-text" class="error-message" aria-hidden="true" aria-hidden="true" style="opacity: 0;">
+			</span>
+			<div class="checkbox-container">
+				<input type="checkbox" id="remember-me-checkbox" name="remember-me"/>
+				<label for="remember-me-checkbox" >Remember me</label>
+			</div>
+		</div>
+		<button type="submit" class="auth-btn">
+			Login
+		</button>
+		<div class="oauth-buttons-container">
+			<a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load" title="Login with 42">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/42.svg#icon-42"></use></svg>
+			</a>
+			<a href="/api/oauth/github" class="oauth-button no-dynamic-load" title="Login with GitHub">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/github.svg#icon-github"></use></svg>
+			</a>
+			<a href="api/oauth/discord" class="oauth-button no-dynamic-load" title="Login with Discord">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/discord.svg#icon-discord"></use></svg>
+			</a>
+			<a href="/api/oauth/google" class="oauth-button no-dynamic-load" title="Login with Google">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/google.svg#icon-google"></use></svg>
+			</a>
+		</div>
+		<div>
+			<p >
+				Forgot your password?
+				<a href="/forgot-password">Reset it here</a>
+			</p>
+			<p >
+				Don't have an account?
+				<a href="/register">Register here</a>
+			</p>
+		</div>
+	</form>
 </div>
 <script src="/js/pages/loginPage.js" type="module" defer></script>
-
-
-<!-- <script>
-    // Always use the addListener function from index.html to ensure proper cleanup
-  const loginForm = document.querySelector('.auth-form-container');
-  const usernameInput = document.getElementById('username-text-input');
-  const passwordInput = document.getElementById('password-text-input');
-  const loginButton = document.querySelector('button[type="submit"]');
-
-  function handleLogin(event) {
-    event.preventDefault();
-    const isUsernameValid = verifyUsernameValidity();
-    const isPasswordValid = verifyPasswordValidity();
-
-    if (isUsernameValid && isPasswordValid) {
-      // Proceed with form submission or further processing
-      console.log('Form is valid. Submitting...');
-      // loginForm.submit();
-    } else {
-      console.log('Form is invalid. Please correct the errors and try again.');
-    }
-  }
-
-  function verifyUsernameValidity() {
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-
-    const username = usernameInput.value;
-    const errorTextElement = document.getElementById('login-username-error-text');
-    if (!usernameRegex.test(username)) {
-      errorTextElement.textContent = 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.';
-      errorTextElement.setAttribute('aria-hidden', 'false');
-      return false;
-    } else {
-      errorTextElement.textContent = '';
-      errorTextElement.setAttribute('aria-hidden', 'true');
-      return true;
-    }
-  }
-
-  function verifyPasswordValidity() {
-    const passwordRegex = /^.{8,64}$/;
-
-    const password = passwordInput.value;
-    const errorTextElement = document.getElementById('login-password-error-text');
-    if (!passwordRegex.test(password)) {
-      errorTextElement.textContent = 'Password must be between 8 and 64 characters long.';
-      errorTextElement.setAttribute('aria-hidden', 'false');
-      return false;
-    } else {
-      errorTextElement.textContent = '';
-      errorTextElement.setAttribute('aria-hidden', 'true');
-      return true;
-    }
-  }
-
-  addListener(loginForm, 'submit', handleLogin);
-  addListener(usernameInput, 'input', verifyUsernameValidity);
-  addListener(passwordInput, 'input', verifyPasswordValidity);
-</script> -->

@@ -213,7 +213,7 @@ body {
 }
 
 #content {
-	width: fit-content;
+	width: 100vw;
 	min-height: calc(100% - 6rem); /* account for fixed ui elements */
 
 	padding: 1rem;
@@ -464,6 +464,28 @@ button:active {
 	transition: background-color 0.3s ease;
 }
 
+.checkbox-container {
+	display: flex;
+}
+
+.oauth-buttons-container {
+	padding: 0.5rem;
+
+	display: flex;
+	gap: 0.5rem;
+}
+
+.oauth-icon {
+	color: rgb(var(--lavender));
+	width: 2rem;
+	height: 2rem;
+	transition: color 0.2s ease;
+}
+
+.oauth-icon:hover, .oauth-icon:focus {
+	color: rgb(var(--blue));
+}
+
 /* ==========================================================================
                              2FA PAGE STYLES 
    ========================================================================== */
@@ -491,7 +513,6 @@ button:active {
 
 .otp-container {
 	gap: 10px;
-
 	display: flex;
 }
 
@@ -616,8 +637,8 @@ button:active {
 
 #lobby-info-boxes {
 	width: 100%;
-	height: 100%;
-	max-height: 30rem;
+	
+	height: 30rem;
 
 	margin-top: 1.5rem;
 	gap: 1.5rem;
@@ -631,12 +652,13 @@ button:active {
 #lobby-player-box,
 #lobby-mode-setting {
 	width: 50%;
-	height: 100%;
+	max-width: 45rem;
+	height: 30rem;
 	max-height: 30rem;
 }
 
 /** Responsive **/
-@media (max-width: 1130px) {
+@media (max-width: 1165px) {
 	#lobby-page {
 		min-height: 96rem;
 	}
@@ -648,7 +670,6 @@ button:active {
 	#lobby-player-box,
 	#lobby-mode-setting {
 		width: 100% !important;
-		max-width: 45rem;
 		min-height: 40rem;
 	}
 	#lobby-mode-setting {
@@ -656,6 +677,9 @@ button:active {
 	}
 	#lobby-action-buttons {
 		width: 100% !important;
+	}
+	.lobby-setting-box {
+		min-height: 42rem;
 	}
 }
 
@@ -771,10 +795,6 @@ button:active {
 		border-top-left-radius: 0px;
 		border-top-right-radius: 0px;
 	}
-
-	.lobby-setting-box {
-		min-height: 42rem;
-	}
 }
 
 /** Setting Boxes **/
@@ -888,7 +908,7 @@ button:active {
 	cursor: pointer;
 }
 
-.lobby-private-checkbox input[type="checkbox"] {
+.lobby-private-checkbox input[type="checkbox"], .checkbox-container input[type="checkbox"] {
 	position: relative;
 
 	width: 1.25rem;
