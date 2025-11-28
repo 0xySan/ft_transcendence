@@ -26,8 +26,7 @@ function verifyUsernameValidity(): boolean {
 	if (!errorTextElement) return (false);
 
 	if (!usernameRegex.test(username)) {
-		errorTextElement.textContent =
-			'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.';
+		errorTextElement.textContent = 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.';
 		errorTextElement.classList.remove('hidden');
 		errorTextElement.setAttribute('aria-hidden', 'false');
 
@@ -51,14 +50,14 @@ function verifyPasswordValidity(): boolean {
 		errorTextElement.textContent = 'Password must be between 8 and 64 characters long.';
 		errorTextElement.classList.remove('hidden');
 		errorTextElement.setAttribute('aria-hidden', 'false');
-		(errorTextElement as HTMLElement).hidden = false;
+		errorTextElement.hidden = false;
 
 		return (false);
 	} else {
 		errorTextElement.textContent = '';
 		errorTextElement.classList.add('hidden');
 		errorTextElement.setAttribute('aria-hidden', 'true');
-		(errorTextElement as HTMLElement).hidden = true;
+		errorTextElement.hidden = true;
 
 		return (true);
 	}

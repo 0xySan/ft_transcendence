@@ -730,16 +730,15 @@ button:active {
 
 .oauth-buttons-container {
 	padding: 0.5rem;
-
 	gap: 0.5rem;
 
 	display: flex;
 }
 
 .oauth-icon {
-
 	width: 2rem;
 	height: 2rem;
+
 	color: rgb(var(--lavender));
 
 	transition: color 0.2s ease;
@@ -784,24 +783,27 @@ button:active {
 	width: 40px;
 	height: 50px;
 
+	background-color: rgb(color(--overlay2));
+
 	border-radius: 20%;
 
+	font-family: "Poppins-SemiBold", sans-serif;
 	font-size: 1.5rem;
 	text-align: center;
 }
 
 #twofa-email-send,
 .auth-submit-btn {
-
 	background-color: rgb(var(--lavender));
+
 	color: rgb(var(--base));
 }
 
 #twofa-email-change {
-
 	background-color: rgb(var(--crust));
 
 	border: 2px solid rgb(var(--surface1));
+
 	color: rgb(var(--text));
 }
 
@@ -1502,19 +1504,19 @@ button:active {
 }
 
 #left-score {
-	width: 110;
+	width: 110px;
 
 	text-align: right;
 }
 
 #score-separator {
-	width: 1;
+	width: 1px;
 
 	text-align: center;
 }
 
 #right-score {
-	width: 110;
+	width: 110px;
 
 	text-align: left;
 }
@@ -1655,33 +1657,6 @@ nav {
 
 	color: rgb(var(--text));
 }
-
-/* ==========================================================================
-                               LINK STYLES 
-   ========================================================================== */
-
-a {
-	text-decoration: none;
-	color: rgb(var(--blue));
-
-	transition:
-		color 0.2s ease,
-		text-decoration 0.2s ease;
-}
-
-a:hover {
-	text-decoration: underline;
-	color: rgb(var(--sapphire));
-}
-
-a:visited {
-	color: rgb(var(--lavender));
-}
-
-/* a:focus {
-  outline: 2px solid rgb(var(--blue));
-  outline-offset: 2px;
-} */
 
 /* ==========================================================================
                                LINK STYLES 
