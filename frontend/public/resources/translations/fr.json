@@ -14,8 +14,8 @@
 
     },
     "home": {
-        "landing-description": "Le Pong rencontre le Tetris sur une plateforme sociale créée pour vous permettre de profiter des jeux de votre enfance !",
-        "play-button": "JOUER"
+        "landingDescription": "Le Pong rencontre le Tetris sur une plateforme sociale créée pour vous permettre de profiter des jeux de votre enfance !",
+        "playButton": "JOUER"
     },
     "login": {
 

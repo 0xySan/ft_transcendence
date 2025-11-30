@@ -94,7 +94,9 @@ app.get("/*", async (req, reply) => {
 		req.headers["x-requested-with"] === "XMLHttpRequest" ||
 		req.headers["x-dynamic"] === "1";
 
-	const contentHtml = serveTranslatedHTML(pageFile);
+	const userLanguage = detectBrowserLanguage(req);
+
+	const contentHtml = await serveTranslatedHTML(pageFile, userLanguage);
 
 	if (isAjax) {
 		// --- Dynamic request: return only the page content ---
@@ -106,12 +108,6 @@ app.get("/*", async (req, reply) => {
 			const dupCheckerScript = fs.readFileSync(dupCheckerPath, "utf8");
 			html += `\n<script type="module">\n${dupCheckerScript}\n</script>`;
 		}
-
-// 		html += `
-// <script type="module">
-// window.translatePage(window.getUserLang(), true);
-// </script>
-// `;
 
 		reply.type("text/html").send(html);
 	} else {
@@ -153,12 +149,23 @@ app.get("/*", async (req, reply) => {
 	}
 });
 
-async function translateFn(key) {
-	const defaultLanguage = "en";
-	// let language =  | defaultLanguage;
-	let jsonFile = path.join(publicDir, "translations", `${defaultLanguage}.json`);
+function detectBrowserLanguage(req, fallback = "en") {
+	const header = req.headers["accept-language"];
+	if (!header) return fallback;
+
+	const first = header.split(",")[0].toLowerCase();
+	const lang = first.split("-")[0];  // "fr-FR" → "fr"
+	return lang;
+}
+
+async function translateFn(key, userLanguage) {
+	let jsonFile = path.join(publicResourcesDir, `translations`, `${userLanguage}.json`);
 	if (!fs.existsSync(jsonFile)) {
-		return `Can't find translation file for language '${defaultLanguage}'`; // Return an error message indicating missing file
+		console.log(`Can't find translation file for language '${defaultLanguage}', defaulting to english`);
+		jsonFile = path.join(publicResourcesDir, `translations`, `en.json`);
+		if (!fs.existsSync(jsonFile)) {
+			return `Can't find translation file for language '${defaultLanguage}`;
+		}
 	}
 	const jsonContent = fs.readFileSync(jsonFile, "utf8");
 	const json = JSON.parse(jsonContent);
@@ -175,19 +182,37 @@ async function translateFn(key) {
 	return typeof value === "string" ? value : key;
 }
 
-function serveTranslatedHTML(filePath) {
-	console.log(`Serving translated HTML for: ${filePath}`);
-	let html = fs.readFileSync(filePath, "utf8");
+async function serveTranslatedHTML(filePath, userLanguage) {
+    console.log(`Serving translated HTML for: ${filePath} with language ${userLanguage}`);
+    let html = fs.readFileSync(filePath, "utf8");
 
-	const regex = /(<[^>]*data-translated-key="([^"]+)"[^>]*>)([\s\S]*?)(<\/[^>]+>)/g;
+    const regex = /(<[^>]*data-translate-key="([^"]+)"[^>]*>)([\s\S]*?)(<\/[^>]+>)/g;
 
-	html = html.replace(regex, (match, openTag, key, innerContent, closeTag) => {
-		const translated = translateFn(key);  // Retrieve translation
-		return `${openTag}${translated}${closeTag}`;
-	});
+    let result = "";
+    let lastIndex = 0;
+    let match;
 
-	return html;
+    while ((match = regex.exec(html)) !== null) {
+        const [full, openTag, key, innerContent, closeTag] = match;
+
+        // Append everything before this match
+        result += html.slice(lastIndex, match.index);
+
+        // Await the translation
+        const translated = await translateFn(key, userLanguage);
+
+        // Insert translated version
+        result += `${openTag}${translated}${closeTag}`;
+
+        lastIndex = regex.lastIndex;
+    }
+
+    // Append the rest of the HTML
+    result += html.slice(lastIndex);
+
+    return result;
 }
+
 
 // --- Start the server ---
 await app.listen({ port: 8080, host: "0.0.0.0" });
