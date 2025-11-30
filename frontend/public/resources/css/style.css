@@ -380,7 +380,11 @@ button:active {
 	word-wrap: break-word; /* allows long words to break */
 }
 
-/* CHAT PAGE STYLES*/
+
+/* ==========================================================================
+                              CHAT PAGES STYLES
+   ========================================================================== */
+
 
 /* Center the app and take full viewport vertically */
 .chat-pages-container {
@@ -394,25 +398,51 @@ button:active {
 /* The card that contains the user list */
 .chat-form-container {
   width: 100%;
-  height: calc(68vh - 2rem); /* full available height inside padding */
+  height: calc(75vh - 2rem);
   background-color: rgb(var(--mantle, 44,47,51));
   border: 4px solid rgb(var(--surface0, 60,63,70));
   border-radius: 8px;
   padding: 1rem;
   box-sizing: border-box;
 
-  display: flex;
-  flex-direction: column;
+  display: flex;        /* horizontal flex container */
+  flex-direction: row;  /* children go side by side */
   gap: 1rem;
 }
 
-/* The scrollable user list: vertical only */
-.user-list {
+.chat-form-block {
   width: 100%;
-  flex: auto;
+  height: calc(75vh - 2rem);
+  background-color: rgb(var(--mantle, 44,47,51));
+  border: 4px solid rgb(var(--surface0, 60,63,70));
+  border-radius: 8px;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  display: flex;        /* horizontal flex container */
+  flex-direction: column;  /* children go side by side */
+  gap: 1rem;
+}
+
+/* User list: fixed width */
+.user-list {
+  width: 200px;      /* fixed width for left sidebar */
+  flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.5rem;
+}
+
+/* Chat block: fills remaining width */
+.chat-block {
+  flex: 1;            /* takes all remaining horizontal space */
+  height: 100%;       /* full height of parent */
+  width: 100%;
+  background-color: rgb(var(--surface1, 60,63,70));
+  border-radius: 6px;
+  overflow-y: auto;   /* scroll inside if needed */
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 /* Each user row */
@@ -430,9 +460,20 @@ button:active {
 .user-item:hover {
   background: rgba(255,255,255,0.03);
 }
+
 .user-item:active {
   transform: translateY(1px);
 }
+
+.user-item.selected {
+  background-color: rgba(var(--lavender), 0.2);
+  color: white;
+}
+
+.user-item.selected:hover {
+  background: rgba(var(--lavender), 0.1);
+}
+
 
 /* Avatar */
 .img_profile {
@@ -458,6 +499,101 @@ button:active {
   background: rgba(0,0,0,0.3);
   border-radius: 999px;
 }
+
+.chat-pages-container {
+  display: flex;
+}
+
+.chat-block {
+  flex: 1;
+  background: #1e1f22;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  padding: 12px;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  white-space: pre-line;
+  word-wrap: break-word;
+}
+
+.chat-message.me {
+  text-align: right;
+  white-space: pre-line;
+  word-wrap: break-word;
+}
+
+.chat-input-form {
+  display: flex;
+  padding: 10px;
+  background: #2a2c30;
+  border-top: 1px solid #333;
+  flex-direction: row;
+}
+
+.chat-input {
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  outline: none;
+  resize: none;
+  flex: 1;
+  background: #2a2c30;
+  color: white;
+  min-height: 17px;
+  max-height: 150px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  white-space: pre-line;
+  word-wrap: break-word;
+}
+
+.chat-input.empty::before {
+  content: attr(data-placeholder);
+  color: #888;
+}
+
+.chat-pages-container {
+  width: 95vw;        /* full page width */
+  overflow: hidden;
+}
+
+.chat-form-container {
+  display: flex;
+  width: 100%;
+}
+
+
+.chat-input-form button {
+  padding: 6px 12px;
+  margin-left: 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #5865f2;
+  color: white;
+  font-size: 14px;
+  flex-shrink: 0; /* prevent it from stretching */
+  max-height: 4vh;
+}
+
+.chat-input-form button:hover {
+  background: #4752c4;
+}
+
 
 
 /* ==========================================================================
