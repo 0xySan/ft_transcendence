@@ -1,38 +1,56 @@
 {
-    "index": {
-
-    },
-    "about": {
-        "title": "À propos de Transcendence 42",
-        "description": "Transcendence est une application web moderne où le plaisir rencontre la fonctionnalité, une plateforme de jeux sociale conçue pour rassembler les joueurs autour de classiques intemporels.",
-        "challenge": "Défiez vos amis ou testez vos compétences contre d'autres dans Pong et Tetris, réimaginés pour le web avec un gameplay en temps réel fluide, des classements dynamiques et un design élégant.",
-        "built-by": "Développé en tant que projet full-stack de fin de cursus par :",
-        "combination-text": "Transcendence 42 combine des technologies modernes avec un gameplay nostalgique pour offrir une expérience en ligne immersive et compétitive.",
-        "catchphrase": "Jouer, se connecter et transcender l'ordinaire."
-    },
-    "forgot_password": {
-
-    },
-    "home": {
-        "landingDescription": "Le Pong rencontre le Tetris sur une plateforme sociale créée pour vous permettre de profiter des jeux de votre enfance !",
-        "playButton": "JOUER"
-    },
-    "login": {
-
-    },
-    "mail-verification": {
-
-    },
-    "pong-board": {
-
-    },
-    "register": {
-
-    },
-    "reset-password": {
-
-    },
-    "twoFA": {
-
-    }
+  "about": {
+    "built-by": "Réalisé comme projet full-stack de fin de cursus par :",
+    "catchphrase": "Jouez, connectez-vous et dépassez l’ordinaire.",
+    "challenge": "Défiez vos amis ou testez vos compétences contre d’autres joueurs dans Pong et Tetris, réimaginés pour le web avec un gameplay fluide en temps réel, des classements dynamiques et un design élégant.",
+    "combination-text": "Transcendence 42 combine des technologies modernes avec le charme nostalgique du rétro-gaming pour offrir une expérience en ligne immersive et compétitive.",
+    "description": "Transcendence est une application web moderne où le fun rencontre la fonctionnalité, une plateforme de jeux sociale conçue pour rassembler les joueurs autour de classiques intemporels.",
+    "title": "À propos de Transcendence 42"
+  },
+  "footer": {
+    "aboutLink": "À propos",
+    "copyrightText": "© 2024 Transcendence 42. Tous droits réservés.",
+    "githubLink": "GitHub",
+    "homeLink": "Accueil",
+    "privacyPolicyLink": "Politique de confidentialité"
+  },
+  "forgotPassword": {
+    "backToLogin": "Retour à la connexion",
+    "emailLabel": "Email :",
+    "instructions": "Entrez votre adresse email ci-dessous pour recevoir un lien de réinitialisation de mot de passe.",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "title": "Mot de passe oublié ?"
+  },
+  "home": {
+    "landingDescription": "Pong rencontre Tetris sur une plateforme sociale créée pour vous faire redécouvrir les jeux de votre enfance !",
+    "playButton": "JOUER"
+  },
+  "lobby": {
+    "customGameButton": "PARTIE PERSONNALISÉE",
+    "multiplayerButton": "MULTIJOUEUR",
+    "players": "Joueurs",
+    "tournamentButton": "TOURNOI"
+  },
+  "mailverification": {
+    "changeEmail": "Changer d’email",
+    "message": "Nous avons envoyé un email à <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>. Vérifiez votre boîte mail et cliquez sur le lien de vérification pour confirmer votre adresse email.",
+    "resendEmail": "Renvoyer l’email",
+    "title": "Vérifiez votre boîte mail"
+  },
+  "register": {
+    "alreadyHaveAccount": "Vous avez déjà un compte ? <a href=\"/login\" class=\"link-peach-to-maroon\" data-translate-key=\"register.loginHereLink\">Connectez-vous ici</a>",
+    "confirmPasswordLabel": "Confirmez le mot de passe :",
+    "emailLabel": "Email :",
+    "loginHereLink": "Connectez-vous ici",
+    "passwordLabel": "Mot de passe :",
+    "registerButton": "S’inscrire",
+    "usernameLabel": "Nom d’utilisateur :"
+  },
+  "resetPassword": {
+    "backToLoginLink": "Retour à la connexion",
+    "confirmPasswordLabel": "Confirmez le mot de passe :",
+    "passwordLabel": "Mot de passe :",
+    "resetButton": "Réinitialiser le mot de passe",
+    "title": "Réinitialiser le mot de passe"
+  }
 }
