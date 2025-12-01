@@ -28,6 +28,63 @@ const visibleStart: Record<string, number> = {};
 
 const userListDiv = document.querySelector<HTMLDivElement>(".user-list")!;
 const chatBlock = document.querySelector<HTMLDivElement>(".chat-block")!;
+
+// New: track whether the user list is hidden (for mobile/full chat)
+let userListHidden = false;
+
+// Set CSS variable --vh to avoid 100vh issues on mobile when virtual keyboard opens.
+function updateVh() {
+  // 1% of the viewport height
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+// initial
+updateVh();
+// update on resize/orientation change
+window.addEventListener('resize', updateVh);
+window.addEventListener('orientationchange', updateVh);
+
+// When the chat input receives focus on mobile, update vh again to account for keyboard.
+document.addEventListener('focusin', (e) => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  if (target.closest && target.closest('.chat-input')) {
+    // small timeout to allow browser to adjust viewport first
+    setTimeout(updateVh, 50);
+  }
+});
+
+// Persistent toggle button placed into the user list (moved out of chat header)
+const headerToggleBtn = document.createElement("button");
+headerToggleBtn.className = "chat-header-toggle-users";
+function updateToggleBtnText() {
+  headerToggleBtn.setAttribute("aria-pressed", String(userListHidden));
+  // Use compact chevrons so the button doesn't take much space: '<' to hide, '>' to show
+  headerToggleBtn.textContent = userListHidden ? ">" : "<";
+  headerToggleBtn.title = userListHidden ? "Show users" : "Hide users";
+}
+updateToggleBtnText();
+headerToggleBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  userListHidden = !userListHidden;
+
+  // physically hide/show the user list element
+  userListDiv.style.display = userListHidden ? "none" : "";
+
+  // expand chat area when hidden; remove inline style when shown so CSS can govern layout
+  if (userListHidden) {
+    chatBlock.style.width = "100%";
+    chatBlock.style.flexGrow = "1";
+  } else {
+    chatBlock.style.width = "";
+    chatBlock.style.flexGrow = "";
+  }
+
+  updateToggleBtnText();
+  renderUserList();
+  renderChat();
+});
+
 // -------------------------------------
 // DUMMY DATA SETUP
 // -------------------------------------
@@ -90,7 +147,27 @@ function getLastTimestamp(name: string): number {
 }
 
 function renderUserList() {
+  // Respect the userListHidden state
+  userListDiv.style.display = userListHidden ? "none" : "";
+
   userListDiv.innerHTML = "";
+
+  // place the persistent toggle into the parent container (so it remains clickable
+  // even if we hide `.user-list`). Prefer `chat-form-container` if available.
+  const container = userListDiv.parentElement as HTMLElement | null;
+  updateToggleBtnText();
+  if (container) {
+    // prefer inserting the toggle immediately before the user list so it occupies its own
+    // space and does not overlap user rows
+    if (container.querySelector('.chat-header-toggle-users') !== headerToggleBtn) {
+      container.insertBefore(headerToggleBtn, userListDiv);
+    }
+  } else {
+    // fallback: still append to userListDiv
+    if (userListDiv.querySelector('.chat-header-toggle-users') !== headerToggleBtn) {
+      userListDiv.insertBefore(headerToggleBtn, userListDiv.firstChild);
+    }
+  }
 
   const sortedUsers = Object.keys(conversations).sort((a, b) => {
     return getLastTimestamp(b) - getLastTimestamp(a); // descending: newest first

@@ -191,7 +191,9 @@
 html,
 body {
 	width: 100vw;
-	height: 100vh;
+	/* Use a dynamic --vh variable so mobile on-screen keyboard resizing won't cause layout jumps
+	   JS will set --vh = window.innerHeight * 0.01px on load/resize. */
+	height: calc(var(--vh, 1vh) * 100);
 
 	margin: 0;
 	padding: 0;
@@ -199,7 +201,9 @@ body {
 	font-family: "Poppins-Regular", sans-serif;
 	color: rgb(var(--text));
 
-	overflow: hidden;
+	/* allow page scrolling; hiding overflow prevents the viewport from adjusting properly
+	   when virtual keyboards open on mobile */
+	overflow: auto;
 }
 
 #scroll-content {
@@ -392,7 +396,9 @@ button:active {
 	flex: 1;
 	align-items: center;    /* vertically center the card - change to flex-start if you want it top-aligned */
 	justify-content: center;
-	padding: 1rem;
+	padding: 10px;
+	width: 95vw;        /* full page width */
+  	overflow: hidden;
 }
 
 /* The card that contains the user list */
@@ -402,8 +408,9 @@ button:active {
   background-color: rgb(var(--mantle, 44,47,51));
   border: 4px solid rgb(var(--surface0, 60,63,70));
   border-radius: 8px;
-  padding: 1rem;
+  padding: 10px;
   box-sizing: border-box;
+  padding-bottom: 20px;
 
   display: flex;        /* horizontal flex container */
   flex-direction: row;  /* children go side by side */
@@ -431,6 +438,20 @@ button:active {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.5rem;
+}
+
+/* enable smooth native scrolling on iOS/Android */
+.user-list {
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Make sure the user-list respects flex sizing and doesn't force the container taller */
+.chat-form-container .user-list {
+	box-sizing: border-box;
+	min-height: 0; /* allow it to shrink when container is column */
+	max-width: 100%;
+	word-break: break-word;
+	touch-action: pan-y;
 }
 
 /* Chat block: fills remaining width */
@@ -500,8 +521,65 @@ button:active {
   border-radius: 999px;
 }
 
-.chat-pages-container {
-  display: flex;
+/* Toggle placed at top of user list */
+.chat-form-container { position: relative; }
+
+/* Toggle placed in the chat form container so it remains visible when .user-list is hidden */
+.chat-form-container {
+	display: flex;
+	align-items: stretch;
+}
+
+.chat-form-container .chat-header-toggle-users {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	margin: 4px 4px;
+	padding: 0;
+	box-sizing: border-box;
+	border: none;
+	border-radius: 6px;
+	background: rgba(var(--surface1, 60,63,70), 0.6);
+	color: rgb(var(--text));
+	font-weight: 700;
+	font-size: 18px;
+	cursor: pointer;
+	position: relative;
+	text-align: center;
+}
+
+.chat-form-container .chat-header-toggle-users:hover {
+	background: rgba(var(--surface1, 60,63,70), 0.8);
+}
+
+/* On narrow screens, stack vertically and keep the toggle at the top-left inside the container */
+@media (max-width: 520px) {
+	.chat-form-container {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.chat-form-container .chat-header-toggle-users {
+		margin: 8px;
+		align-self: flex-start;
+	}
+
+	/* when stacked vertically, limit the user list height and allow touch scrolling */
+	.chat-form-container .user-list {
+		width: 100%;
+		max-height: 35vh; /* leave room for chat area */
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		flex: 0 1 auto;
+		min-height: 0;
+	}
+
+	/* allow chat block to shrink and take remaining space */
+	.chat-form-container .chat-block {
+		flex: 1 1 auto;
+		min-height: 0;
+	}
 }
 
 .chat-block {
@@ -546,6 +624,10 @@ button:active {
 
 .chat-message.blocked[data-shown="true"] {
 	background-color: #444;
+}
+
+.chat-message.blocked:hover .show-blocked-btn {
+	color: rgb(65, 65, 230);
 }
 
 .chat-input-form {
@@ -601,6 +683,10 @@ button:active {
 	max-height: 48px;
 }
 
+.show-blocked-btn:hover {
+	text-decoration: underline;
+}
+
 .chat-blocked-note {
 	font-size: 14px;
 }
@@ -609,17 +695,6 @@ button:active {
   content: attr(data-placeholder);
   color: #888;
 }
-
-.chat-pages-container {
-  width: 95vw;        /* full page width */
-  overflow: hidden;
-}
-
-.chat-form-container {
-  display: flex;
-  width: 100%;
-}
-
 
 .chat-input-form button {
   padding: 6px 12px;
@@ -1542,6 +1617,7 @@ nav {
 
 	display: flex;
 	justify-content: space-between;
+	z-index: 100;
 }
 
 #nav-menu-svg {
