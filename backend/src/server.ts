@@ -6,6 +6,7 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import { parse } from './sockets/socketParsing.js'
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -95,9 +96,14 @@ async function start() {
 		createThread();
 
 		wss.on('connection', (ws, request) => {
+			console.log("DEBUG: websocket start here !");
+
 			const params = new URLSearchParams(request.url?.split('?')[1]);
 			const user_id = params.get('user_id'); 
 			const token = params.get('token'); 
+
+			console.log(`User connected: ${user_id}`);
+    		ws.send(JSON.stringify({ event: 'welcome', user_id }));
 
 			if (!user_id || !token)
 			{
@@ -114,18 +120,17 @@ async function start() {
 			else
 			{
 				ws.on('message', (msg) => { 
-				ws.send(`echo: ${msg}`);
-				let str =  msg.toString();
-			    let data;
-				try {
-					data = JSON.parse(str);
-					if (data.action === "move")
-						console.log("PLAYER MOVES:", data.direction);
-				}
-				catch (err) {
-					console.log("Invalid JSON");
-				}
-			});
+					ws.send(`echo: ${msg}`);
+					let str =  msg.toString();
+					let data;
+					try {
+						data = JSON.parse(str);
+						parse(data);
+					}
+					catch (err) {
+						console.log("Invalid JSON");
+					}
+				});
 			}				
 			ws.on('close', () => {
 				console.log('WebSocket disconnected');

@@ -56,8 +56,8 @@ export class Games {
         this.game_uuid = game_uuid;
         this.code = code;
 
-        this.position_paddle = { "player_1": { pos_x: 0, pos_y: 0 }, "player_2": { pos_x: 0, pos_y: 0 } };
-        this.score = { "player_1": 0, "player_2": 0 };
+        this.position_paddle = { user_id: { pos_x: 0, pos_y: 0 }};
+        this.score = { "equip_a": 0, "equip_b": 0 };
         this.position_ball = { pos_x: 0, pos_y: 0 };
         this.velocity_ball = { pos_x: 0, pos_y: 0 };
         this.time = 0;

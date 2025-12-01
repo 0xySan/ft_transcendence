@@ -134,7 +134,7 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
 
     // stock uuid and token in map
     const token = generateRandomToken(32);
-    clientToken.set(String(game.user_id), token);
+    clientToken.set(game.user_id, token);
     // return party Token
     return (reply.status(202).send({token}));
 }
@@ -162,7 +162,7 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
         if (result != "null") {
             target.players.push(game.user_id);
             const token = generateRandomToken(32);
-            clientToken.set(String(game.user_id), token);
+            clientToken.set(game.user_id, token);
             return (reply.status(202).send({token}));
         }
     }
