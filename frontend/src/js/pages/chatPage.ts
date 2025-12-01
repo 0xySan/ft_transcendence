@@ -1,55 +1,137 @@
 // chatPage.ts
 export {};
 
+
+// -------------------------------------
+// CONFIG
+// -------------------------------------
 interface Message {
   sender: string;
   text: string;
   timestamp: Date;
+  hidden?: boolean;
 }
 
 interface Conversation {
   [username: string]: Message[];
 }
 
+const MESSAGES_PAGE = 100; // page size for incremental loading
+
+const conversations: Conversation = {};
+let activeUser: string | null = null;
+
+const blockedUsers: Set<string> = new Set(); // track blocked users
+
+// track for each conversation where the visible window starts (index into conversation array)
+const visibleStart: Record<string, number> = {};
+
+const userListDiv = document.querySelector<HTMLDivElement>(".user-list")!;
+const chatBlock = document.querySelector<HTMLDivElement>(".chat-block")!;
+// -------------------------------------
+// DUMMY DATA SETUP
+// -------------------------------------
 const users: string[] = [];
 for (let i = 0; i < 100; i++) {
   users.push("user" + i);
 }
 
-const conversations: Conversation = {};
-
-let activeUser: string | null = null;
-
-const userListDiv = document.querySelector<HTMLDivElement>(".user-list")!;
-const chatBlock = document.querySelector<HTMLDivElement>(".chat-block")!;
+const profilepics: string[] = [];
+for (let _ = 0; _ < 100; _++) {
+  profilepics.push(`https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 10) % 5}.png`);
+}
 
 // -------------------------------------
-// RENDER USER LIST
+// SEED DUMMY CONVERSATIONS
 // -------------------------------------
-users.forEach((name) => {
-  const userItem = document.createElement('div'); 
-  userItem.className = 'user-item';
-  const img = document.createElement('img');
-  img.className = 'img_profile';
-  img.src = `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 10) % 5}.png`;
-  img.alt = '';
-  const txt = document.createElement('p');
-  txt.className = 'name_profile';
-  txt.textContent = name;
-  userItem.appendChild(img);
-  userItem.appendChild(txt);
-
-  userItem.addEventListener("click", () => {
-    document.querySelectorAll('.user-item.selected').forEach(el => {
-      el.classList.remove('selected');
+users.forEach((name, i) => {
+  const base = Date.now() - (i + 1) * 6000000;
+  const list: Message[] = [];
+  // create many messages for testing possibly exceeding page
+  const count = Math.floor(Math.random() * 1000); // random length up to 1000
+  for (let j = 0; j < count; j++) {
+    let random = Math.floor(Math.random() * 3);
+    list.push({
+      sender: (random === 0) ? name : "me",
+      text: `msg ${j} from ${(random === 0) ? name : "me"}`,
+      timestamp: new Date(base + j),
     });
-    userItem.classList.add('selected');
-    activeUser = name;
-    renderChat();
+  }
+  // ensure at least a few messages
+  if (list.length === 0) {
+    list.push({ sender: name, text: "Hey! This is a placeholder message.", timestamp: new Date(base) });
+    list.push({ sender: "me", text: "Nice, just testing the chat UI!", timestamp: new Date(base + 1) });
+  }
+  conversations[name] = list;
+});
+
+conversations["user42"] = [
+  { sender: "user42", text: "This is a longer message to test how the chat UI handles wrapping and multiple lines. Let's see how it looks when the message exceeds the typical length of a chat bubble. Hopefully, it wraps nicely and remains readable!", timestamp: new Date(Date.now() + 3) },
+  { sender: "me", text: "Indeed, it seems to be working well!\nNew line test.", timestamp: new Date(Date.now() + 4) },
+];
+
+conversations["user98"] = []; // empty conversation for testing
+
+conversations["Dummy"] = [
+  { sender: "Dummy", text: "Hi there!", timestamp: new Date(Date.now() + 5) },
+  { sender: "me", text: "Hello Dummy, how are you?", timestamp: new Date(Date.now() + 6) },
+];
+
+users.push("Dummy");
+profilepics.push("https://i.ibb.co/VcQ5RQwX/dummy.png");
+
+// -------------------------------------
+// SORTING HELPERS + RENDER USER LIST
+// -------------------------------------
+function getLastTimestamp(name: string): number {
+  const msgs = conversations[name] || [];
+  if (msgs.length === 0) return 0;
+  return Math.max(...msgs.map((m) => m.timestamp.getTime()));
+}
+
+function renderUserList() {
+  userListDiv.innerHTML = "";
+
+  const sortedUsers = Object.keys(conversations).sort((a, b) => {
+    return getLastTimestamp(b) - getLastTimestamp(a); // descending: newest first
   });
 
-  userListDiv.appendChild(userItem);
-});
+  sortedUsers.forEach((name) => {
+    const userItem = document.createElement('div');
+    userItem.className = 'user-item';
+    if (name === activeUser) userItem.classList.add('selected');
+    if (blockedUsers.has(name)) userItem.classList.add('blocked');
+
+    const img = document.createElement('img');
+    img.className = 'img_profile';
+    img.src = profilepics[users.indexOf(name) % profilepics.length];
+    img.alt = '';
+
+    const txt = document.createElement('p');
+    txt.className = 'name_profile';
+    if (blockedUsers.has(name))
+      txt.textContent = `${name} 🚫`;
+    else
+      txt.textContent = name;
+
+    userItem.appendChild(img);
+    userItem.appendChild(txt);
+
+    userItem.addEventListener("click", () => {
+      activeUser = name;
+      // initialize visibleStart so only last page is shown
+      const msgs = conversations[name] || [];
+      visibleStart[name] = Math.max(0, msgs.length - MESSAGES_PAGE);
+      renderUserList();
+      renderChat();
+    });
+
+    userListDiv.appendChild(userItem);
+  });
+}
+
+// initial render of user list
+renderUserList();
 
 // -------------------------------------
 // RENDER CHAT PANEL (messages + input)
@@ -57,13 +139,16 @@ users.forEach((name) => {
 function renderChat() {
   if (!activeUser) return;
 
-  // Initialize conversation if new (placeholders)
-  if (!conversations[activeUser]) {
-    conversations[activeUser] = [
-      { sender: activeUser, text: "Hey! This is a placeholder message.", timestamp: new Date() },
-      { sender: "me", text: "Nice, just testing the chat UI!", timestamp: new Date() },
-      { sender: activeUser, text: "Looks good so far 👍", timestamp: new Date() },
-    ];
+  // capture previous messagesDiv state to decide auto-scroll behavior & preserve position on prepend
+  const oldMessagesDiv = chatBlock.querySelector<HTMLDivElement>(".chat-messages");
+  let wasNearBottom = true;
+  let prevScrollTop = 0;
+  let prevScrollHeight = 0;
+  if (oldMessagesDiv) {
+    prevScrollTop = oldMessagesDiv.scrollTop;
+    prevScrollHeight = oldMessagesDiv.scrollHeight;
+    const distanceFromBottom = oldMessagesDiv.scrollHeight - oldMessagesDiv.scrollTop - oldMessagesDiv.clientHeight;
+    wasNearBottom = distanceFromBottom < 100; // consider near bottom if within 100px
   }
 
   // Build the chat UI using DOM APIs instead of innerHTML to avoid
@@ -72,7 +157,43 @@ function renderChat() {
 
   const header = document.createElement("div");
   header.className = "chat-header";
-  header.textContent = activeUser;
+
+  const titleSpan = document.createElement("span");
+  titleSpan.textContent = activeUser;
+  titleSpan.className = "chat-header-title";
+  header.appendChild(titleSpan);
+
+  // Block/unblock button moved to chat header (not next to each username)
+  const headerBlockBtn = document.createElement("button");
+  headerBlockBtn.className = "chat-header-block-btn";
+  headerBlockBtn.textContent = blockedUsers.has(activeUser) ? "Unblock" : "Block";
+  headerBlockBtn.setAttribute("aria-pressed", String(blockedUsers.has(activeUser)));
+
+  // Hide block button when viewing yourself (optional)
+  if (activeUser === "me") {
+    headerBlockBtn.hidden = true;
+  }
+
+  headerBlockBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (blockedUsers.has(activeUser!)) blockedUsers.delete(activeUser!);
+    else
+    {
+      blockedUsers.add(activeUser!);
+      if (activeUser)
+      {
+        conversations[activeUser].forEach(element => {
+          element.hidden = true;
+        });
+      }
+    }
+    // update both sides
+    renderUserList();
+    renderChat();
+  });
+
+  header.appendChild(headerBlockBtn);
 
   const messagesDiv = document.createElement("div");
   messagesDiv.className = "chat-messages";
@@ -87,11 +208,13 @@ function renderChat() {
 
   const input = document.createElement("div");
   input.className = "chat-input";
-  // Use a data-attribute for the placeholder so CSS can show it via ::before
-  const placeholderText = `Type a message to @${activeUser}`;
+  var placeholderText;
+  if (blockedUsers.has(activeUser))
+    placeholderText = `You have blocked @${activeUser}. Unblock to send messages.`;
+  else
+    placeholderText = `Type a message to @${activeUser}`;
   input.dataset.placeholder = placeholderText;
-  input.contentEditable = "true";
-  // mark empty initially so placeholder appears (requires CSS that shows placeholder when .empty)
+  input.contentEditable = blockedUsers.has(activeUser) ? "false" : "true";
   input.classList.add("empty");
 
   const sendBtn = document.createElement("button");
@@ -107,22 +230,131 @@ function renderChat() {
   chatBlock.appendChild(messagesDiv);
   chatBlock.appendChild(form);
 
-  // Render existing messages (escape HTML then convert newlines to <br> so breaks are preserved)
-  messagesDiv.innerHTML = conversations[activeUser]
-    .map((msg) => {
+  // If the conversation partner is blocked, disable input like Discord (you can't send to them)
+  if (blockedUsers.has(activeUser))
+  {
+    input.classList.add("blocked-conversation");
+    sendBtn.disabled = true;
+    sendBtn.hidden = true;
+    headerBlockBtn.textContent = "Unblock";
+    headerBlockBtn.setAttribute("aria-pressed", "true");
+  }
+  else
+  {
+    input.classList.remove("blocked-conversation");
+    sendBtn.disabled = false;
+    sendBtn.hidden = true;
+    headerBlockBtn.textContent = "Block";
+    headerBlockBtn.setAttribute("aria-pressed", "false");
+  }
+
+  // Ensure visibleStart exists for this conversation
+  const msgs = conversations[activeUser] || [];
+  if (visibleStart[activeUser] === undefined) {
+    visibleStart[activeUser] = Math.max(0, msgs.length - MESSAGES_PAGE);
+  }
+  let startIndex = visibleStart[activeUser];
+
+  // If we're showing the last page (or the conversation fits in a page), force scroll-to-bottom
+  const lastPageStart = Math.max(0, msgs.length - MESSAGES_PAGE);
+  if (startIndex >= lastPageStart) {
+    wasNearBottom = true;
+  }
+
+  // Render existing messages from startIndex -> end
+  messagesDiv.innerHTML = (msgs.slice(startIndex) || [])
+  .map((msg, idx) => {
+    const globalIdx = startIndex + idx;
+    const time = convertTimestampToReadable(msg.timestamp);
+
+    // if sender is blocked and it's not our own message, render placeholder + toggleable content
+    if (msg.sender !== "me" && blockedUsers.has(msg.sender)) {
+      const isHidden = msg.hidden !== false; // default: hidden (true) when undefined
       const safe = escapeHtml(msg.text).replace(/\n/g, "<br>");
       return `
-      <div class="chat-message ${msg.sender === 'me' ? 'me' : 'them'}">
-        <span>${safe}</span>
+      <div class="chat-message blocked" data-shown="${!isHidden}" data-index="${globalIdx}">
+        <span class="chat-blocked-note">Blocked message — </span><span class="show-blocked-btn" data-index="${globalIdx}" aria-pressed="${!isHidden}">${isHidden ? "Show" : "Hide"}</span>
+        <div class="blocked-message-content" data-index="${globalIdx}" style="display:${isHidden ? "none" : "block"}">
+          <span class="chat-time">${time}</span>
+          <span>${safe}</span>
+        </div>
       </div>`;
-    })
-    .join("");
+    }
 
-  // Auto-scroll to bottom
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    const safe = escapeHtml(msg.text).replace(/\n/g, "<br>");
+    return `
+    <div class="chat-message ${msg.sender === 'me' ? 'me' : msg.sender}" data-index="${globalIdx}">
+      <span class="chat-time">${time}</span>
+      <span>${safe}</span>
+    </div>`;
+  })
+  .join("");
+
+  // When a conversation has more messages than the current window, show a small hint at top
+  if (startIndex > 0) {
+    const topHint = document.createElement("div");
+    topHint.className = "load-older-hint";
+    topHint.textContent = "Scroll up to load earlier messages";
+    topHint.style.textAlign = "center";
+    topHint.style.padding = "6px 0";
+    messagesDiv.insertBefore(topHint, messagesDiv.firstChild);
+  }
+
+  // Event delegation to handle "Show" on blocked messages
+  messagesDiv.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+    if (target.classList.contains("show-blocked-btn")) {
+      const idxStr = target.dataset.index;
+      if (!idxStr) return;
+      const idx = Number(idxStr);
+      const msgs = conversations[activeUser!] || [];
+      const msg = msgs[idx];
+      if (!msg) return;
+      const container = target.closest(".chat-message");
+      if (!container) return;
+
+      // replace placeholder with actual message content (still escaped)
+      msg.hidden = !msg.hidden;
+      target.setAttribute("aria-pressed", String(!msg.hidden));
+      const contentDiv = container.querySelector<HTMLElement>(".blocked-message-content");
+      container.setAttribute("data-shown", String(!msg.hidden));
+      if (contentDiv) {
+        if (msg.hidden) {
+          contentDiv.style.display = "none";
+          target.textContent = "Show";
+        } else {
+          contentDiv.style.display = "block";
+          target.textContent = "Hide";
+        }
+      }
+    }
+  });
+
+  // Auto-scroll behavior:
+  // - If the user was near bottom before re-render, scroll to bottom to show new messages.
+  // - Otherwise keep their place (important when they are reading older messages).
+  if (wasNearBottom) {
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  } else {
+    // If we just rendered a larger window because we prepended older messages, preserve position
+    // formula: newScrollTop = newScrollHeight - oldScrollHeight + oldScrollTop
+    if (prevScrollHeight > 0) {
+      messagesDiv.scrollTop = messagesDiv.scrollHeight - prevScrollHeight + prevScrollTop;
+      // clamp
+      if (messagesDiv.scrollTop < 0) messagesDiv.scrollTop = 0;
+    } else {
+      // otherwise keep at same top position
+      messagesDiv.scrollTop = prevScrollTop;
+    }
+  }
 
   // Helper to submit message
   function submitMessage() {
+    // Do not allow sending to blocked user
+    if (!activeUser) return;
+    if (blockedUsers.has(activeUser)) return;
+
     const text = input.textContent?.trim() || "";
     if (!text) return;
 
@@ -132,39 +364,75 @@ function renderChat() {
       timestamp: new Date(),
     });
 
+    // ensure visible window includes the latest message: if the window did not include the last page,
+    // and user is near bottom, advance visibleStart to show the new message; otherwise keep it as-is.
+    const len = conversations[activeUser].length;
+    if (!visibleStart[activeUser]) visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+    else {
+      // if currently showing the last page or user was near bottom, move window to include new message
+      if (visibleStart[activeUser] >= len - 1 - MESSAGES_PAGE || (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < 100) {
+        visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+      }
+    }
+
     input.textContent = "";
-    // mark empty so placeholder reappears and hide send button
     input.classList.add("empty");
     sendBtn.hidden = true;
-    renderChat(); // re-render to show the new message
+
+    renderUserList();
+    renderChat(); // re-render to show the new message (renderChat will auto-scroll only if appropriate)
   }
 
   // PRIMARY: intercept submit and stop other handlers from running
   form.addEventListener("submit", (e) => {
-    e.preventDefault();                 // prevent default navigation
+    e.preventDefault();
     submitMessage();
   });
 
   input.addEventListener("keydown", (e: KeyboardEvent) => {
-    // Ignore composition events (IME) to avoid interfering with input
     if ((e as any).isComposing) return;
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submitMessage();
     }
-    // If Shift+Enter, do nothing here so the textarea inserts a newline naturally.
   });
 
   input.addEventListener("input", () => {
-    // Auto-resize logic and placeholder behaviour
-    if (input.textContent!.trim() === "") {
+    if (input.textContent!.trim() === "")
+    {
       input.classList.add("empty");
-      input.textContent = ""; // clear any whitespace
+      input.textContent = "";
       sendBtn.hidden = true;
-    } else {
+    }
+    else
+    {
       input.classList.remove("empty");
-      sendBtn.hidden = false;
+      // if conversation partner blocked, keep send disabled
+      if (!blockedUsers.has(activeUser!))
+        sendBtn.hidden = false;
+    }
+  });
+
+  // Scroll handler to load older messages when reaching top
+  let loadingOlder = false;
+  messagesDiv.addEventListener("scroll", () => {
+    if (loadingOlder) return;
+    if (messagesDiv.scrollTop <= 20) {
+      // at (or near) top
+      const curStart = visibleStart[activeUser!] || 0;
+      if (curStart === 0) return; // no more to load
+      loadingOlder = true;
+      const prevHeight = messagesDiv.scrollHeight;
+      const newStart = Math.max(0, curStart - MESSAGES_PAGE);
+      visibleStart[activeUser!] = newStart;
+
+      // re-render only messages (we can reuse renderChat which will rebuild and preserve position)
+      // but call renderChat asynchronously to let this handler finish and avoid double-listeners
+      setTimeout(() => {
+        renderChat();
+        loadingOlder = false;
+      }, 0);
     }
   });
 }
@@ -177,4 +445,28 @@ function escapeHtml(str: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// Convert messages timestamp to readable format
+function convertTimestampToReadable(ts: Date): string {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+
+  const hh = String(ts.getHours()).padStart(2, "0");
+  const min = String(ts.getMinutes()).padStart(2, "0");
+
+  let time: string;
+  if (ts >= todayStart)
+    time = `${hh}:${min}`; // same day: HH:MM
+  else if (ts >= yesterdayStart) // yesterday: "yesterday at HH:MM"
+    time = `yesterday at ${hh}:${min}`;
+  else // older: YYYY-MM-DD HH:MM
+  {
+    const yyyy = ts.getFullYear();
+    const mo = String(ts.getMonth() + 1).padStart(2, "0");
+    const dd = String(ts.getDate()).padStart(2, "0");
+    time = `${yyyy}-${mo}-${dd} ${hh}:${min}`;
+  }
+  return time;
 }
