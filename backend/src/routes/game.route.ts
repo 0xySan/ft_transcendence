@@ -177,9 +177,9 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
 export async function gameRoutes(fastify: FastifyInstance) {
 
     // ------------------    GET METHOD    ----------------------- \\
-    // fastify.get("/api/game", { schema: getGameSchema }, async (request, reply) => {
-    //     const game = request.body as sv_game;
-    //     const token = generateRandomToken(32);
+    fastify.get("/api/game", { schema: getGameSchema }, async (request, reply) => {
+        const game = request.body as sv_game;
+        const token = generateRandomToken(32);
 
         if (game.user_id == null)
             return (reply.status(401).send({ error: "user_is is empty" }));
