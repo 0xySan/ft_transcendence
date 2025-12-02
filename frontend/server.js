@@ -161,10 +161,10 @@ function detectBrowserLanguage(req, fallback = "en") {
 async function translateFn(key, userLanguage) {
 	let jsonFile = path.join(publicResourcesDir, `translations`, `${userLanguage}.json`);
 	if (!fs.existsSync(jsonFile)) {
-		console.log(`Can't find translation file for language '${defaultLanguage}', defaulting to english`);
+		console.log(`Can't find translation file for language '${userLanguage}', defaulting to english`);
 		jsonFile = path.join(publicResourcesDir, `translations`, `en.json`);
 		if (!fs.existsSync(jsonFile)) {
-			return `Can't find translation file for language '${defaultLanguage}`;
+			return `Can't find translation file for language '${userLanguage}`;
 		}
 	}
 	const jsonContent = fs.readFileSync(jsonFile, "utf8");
@@ -175,7 +175,7 @@ async function translateFn(key, userLanguage) {
 	let value = json;
 	for (const k of keys) {
 		if (value[k] === undefined) {
-			return `Can't find translation text for key '${key}' for language '${defaultLanguage}'`;
+			return `Can't find translation text for key '${key}' for language '${userLanguage}'`;
 		}
 		value = value[k];
 	}

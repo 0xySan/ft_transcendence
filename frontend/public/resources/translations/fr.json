@@ -9,7 +9,7 @@
   },
   "footer": {
     "aboutLink": "À propos",
-    "copyrightText": "© 2024 Transcendence 42. Tous droits réservés.",
+    "copyrightText": "© 2025 Transcendence 42. Tous droits réservés.",
     "githubLink": "GitHub",
     "homeLink": "Accueil",
     "privacyPolicyLink": "Politique de confidentialité"
@@ -29,7 +29,24 @@
     "customGameButton": "PARTIE PERSONNALISÉE",
     "multiplayerButton": "MULTIJOUEUR",
     "players": "Joueurs",
-    "tournamentButton": "TOURNOI"
+    "tournamentButton": "TOURNOI",
+    "settingsTitle": "Paramètres",
+    "privateLabel": "Privé",
+    "roomSettingsButton": "Paramètres de la salle",
+    "advancedSettingsButton": "Paramètres avancés",
+    "joinButton": "REJOINDRE",
+    "leaveButton": "QUITTER",
+    "launchButton": "LANCER"
+  },
+  "login": {
+    "forgotPasswordText": "Mot de passe oublié ? <a href=\"/forgot-password\">Réinitialisez-le ici</a>",
+    "loginButton": "Connexion",
+    "loginTitle": "Connexion",
+    "noAccountText": "Vous n'avez pas de compte ? <a href=\"/register\">Inscrivez-vous ici</a>",
+    "passwordLabel": "Mot de passe :",
+    "registerHereLink": "Inscrivez-vous ici",
+    "rememberMeLabel": "Se souvenir de moi",
+    "usernameLabel": "Nom d’utilisateur :"
   },
   "mailverification": {
     "changeEmail": "Changer d’email",
@@ -37,9 +54,18 @@
     "resendEmail": "Renvoyer l’email",
     "title": "Vérifiez votre boîte mail"
   },
+  "navbar": {
+    "homeText": "Accueil",
+    "playText": "Jouer",
+    "leaderboardText": "Classement",
+    "profileText": "Profil",
+    "loginButton": "Connexion",
+    "registerButton": "Inscription"
+  },
   "register": {
     "alreadyHaveAccount": "Vous avez déjà un compte ? <a href=\"/login\" class=\"link-peach-to-maroon\" data-translate-key=\"register.loginHereLink\">Connectez-vous ici</a>",
     "confirmPasswordLabel": "Confirmez le mot de passe :",
+    "createAccount": "Créer un compte",
     "emailLabel": "Email :",
     "loginHereLink": "Connectez-vous ici",
     "passwordLabel": "Mot de passe :",

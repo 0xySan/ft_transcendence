@@ -91,7 +91,7 @@ export function translatePage(
                     const keys = key.split(".");
                     const translatedText = getNestedJsonValue(json, keys);
                     if (translatedText) {
-                        element.innerText = translatedText;
+                        element.innerHTML = translatedText;
                     }
                 }
             });
