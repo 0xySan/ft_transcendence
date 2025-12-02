@@ -434,6 +434,15 @@ button:active {
   	gap: 1rem;
 }
 
+@media (max-height: 500px) {
+	.chat-form-block {
+		height: calc(100vh - 2rem);
+	}
+	.chat-form-container {
+		height: calc(100vh - 2rem);
+	}
+}
+
 /* User list: fixed width */
 .user-list {
   	width: 275px;      /* fixed width for left sidebar */

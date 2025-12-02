@@ -59,10 +59,14 @@ headerToggleBtn.className = "chat-header-toggle-users";
 function updateToggleBtnText() {
 	headerToggleBtn.setAttribute("aria-pressed", String(userListHidden));
 	// Use compact chevrons so the button doesn't take much space: '<' to hide, '>' to show
-	headerToggleBtn.textContent = userListHidden ? ">" : "<";
+	const narrow = window.innerWidth < 700;
+	headerToggleBtn.textContent = narrow ? (userListHidden ? "▼" : "▲") : (userListHidden ? "▶" : "◀");
 	headerToggleBtn.title = userListHidden ? "Show users" : "Hide users";
 }
 updateToggleBtnText();
+// keep the toggle icon responsive when viewport changes
+window.addEventListener('resize', updateToggleBtnText);
+window.addEventListener('orientationchange', updateToggleBtnText);
 headerToggleBtn.addEventListener("click", (e) => {
 	e.preventDefault();
 	e.stopPropagation();
