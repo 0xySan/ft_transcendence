@@ -1,0 +1,49 @@
+<div class="auth-pages-container">
+	<h1 >Login</h1>
+	<form class="auth-form-container">
+		<div class="div-title-and-text-input">
+			<label for="username" >Username:</label>
+			<input type="text" id="username-text-input" name="username" class="form-input-field" placeholder="Enter your username"/>
+			<span id="login-username-error-text" class="error-message" aria-hidden="true" style="opacity: 0;">
+			</span>
+		</div>
+		<div class="div-title-and-text-input">
+			<label for="password" >Password:</label>
+			<input type="password" id="password-text-input" name="password" class="form-input-field" placeholder="Enter your password"/>
+			<span id="login-password-error-text" class="error-message" aria-hidden="true" style="opacity: 0;">
+			</span>
+			<div class="checkbox-container">
+				<input type="checkbox" id="remember-me-checkbox" name="remember-me"/>
+				<label for="remember-me-checkbox" >Remember me</label>
+			</div>
+		</div>
+		<button type="submit" class="auth-btn">
+			Login
+		</button>
+		<div class="oauth-buttons-container">
+			<a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load" title="Login with 42">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/42.svg#icon-42"></use></svg>
+			</a>
+			<a href="/api/oauth/github" class="oauth-button no-dynamic-load" title="Login with GitHub">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/github.svg#icon-github"></use></svg>
+			</a>
+			<a href="/api/oauth/discord" class="oauth-button no-dynamic-load" title="Login with Discord">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/discord.svg#icon-discord"></use></svg>
+			</a>
+			<a href="/api/oauth/google" class="oauth-button no-dynamic-load" title="Login with Google">
+				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/google.svg#icon-google"></use></svg>
+			</a>
+		</div>
+		<div>
+			<p >
+				Forgot your password?
+				<a href="/forgot-password">Reset it here</a>
+			</p>
+			<p >
+				Don't have an account?
+				<a href="/register">Register here</a>
+			</p>
+		</div>
+	</form>
+</div>
+<script src="/js/pages/loginPage.js" type="module" defer></script>

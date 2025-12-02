@@ -1,0 +1,72 @@
+<div id="lobby-page">
+	<div id="lobby-info-boxes">
+		<div id="lobby-player-box">
+			<div id="lobby-player-info-count">
+				<p>Players</p>
+				<div>
+					<span id="player-current-count">X</span>/<span id="player-max-count">Y</span>
+				</div>
+			</div>
+			<div id="lobby-player-list">
+				<!-- TODO Player List -->
+			</div>
+		</div>
+		<div id="lobby-mode-setting">
+			<div id="lobby-mode-buttons">
+				<button id="lobby-multiplayer-button">MULTIPLAYER</button>
+				<button class="current-mode" id="lobby-custom-game-button">CUSTOM GAME</button>
+				<button id="lobby-tournament-button">TOURNAMENT</button>
+			</div>
+			<div id="lobby-multiplayer-tab" class="lobby-multiplayer-box unloaded">
+
+			</div>
+			<div id="lobby-custom-game-tab" class="lobby-setting-box">
+				<div class="lobby-setting-box-title">
+					<span>Settings</span>
+					<div class="lobby-private-checkbox">
+						<label for="lobby-private-checkbox-custom-game">Private</label>
+						<input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-custom-game">
+					</div>
+				</div>
+				<div class="lobby-setting-type">
+					<button class="lobby-btn-active" id="lobby-custom-game-basic-settings-button">Room settings</button>
+					<button id="lobby-custom-game-advanced-settings-button">Advanced settings</button>
+				</div>
+				<div class="lobby-setting-list" id="lobby-custom-game-basic-settings">
+
+				</div>
+				<div class="lobby-setting-list" id="lobby-custom-game-advanced-settings">
+
+				</div>
+			</div>
+			<div id="lobby-tournament-tab" class="lobby-setting-box unloaded">
+				<div class="lobby-setting-box-title">
+					<span>Settings</span>
+					<div class="lobby-private-checkbox">
+						<label for="lobby-private-checkbox-custom-tournament">Private</label>
+						<input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-custom-tournament" class="lobby-checkbox">
+					</div>
+				</div>
+				<div class="lobby-setting-type">
+					<button class="lobby-btn-active" id="lobby-tournament-basic-settings-button">Room settings</button>
+					<button id="lobby-tournament-advanced-settings-button">Advanced settings</button>
+				</div>
+				<div class="lobby-setting-list" id="lobby-tournament-basic-settings">
+
+				</div>
+				<div class="lobby-setting-list" id="lobby-tournament-advanced-settings">
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="lobby-action-buttons">
+		<div id="lobby-join-box">
+			<input type="text" placeholder="Enter code" class="font-poppins-semibold" />
+			<button>JOIN</button>
+		</div>
+		<button>LEAVE</button>
+		<button>LAUNCH</button>
+	</div>
+</div>
+<script src="/js/pages/lobby.js" type="module" defer></script>

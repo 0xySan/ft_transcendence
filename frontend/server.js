@@ -13,7 +13,7 @@ const distDir = path.join(rootDir, "dist");
 const jsDir = path.join(distDir, "js");
 const publicPagesDir = path.join(publicDir, "pages");
 const publicResourcesDir = path.join(publicDir, "resources");
-
+const cssDir = path.join(publicResourcesDir, "css");
 /*
   2) Serve all compiled JavaScript files from dist/js under /js/
 	 Example:
@@ -45,7 +45,7 @@ if (fs.existsSync(publicResourcesDir)) {
   4) Dedicated route for /style.css (generated in dist/style.css)
 */
 app.get("/style.css", async (req, reply) => {
-	const cssFile = path.join(distDir, "style.css");
+	const cssFile = path.join(cssDir, "style.css");
 	if (!fs.existsSync(cssFile)) {
 		return reply.status(404).send("style.css not found");
 	}

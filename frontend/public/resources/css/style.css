@@ -1,0 +1,1481 @@
+/* ==========================================================================
+                              THEMES DEFINITION 
+   ========================================================================== */
+
+[data-theme="catppuccin-macchiato"] {
+	--rosewater: 245, 224, 220; /* Primary accent (cursor or highlights) */
+	--flamingo: 242, 205, 205; /* Secondary accent (alerts or highlights) */
+	--pink: 245, 194, 231; /* Vivid accent (used for emphasis) */
+	--mauve: 203, 166, 247; /* Syntax highlighting or active elements */
+	--red: 243, 139, 168; /* Error or critical alert (bright tone) */
+	--maroon: 235, 160, 172; /* Error or danger (muted tone) */
+	--peach: 250, 179, 135; /* Warning (highlight important elements) */
+	--yellow: 249, 226, 175; /* Caution or notification */
+	--green: 166, 227, 161; /* Success or confirmation */
+	--teal: 148, 226, 213; /* Info or moderate success (cyan-green tone) */
+	--sky: 137, 220, 235; /* General information (light cyan) */
+	--sapphire: 116, 199, 236; /* Accent for links or buttons (deep blue) */
+	--blue: 137, 180, 250; /* Primary actions or links (bright blue) */
+	--lavender: 180, 190, 254; /* Soft accent or comments (light lavender) */
+	--text: 202, 211, 245; /* Main text (on dark background) */
+	--subtext1: 184, 192, 224; /* Secondary text (subtitles, captions) */
+	--subtext0: 165, 173, 203; /* Tertiary text (labels, minor info) */
+	--overlay2: 147, 154, 183; /* Light overlay (for elevated surfaces) */
+	--overlay1: 128, 135, 162; /* Medium overlay */
+	--overlay0: 110, 115, 141; /* Dark overlay */
+	--surface2: 91, 96, 120; /* Light UI surface (foreground elements) */
+	--surface1: 73, 77, 100; /* Mid UI surface */
+	--surface0: 54, 58, 79; /* Dark UI surface */
+	--base: 36, 39, 58; /* Main background */
+	--mantle: 30, 32, 48; /* Secondary background (containers) */
+	--crust: 24, 25, 38; /* Tertiary background (deep layers) */
+}
+
+[data-theme="catppuccin-latte"] {
+	--rosewater: 220, 138, 120;
+	--flamingo: 221, 120, 120;
+	--pink: 234, 118, 203;
+	--mauve: 136, 57, 239;
+	--red: 210, 15, 57;
+	--maroon: 230, 69, 83;
+	--peach: 254, 100, 11;
+	--yellow: 223, 142, 29;
+	--green: 64, 160, 43;
+	--teal: 23, 146, 153;
+	--sky: 4, 165, 229;
+	--sapphire: 32, 159, 181;
+	--blue: 30, 102, 245;
+	--lavender: 114, 135, 253;
+	--text: 76, 79, 105;
+	--subtext1: 92, 95, 119;
+	--subtext0: 108, 111, 133;
+	--overlay2: 124, 127, 147;
+	--overlay1: 140, 143, 161;
+	--overlay0: 156, 160, 176;
+	--surface2: 172, 176, 190;
+	--surface1: 188, 192, 204;
+	--surface0: 204, 208, 218;
+	--base: 239, 241, 245;
+	--mantle: 230, 233, 239;
+	--crust: 220, 224, 232;
+}
+
+[data-theme="catppuccin-mocha"] {
+	--rosewater: 245, 224, 220;
+	--flamingo: 242, 205, 205;
+	--pink: 245, 194, 231;
+	--mauve: 203, 166, 247;
+	--red: 243, 139, 168;
+	--maroon: 235, 160, 172;
+	--peach: 250, 179, 135;
+	--yellow: 249, 226, 175;
+	--green: 166, 227, 161;
+	--teal: 148, 226, 213;
+	--sky: 137, 220, 235;
+	--sapphire: 116, 199, 236;
+	--blue: 137, 180, 250;
+	--lavender: 180, 190, 254;
+	--text: 205, 214, 244;
+	--subtext1: 186, 194, 222;
+	--subtext0: 166, 173, 200;
+	--overlay2: 147, 153, 178;
+	--overlay1: 127, 132, 156;
+	--overlay0: 108, 112, 134;
+	--surface2: 88, 91, 112;
+	--surface1: 69, 71, 90;
+	--surface0: 49, 50, 68;
+	--base: 30, 30, 46;
+	--mantle: 24, 24, 37;
+	--crust: 17, 17, 27;
+}
+
+[data-theme="catppuccin-frappe"] {
+	--rosewater: 242, 213, 207;
+	--flamingo: 238, 190, 190;
+	--pink: 244, 184, 228;
+	--mauve: 202, 158, 230;
+	--red: 231, 130, 132;
+	--maroon: 234, 153, 156;
+	--peach: 239, 159, 118;
+	--yellow: 229, 200, 144;
+	--green: 166, 209, 137;
+	--teal: 129, 200, 190;
+	--sky: 153, 209, 219;
+	--sapphire: 133, 193, 220;
+	--blue: 140, 170, 238;
+	--lavender: 186, 187, 241;
+	--text: 198, 208, 245;
+	--subtext1: 181, 191, 226;
+	--subtext0: 165, 173, 206;
+	--overlay2: 148, 156, 187;
+	--overlay1: 131, 139, 167;
+	--overlay0: 115, 121, 148;
+	--surface2: 98, 104, 128;
+	--surface1: 81, 87, 109;
+	--surface0: 65, 69, 89;
+	--base: 48, 52, 70;
+	--mantle: 41, 44, 60;
+	--crust: 35, 38, 52;
+}
+
+/* ==========================================================================
+                              FONT-FACE DECLARATION 
+   ========================================================================== */
+
+@font-face {
+	font-family: "Poppins-Medium";
+	font-weight: 400;
+	font-style: normal;
+	src: url("resources/fonts/Poppins-Medium.ttf") format("truetype");
+}
+
+@font-face {
+	font-family: "Poppins-Regular";
+	font-weight: 400;
+	font-style: normal;
+	src: url("resources/fonts/Poppins-Regular.ttf") format("truetype");
+}
+
+@font-face {
+	font-family: "Poppins-SemiBold";
+	font-weight: 400;
+	font-style: normal;
+	src: url("resources/fonts/Poppins-SemiBold.ttf") format("truetype");
+}
+
+/* ==========================================================================
+                                FONTS DEFINITION
+   ========================================================================== */
+
+.font-poppins-medium {
+	font-family: "Poppins-Medium", sans-serif;
+}
+
+.font-poppins-regular {
+	font-family: "Poppins-Regular", sans-serif;
+}
+
+.font-poppins-semibold {
+	font-family: "Poppins-SemiBold", sans-serif;
+}
+
+/* ==========================================================================
+                              TEXT COLOR DEFINITION
+   ========================================================================== */
+
+.text-color-text {
+	color: rgb(var(--text));
+}
+
+.text-color-subtext0 {
+	color: rgb(var(--subtext0));
+}
+
+.text-color-red {
+	color: rgb(var(--red));
+}
+
+.flex-space-between {
+	height: 100vh; /* must have a fixed or inherited height */
+
+	display: flex;
+	flex-direction: column; /* stack vertically */
+	align-items: center; /* center horizontally (align center in Figma) */
+	justify-content: space-between; /* push first to top, last to bottom */
+}
+
+/* ==========================================================================
+                                BASE DEFINITION
+   ========================================================================== */
+
+html,
+body {
+	width: 100vw;
+	height: 100vh;
+
+	margin: 0;
+	padding: 0;
+
+	font-family: "Poppins-Regular", sans-serif;
+	color: rgb(var(--text));
+
+	overflow: hidden;
+}
+
+#scroll-content {
+	width: 100%;
+	height: calc(100% - 5rem);
+
+	background-color: rgb(var(--base));
+
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+#content {
+	width: 100vw;
+	min-height: calc(100% - 6rem); /* account for fixed ui elements */
+
+	padding: 1rem;
+	box-sizing: border-box; /* include padding/border in size */
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+#content > * {
+	/*automatically center all future direct childrens of #content*/
+	margin-top: auto;
+	margin-bottom: auto;
+}
+
+h1 {
+	margin: 0;
+	padding: 0;
+}
+
+:root {
+	transition: background-color 0.5s ease;
+}
+
+/* utility hidden class (use on any element that should be visually hidden but keep layout reserve) */
+.hidden {
+	visibility: hidden;
+
+	height: 2rem;
+
+	white-space: nowrap;
+
+	transition: opacity 0.15s ease;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	opacity: 0;
+}
+
+.unloaded {
+	display: none !important;
+}
+
+/* ==========================================================================
+                                BUTTON DEFINITION
+   ========================================================================== */
+
+button {
+	padding: 0.75em 2.5em;
+
+	border: none;
+	border-radius: 20px;
+
+	font-weight: 600;
+
+	transition:
+		background-color var(--bg-transition),
+		transform 0.2s;
+	cursor: pointer;
+}
+
+button:hover {
+	background-color: rgba(
+		var(--blue),
+		0.85
+	); /* slightly transparent hover effect */
+	/* transform: translateY(-1px); */
+}
+
+button:active {
+	transform: translateY(0);
+}
+
+.button-fit-div-width {
+	width: 100%;
+	max-width: 100%;
+
+	box-sizing: border-box;
+	/* make the button fill the available width inside the flex container */
+
+	display: block;
+
+	align-self: stretch;
+}
+
+/* ==========================================================================
+                              GRADIENT DEFINITION
+   ========================================================================== */
+
+.gradient-peach-to-maroon {
+	--gradient-start: 1%;
+
+	background: linear-gradient(
+		90deg,
+		rgb(var(--peach)) var(--gradient-start),
+		rgb(var(--maroon)) 100%
+	);
+}
+
+.gradient-red-to-maroon {
+	background: linear-gradient(90deg, rgb(var(--red)), rgb(var(--maroon)));
+}
+
+.gradient-mauve-to-pink {
+	background: linear-gradient(90deg, rgb(var(--mauve)), rgb(var(--pink)));
+}
+
+.gradient-text {
+	color: transparent;
+
+	-webkit-background-clip: text;
+	background-clip: text; /* for Firefox */
+	-webkit-text-fill-color: transparent;
+}
+
+/* Wrapper with gradient border */
+.border-gradient-customizable {
+	padding: 4px; /* thickness of the border */
+
+	background: linear-gradient(
+		90deg,
+		var(--custom-team-color1),
+		var(--custom-team-color2)
+	);
+
+	border-radius: 12px; /* outer border radius */
+
+	display: flex; /* center the inner board */
+	align-items: center;
+	justify-content: center;
+}
+
+/* ==========================================================================
+                              LANDING PAGE STYLES
+   ========================================================================== */
+
+#landing-div {
+	min-width: 75vw;
+
+	gap: 1rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start; /* vertical: top */
+	justify-content: flex-start; /* horizontal: left */
+}
+
+@media (max-width: 300px) {
+	/* very small screens */
+	#landing-div h1 {
+		font-size: medium;
+	}
+	#landing-div p {
+		font-size: small;
+	}
+}
+
+#landing-descr {
+	max-width: 34rem;
+
+	line-height: 1.5; /* controls spacing between wrapped lines */
+
+	word-wrap: break-word; /* allows long words to break */
+}
+
+/* ==========================================================================
+                              AUTH PAGES STYLES
+                        LOGIN / REGISTER / RESET PASSWORD
+   ========================================================================== */
+
+.auth-pages-container {
+	width: 100%;
+	max-width: 700px;
+
+	padding: 0 1rem;
+	padding-bottom: 2rem;
+	gap: 1rem;
+
+	text-align: center;
+}
+
+.auth-form-container {
+	width: 100%;
+
+	padding: 2rem;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--mantle));
+
+	border: 4px solid rgb(var(--surface0));
+	border-radius: 8px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.div-title-and-text-input {
+	width: 100%;
+
+	gap: 0.25rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+.auth-form-container input {
+	width: 100%;
+
+	padding: 0.3rem;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--base));
+
+	border: 2px solid rgb(var(--surface1));
+	border-radius: 4px;
+
+	font-size: 1.1rem;
+	color: rgb(var(--text));
+}
+
+.error-message {
+	visibility: visible;
+
+	height: 2rem;
+
+	display: block;
+
+	font-size: 0.875rem;
+	line-height: 1rem;
+	text-align: left;
+	color: rgb(var(--red));
+
+	transition: opacity 0.3s ease;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.auth-btn {
+	width: 40%;
+	min-width: 8.7rem;
+
+	background-color: rgb(var(--lavender));
+
+	transition: background-color 0.3s ease;
+}
+
+.checkbox-container {
+	display: flex;
+}
+
+.oauth-buttons-container {
+	padding: 0.5rem;
+	gap: 0.5rem;
+
+	display: flex;
+}
+
+.oauth-icon {
+	width: 2rem;
+	height: 2rem;
+
+	color: rgb(var(--lavender));
+
+	transition: color 0.2s ease;
+}
+
+.oauth-icon:hover,
+.oauth-icon:focus {
+	color: rgb(var(--blue));
+}
+
+/* ==========================================================================
+                             2FA PAGE STYLES 
+   ========================================================================== */
+
+#twoFA-container {
+	max-width: 32rem;
+
+	gap: 1rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center; /* vertical: center */
+	justify-content: center; /* horizontal: center */
+}
+
+#twoFA-form-container {
+	gap: 1rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+.otp-container {
+	gap: 10px;
+
+	display: flex;
+}
+
+.otp-input {
+	width: 40px;
+	height: 50px;
+
+	background-color: rgb(color(--overlay2));
+
+	border-radius: 20%;
+
+	font-family: "Poppins-SemiBold", sans-serif;
+	font-size: 1.5rem;
+	text-align: center;
+}
+
+#twofa-email-send,
+.auth-submit-btn {
+	background-color: rgb(var(--lavender));
+
+	color: rgb(var(--base));
+}
+
+#twofa-email-change {
+	background-color: rgb(var(--crust));
+
+	border: 2px solid rgb(var(--surface1));
+
+	color: rgb(var(--text));
+}
+
+/* ==========================================================================
+                            ABOUT PAGE STYLES 
+   ========================================================================== */
+
+#about-container {
+	height: fit-content;
+	max-width: 65rem;
+
+	gap: 2rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	text-align: left;
+}
+
+#about-content {
+	max-width: 55rem;
+
+	gap: 1rem;
+
+	display: flex;
+	flex-direction: column;
+
+	line-height: 1.7;
+}
+
+#about-authors-list {
+	padding: 0;
+	gap: 1.5rem;
+
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+
+	list-style: none;
+}
+
+#about-authors-list li {
+	gap: 0.6rem;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+.about-author-name {
+	font-family: "Poppins-SemiBold", sans-serif;
+	font-size: 1.1rem;
+	font-weight: 600;
+}
+
+#about-authors-list li a {
+	display: flex;
+	align-items: center;
+
+	text-decoration: none;
+	color: inherit;
+
+	transition:
+		transform 0.2s,
+		color 0.2s;
+}
+
+#about-authors-list li a:hover {
+	color: rgb(var(--lavender));
+
+	transform: translateY(-2px);
+}
+
+.about-icon {
+	width: 28px;
+	height: 28px;
+
+	transition:
+		transform 0.2s ease,
+		opacity 0.2s ease;
+	fill: currentColor;
+	cursor: pointer;
+}
+
+.about-icon:hover {
+	transform: translateY(-2px);
+	opacity: 1;
+}
+
+/* ==========================================================================
+                            LOBBY PAGE STYLES 
+   ========================================================================== */
+
+/** Layout & Positioning **/
+#lobby-page {
+	width: 100%;
+	height: 100%;
+	max-width: 100rem;
+	min-height: 30rem;
+
+	padding-bottom: 2rem;
+	gap: 16px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	justify-content: center;
+}
+
+#lobby-info-boxes {
+	width: 100%;
+	height: 30rem;
+
+	margin-top: 1.5rem;
+	gap: 1.5rem;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+#lobby-player-box,
+#lobby-mode-setting {
+	width: 50%;
+	height: 30rem;
+	max-width: 45rem;
+	max-height: 30rem;
+}
+
+/** Responsive **/
+@media (max-width: 1165px) {
+	#lobby-page {
+		min-height: 96rem;
+	}
+	#lobby-info-boxes {
+		min-height: 90rem;
+
+		flex-direction: column;
+	}
+	#lobby-player-box,
+	#lobby-mode-setting {
+		width: 100% !important;
+		min-height: 40rem;
+	}
+	#lobby-mode-setting {
+		min-height: 50rem;
+	}
+	#lobby-action-buttons {
+		width: 100% !important;
+	}
+	.lobby-setting-box {
+		min-height: 42rem;
+	}
+}
+
+/** Box Model **/
+#lobby-player-box {
+	padding: 0.5rem;
+	gap: 12px;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--mantle));
+
+	border: 4px solid rgb(var(--overlay0));
+	border-radius: 20px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+#lobby-player-info-count {
+	width: 100%;
+	height: 3rem;
+
+	padding: 0 1rem;
+	gap: 0;
+	box-sizing: border-box;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+
+	border-bottom: 4px solid rgb(var(--overlay0));
+}
+
+#lobby-player-info-count > div {
+	margin-top: 1rem;
+}
+
+#lobby-player-list {
+	gap: 12px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+#lobby-mode-setting {
+	gap: 0.5rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+/** Buttons / Modes **/
+#lobby-mode-buttons {
+	width: 100%;
+
+	margin-bottom: -0.5rem;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+#lobby-mode-buttons > button {
+	width: 100%;
+
+	background-color: rgb(var(--base));
+
+	border: 3px solid rgb(var(--surface2));
+
+	color: rgb(var(--text));
+
+	border-bottom-left-radius: 0px;
+	border-bottom-right-radius: 0px;
+	border-bottom: 0px;
+}
+
+#lobby-mode-buttons > button.current-mode {
+	background-color: rgb(var(--surface2));
+}
+
+/** Responsive Small **/
+@media (max-width: 666px) {
+	#lobby-page {
+		min-height: 105rem;
+	}
+	#lobby-mode-buttons {
+		width: 100%;
+
+		flex-direction: column;
+	}
+	#lobby-mode-buttons > button {
+		width: 100%;
+	}
+	#lobby-action-buttons {
+		flex-direction: column !important;
+	}
+	#lobby-action-buttons > button {
+		width: 70%;
+	}
+	#lobby-custom-game-button {
+		border-top-left-radius: 0px;
+		border-top-right-radius: 0px;
+	}
+	#lobby-tournament-button {
+		border-top-left-radius: 0px;
+		border-top-right-radius: 0px;
+	}
+}
+
+/** Setting Boxes **/
+.lobby-setting-box {
+	width: 100%;
+	height: 100%;
+
+	padding: 12px 16px;
+	gap: 12px;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--mantle));
+
+	border: 4px solid rgb(var(--overlay0));
+	border-radius: 20px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}
+
+.lobby-setting-box-title {
+	width: 100%;
+
+	gap: 0;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.lobby-setting-box-title > span,
+#lobby-player-info-count > p {
+	font-size: x-large;
+}
+
+.lobby-setting-type {
+	width: 100%;
+
+	background-color: rgb(var(--crust));
+
+	border: 2px solid rgb(var(--surface1));
+	border-radius: 5px;
+
+	display: flex;
+}
+
+.lobby-btn-active {
+	background-color: rgb(var(--surface1)) !important;
+
+	color: rgb(var(--text)) !important;
+}
+
+.lobby-setting-type > button {
+	height: fit-content;
+
+	background-color: rgb(var(--crust));
+
+	border-radius: 0px;
+
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+
+	font-size: inherit;
+	line-height: normal;
+	color: rgb(var(--subtext0));
+
+	transition:
+		background-color 0.15s ease,
+		color 0.15s ease;
+	cursor: pointer;
+}
+
+.lobby-setting-type > button:first-child {
+	border-top-left-radius: 3px;
+	border-bottom-left-radius: 3px;
+}
+
+.lobby-setting-type > button:last-child {
+	border-top-right-radius: 3px;
+	border-bottom-right-radius: 3px;
+}
+
+.lobby-setting-list {
+	gap: 12px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+/** Private Checkbox **/
+.lobby-private-checkbox {
+	gap: 0.25rem;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+
+	font-size: 1.125rem;
+
+	user-select: none;
+	cursor: pointer;
+}
+
+.lobby-private-checkbox input[type="checkbox"],
+.checkbox-container input[type="checkbox"] {
+	position: relative;
+
+	width: 1.25rem;
+	height: 1.25rem;
+
+	background-color: rgb(var(--surface2));
+
+	border: 2px solid rgb(var(--surface0));
+	border-radius: 0.25rem;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	-webkit-appearance: none;
+	appearance: none;
+	transition:
+		background-color 0.2s ease,
+		transform 0.15s ease,
+		border-color 0.2s ease;
+}
+
+.lobby-private-checkbox input[type="checkbox"]:checked,
+.checkbox-container input[type="checkbox"]:checked {
+	background-color: rgb(var(--blue));
+
+	border-color: rgb(var(--blue));
+}
+
+.lobby-private-checkbox input[type="checkbox"]::after,
+.checkbox-container input[type="checkbox"]::after {
+	position: absolute;
+
+	width: 0;
+	height: 0;
+
+	border: solid white;
+	border-width: 0 0 0 0;
+	border-radius: 0.125rem;
+
+	content: "";
+	transform: rotate(-45deg);
+	opacity: 0;
+	transition:
+		width 0.2s ease,
+		height 0.2s ease,
+		opacity 0.2s ease;
+}
+
+.lobby-private-checkbox input[type="checkbox"]:checked::after,
+.checkbox-container input[type="checkbox"]:checked::after {
+	width: 0.6rem;
+	height: 0.3rem;
+
+	border-width: 0 0 0.2rem 0.2rem;
+
+	opacity: 1;
+}
+
+/** Action Buttons **/
+#lobby-action-buttons {
+	width: 49%;
+
+	gap: 1rem;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+#lobby-join-box {
+	padding: 0.3rem;
+
+	border: 2px solid rgb(var(--surface1));
+	border-radius: 25px;
+
+	display: flex;
+	align-items: center;
+
+	overflow: hidden;
+}
+
+#lobby-join-box > input {
+	width: 70%;
+	min-width: 0;
+
+	background: transparent;
+
+	border: none;
+
+	flex: 1;
+
+	font-size: 1rem;
+	color: rgb(var(--text));
+
+	outline: none;
+}
+
+#lobby-join-box > input::placeholder {
+	color: rgb(var(--overlay1));
+}
+
+#lobby-join-box > button {
+	padding: 0.65rem 1.6rem;
+
+	background-color: rgb(var(--peach));
+
+	border: none;
+	border-radius: 9999px;
+
+	font-size: 0.95rem;
+	font-weight: 600;
+
+	transition:
+		background-color 0.2s,
+		transform 0.1s;
+	cursor: pointer;
+}
+
+#lobby-join-box > button:hover {
+	transform: scale(1.03);
+}
+
+#lobby-join-box > button:active {
+	transform: scale(0.98);
+}
+
+#lobby-action-buttons > button {
+	background-color: rgb(var(--red));
+}
+
+#lobby-action-buttons > button:last-child {
+	background-color: rgb(var(--blue));
+}
+
+/* ==========================================================================
+                          PONG BOARD PAGE STYLES 
+   ========================================================================== */
+
+#pong-board-page {
+	--custom-team-color1: rgb(var(--red));
+	--custom-team-color2: rgb(var(--blue));
+
+	max-width: 920px;
+
+	gap: 20px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center; /* horizontal */
+	justify-content: center; /* vertical */
+}
+
+/* Inner board */
+#pong-board {
+	position: relative;
+
+	width: 920px;
+	height: 600px;
+
+	background-color: rgb(var(--base)); /* or transparent if needed */
+
+	border-radius: 10px; /* inner radius = outer radius - padding */
+
+	flex: 0 0 auto; /* prevent flex stretching if parent is flex */
+
+	overflow: hidden; /* keeps players/ball inside rounded corners */
+}
+
+#player1,
+#player2,
+#player3,
+#player4,
+#ball,
+#center-line {
+	position: absolute;
+
+	display: block;
+}
+
+#player1,
+#player2,
+#player3,
+#player4 {
+	width: 10px;
+	height: 80px;
+
+	border-radius: 20px;
+}
+
+#player1,
+#player3 {
+	background: var(--custom-team-color1);
+}
+
+#player2,
+#player4 {
+	background: var(--custom-team-color2);
+}
+
+#player1 {
+	top: 160px;
+	left: 20px;
+}
+
+#player2 {
+	top: 160px;
+	right: 20px;
+}
+
+#player3 {
+	top: 480px;
+	left: 20px;
+}
+
+#player4 {
+	top: 480px;
+	right: 20px;
+}
+
+#ball {
+	--ball-width: 12px;
+	--ball-height: 12px;
+
+	top: 50%;
+	left: 50%;
+
+	width: var(--ball-width);
+	height: var(--ball-height);
+
+	background: rgb(var(--overlay2));
+
+	border-radius: 50%;
+
+	transform: translate(-50%, -50%); /* Centers it perfectly */
+}
+
+/* #center-line {
+  width: 2px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+  background: white;
+  opacity: 0.3;
+} */
+
+#center-line {
+	position: absolute;
+	top: 0;
+	left: 50%;
+
+	width: 0; /* vertical line */
+	height: 100%;
+
+	transform: translateX(-2px); /*half of 4px border width*/
+	border-left: 4px dashed rgb(var(--surface0));
+	border-image: none;
+	border-left-style: dashed;
+	border-left-width: 4px;
+	border-left-color: rgb(var(--surface0));
+}
+
+.info-bar-pong-board {
+	width: 920px;
+
+	gap: auto;
+
+	display: flex;
+	flex-direction: row;
+	align-content: top;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.left-side-username-info {
+	width: 240px;
+
+	padding: 0.5rem;
+
+	border: 2px solid var(--custom-team-color1);
+	border-radius: 5px;
+
+	display: flex;
+	flex-direction: row;
+	align-content: center;
+	justify-content: center;
+}
+
+.right-side-username-info {
+	width: 240px;
+
+	padding: 0.5rem;
+
+	border: 2px solid var(--custom-team-color2);
+	border-radius: 5px;
+
+	display: flex;
+	flex-direction: row;
+	align-content: center;
+	justify-content: center;
+}
+
+#score-counters {
+	gap: 28px;
+
+	display: flex;
+	flex-direction: row;
+	align-content: center;
+	justify-content: center;
+}
+
+#left-score {
+	width: 110px;
+
+	text-align: right;
+}
+
+#score-separator {
+	width: 1px;
+
+	text-align: center;
+}
+
+#right-score {
+	width: 110px;
+
+	text-align: left;
+}
+
+/* ==========================================================================
+                              NAVBAR STYLES 
+   ========================================================================== */
+
+nav {
+	position: fixed;
+	top: 0;
+	left: 0;
+
+	width: 100%;
+	height: 5rem;
+
+	padding: 1rem 2rem;
+
+	/* use percent + border-box so padding doesn't cause overflow */
+	box-sizing: border-box;
+
+	background-color: rgb(var(--crust));
+
+	display: flex;
+	justify-content: space-between;
+}
+
+#nav-menu-svg {
+	visibility: hidden;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 101;
+
+	width: 0;
+	height: 0;
+
+	background-color: rgb(var(--crust));
+}
+
+#nav-left-links,
+#nav-right-links {
+	background-color: rgb(var(--crust));
+
+	display: flex;
+	align-items: center;
+}
+#nav-left-links > a:first-of-type {
+	border-left: 0px solid;
+}
+#nav-right-links {
+	gap: 1.5rem;
+}
+
+#nav-left-links {
+	gap: 0.5rem;
+}
+
+#nav-left-links > a:hover,
+#nav-left-links > a:active {
+	background-color: rgb(var(--surface2)) !important;
+}
+
+#nav-left-links > a {
+	height: 80%;
+
+	padding-top: 1rem;
+	padding-right: 1rem;
+	padding-left: 1rem;
+
+	display: flex;
+	justify-content: center;
+
+	border-right: 0px solid;
+}
+
+@media (max-width: 700px) {
+	#nav-menu-svg {
+		visibility: visible;
+		position: relative;
+
+		width: 3rem;
+		height: 3rem;
+
+		margin-top: -1rem;
+		margin-left: -1rem;
+		padding-top: 1rem;
+
+		overflow: visible;
+	}
+	#nav-left-links {
+		visibility: hidden;
+		position: fixed;
+		top: -12rem;
+		left: 0;
+		z-index: -1;
+
+		padding: 1rem;
+		gap: 0;
+
+		background-color: rgb(var(--crust));
+
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+
+		transition:
+			top 0.3s ease-out,
+			visibility 0.3s linear;
+	}
+	#nav-left-links > a {
+		width: 100%;
+
+		padding-bottom: 1rem;
+
+		display: flex;
+		flex-direction: column;
+	}
+	#nav-left-links.nav-links-visible {
+		visibility: visible;
+		top: 4rem;
+	}
+}
+
+@media (max-width: 375px) {
+	#nav-right-links > button {
+		padding: 0.5rem;
+	}
+	#nav-right-links {
+		gap: 0.2rem;
+	}
+}
+
+#nav-login-btn {
+	background-color: rgb(var(--crust));
+
+	border: 2px solid rgb(var(--text));
+
+	color: rgb(var(--text));
+}
+
+/* ==========================================================================
+                               LINK STYLES 
+   ========================================================================== */
+
+a {
+	text-decoration: none;
+	color: rgb(var(--blue));
+
+	transition:
+		color 0.2s ease,
+		text-decoration 0.2s ease;
+}
+
+a:hover {
+	text-decoration: underline;
+	color: rgb(var(--sapphire));
+}
+
+a:visited {
+	color: rgb(var(--lavender));
+}
+
+/* ==========================================================================
+                              FOOTER STYLES 
+   ========================================================================== */
+
+footer {
+	height: 4rem;
+
+	margin-bottom: 0px;
+	padding: 1rem 2rem;
+
+	background-color: rgb(var(--crust));
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	font-size: 0.875rem;
+	color: rgb(var(--text));
+}
+
+@media (max-width: 450px) {
+	footer {
+		height: 2rem;
+
+		font-size: 0.6rem;
+	}
+
+	#content {
+		min-height: calc(100% - 4rem);
+	}
+}
+@media (max-width: 250px) {
+	footer {
+		font-size: 0.4rem;
+	}
+}
+.footer-divider {
+	width: 1px;
+	height: 1.5rem;
+
+	background-color: rgb(var(--subtext1)); /* line color */
+
+	display: inline-block;
+}
+
+#link-text {
+	width: fit-content;
+	height: 2.5rem;
+
+	gap: 1rem;
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#copyright-text {
+	color: rgb(var(--subtext0));
+}
