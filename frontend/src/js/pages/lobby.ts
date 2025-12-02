@@ -134,5 +134,3 @@ function setupAllSubTabs() {
 /* Initialize handlers */
 setupModeHandlers();
 setupAllSubTabs();
-
-translatePage(getUserLang());

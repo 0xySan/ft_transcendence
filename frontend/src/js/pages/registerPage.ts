@@ -117,5 +117,3 @@ addListener(usernameInput, 'input', verifyUsernameValidity);
 addListener(emailInput, 'input', verifyEmailValidity);
 addListener(passwordInput, 'input', verifyPasswordValidity);
 addListener(confirmPasswordInput, 'input', verifyConfirmPasswordValidity);
-
-translatePage(getUserLang());

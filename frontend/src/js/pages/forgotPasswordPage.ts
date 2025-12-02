@@ -44,5 +44,3 @@ function verifyEmailValidity(): boolean {
 
 addListener(resetButton, 'click', handleForgotPassword);
 addListener(emailInput, 'input', verifyEmailValidity);
-
-translatePage(getUserLang());

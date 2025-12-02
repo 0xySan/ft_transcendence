@@ -64,5 +64,3 @@ addListener(document, 'DOMContentLoaded', () => {
 		});
 	});
 });
-
-translatePage(getUserLang());
