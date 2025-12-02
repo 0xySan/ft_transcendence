@@ -450,46 +450,10 @@ function renderChat() {
 		}
 	}
 
-	// Helper to submit message
-	function submitMessage() {
-		// Do not allow sending to blocked user
-		if (!activeUser) return;
-		if (blockedUsers.has(activeUser)) return;
-
-		const text = input.textContent?.trim() || "";
-		if (!text) return;
-
-		conversations[activeUser || ""].push({
-			sender: "me",
-			text,
-			timestamp: new Date(),
-		});
-
-		// ensure visible window includes the latest message: if the window did not include the last page,
-		// and user is near bottom, advance visibleStart to show the new message; otherwise keep it as-is.
-		const len = conversations[activeUser].length;
-		if (!visibleStart[activeUser]) visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-		else {
-			// if currently showing the last page or user was near bottom, move window to include new message
-			if (visibleStart[activeUser] >= len - 1 - MESSAGES_PAGE || (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < 100) {
-				visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-			}
-		}
-
-		input.textContent = "";
-		// clear persisted draft for this conversation
-		clearDraft(activeUser);
-		input.classList.add("empty");
-		sendBtn.hidden = true;
-
-		renderUserList();
-		renderChat(); // re-render to show the new message (renderChat will auto-scroll only if appropriate)
-	}
-
 	// PRIMARY: intercept submit and stop other handlers from running
 	form.addEventListener("submit", (e) => {
 		e.preventDefault();
-		submitMessage();
+		submitMessage(input, sendBtn, messagesDiv);
 	});
 
 	input.addEventListener("keydown", (e: KeyboardEvent) => {
@@ -497,7 +461,7 @@ function renderChat() {
 
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			submitMessage();
+			submitMessage(input, sendBtn, messagesDiv);
 		}
 	});
 
@@ -542,6 +506,10 @@ function renderChat() {
 		}
 	});
 }
+
+// -------------------------------------
+// MESSAGE RENDERING HELPERS
+// -------------------------------------
 
 // Small helper to avoid XSS from message text
 function escapeHtml(str: string) {
@@ -628,4 +596,37 @@ function loadMessages(startIndex: number, msgs: Message[]): string {
 		i = j; // advance to next group
 	}
 	return html;
+}
+
+// -------------------------------------
+// SUBMIT MESSAGE HANDLER
+// -------------------------------------
+function submitMessage(input: HTMLDivElement, sendBtn: HTMLButtonElement, messagesDiv: HTMLDivElement) {
+	// Do not allow sending to blocked user
+	if (!activeUser) return;
+	if (blockedUsers.has(activeUser)) return;
+	const text = input.textContent?.trim() || "";
+	if (!text) return;
+	conversations[activeUser || ""].push({
+		sender: "me",
+		text,
+		timestamp: new Date(),
+	});
+	// ensure visible window includes the latest message: if the window did not include the last page,
+	// and user is near bottom, advance visibleStart to show the new message; otherwise keep it as-is.
+	const len = conversations[activeUser].length;
+	if (!visibleStart[activeUser]) visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+	else {
+		// if currently showing the last page or user was near bottom, move window to include new message
+		if (visibleStart[activeUser] >= len - 1 - MESSAGES_PAGE || (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < 100) {
+			visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+		}
+	}
+	input.textContent = "";
+	// clear persisted draft for this conversation
+	clearDraft(activeUser);
+	input.classList.add("empty");
+	sendBtn.hidden = true;
+	renderUserList();
+	renderChat(); // re-render to show the new message (renderChat will auto-scroll only if appropriate)
 }
