@@ -149,6 +149,12 @@ app.get("/*", async (req, reply) => {
 	}
 });
 
+/**
+ * Detects browser language from Accept-Language header
+ * @param {*} req HTTP request
+ * @param {*} fallback fallback language code if none detected
+ * @returns detected language code
+ */
 function detectBrowserLanguage(req, fallback = "en") {
 	const header = req.headers["accept-language"];
 	if (!header) return fallback;
@@ -158,6 +164,11 @@ function detectBrowserLanguage(req, fallback = "en") {
 	return lang;
 }
 
+/** Translates a key to the specified language
+ * @param key translation key (can be nested with dots)
+ * @param userLanguage target language code
+ * @returns translated text
+ */
 async function translateFn(key, userLanguage) {
 	let jsonFile = path.join(publicResourcesDir, `translations`, `${userLanguage}.json`);
 	if (!fs.existsSync(jsonFile)) {
@@ -182,6 +193,11 @@ async function translateFn(key, userLanguage) {
 	return typeof value === "string" ? value : key;
 }
 
+/** Serves translated HTML file
+ * @param filePath path to the HTML file
+ * @param userLanguage target language code
+ * @returns translated HTML content
+ */
 async function serveTranslatedHTML(filePath, userLanguage) {
     console.log(`Serving translated HTML for: ${filePath} with language ${userLanguage}`);
     let html = fs.readFileSync(filePath, "utf8");

@@ -11,7 +11,7 @@ const DefaultLocale = "en";
 
 /**
  * Gets the user's lang
- * @returns  
+ * @returns user's language code
  */
 export function getUserLang() {
     /// TODO: improve this function to ask the backend for the user's preferred language FIRST
@@ -23,7 +23,7 @@ export function getUserLang() {
 
 /**
  * Fetchs translation json
- * @param language 
+ * @param language code of the language we want to translate to
  * @returns translation json 
  */
 async function fetchTranslationJson(
@@ -42,8 +42,8 @@ async function fetchTranslationJson(
 
 /**
  * Gets nested json value
- * @param json 
- * @param keys 
+ * @param json translation json object
+ * @param keys array of keys to access nested value
  * @returns nested json value 
  */
 function getNestedJsonValue(
@@ -60,6 +60,10 @@ function getNestedJsonValue(
     return typeof value === "string" ? value : null;
 }
 
+/** Correlates language code to available translations
+ * @param lang language code to correlate
+ * @returns correlated language code
+ */
 function correlateLangCode(lang: string): string {
     const langMap: Record<string, string> = {
         "en": "en",
@@ -73,8 +77,7 @@ function correlateLangCode(lang: string): string {
 
 /**
  * Translates page
- * @param language 
- * @returns  
+ * @param language code of the language we want to translate to
  */
 export function translatePage(
     language: string
@@ -99,6 +102,10 @@ export function translatePage(
     });
 }
 
+/** Prints key-text pairs to console
+ * @param key key of the text 
+ * @param text text to be printed
+ */
 function printToJsonLine(key: string, text: string) {
     // For development purposes only: prints key-text pairs to console
     console.log(`"${key}": "${text.replace(/"/g, '\\"')}",`);
@@ -106,9 +113,8 @@ function printToJsonLine(key: string, text: string) {
 
 /**
  * Translates element
- * @param language 
- * @param element 
- * @returns  
+ * @param language code of the language we want to translate to
+ * @param element the element to be translated
  */
 export function translateElement(language: string, element: HTMLElement) {
     const correlatedLanguage = correlateLangCode(language);
