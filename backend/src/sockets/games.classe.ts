@@ -48,6 +48,8 @@ export class Games {
     velocity_ball: Position;
     /* The time of the game (setting) */
     time: number;
+    /* Game statement | false = lobby / true = playing */
+    statement: boolean;
 
     /* Constructor of the Games instance */
     constructor(user_id: string, game_uuid: string, code: string)
@@ -60,6 +62,7 @@ export class Games {
         this.score = { "equip_a": 0, "equip_b": 0 };
         this.position_ball = { pos_x: 0, pos_y: 0 };
         this.velocity_ball = { pos_x: 0, pos_y: 0 };
+        this.statement = false;
         this.time = 0;
     }
 
