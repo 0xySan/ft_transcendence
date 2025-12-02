@@ -1,5 +1,5 @@
 /* ==========================================================================
-                              THEMES DEFINITION 
+							  THEMES DEFINITION 
    ========================================================================== */
 
 [data-theme="catppuccin-macchiato"] {
@@ -119,7 +119,7 @@
 }
 
 /* ==========================================================================
-                              FONT-FACE DECLARATION 
+							  FONT-FACE DECLARATION 
    ========================================================================== */
 
 @font-face {
@@ -144,7 +144,7 @@
 }
 
 /* ==========================================================================
-                                FONTS DEFINITION
+								FONTS DEFINITION
    ========================================================================== */
 
 .font-poppins-medium {
@@ -160,7 +160,7 @@
 }
 
 /* ==========================================================================
-                              TEXT COLOR DEFINITION
+							  TEXT COLOR DEFINITION
    ========================================================================== */
 
 .text-color-text {
@@ -185,7 +185,7 @@
 }
 
 /* ==========================================================================
-                                BASE DEFINITION
+								BASE DEFINITION
    ========================================================================== */
 
 html,
@@ -263,7 +263,7 @@ h1 {
 }
 
 /* ==========================================================================
-                                BUTTON DEFINITION
+								BUTTON DEFINITION
    ========================================================================== */
 
 button {
@@ -305,7 +305,7 @@ button:active {
 }
 
 /* ==========================================================================
-                              GRADIENT DEFINITION
+							  GRADIENT DEFINITION
    ========================================================================== */
 
 .gradient-peach-to-maroon {
@@ -352,7 +352,7 @@ button:active {
 }
 
 /* ==========================================================================
-                              LANDING PAGE STYLES
+							  LANDING PAGE STYLES
    ========================================================================== */
 
 #landing-div {
@@ -386,7 +386,7 @@ button:active {
 
 
 /* ==========================================================================
-                              CHAT PAGES STYLES
+							  CHAT PAGES STYLES
    ========================================================================== */
 
 
@@ -403,46 +403,44 @@ button:active {
 
 /* The card that contains the user list */
 .chat-form-container {
-  width: 100%;
-  height: calc(75vh - 2rem);
-  background-color: rgb(var(--mantle, 44,47,51));
-  border: 4px solid rgb(var(--surface0, 60,63,70));
-  border-radius: 8px;
-  padding: 10px;
-  box-sizing: border-box;
-  padding-bottom: 20px;
+	width: 100%;
+	height: calc(75vh - 2rem);
+	background-color: rgb(var(--mantle, 44,47,51));
+	border: 4px solid rgb(var(--surface0, 60,63,70));
+	border-radius: 8px;
+	padding: 10px;
+	box-sizing: border-box;
+	padding-bottom: 20px;
 
-  display: flex;        /* horizontal flex container */
-  flex-direction: row;  /* children go side by side */
-  gap: 1rem;
+	flex-direction: row;  /* children go side by side */
+	gap: 1rem;
+	position: relative;
+
+	display: flex;
+	align-items: stretch;
 }
 
 .chat-form-block {
-  width: 100%;
-  height: calc(75vh - 2rem);
-  background-color: rgb(var(--mantle, 44,47,51));
-  border: 4px solid rgb(var(--surface0, 60,63,70));
-  border-radius: 8px;
-  padding: 1rem;
-  box-sizing: border-box;
+  	width: 100%;
+  	height: calc(75vh - 2rem);
+  	background-color: rgb(var(--mantle, 44,47,51));
+  	border: 4px solid rgb(var(--surface0, 60,63,70));
+  	border-radius: 8px;
+  	padding: 1rem;
+  	box-sizing: border-box;
 
-  display: flex;        /* horizontal flex container */
-  flex-direction: column;  /* children go side by side */
-  gap: 1rem;
+  	display: flex;        /* horizontal flex container */
+  	flex-direction: column;  /* children go side by side */
+  	gap: 1rem;
 }
 
 /* User list: fixed width */
 .user-list {
-  width: 200px;      /* fixed width for left sidebar */
-  flex-shrink: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 0.5rem;
-}
-
-/* enable smooth native scrolling on iOS/Android */
-.user-list {
-	-webkit-overflow-scrolling: touch;
+  	width: 275px;      /* fixed width for left sidebar */
+  	flex-shrink: 0;
+  	overflow-y: auto;
+  	overflow-x: hidden;
+  	padding-right: 0.5rem;
 }
 
 /* Make sure the user-list respects flex sizing and doesn't force the container taller */
@@ -456,39 +454,39 @@ button:active {
 
 /* Chat block: fills remaining width */
 .chat-block {
-  flex: 1;            /* takes all remaining horizontal space */
-  height: 100%;       /* full height of parent */
-  width: 100%;
-  background-color: rgb(var(--surface1, 60,63,70));
-  border-radius: 6px;
-  overflow-y: auto;   /* scroll inside if needed */
-  padding: 1rem;
-  box-sizing: border-box;
+	flex: 1;            /* takes all remaining horizontal space */
+	height: 100%;       /* full height of parent */
+	width: 100%;
+	background-color: rgb(var(--surface1, 60,63,70));
+	border-radius: 6px;
+	overflow-y: auto;   /* scroll inside if needed */
+	padding: 1rem;
+	box-sizing: border-box;
 }
 
 /* Each user row */
 .user-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.6rem 0.75rem;
+  	border-radius: 6px;
+  	cursor: pointer;
+ 	user-select: none;
 }
 
 /* Hover and active styles */
 .user-item:hover {
-  background: rgba(255,255,255,0.03);
+  	background: rgba(255,255,255,0.03);
 }
 
 .user-item:active {
-  transform: translateY(1px);
+	transform: translateY(1px);
 }
 
 .user-item.selected {
-  background-color: rgba(var(--lavender), 0.2);
-  color: white;
+	background-color: rgba(var(--lavender), 0.2);
+	color: white;
 }
 
 .user-item.selected:hover {
@@ -498,36 +496,35 @@ button:active {
 
 /* Avatar */
 .img_profile {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: #2b2b2b;
-  flex-shrink: 0;
-  object-fit: cover;
+  	width: 40px;
+  	height: 40px;
+  	border-radius: 999px;
+  	background: #2b2b2b;
+  	object-fit: cover;
+}
+
+.chat-header-img_profile {
+  	width: 28px;
+  	height: 28px;
+  	border-radius: 999px;
+  	background: #2b2b2b;
+  	object-fit: cover;
+	float: left;
 }
 
 /* Username */
 .name_profile {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text);
+  	margin: 0;
+  	font-size: 0.95rem;
+  	color: var(--text);
 }
 
 .user-list::-webkit-scrollbar {
-  width: 10px;
+  	width: 10px;
 }
 .user-list::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.3);
-  border-radius: 999px;
-}
-
-/* Toggle placed at top of user list */
-.chat-form-container { position: relative; }
-
-/* Toggle placed in the chat form container so it remains visible when .user-list is hidden */
-.chat-form-container {
-	display: flex;
-	align-items: stretch;
+  	background: rgba(0,0,0,0.3);
+  	border-radius: 999px;
 }
 
 .chat-form-container .chat-header-toggle-users {
@@ -550,12 +547,20 @@ button:active {
 	text-align: center;
 }
 
+.chat-header-title {
+	margin: 0 10px 0 5px;
+	font-size: 0.95rem;
+	color: var(--text);
+	padding-top: 3px;
+	float: left;
+}
+
 .chat-form-container .chat-header-toggle-users:hover {
 	background: rgba(var(--surface1, 60,63,70), 0.8);
 }
 
 /* On narrow screens, stack vertically and keep the toggle at the top-left inside the container */
-@media (max-width: 520px) {
+@media (max-width: 700px) {
 	.chat-form-container {
 		flex-direction: column;
 		align-items: stretch;
@@ -563,12 +568,13 @@ button:active {
 	.chat-form-container .chat-header-toggle-users {
 		margin: 8px;
 		align-self: flex-start;
+		height: 36px;
 	}
 
 	/* when stacked vertically, limit the user list height and allow touch scrolling */
 	.chat-form-container .user-list {
 		width: 100%;
-		max-height: 35vh; /* leave room for chat area */
+		max-height: 20vh; /* leave room for chat area */
 		overflow-y: auto;
 		-webkit-overflow-scrolling: touch;
 		flex: 0 1 auto;
@@ -583,43 +589,42 @@ button:active {
 }
 
 .chat-block {
-  flex: 1;
-  background: #1e1f22;
-  color: white;
-  display: flex;
-  flex-direction: column;
+  	flex: 1;
+  	background: #1e1f22;
+  	color: white;
+  	display: flex;
+  	flex-direction: column;
 }
 
 .chat-header {
-  padding: 12px;
-  font-weight: bold;
-  border-bottom: 1px solid #333;
-  flex-direction: row;
+  	padding: 12px;
+  	font-weight: bold;
+  	border-bottom: 1px solid #333;
 }
 
 .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 6px;
-  margin-bottom: 0px;
+  	flex: 1;
+  	overflow-y: auto;
+  	padding: 6px;
+  	margin-bottom: 0px;
 }
 
 .chat-message {
-  margin-bottom: 4px;
-  white-space: pre-line;
-  word-wrap: break-word;
+  	margin-bottom: 4px;
+  	white-space: pre-line;
+  	word-wrap: break-word;
 }
 
 .chat-time {
-  margin-bottom: 2px;
-  font-size: 0.75rem;
-  color: #888;
-}
+  	margin-bottom: 2px;
+  	font-size: 0.75rem;
+  	color: #888;
+}	
 
 .chat-message.me {
-  text-align: right;
-  white-space: pre-line;
-  word-wrap: break-word;
+  	text-align: right;
+  	white-space: pre-line;
+  	word-wrap: break-word;
 }
 
 .chat-message.blocked[data-shown="true"] {
@@ -627,15 +632,15 @@ button:active {
 }
 
 .chat-message.blocked:hover .show-blocked-btn {
-	color: rgb(65, 65, 230);
+	color: rgba(var(--blue), 1);
 }
 
 .chat-input-form {
-  display: flex;
-  padding: 10px;
-  background: #2a2c30;
-  border-top: 1px solid #333;
-  flex-direction: row;
+  	display: flex;
+  	padding: 10px;
+  	background: #2a2c30;
+  	border-top: 1px solid #333;
+  	flex-direction: row;
 }
 
 .chat-header-block-btn {
@@ -651,25 +656,46 @@ button:active {
 }
 
 .chat-header-block-btn:hover {
-  background: #444;
-  color: white;
+  	background: #444;
+  	color: white;
+}
+
+.chat-header-profile-btn {
+	background: #555;
+	color: #ccc;
+	padding: 6px 12px;
+	border: none;
+	border-radius: 4px;
+	font-size: 14px;
+
+	float: left;
+	margin-left: 6px;
+}
+
+.chat-header-profile-btn:hover {
+  	background: #444;
+  	color: white;
 }
 
 .chat-input {
-  padding: 8px;
-  border: none;
-  border-radius: 4px;
-  outline: none;
-  resize: none;
-  flex: 1;
-  background: #2a2c30;
-  color: white;
-  min-height: 17px;
-  max-height: 150px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  white-space: pre-line;
-  word-wrap: break-word;
+  	padding: 8px;
+  	border: none;
+  	border-radius: 4px;
+  	outline: none;
+  	resize: none;
+  	flex: 1;
+  	background: #2a2c30;
+  	color: white;
+  	min-height: 17px;
+  	max-height: 150px;
+  	overflow-x: hidden;
+  	overflow-y: auto;
+  	white-space: pre-line;
+  	word-wrap: break-word;
+}
+
+.chat-message:hover {
+	background-color: rgba(255, 255, 255, 0.1);
 }
 
 .show-blocked-btn {
@@ -692,32 +718,32 @@ button:active {
 }
 
 .chat-input.empty::before {
-  content: attr(data-placeholder);
-  color: #888;
+  	content: attr(data-placeholder);
+  	color: #888;
 }
 
 .chat-input-form button {
-  padding: 6px 12px;
-  margin-left: 6px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background: #5865f2;
-  color: white;
-  font-size: 14px;
-  flex-shrink: 0; /* prevent it from stretching */
-  max-height: 48px;
+  	padding: 6px 12px;
+  	margin-left: 6px;
+  	border: none;
+  	border-radius: 4px;
+  	cursor: pointer;
+  	background: #5865f2;
+  	color: white;
+  	font-size: 14px;
+  	flex-shrink: 0; /* prevent it from stretching */
+  	max-height: 48px;
 }
 
 .chat-input-form button:hover {
-  background: #4752c4;
+  	background: #4752c4;
 }
 
 
 
 /* ==========================================================================
-                              AUTH PAGES STYLES
-                        LOGIN / REGISTER / RESET PASSWORD
+							  AUTH PAGES STYLES
+						LOGIN / REGISTER / RESET PASSWORD
    ========================================================================== */
 
 .auth-pages-container {
@@ -825,7 +851,7 @@ button:active {
 }
 
 /* ==========================================================================
-                             2FA PAGE STYLES 
+							 2FA PAGE STYLES 
    ========================================================================== */
 
 #twoFA-container {
@@ -883,7 +909,7 @@ button:active {
 }
 
 /* ==========================================================================
-                            ABOUT PAGE STYLES 
+							ABOUT PAGE STYLES 
    ========================================================================== */
 
 #about-container {
@@ -972,7 +998,7 @@ button:active {
 }
 
 /* ==========================================================================
-                            LOBBY PAGE STYLES 
+							LOBBY PAGE STYLES 
    ========================================================================== */
 
 /** Layout & Positioning **/
@@ -1403,7 +1429,7 @@ button:active {
 }
 
 /* ==========================================================================
-                          PONG BOARD PAGE STYLES 
+						  PONG BOARD PAGE STYLES 
    ========================================================================== */
 
 #pong-board-page {
@@ -1597,7 +1623,7 @@ button:active {
 }
 
 /* ==========================================================================
-                              NAVBAR STYLES 
+							  NAVBAR STYLES 
    ========================================================================== */
 
 nav {
@@ -1735,7 +1761,7 @@ nav {
 }
 
 /* ==========================================================================
-                               LINK STYLES 
+							   LINK STYLES 
    ========================================================================== */
 
 a {
@@ -1757,7 +1783,7 @@ a:visited {
 }
 
 /* ==========================================================================
-                              FOOTER STYLES 
+							  FOOTER STYLES 
    ========================================================================== */
 
 footer {
