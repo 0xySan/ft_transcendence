@@ -27,6 +27,15 @@ export function getPlayerWithToken(token: string) {
     return (null);
 }
 
+export function getPlayerWithUserId(user_id: string) {
+    for (const target of clientToken) {
+        if (target.player_id == user_id) {
+            return (target);
+        }
+    }
+    return (null);
+}
+
 /**
  * This function could create a unique code.
  * @returns 

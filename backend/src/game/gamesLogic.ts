@@ -22,6 +22,12 @@ function game() {
             if (game_target.time <= date) {
                 game_target.statement = false;
                 console.log("DEBUG: Partie terminee");
+                for (const user of game_target.equip_a) {
+                    parentPort?.postMessage({ action: "finished", user_id: user });
+                }
+                for (const user of game_target.equip_b) {
+                    parentPort?.postMessage({ action: "finished", user_id: user });
+                }
             }
         }
     }

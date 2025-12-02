@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { parse } from './sockets/socketParsing.js'
-import { Player } from './sockets/player.class.js'
+import WebSocket from 'ws';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -21,7 +21,8 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
-import { clientToken, getPlayerWithToken } from "./routes/game.route.js";
+import { clientToken, getPlayerWithToken, getPlayerWithUserId } from "./routes/game.route.js";
+import { Player } from "./sockets/player.class.js";
 
 /**
  * This interface with a worker (thread) and a list of players in this.
@@ -78,8 +79,18 @@ export async function createThread(options: { workerFile?: string, count?: numbe
 
 	// Create the worker (thread).
 	for (let i = 0; i < count; i++) {
+		const worker = new Worker(workerPath);
+		worker.on("message", (msg) => {
+			console.log("DEBUG: msg = " + msg.action);
+			if (msg.action == "finished") {
+				const player = getPlayerWithUserId(msg.user_id);
+                console.log("DEBUG: user_id = " + msg.user_id + " | token = " + player?.token);
+				player?.socket.close(1000, "game finished");
+			}
+		});
+	
 		workers.push({
-		worker: new Worker(workerPath),
+		worker: worker,
 		players: []
 		});
 	}
@@ -118,6 +129,7 @@ async function start() {
 				return;
 			}
 
+			player.setSocket(ws);
 			if (player.token !== token)
 			{
 				ws.close(1008, 'Invalid token or user_id'); // 1008 = Policy Violation
@@ -132,7 +144,7 @@ async function start() {
 					let data;
 					try {
 						data = JSON.parse(str);
-						parse(data, player);
+						parse(data, player, ws);
 					}
 					catch (err) {
 						console.log("Invalid JSON");

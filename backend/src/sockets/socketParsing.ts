@@ -6,7 +6,7 @@ import { workers } from '../server.js'
  * @param json - The json file
  * @throws Error if the user_id or game_id is missing.
  */
-export async function parse(json: any, player: Player) {
+export async function parse(json: any, player: Player, ws: any) {
     const action = json["action"];
 
     if (!action) {
@@ -23,7 +23,6 @@ export async function parse(json: any, player: Player) {
             workers[player.worker_index].worker.postMessage({ action: "startGame", game_uuid: player.game_id });
 
         })
-        // console.log("DEBUG: websocket: game_id = " + player.game_id + " | player_id = " + player.player_id + " | token = " + player.token + " | worker_index = " + player.worker_index);
     }
 }
 
