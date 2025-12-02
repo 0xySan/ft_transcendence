@@ -9,11 +9,29 @@ import { Games } from '../sockets/games.classe.js';
 // List of the games in this thread.
 let games: Games[] = []; 
 
+setInterval(game, 200);
+
+function game() {
+    let date = Date.now();
+
+    for (const game_target of games) {
+        if (game_target.statement == true) {
+
+            console.log("DEBUG: time now = " + date / 1000 + " | time game = " + game_target.time / 1000);
+
+            if (game_target.time <= date) {
+                game_target.statement = false;
+                console.log("DEBUG: Partie terminee");
+            }
+        }
+    }
+}
+
+
 /**
  * Is a listener for listen every message.
  */
 parentPort?.on("message", (msg) => {
-
 
     /**
      * If the action message is 'getNumberParties'.
@@ -40,6 +58,16 @@ parentPort?.on("message", (msg) => {
             }
         }
         parentPort?.postMessage("null");
+    } 
+
+    else if (msg.action == "startGame") {
+        for (const target of games) {
+            if (target.game_uuid == msg.game_uuid) {
+                target.statement = true;
+                target.time += Date.now();
+                return;
+            }
+        }
     } 
     
     /**

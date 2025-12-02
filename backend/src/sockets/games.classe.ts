@@ -63,7 +63,7 @@ export class Games {
         this.position_ball = { pos_x: 0, pos_y: 0 };
         this.velocity_ball = { pos_x: 0, pos_y: 0 };
         this.statement = false;
-        this.time = 0;
+        this.time = 15000;
     }
 
     /**

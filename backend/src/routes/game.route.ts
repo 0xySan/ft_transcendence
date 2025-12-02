@@ -10,12 +10,22 @@ import { workers, parties_per_core } from '../server.js';
 import { FastifyReply } from "fastify/types/reply.js";
 import { requirePartialAuth } from '../middleware/auth.middleware.js';
 import { patchGameSchema, postGameSchema, getGameSchema } from '../plugins/swagger/schemas/game.schema.js'
+import { Player } from '../sockets/player.class.js'
 
 /**
  * Set the clientToken and codes.
  */
-export const clientToken = new Map<string, string>();
+export const clientToken: Player[] = []
 let codes: string[] = [];
+
+export function getPlayerWithToken(token: string) {
+    for (const target of clientToken) {
+        if (target.token == token) {
+            return (target);
+        }
+    }
+    return (null);
+}
 
 /**
  * This function could create a unique code.
@@ -124,9 +134,10 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
     codes.push(code);
 
     // Communicated with the worker (thread) for create a game.
+    const game_uuid = generateRandomToken(32);
     worker.worker.postMessage({ action: "createGame", game: {
         user_id: game.user_id,
-        uuid: generateRandomToken(32),
+        uuid: game_uuid,
         code: code
     } });
 
@@ -134,7 +145,7 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
 
     // stock uuid and token in map
     const token = generateRandomToken(32);
-    clientToken.set(game.user_id, token);
+    clientToken.push(new Player(workers.indexOf(worker), game.user_id, game_uuid, token));
     // return party Token
     return (reply.status(202).send({token}));
 }
@@ -162,7 +173,7 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
         if (result != "null") {
             target.players.push(game.user_id);
             const token = generateRandomToken(32);
-            clientToken.set(game.user_id, token);
+            clientToken.push(new Player(workers.indexOf(target), game.user_id, result, token));
             return (reply.status(202).send({token}));
         }
     }
@@ -177,17 +188,17 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
 export async function gameRoutes(fastify: FastifyInstance) {
 
     // ------------------    GET METHOD    ----------------------- \\
-    fastify.get("/api/game", { schema: getGameSchema }, async (request, reply) => {
-        const game = request.body as sv_game;
-        const token = generateRandomToken(32);
+    // fastify.get("/api/game", { schema: getGameSchema }, async (request, reply) => {
+    //     const game = request.body as sv_game;
+    //     const token = generateRandomToken(32);
 
-        if (game.user_id == null)
-            return (reply.status(401).send({ error: "user_is is empty" }));
-        // stock uuid and token in map
-        clientToken.set(game.user_id, token);
-        // return party Token
-        return (reply.status(202).send({token}));
-    });
+    //     if (game.user_id == null)
+    //         return (reply.status(401).send({ error: "user_is is empty" }));
+    //     // stock uuid and token in maptarget
+    //     clientToken.set(game.user_id, token);
+    //     // return party Token
+    //     return (reply.status(202).send({token}));
+    // });
 
     // -----------------    POST METHOD    ----------------------- \\
     fastify.post("/api/game", { preHandler: requirePartialAuth, schema: postGameSchema }, async (request, reply) => {

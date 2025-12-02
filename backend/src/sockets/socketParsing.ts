@@ -1,4 +1,4 @@
-import { Games } from './games.classe.js'
+import { Player } from './player.class.js'
 import { workers } from '../server.js'
 
 /**
@@ -6,29 +6,29 @@ import { workers } from '../server.js'
  * @param json - The json file
  * @throws Error if the user_id or game_id is missing.
  */
-export function parse(json: any) {
-    const user_id = json["user_id"];
-    const game_id = json["game_id"];
+export async function parse(json: any, player: Player) {
     const action = json["action"];
 
-    if (!user_id || !game_id || !action) {
-        throw new Error("user_id, game_id or action is missing");
+    if (!action) {
+        throw new Error("Action is missing");
     }
-
-    const game: Games = 
 
     if (action == "move") {
         /* Apply logic for move */
     } else if (action == "add") {
         /* Apply logic for score */
     } else if (action == "start") {
-        const user_id = json["user_id"];
-        const game_id = json["game_id"];
+        await new Promise<string> ((resolve) => {
+            workers[player.worker_index].worker.once("message", (msg) => resolve(msg));
+            workers[player.worker_index].worker.postMessage({ action: "startGame", game_uuid: player.game_id });
 
-        if (!user_id || !game_id) {
-            throw new Error("user_id or game_id is missing");
-        }
-
-
+        })
+        // console.log("DEBUG: websocket: game_id = " + player.game_id + " | player_id = " + player.player_id + " | token = " + player.token + " | worker_index = " + player.worker_index);
     }
 }
+
+/* 
+{
+    "action": "example"
+}
+*/

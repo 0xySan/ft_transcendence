@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { parse } from './sockets/socketParsing.js'
+import { Player } from './sockets/player.class.js'
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -20,7 +21,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
-import { clientToken } from "./routes/game.route.js";
+import { clientToken, getPlayerWithToken } from "./routes/game.route.js";
 
 /**
  * This interface with a worker (thread) and a list of players in this.
@@ -111,10 +112,16 @@ async function start() {
 				console.log('WebSocket rejected: token or user_id not defined', token, user_id);
 				return;
 			}
-			else if (clientToken.get(user_id) !== token)
+
+			const player = getPlayerWithToken(token);
+			if (player == null) {
+				return;
+			}
+
+			if (player.token !== token)
 			{
 				ws.close(1008, 'Invalid token or user_id'); // 1008 = Policy Violation
-				console.log('WebSocket rejected: invalid token/user_id', clientToken.get(user_id), token);
+				console.log('WebSocket rejected: invalid token/user_id', player.token, token);
 				return;
 			}
 			else
@@ -125,7 +132,7 @@ async function start() {
 					let data;
 					try {
 						data = JSON.parse(str);
-						parse(data);
+						parse(data, player);
 					}
 					catch (err) {
 						console.log("Invalid JSON");
@@ -134,7 +141,7 @@ async function start() {
 			}				
 			ws.on('close', () => {
 				console.log('WebSocket disconnected');
-				clientToken.delete(user_id);
+				clientToken.splice(clientToken.indexOf(player), 1);
 			});
 		});
 
