@@ -26,6 +26,28 @@ const blockedUsers: Set<string> = new Set(); // track blocked users
 // track for each conversation where the visible window starts (index into conversation array)
 const visibleStart: Record<string, number> = {};
 
+// Drafts: keep per-conversation drafts in-memory and persist to sessionStorage
+const DRAFTS_KEY = 'chat_drafts';
+const drafts: Record<string, string> = (() => {
+	try {
+		return JSON.parse(sessionStorage.getItem(DRAFTS_KEY) || '{}');
+	} catch (e) {
+		return {};
+	}
+})();
+
+function saveDraft(user: string | null, text: string) {
+	if (!user) return;
+	drafts[user] = text;
+	try { sessionStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts)); } catch (e) { /* ignore */ }
+}
+
+function clearDraft(user: string | null) {
+	if (!user) return;
+	delete drafts[user];
+	try { sessionStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts)); } catch (e) { /* ignore */ }
+}
+
 const userListDiv = document.querySelector<HTMLDivElement>(".user-list")!;
 const chatBlock = document.querySelector<HTMLDivElement>(".chat-block")!;
 
@@ -312,7 +334,15 @@ function renderChat() {
 		placeholderText = `Type a message to @${activeUser}`;
 	input.dataset.placeholder = placeholderText;
 	input.contentEditable = blockedUsers.has(activeUser) ? "false" : "true";
-	input.classList.add("empty");
+
+	// Load saved draft for this conversation (if any)
+	const initialDraft = drafts[activeUser || ''] || '';
+	if (initialDraft && !blockedUsers.has(activeUser)) {
+		input.textContent = initialDraft;
+		input.classList.remove("empty");
+	} else {
+		input.classList.add("empty");
+	}
 
 	const sendBtn = document.createElement("button");
 	sendBtn.type = "submit";
@@ -340,7 +370,8 @@ function renderChat() {
 	{
 		input.classList.remove("blocked-conversation");
 		sendBtn.disabled = false;
-		sendBtn.hidden = true;
+		// show send button if there's current input (draft) or let input handler toggle it
+		sendBtn.hidden = input.textContent!.trim() === '';
 		headerBlockBtn.textContent = "Block";
 		headerBlockBtn.setAttribute("aria-pressed", "false");
 	}
@@ -446,6 +477,8 @@ function renderChat() {
 		}
 
 		input.textContent = "";
+		// clear persisted draft for this conversation
+		clearDraft(activeUser);
 		input.classList.add("empty");
 		sendBtn.hidden = true;
 
@@ -482,6 +515,9 @@ function renderChat() {
 			if (!blockedUsers.has(activeUser!))
 				sendBtn.hidden = false;
 		}
+
+		// persist draft for the active conversation
+		saveDraft(activeUser, input.textContent || '');
 	});
 
 	// Scroll handler to load older messages when reaching top
