@@ -130,7 +130,7 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
         code: code
     } });
 
-    worker.players.push(game.user_id);
+    worker.players.push(String(game.user_id));
 
     // stock uuid and token in map
     const token = generateRandomToken(32);
@@ -181,13 +181,13 @@ export async function gameRoutes(fastify: FastifyInstance) {
     //     const game = request.body as sv_game;
     //     const token = generateRandomToken(32);
 
-    //     if (game.user_id == null)
-    //         return (reply.status(401).send({ error: "user_is is empty" }));
-    //     // stock uuid and token in map
-    //     clientToken.set(String(game.user_id), token);
-    //     // return party Token
-    //     return (reply.status(202).send({token}));
-    // });
+        if (game.user_id == null)
+            return (reply.status(401).send({ error: "user_is is empty" }));
+        // stock uuid and token in map
+        clientToken.set(game.user_id, token);
+        // return party Token
+        return (reply.status(202).send({token}));
+    });
 
     // -----------------    POST METHOD    ----------------------- \\
     fastify.post("/api/game", { preHandler: requirePartialAuth, schema: postGameSchema }, async (request, reply) => {
