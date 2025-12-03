@@ -531,9 +531,10 @@ function renderChat() {
 				renderUserList();
 				renderChat();
 				setTimeout(() => {
-					const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
-					const game = target.dataset.game || msg.game || 'pong';
-					window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
+					// const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
+					// const game = target.dataset.game || msg.game || 'pong';
+					// window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
+					window.location.href = '/pong-board'
 				}, 150);
 				return;
 			}
@@ -552,9 +553,10 @@ function renderChat() {
 				return;
 			}
 			if (target.classList.contains('invite-go')) {
-				const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
-				const game = target.dataset.game || msg.game || 'pong';
-				window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
+				// const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
+				// const game = target.dataset.game || msg.game || 'pong';
+				// window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
+				window.location.href = '/pong-board'
 				return;
 			}
 		}
