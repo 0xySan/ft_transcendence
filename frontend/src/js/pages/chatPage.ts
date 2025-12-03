@@ -1,7 +1,6 @@
 // chatPage.ts
 export {};
 
-
 // -------------------------------------
 // CONFIG
 // -------------------------------------
@@ -31,18 +30,21 @@ const DRAFTS_KEY = 'chat_drafts';
 const drafts: Record<string, string> = (() => {
 	try {
 		return JSON.parse(sessionStorage.getItem(DRAFTS_KEY) || '{}');
-	} catch (e) {
+	}
+	catch (e) {
 		return {};
 	}
 })();
 
-function saveDraft(user: string | null, text: string) {
+function saveDraft(user: string | null, text: string)
+{
 	if (!user) return;
 	drafts[user] = text;
 	try { sessionStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts)); } catch (e) { /* ignore */ }
 }
 
-function clearDraft(user: string | null) {
+function clearDraft(user: string | null)
+{
 	if (!user) return;
 	delete drafts[user];
 	try { sessionStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts)); } catch (e) { /* ignore */ }
@@ -55,9 +57,9 @@ const chatBlock = document.querySelector<HTMLDivElement>(".chat-block")!;
 let userListHidden = false;
 
 // Set CSS variable --vh to avoid 100vh issues on mobile when virtual keyboard opens.
-function updateVh() {
-	// 1% of the viewport height
-	document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+function updateVh()
+{
+	document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); // 1% of the viewport height
 }
 // initial
 updateVh();
@@ -69,10 +71,8 @@ window.addEventListener('orientationchange', updateVh);
 document.addEventListener('focusin', (e) => {
 	const target = e.target as HTMLElement | null;
 	if (!target) return;
-	if (target.closest && target.closest('.chat-input')) {
-		// small timeout to allow browser to adjust viewport first
-		setTimeout(updateVh, 50);
-	}
+	if (target.closest && target.closest('.chat-input'))
+		setTimeout(updateVh, 50); // small timeout to allow browser to adjust viewport first
 });
 
 // Persistent toggle button placed into the user list (moved out of chat header)
@@ -80,7 +80,7 @@ const headerToggleBtn = document.createElement("button");
 headerToggleBtn.className = "chat-header-toggle-users";
 function updateToggleBtnText() {
 	headerToggleBtn.setAttribute("aria-pressed", String(userListHidden));
-	// Use compact chevrons so the button doesn't take much space: '<' to hide, '>' to show
+	// Use compact chevrons so the button doesn't take much space: '◀/▲' to hide, '▶/▼' to show
 	const narrow = window.innerWidth < 700;
 	headerToggleBtn.textContent = narrow ? (userListHidden ? "▼" : "▲") : (userListHidden ? "▶" : "◀");
 	headerToggleBtn.title = userListHidden ? "Show users" : "Hide users";
@@ -98,10 +98,13 @@ headerToggleBtn.addEventListener("click", (e) => {
 	userListDiv.style.display = userListHidden ? "none" : "";
 
 	// expand chat area when hidden; remove inline style when shown so CSS can govern layout
-	if (userListHidden) {
+	if (userListHidden)
+	{
 		chatBlock.style.width = "100%";
 		chatBlock.style.flexGrow = "1";
-	} else {
+	}
+	else
+	{
 		chatBlock.style.width = "";
 		chatBlock.style.flexGrow = "";
 	}
@@ -166,13 +169,15 @@ profilepics.push("https://i.ibb.co/VcQ5RQwX/dummy.png");
 // -------------------------------------
 // SORTING HELPERS + RENDER USER LIST
 // -------------------------------------
-function getLastTimestamp(name: string): number {
+function getLastTimestamp(name: string): number
+{
 	const msgs = conversations[name] || [];
 	if (msgs.length === 0) return 0;
 	return Math.max(...msgs.map((m) => m.timestamp.getTime()));
 }
 
-function renderUserList() {
+function renderUserList()
+{
 	// Respect the userListHidden state
 	userListDiv.style.display = userListHidden ? "none" : "";
 
@@ -182,17 +187,18 @@ function renderUserList() {
 	// even if we hide `.user-list`). Prefer `chat-form-container` if available.
 	const container = userListDiv.parentElement as HTMLElement | null;
 	updateToggleBtnText();
-	if (container) {
+	if (container)
+	{
 		// prefer inserting the toggle immediately before the user list so it occupies its own
 		// space and does not overlap user rows
-		if (container.querySelector('.chat-header-toggle-users') !== headerToggleBtn) {
+		if (container.querySelector('.chat-header-toggle-users') !== headerToggleBtn)
 			container.insertBefore(headerToggleBtn, userListDiv);
-		}
-	} else {
+	}
+	else
+	{
 		// fallback: still append to userListDiv
-		if (userListDiv.querySelector('.chat-header-toggle-users') !== headerToggleBtn) {
+		if (userListDiv.querySelector('.chat-header-toggle-users') !== headerToggleBtn)
 			userListDiv.insertBefore(headerToggleBtn, userListDiv.firstChild);
-		}
 	}
 
 	const sortedUsers = Object.keys(conversations).sort((a, b) => {
@@ -378,21 +384,20 @@ function renderChat() {
 
 	// Ensure visibleStart exists for this conversation
 	const msgs = conversations[activeUser] || [];
-	if (visibleStart[activeUser] === undefined) {
+	if (visibleStart[activeUser] === undefined)
 		visibleStart[activeUser] = Math.max(0, msgs.length - MESSAGES_PAGE);
-	}
 	let startIndex = visibleStart[activeUser];
 
 	// If we're showing the last page (or the conversation fits in a page), force scroll-to-bottom
 	const lastPageStart = Math.max(0, msgs.length - MESSAGES_PAGE);
-	if (startIndex >= lastPageStart) {
+	if (startIndex >= lastPageStart)
 		wasNearBottom = true;
-	}
 
 	messagesDiv.innerHTML = loadMessages(startIndex, msgs);
 
 	// When a conversation has more messages than the current window, show a small hint at top
-	if (startIndex > 0) {
+	if (startIndex > 0)
+	{
 		const topHint = document.createElement("div");
 		topHint.className = "load-older-hint";
 		topHint.textContent = "Scroll up to load earlier messages";
@@ -420,11 +425,15 @@ function renderChat() {
 			target.setAttribute("aria-pressed", String(!msg.hidden));
 			const contentDiv = container.querySelector<HTMLElement>(".blocked-message-content");
 			container.setAttribute("data-shown", String(!msg.hidden));
-			if (contentDiv) {
-				if (msg.hidden) {
+			if (contentDiv)
+			{
+				if (msg.hidden)
+				{
 					contentDiv.style.display = "none";
 					target.textContent = "Show";
-				} else {
+				}
+				else
+					{
 					contentDiv.style.display = "block";
 					target.textContent = "Hide";
 				}
@@ -435,19 +444,20 @@ function renderChat() {
 	// Auto-scroll behavior:
 	// - If the user was near bottom before re-render, scroll to bottom to show new messages.
 	// - Otherwise keep their place (important when they are reading older messages).
-	if (wasNearBottom) {
+	if (wasNearBottom)
 		messagesDiv.scrollTop = messagesDiv.scrollHeight;
-	} else {
+	else
+	{
 		// If we just rendered a larger window because we prepended older messages, preserve position
 		// formula: newScrollTop = newScrollHeight - oldScrollHeight + oldScrollTop
-		if (prevScrollHeight > 0) {
+		if (prevScrollHeight > 0)
+		{
 			messagesDiv.scrollTop = messagesDiv.scrollHeight - prevScrollHeight + prevScrollTop;
 			// clamp
 			if (messagesDiv.scrollTop < 0) messagesDiv.scrollTop = 0;
-		} else {
-			// otherwise keep at same top position
-			messagesDiv.scrollTop = prevScrollTop;
 		}
+		else
+			messagesDiv.scrollTop = prevScrollTop; // otherwise keep at same top position
 	}
 
 	// PRIMARY: intercept submit and stop other handlers from running
@@ -456,6 +466,7 @@ function renderChat() {
 		submitMessage(input, sendBtn, messagesDiv);
 	});
 
+	// Handle Enter key (without Shift) to submit
 	input.addEventListener("keydown", (e: KeyboardEvent) => {
 		if ((e as any).isComposing) return;
 
@@ -465,6 +476,7 @@ function renderChat() {
 		}
 	});
 
+	// Input handler to toggle send button visibility and save draft
 	input.addEventListener("input", () => {
 		if (input.textContent!.trim() === "")
 		{
@@ -475,12 +487,10 @@ function renderChat() {
 		else
 		{
 			input.classList.remove("empty");
-			// if conversation partner blocked, keep send disabled
 			if (!blockedUsers.has(activeUser!))
 				sendBtn.hidden = false;
 		}
 
-		// persist draft for the active conversation
 		saveDraft(activeUser, input.textContent || '');
 	});
 
@@ -522,7 +532,8 @@ function escapeHtml(str: string) {
 }
 
 // Convert messages timestamp to readable format
-function convertTimestampToReadable(ts: Date): string {
+function convertTimestampToReadable(ts: Date): string
+{
 	const now = new Date();
 	const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 	const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
@@ -545,8 +556,9 @@ function convertTimestampToReadable(ts: Date): string {
 	return time;
 }
 
-function loadMessages(startIndex: number, msgs: Message[]): string {
-	// Render existing messages from startIndex -> end
+// Load messages from startIndex to end, grouping consecutive messages from same sender
+function loadMessages(startIndex: number, msgs: Message[]): string
+{
 	const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 	const slice = (msgs.slice(startIndex) || []);
 	let html = "";
@@ -573,27 +585,30 @@ function loadMessages(startIndex: number, msgs: Message[]): string {
 			.map((s) => `<span class="chat-group-text">${s}</span>`)
 			.join(`<br>`);
 		// If sender is blocked (and not our own messages), render a single blocked group block
-		if (first.sender !== "me" && blockedUsers.has(first.sender)) {
+		if (first.sender !== "me" && blockedUsers.has(first.sender))
+		{
 			// consider group hidden if all messages are hidden (default hidden when undefined)
 			const groupHidden = group.every((m) => m.hidden !== false);
 			html += `
-		<div class="chat-message blocked " data-shown="${!groupHidden}" data-index="${globalFirstIdx}" data-count="${group.length}">
-			<span class="chat-blocked-note">${group.length} blocked ${group.length > 1 ? "messages" : "message"} — </span><span class="show-blocked-btn" data-index="${globalFirstIdx}" data-count="${group.length}" aria-pressed="${!groupHidden}">${groupHidden ? "Show" : "Hide"}</span>
-			<div class="blocked-message-content" data-index="${globalFirstIdx}" style="display:${groupHidden ? "none" : "block"}">
-				<span class="chat-time">${time}</span>
-				${joinedSafe}
-			</div>
-		</div>`;
-		} else {
+			<div class="chat-message blocked " data-shown="${!groupHidden}" data-index="${globalFirstIdx}" data-count="${group.length}">
+				<span class="chat-blocked-note">${group.length} blocked ${group.length > 1 ? "messages" : "message"} — </span><span class="show-blocked-btn" data-index="${globalFirstIdx}" data-count="${group.length}" aria-pressed="${!groupHidden}">${groupHidden ? "Show" : "Hide"}</span>
+				<div class="blocked-message-content" data-index="${globalFirstIdx}" style="display:${groupHidden ? "none" : "block"}">
+					<span class="chat-time">${time}</span>
+					${joinedSafe}
+				</div>
+			</div>`;
+		}
+		else
+		{
 			// normal grouped messages: single container, single time, multiple spans separated by <br>
 			const senderClass = first.sender === "me" ? "me" : first.sender;
 			html += `
-		<div class="chat-message ${senderClass}" data-index="${globalFirstIdx}" data-count="${group.length}">
-			<span class="chat-time">${time}</span>
-			${joinedSafe}
-		</div>`;
+			<div class="chat-message ${senderClass}" data-index="${globalFirstIdx}" data-count="${group.length}">
+				<span class="chat-time">${time}</span>
+				${joinedSafe}
+			</div>`;
 		}
-		i = j; // advance to next group
+		i = j;
 	}
 	return html;
 }
@@ -623,10 +638,9 @@ function submitMessage(input: HTMLDivElement, sendBtn: HTMLButtonElement, messag
 		}
 	}
 	input.textContent = "";
-	// clear persisted draft for this conversation
 	clearDraft(activeUser);
 	input.classList.add("empty");
 	sendBtn.hidden = true;
 	renderUserList();
-	renderChat(); // re-render to show the new message (renderChat will auto-scroll only if appropriate)
+	renderChat();
 }
