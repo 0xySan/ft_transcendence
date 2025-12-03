@@ -17,7 +17,7 @@ const RATE_WINDOW = 15 * 60 * 1000;
 const MIN_DELAY = 500;
 const RATE_LIMIT = 5;
 
-export async function newPasswordReset(fastify: FastifyInstance) {
+export async function passwordResetRoutes(fastify: FastifyInstance) {
     const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
     const passwordRegex = /^.{8,64}$/;
 

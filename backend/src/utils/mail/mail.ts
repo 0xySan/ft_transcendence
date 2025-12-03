@@ -7,6 +7,14 @@ dotenv.config({ quiet: true });
 
 function createTransporter() {
 	if (process.env.NODE_ENV !== 'test' && process.env.DKIM_KEY && fs.existsSync(process.env.DKIM_KEY)) {
+		try {
+			fs.readFileSync(process.env.DKIM_KEY, 'utf8');
+		} catch (err) {
+			console.error(`❌ DKIM key file is not readable: ${process.env.DKIM_KEY}`);
+			return nodemailer.createTransport({
+				jsonTransport: true
+			});
+		}
 		return nodemailer.createTransport({
 			host: 'host.docker.internal',
 			port: 25,

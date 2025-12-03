@@ -1163,8 +1163,7 @@ button:active {
 	}
 	#lobby-player-box,
 	#lobby-mode-setting {
-		width: 100%;
-		max-width: 45rem;
+		width: 100% !important;
 		min-height: 40rem;
 	}
 	#lobby-mode-setting {
@@ -1172,6 +1171,9 @@ button:active {
 	}
 	#lobby-action-buttons {
 		width: 100%;
+	}
+	.lobby-setting-box {
+		min-height: 42rem;
 	}
 	.lobby-setting-box {
 		min-height: 42rem;
@@ -1874,7 +1876,7 @@ nav {
 }
 
 /* ==========================================================================
-							   LINK STYLES 
+                               LINK STYLES 
    ========================================================================== */
 
 a {

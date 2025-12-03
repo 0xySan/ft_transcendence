@@ -14,15 +14,15 @@ export const registerAccountSchema = {
 			},
 			password: {
 				type: "string",
-				description: "User password (8–64 chars)",
+				description: "User password (8-64 chars)",
 			},
 			username: {
 				type: "string",
-				description: "Unique username (3–20 chars, letters, numbers, underscores)",
+				description: "Unique username (3-20 chars, letters, numbers, underscores)",
 			},
 			display_name: {
 				type: "string",
-				description: "Public display name (optional, 1–50 chars)",
+				description: "Public display name (optional, 1-50 chars)",
 			},
 			pfp: {
 				type: "string",

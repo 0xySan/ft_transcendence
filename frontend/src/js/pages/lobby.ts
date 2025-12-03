@@ -6,6 +6,9 @@ declare function addListener(
 	handler: EventListenerOrEventListenerObject,
 	options?: boolean
 ): void;
+declare function translatePage(language: string): void;
+declare function translateElement(language: string, element: HTMLElement): void;
+declare function getUserLang(): string;
 
 /**
  * Get element by ID or throw error if missing

@@ -65,6 +65,10 @@ export function createUser(email: string, passwordHash: string, roleId = 1): Use
 	return user;
 }
 
+export function getPasswordHashByUserId(userId: string): string | undefined {
+	return getRow<User>("users", "user_id", userId)?.password_hash;
+}
+
 /**
  * Update a user's last login timestamp to the current time.
  * Returns true if a user was actually updated.

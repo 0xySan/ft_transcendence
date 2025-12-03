@@ -10,7 +10,7 @@ import * as dbModule from "../../src/db/wrappers/auth/sessions.js";
 
 describe("session utilities", () => {
 	let randomTokenSpy: any;
-	let encryptSecretSpy: any;
+	let tokenHashSpy: any;
 	let createSessionSpy: any;
 	let getSessionByTokenHashSpy: any;
 
@@ -19,14 +19,14 @@ describe("session utilities", () => {
 
 		// Mock crypto functions
 		randomTokenSpy = vi.spyOn(cryptoModule, "generateRandomToken").mockReturnValue("dummyToken");
-		encryptSecretSpy = vi.spyOn(cryptoModule, "encryptSecret").mockImplementation((s: string) => Buffer.from(s + "_hashed"));
+		tokenHashSpy = vi.spyOn(cryptoModule, "tokenHash").mockImplementation((token: string) => token + "_hashed");
 
 		// Mock DB functions
 		createSessionSpy = vi.spyOn(dbModule, "createSession").mockImplementation((data: any) => ({
 			...data,
 			id: 1
 		}));
-		getSessionByTokenHashSpy = vi.spyOn(dbModule, "getSessionByTokenHash").mockImplementation((hash: string) => ({
+		getSessionByTokenHashSpy = vi.spyOn(dbModule, "getSessionByTokenHash").mockImplementation(() => ({
 			id: 1,
 			user_id: "42",
 			session_token_hash: "dummyToken_hashed",
@@ -34,6 +34,7 @@ describe("session utilities", () => {
 			is_persistent: false,
 			created_at: Math.floor(Date.now() / 1000),
 			last_used_at: Math.floor(Date.now() / 1000),
+			stage: "active",
 			ip: "127.0.0.1",
 			user_agent: "test-agent",
 		}));
@@ -52,7 +53,7 @@ describe("session utilities", () => {
 		expect(result?.session).toHaveProperty("id");
 		expect(createSessionSpy).toHaveBeenCalled();
 		expect(randomTokenSpy).toHaveBeenCalledWith(128);
-		expect(encryptSecretSpy).toHaveBeenCalledWith("dummyToken");
+		expect(tokenHashSpy).toHaveBeenCalledWith("dummyToken");
 	});
 
 	it("createNewSession should return undefined if DB creation fails", () => {
@@ -63,15 +64,15 @@ describe("session utilities", () => {
 
 	it("checkTokenValidity should return true for valid session", () => {
 		const isValid = sessionModule.checkTokenValidity("dummyToken");
-		expect(isValid).toBe(true);
-		expect(encryptSecretSpy).toHaveBeenCalledWith("dummyToken");
+		expect(isValid).toEqual({ isValid: true, session: expect.objectContaining({ user_id: "42" }) });
+		expect(tokenHashSpy).toHaveBeenCalledWith("dummyToken");
 		expect(getSessionByTokenHashSpy).toHaveBeenCalled();
 	});
 
 	it("checkTokenValidity should return false if session not found", () => {
 		getSessionByTokenHashSpy.mockReturnValueOnce(undefined);
 		const isValid = sessionModule.checkTokenValidity("nonexistentToken");
-		expect(isValid).toBe(false);
+		expect(isValid).toEqual({ isValid: false, session: null });
 	});
 
 	it("checkTokenValidity should return false if session expired", () => {
@@ -84,6 +85,6 @@ describe("session utilities", () => {
 			is_persistent: false
 		});
 		const isValid = sessionModule.checkTokenValidity("dummyToken");
-		expect(isValid).toBe(false);
+		expect(isValid).toEqual({ isValid: false, session: expect.objectContaining({ user_id: 42 }) });
 	});
 });

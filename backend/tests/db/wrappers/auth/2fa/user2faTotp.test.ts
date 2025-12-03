@@ -7,7 +7,8 @@ import {
 	getUser2faTotpById,
 	updateUser2faTotp,
 	listUser2faTotp,
-	getUser2faTotpByMethodId
+	getUser2faTotpByMethodId,
+	getUserTotpMethodById
 } from "../../../../../src/db/wrappers/auth/2fa/user2faTotp.js";
 
 import {
@@ -15,10 +16,10 @@ import {
 } from "../../../../../src/db/wrappers/auth/2fa/user2FaMethods.js";
 
 let userId: string;
-let methodId: number;
+let methodId: string;
 let totpId: number;
 
-describe("user_2fa_totp wrapper – with FK setup", () => {
+describe("user2faTotp wrapper – with FK setup", () => {
 	beforeAll(() => {
 		userId = uuidv7();
 		const insertUser = db.prepare(`
@@ -32,7 +33,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 			user_id: userId,
 			method_type: 2,
 			label: "App Authenticator",
-			is_primary: 1,
+			is_primary: true,
 			is_verified: true,
 			created_at: now,
 			updated_at: now
@@ -42,7 +43,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		if (!methodId) throw new Error("Throw error (undefined)");
 	});
 
-	it("should create a user_2fa_totp entry with valid FK", () => {
+	it("should create a user2faTotp entry with valid FK", () => {
 		const now = Math.floor(Date.now() / 1000);
 		const created = createUser2faTotp({
 			method_id: methodId,
@@ -51,7 +52,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 			secret_meta: "digits=6;period=30",
 			last_used: now
 		});
-        if (!created)throw new Error("Expected an user2faTotp from createUser2faTotp(), but got undefined.");
+        if (!created) throw new Error("Expected an user2faTotp from createUser2faTotp(), but got undefined.");
 		expect(created).toBeDefined();
 		expect(created.method_id).toBe(methodId);
 		expect(created.secret_meta).toContain("digits");
@@ -60,10 +61,10 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		expect(typeof totpId).toBe("number");
 	});
 
-	it("should retrieve a user_2fa_totp entry by ID", () => {
+	it("should retrieve a user2faTotp entry by ID", () => {
 		const totp = getUser2faTotpById(totpId);
 		expect(totp).toBeDefined();
-        if (!totp)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
+        if (!totp) throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
 		expect(totp.method_id).toBe(methodId);
 		expect(totp.secret_meta).toMatch(/period=30/);
 	});
@@ -76,7 +77,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		expect(updated).toBe(true);
 
 		const fetched = getUser2faTotpById(totpId);
-        if (!fetched)throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
+        if (!fetched) throw new Error("Expected an user2faTotp from getSessionById(), but got undefined.");
 		expect(fetched.secret_meta).toContain("digits=8");
 		expect(fetched.last_used).toBe(1800000000);
 	});
@@ -88,7 +89,7 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 
 	it("should not allow creation without valid method_id", () => {
 		const result = createUser2faTotp({
-			method_id: 99999,
+			method_id: "non-existent-method-id",
             // @ts-expect-error
 			secret_encrypted: Buffer.from("bad"),
 			secret_meta: "fail"
@@ -96,15 +97,15 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
 		expect(result).toBeUndefined();
 	});
 
-	it("should retrieve user_2fa_totp by method_id", () => {
+	it("should retrieve user2faTotp by method_id", () => {
         const totp = getUser2faTotpByMethodId(methodId);
-        if (!totp)throw new Error("Expected an user2faTotp from getUser2faTotpByMethodId(), but got undefined.");
+        if (!totp) throw new Error("Expected an user2faTotp from getUser2faTotpByMethodId(), but got undefined.");
         expect(totp).toBeDefined();
         expect(totp.method_id).toBe(methodId);
         expect(totp.secret_encrypted).toBeInstanceOf(Buffer);
     });
 
-	it("should list all user_2fa_totp entries", () => {
+	it("should list all user2faTotp entries", () => {
 		const allTotps = listUser2faTotp();
 		expect(Array.isArray(allTotps)).toBe(true);
 		expect(allTotps.length).toBeGreaterThan(0);
@@ -115,5 +116,45 @@ describe("user_2fa_totp wrapper – with FK setup", () => {
             const secretString = totp.secret_encrypted.toString("base64");
             expect(typeof secretString).toBe("string");
         });
+	});
+
+	it("getUserTotpMethodById should return undefined for non-existent ID", () => {
+		const totp = getUserTotpMethodById("non-existent-method-id");
+		expect(totp).toBeUndefined();
+	});
+
+	it("getUserTotpMethodById should return correct data for existing ID", () => {
+		const insertMethod = db.prepare(`
+			INSERT INTO user_2fa_methods (method_id, user_id, method_type, label, is_primary, is_verified, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		`);
+		const now = Math.floor(Date.now() / 1000);
+		const newMethodId = "test-method-123";
+		insertMethod.run(
+			newMethodId,
+			userId,
+			1,
+			"Test TOTP Method",
+			0,
+			1,
+			now,
+			now
+		);
+		const insertTotp = db.prepare(`
+			INSERT INTO user_2fa_totp (method_id, secret_encrypted, secret_meta, last_used)
+			VALUES (?, ?, ?, ?)
+		`);
+		insertTotp.run(
+			newMethodId,
+			Buffer.from("another-secret"),
+			"digits=6;period=30",
+			now
+		);
+
+		const result = getUserTotpMethodById(newMethodId);
+		if (!result) throw new Error("Expected a User2FaTotpDetails from getUserTotpMethodById(), but got undefined.");
+		expect(result).toBeDefined();
+		expect(result.method.method_id).toBe(newMethodId);
+		expect(result.totp.secret_meta).toBe("digits=6;period=30");
 	});
 });

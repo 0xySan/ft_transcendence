@@ -1,0 +1,82 @@
+{
+  "about": {
+    "built-by": "Built as a full-stack end-of-cursus project by:",
+    "catchphrase": "Play, connect, and transcend the ordinary.",
+    "challenge": "Challenge your friends or test your skills against others in Pong and Tetris, reimagined for the web with smooth real-time gameplay, dynamic leaderboards, and sleek design.",
+    "combination-text": "Transcendence 42 combines modern technologies with nostalgic gameplay to deliver an immersive and competitive online experience.",
+    "description": "Transcendence is a modern web application where fun meets functionality, a social gaming platform designed to bring players together through timeless classics.",
+    "title": "About Transcendence 42"
+  },
+  "footer": {
+    "aboutLink": "About",
+    "copyrightText": "© 2025 Transcendence 42. All rights reserved.",
+    "githubLink": "GitHub",
+    "homeLink": "Home",
+    "privacyPolicyLink": "Privacy Policy"
+  },
+  "forgotPassword": {
+    "backToLogin": "Back to Login",
+    "emailLabel": "Email:",
+    "instructions": "Enter your email address below to receive a password reset link.",
+    "resetPassword": "Reset Password",
+    "title": "Forgot your password?"
+  },
+  "home": {
+    "landingDescription": "Pong meets Tetris on a social platform created to let you enjoy your childhood's games!",
+    "playButton": "PLAY"
+  },
+  "lobby": {
+    "customGameButton": "CUSTOM GAME",
+    "multiplayerButton": "MULTIPLAYER",
+    "players": "Players",
+    "tournamentButton": "TOURNAMENT",
+    "settingsTitle": "Settings",
+    "privateLabel": "Private",
+    "roomSettingsButton": "Room settings",
+    "advancedSettingsButton": "Advanced settings",
+    "joinButton": "JOIN",
+    "leaveButton": "LEAVE",
+    "launchButton": "LAUNCH"
+  },
+  "login": {
+    "forgotPasswordText": "Forgot your password? <a href=\"/forgot-password\">Reset it here</a>",
+    "loginButton": "Login",
+    "loginTitle": "Login",
+    "noAccountText": "Don't have an account? <a href=\"/register\">Register here</a>",
+    "passwordLabel": "Password:",
+    "registerHereLink": "Register here",
+    "rememberMeLabel": "Remember me",
+    "usernameLabel": "Username:"
+  },
+  "mailverification": {
+    "changeEmail": "Change email",
+    "message": "We've sent an email to <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>. Check your inbox and click the verification link to confirm your email address.",
+    "resendEmail": "Resend Email",
+    "title": "Check your mailbox"
+  },
+  "navbar": {
+    "homeText": "Home",
+    "playText": "Play",
+    "leaderboardText": "Leaderboard",
+    "profileText": "Profile",
+    "loginButton": "Login",
+    "registerButton": "Register"
+  },
+  "register": {
+    "alreadyHaveAccount": "Already have an account? <a href=\"/login\" class=\"link-peach-to-maroon\" data-translate-key=\"register.loginHereLink\">Login here</a>",
+    "confirmPasswordLabel": "Confirm Password:",
+    "createAccount": "Create an Account",
+    "emailLabel": "Email:",
+    "loginHereLink": "Login here",
+    "passwordLabel": "Password:",
+    "registerButton": "Register",
+    "usernameLabel": "Username:"
+  },
+  "resetPassword": {
+    "backToLoginLink": "Back to Login",
+    "confirmPasswordLabel": "Confirm Password:",
+    "passwordLabel": "Password:",
+    "resetButton": "Reset Password",
+    "title": "Reset Password"
+  }
+}

@@ -1,23 +1,23 @@
 <div class="auth-pages-container">
-	<h1 >Login</h1>
+	<h1 data-translate-key="login.loginTitle">Login</h1>
 	<form class="auth-form-container">
 		<div class="div-title-and-text-input">
-			<label for="username" >Username:</label>
+			<label for="username" data-translate-key="login.usernameLabel">Username:</label>
 			<input type="text" id="username-text-input" name="username" class="form-input-field" placeholder="Enter your username"/>
 			<span id="login-username-error-text" class="error-message" aria-hidden="true" style="opacity: 0;">
 			</span>
 		</div>
 		<div class="div-title-and-text-input">
-			<label for="password" >Password:</label>
+			<label for="password" data-translate-key="login.passwordLabel">Password:</label>
 			<input type="password" id="password-text-input" name="password" class="form-input-field" placeholder="Enter your password"/>
 			<span id="login-password-error-text" class="error-message" aria-hidden="true" style="opacity: 0;">
 			</span>
 			<div class="checkbox-container">
 				<input type="checkbox" id="remember-me-checkbox" name="remember-me"/>
-				<label for="remember-me-checkbox" >Remember me</label>
+				<label for="remember-me-checkbox" data-translate-key="login.rememberMeLabel">Remember me</label>
 			</div>
 		</div>
-		<button type="submit" class="auth-btn">
+		<button type="submit" class="auth-btn" data-translate-key="login.loginButton">
 			Login
 		</button>
 		<div class="oauth-buttons-container">
@@ -35,11 +35,11 @@
 			</a>
 		</div>
 		<div>
-			<p >
+			<p data-translate-key="login.forgotPasswordText">
 				Forgot your password?
 				<a href="/forgot-password">Reset it here</a>
 			</p>
-			<p >
+			<p data-translate-key="login.noAccountText">
 				Don't have an account?
 				<a href="/register">Register here</a>
 			</p>

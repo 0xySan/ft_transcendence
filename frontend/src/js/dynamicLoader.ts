@@ -1,5 +1,7 @@
 export {};
 
+import { getUserLang } from "./translationModule.js";
+
 // Global listeners array to track dynamically added event listeners
 declare global {
 	var listeners: Listener[];
@@ -87,7 +89,7 @@ function setupDynamicRouting(): void {
 		const url = new URL(link.href);
 
 		// Fetch page content dynamically
-		fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+		fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
 			.then(res => res.ok ? res.text() : Promise.reject(`HTTP ${res.status}`))
 			.then(html => {
 				updatePage(url.href, html, 'push');
@@ -101,7 +103,7 @@ function setupDynamicRouting(): void {
 		if (url.pathname === '/' && !url.searchParams.has('song')) {
 			if (contentDiv) contentDiv.innerHTML = '';
 		} else {
-			fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+			fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
 				.then(res => res.text())
 				.then(html => updatePage(url.href, html, 'replace'))
 				.catch(err => console.error('Fetch error on popstate:', err));

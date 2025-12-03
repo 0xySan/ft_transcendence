@@ -1,7 +1,7 @@
 export const profileSchema = {
 	summary: "Retrieve user profile information",
 	description: "Fetches the profile details of a user by their unique ID.",
-	tags: ["Users"],
+	tags: ["Users: Profile"],
 	querystring: {
 		type: "object",
 		properties: {
