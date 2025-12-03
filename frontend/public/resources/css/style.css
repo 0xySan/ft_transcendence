@@ -476,11 +476,14 @@ button:active {
 	flex: 1;            /* takes all remaining horizontal space */
 	height: 100%;       /* full height of parent */
 	width: 100%;
-	background-color: rgb(var(--surface1, 60,63,70));
+	background-color: rgb(var(--base));
 	border-radius: 6px;
 	overflow-y: auto;   /* scroll inside if needed */
 	padding: 1rem;
 	box-sizing: border-box;
+	color: rgb(var(--text));
+	display: flex;
+	flex-direction: column;
 }
 
 /* Each user row */
@@ -553,14 +556,6 @@ button:active {
 
 .chat-form-container .chat-header-toggle-users:hover {
 	background: rgba(var(--surface1, 60,63,70), 0.8);
-}
-
-.chat-block {
-  	flex: 1;
-  	background: rgb(var(--base));
-  	color: rgb(var(--text));
-  	display: flex;
-  	flex-direction: column;
 }
 
 .chat-header {

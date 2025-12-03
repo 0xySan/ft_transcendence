@@ -22,6 +22,9 @@ interface Conversation {
 }
 
 const MESSAGES_PAGE = 100; // page size for incremental loading
+const NAVIGATION_DELAY = 150;
+const KEYBOARD_ADJUST_DELAY = 50;
+const SCROLL_THRESHOLD = 100; // px from bottom to consider "near bottom"
 
 const conversations: Conversation = {};
 let activeUser: string | null = null;
@@ -59,6 +62,23 @@ function clearDraft(user: string | null)
 const userListDiv = document.querySelector<HTMLDivElement>(".user-list")!;
 const chatBlock = document.querySelector<HTMLDivElement>(".chat-block")!;
 
+// Single global handler to hide the invite menu when clicking outside.
+// This avoids adding/removing listeners on every `renderChat()` call and
+// prevents accumulating duplicate listeners (memory leak / performance).
+function globalHideInviteMenu(event: MouseEvent) {
+	const inviteMenu = document.querySelector<HTMLDivElement>('.invite-menu');
+	const inviteBtn = document.querySelector<HTMLButtonElement>('.chat-invite-btn');
+	if (!inviteMenu) return;
+	// only act when the menu is currently visible
+	if (inviteMenu.style.display === 'block') {
+		const target = event.target as Node | null;
+		if (target && !inviteMenu.contains(target) && !(inviteBtn && inviteBtn.contains(target))) {
+			inviteMenu.style.display = 'none';
+		}
+	}
+}
+document.addEventListener('click', globalHideInviteMenu);
+
 // New: track whether the user list is hidden (for mobile/full chat)
 let userListHidden = false;
 
@@ -78,7 +98,7 @@ document.addEventListener('focusin', (e) => {
 	const target = e.target as HTMLElement | null;
 	if (!target) return;
 	if (target.closest && target.closest('.chat-input'))
-		setTimeout(updateVh, 50); // small timeout to allow browser to adjust viewport first
+		setTimeout(updateVh, KEYBOARD_ADJUST_DELAY); // small timeout to allow browser to adjust viewport first
 });
 
 // Persistent toggle button placed into the user list (moved out of chat header)
@@ -266,7 +286,7 @@ function renderChat() {
 		prevScrollTop = oldMessagesDiv.scrollTop;
 		prevScrollHeight = oldMessagesDiv.scrollHeight;
 		const distanceFromBottom = oldMessagesDiv.scrollHeight - oldMessagesDiv.scrollTop - oldMessagesDiv.clientHeight;
-		wasNearBottom = distanceFromBottom < 100; // consider near bottom if within 100px
+		wasNearBottom = distanceFromBottom < SCROLL_THRESHOLD; // consider near bottom if within 100px
 	}
 
 	// Build the chat UI using DOM APIs instead of innerHTML to avoid
@@ -384,19 +404,6 @@ function renderChat() {
 		if (activeUser === 'me' || blockedUsers.has(activeUser!)) return;
 		inviteMenu.style.display = inviteMenu.style.display === 'none' ? 'block' : 'none';
 	});
-
-	// hide menu when clicking elsewhere
-	const hideInviteMenu = (event: MouseEvent) => {
-		// Only hide if the click is outside the invite menu and invite button
-		if (
-			!inviteMenu.contains(event.target as Node) &&
-			!inviteBtn.contains(event.target as Node)
-		) {
-			inviteMenu.style.display = 'none';
-		}
-	};
-	document.removeEventListener('click', hideInviteMenu);
-	document.addEventListener('click', hideInviteMenu);
 
 	const messagesDiv = document.createElement("div");
 	messagesDiv.className = "chat-messages";
@@ -520,7 +527,7 @@ function renderChat() {
 					target.textContent = "Show";
 				}
 				else
-					{
+				{
 					contentDiv.style.display = "block";
 					target.textContent = "Hide";
 				}
@@ -547,7 +554,7 @@ function renderChat() {
 					// const game = target.dataset.game || msg.game || 'pong';
 					// window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
 					window.location.href = '/pong-board';
-				}, 150);
+				}, NAVIGATION_DELAY);
 				return;
 			}
 			if (target.classList.contains('invite-decline'))
@@ -601,7 +608,7 @@ function renderChat() {
 
 	// Handle Enter key (without Shift) to submit
 	input.addEventListener("keydown", (e: KeyboardEvent) => {
-		if ('isComposing' in e && (e as any).isComposing) return;
+		if (e.isComposing) return;
 
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
