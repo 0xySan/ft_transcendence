@@ -9,6 +9,12 @@ interface Message {
 	text: string;
 	timestamp: Date;
 	hidden?: boolean;
+	// optional: message type for richer UI (invite/system/etc)
+	type?: 'text' | 'invite' | 'system';
+	// for invites: 'pending' | 'accepted' | 'declined' | 'cancelled'
+	inviteState?: 'pending' | 'accepted' | 'declined' | 'cancelled';
+	// invited game: 'pong' or 'tetris'
+	game?: 'pong' | 'tetris';
 }
 
 interface Conversation {
@@ -152,6 +158,8 @@ users.forEach((name, i) => {
 });
 
 conversations["user42"] = [
+	{ sender: "user42", type: 'invite', inviteState: 'pending', game: 'tetris', text: "Wanna play Tetris?", timestamp: new Date(Date.now() + 1) },
+	{ sender: "user42", type: 'invite', inviteState: 'pending', game: 'pong', text: "Wanna play Pong?", timestamp: new Date(Date.now() + 2) },
 	{ sender: "user42", text: "This is a longer message to test how the chat UI handles wrapping and multiple lines. Let's see how it looks when the message exceeds the typical length of a chat bubble. Hopefully, it wraps nicely and remains readable!", timestamp: new Date(Date.now() + 3) },
 	{ sender: "me", text: "Indeed, it seems to be working well!\nNew line test.", timestamp: new Date(Date.now() + 4) },
 ];
@@ -161,6 +169,7 @@ conversations["user98"] = []; // empty conversation for testing
 conversations["Dummy"] = [
 	{ sender: "Dummy", text: "Hi there!", timestamp: new Date(Date.now() + 5) },
 	{ sender: "me", text: "Hello Dummy, how are you?", timestamp: new Date(Date.now() + 6) },
+	{ sender: "me", type: 'invite', inviteState: 'accepted', game: 'pong', text: "Wanna play Pong?", timestamp: new Date(Date.now() + 7) },
 ];
 
 users.push("Dummy");
@@ -323,6 +332,62 @@ function renderChat() {
 
 	header.appendChild(headerBlockBtn);
 
+	// Invite button + small menu to choose game (Pong or Tetris)
+	const inviteBtn = document.createElement("button");
+	inviteBtn.className = "chat-invite-btn";
+	inviteBtn.textContent = "+";
+	inviteBtn.title = activeUser ? `Invite ${activeUser} to play` : "Invite to play";
+	inviteBtn.setAttribute("invite-button", "true");
+	if (activeUser === "me") inviteBtn.hidden = true; // don't show for self
+	if (blockedUsers.has(activeUser!)) // hide invite button entirely when the conversation partner is blocked
+	{
+		inviteBtn.hidden = true;
+		inviteBtn.title = `Cannot invite ${activeUser} (blocked)`;
+	}
+
+	// menu container (hidden by default)
+	const inviteMenu = document.createElement('div');
+	inviteMenu.className = 'invite-menu';
+	inviteMenu.style.display = 'none';
+	inviteMenu.setAttribute('role', 'menu');
+
+	const btnTetris = document.createElement('button');
+	btnTetris.type = 'button';
+	btnTetris.className = 'invite-menu-btn';
+	btnTetris.textContent = 'Invite Tetris';
+	btnTetris.addEventListener('click', (ev) => {
+		ev.preventDefault(); ev.stopPropagation();
+		if (!activeUser) return;
+		if (blockedUsers.has(activeUser)) return; // don't allow inviting blocked users
+		sendInvite(activeUser, 'tetris');
+		inviteMenu.style.display = 'none';
+	});
+
+	const btnPong = document.createElement('button');
+	btnPong.type = 'button';
+	btnPong.className = 'invite-menu-btn';
+	btnPong.textContent = 'Invite Pong';
+	btnPong.addEventListener('click', (ev) => {
+		ev.preventDefault(); ev.stopPropagation();
+		if (!activeUser) return;
+		if (blockedUsers.has(activeUser)) return; // don't allow inviting blocked users
+		sendInvite(activeUser, 'pong');
+		inviteMenu.style.display = 'none';
+	});
+
+	// Append Tetris then Pong so Tetris appears above Pong in the popup box
+	inviteMenu.appendChild(btnTetris);
+	inviteMenu.appendChild(btnPong);
+
+	inviteBtn.addEventListener('click', (e) => {
+		e.preventDefault(); e.stopPropagation();
+		if (activeUser === 'me') return;
+		inviteMenu.style.display = inviteMenu.style.display === 'none' ? 'block' : 'none';
+	});
+
+	// hide menu when clicking elsewhere
+	document.addEventListener('click', () => { inviteMenu.style.display = 'none'; });
+
 	const messagesDiv = document.createElement("div");
 	messagesDiv.className = "chat-messages";
 	messagesDiv.setAttribute("role", "log");
@@ -359,6 +424,13 @@ function renderChat() {
 	sendBtn.textContent = "Send";
 	sendBtn.hidden = true; // initially hidden
 
+	// Invite wrapper placed inside the form, left of the input
+	const inviteWrapper = document.createElement('div');
+	inviteWrapper.className = 'invite-wrapper';
+	inviteWrapper.appendChild(inviteBtn);
+	inviteWrapper.appendChild(inviteMenu);
+
+	form.appendChild(inviteWrapper);
 	form.appendChild(input);
 	form.appendChild(sendBtn);
 
@@ -441,8 +513,52 @@ function renderChat() {
 					target.textContent = "Hide";
 				}
 			}
+
 		}
-	});
+
+		// Invite actions: accept / decline / cancel / go
+		if (target.classList.contains('invite-accept') || target.classList.contains('invite-decline') || target.classList.contains('invite-cancel') || target.classList.contains('invite-go'))
+		{
+			const idxStr = target.dataset.index;
+			if (!idxStr) return;
+			const idx = Number(idxStr);
+			const msgs = conversations[activeUser!] || [];
+			const msg = msgs[idx];
+			if (!msg) return;
+			if (target.classList.contains('invite-accept'))
+			{
+				msg.inviteState = 'accepted';
+				renderUserList();
+				renderChat();
+				setTimeout(() => {
+					const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
+					const game = target.dataset.game || msg.game || 'pong';
+					window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
+				}, 150);
+				return;
+			}
+			if (target.classList.contains('invite-decline'))
+			{
+				msg.inviteState = 'declined';
+				renderUserList();
+				renderChat();
+				return;
+			}
+			if (target.classList.contains('invite-cancel'))
+			{
+				msg.inviteState = 'cancelled';
+				renderUserList();
+				renderChat();
+				return;
+			}
+			if (target.classList.contains('invite-go')) {
+				const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
+				const game = target.dataset.game || msg.game || 'pong';
+				window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
+				return;
+			}
+		}
+		});
 
 	// Auto-scroll behavior:
 	// - If the user was near bottom before re-render, scroll to bottom to show new messages.
@@ -568,12 +684,17 @@ function loadMessages(startIndex: number, msgs: Message[]): string
 	for (let i = 0; i < slice.length; ) {
 		const first = slice[i];
 		const globalFirstIdx = startIndex + i;
+
 		// gather group of consecutive messages from same sender within GROUP_WINDOW_MS
 		const group: Message[] = [first];
 		let j = i + 1;
 		while (j < slice.length) {
 			const cur = slice[j];
+			// stop grouping when sender changes
 			if (cur.sender !== first.sender) break;
+			// stop grouping before an invite message so invites render with their own UI
+			// but if the invite is from a blocked incoming sender, allow grouping (render like regular/blocked messages)
+			if (cur.type === 'invite' && !(cur.sender !== 'me' && blockedUsers.has(cur.sender))) break;
 			// ensure the current message is within GROUP_WINDOW_MS of the group's first message;
 			// this prevents long chains where pairwise gaps are small but the overall span is large
 			if (cur.timestamp.getTime() - first.timestamp.getTime() > GROUP_WINDOW_MS) break;
@@ -587,6 +708,77 @@ function loadMessages(startIndex: number, msgs: Message[]): string
 			.map((m) => escapeHtml(m.text).replace(/\n/g, "<br>"))
 			.map((s) => `<span class="chat-group-text">${s}</span>`)
 			.join(`<br>`);
+
+		// Special rendering for invite messages (invites are single-message semantics)
+		// If the invite is from an incoming blocked sender, fall through and let the blocked-message
+		// rendering handle it so it appears like a regular/blocked message.
+		if (first.type === 'invite' && !(first.sender !== 'me' && blockedUsers.has(first.sender)))
+		{
+			const state = first.inviteState || 'pending';
+			const game = first.game || 'pong';
+			if (first.sender === 'me')
+			{
+				if (state === 'pending') // outgoing invite
+				{
+					html += `
+					<div class="chat-message invite me" data-index="${globalFirstIdx}" data-count="${group.length}">
+						<span class="chat-time">${time}</span>
+						<div class="invite-text">You invited ${escapeHtml(activeUser || 'player')} to play ${game === 'pong' ? 'Pong' : 'Tetris'}.</div>
+						<div class="invite-actions"><button class="invite-cancel" data-index="${globalFirstIdx}">Cancel</button></div>
+					</div>`;
+				}
+				else if (state === 'accepted')
+				{
+					html += `
+					<div class="chat-message invite me accepted" data-index="${globalFirstIdx}">
+						<span class="chat-time">${time}</span>
+						<div class="invite-text">Invite accepted.</div>
+						<div class="invite-actions"><button class="invite-go" data-index="${globalFirstIdx}" data-game="${game}">Play</button></div>
+					</div>`;
+				}
+				else
+				{
+					html += `
+					<div class="chat-message invite me ${state}" data-index="${globalFirstIdx}">
+						<span class="chat-time">${time}</span>
+						<div class="invite-text">Invite ${state}.</div>
+					</div>`;
+				}
+			}
+			else
+			{
+				if (state === 'pending') // incoming invite
+				{
+					html += `
+					<div class="chat-message invite" data-index="${globalFirstIdx}">
+						<span class="chat-time">${time}</span>
+						<div class="invite-text">${escapeHtml(first.sender)} invited you to play ${game === 'pong' ? 'Pong' : 'Tetris'}.</div>
+						<div class="invite-actions"><button class="invite-accept" data-index="${globalFirstIdx}" data-game="${game}">Accept</button> <button class="invite-decline" data-index="${globalFirstIdx}">Decline</button></div>
+					</div>`;
+				}
+				else if (state === 'accepted')
+				{
+					html += `
+					<div class="chat-message invite accepted" data-index="${globalFirstIdx}">
+						<span class="chat-time">${time}</span>
+						<div class="invite-text">You accepted ${escapeHtml(first.sender)}'s invite.</div>
+						<div class="invite-actions"><button class="invite-go" data-index="${globalFirstIdx}" data-game="${game}">Play</button></div>
+					</div>`;
+				}
+				else
+				{
+					html += `
+					<div class="chat-message invite ${state}" data-index="${globalFirstIdx}">
+						<span class="chat-time">${time}</span>
+						<div class="invite-text">Invite ${state}.</div>
+					</div>`;
+				}
+			}
+
+			// advance by one (invites are single messages)
+			i = i + 1;
+			continue;
+		}
 		// If sender is blocked (and not our own messages), render a single blocked group block
 		if (first.sender !== "me" && blockedUsers.has(first.sender))
 		{
@@ -644,6 +836,25 @@ function submitMessage(input: HTMLDivElement, sendBtn: HTMLButtonElement, messag
 	clearDraft(activeUser);
 	input.classList.add("empty");
 	sendBtn.hidden = true;
+	renderUserList();
+	renderChat();
+}
+
+// Send an invite message to a user (frontend-only demo behavior)
+function sendInvite(user: string, game: 'pong' | 'tetris' = 'pong')
+{
+	if (!user) return;
+	// don't allow inviting a blocked user
+	if (blockedUsers.has(user)) return;
+	if (!conversations[user]) conversations[user] = [];
+	conversations[user].push({
+		sender: 'me',
+		text: `invited ${user} to a ${game === 'pong' ? 'Pong' : 'Tetris'} game`,
+		timestamp: new Date(),
+		type: 'invite',
+		inviteState: 'pending',
+		game: game,
+	});
 	renderUserList();
 	renderChat();
 }

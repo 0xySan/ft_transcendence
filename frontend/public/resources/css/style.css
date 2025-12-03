@@ -629,6 +629,119 @@ button:active {
 	color: rgb(var(--blue));
 }
 
+/* Invite message styling */
+.chat-message.invite {
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(var(--sapphire), 0.12);
+	background: rgba(var(--sky), 0.04);
+	margin-bottom: 8px;
+}
+.chat-message.invite.me {
+	background: linear-gradient(90deg, rgba(var(--sapphire),0.12), rgba(var(--blue),0.06));
+	border-color: rgba(var(--blue), 0.18);
+}
+.chat-message.invite .invite-text {
+	font-weight: 600;
+	color: rgb(var(--text));
+	margin-bottom: 6px;
+}
+.chat-message.invite .invite-actions {
+	display: flex;
+	gap: 8px;
+}
+.chat-message.invite .invite-actions button {
+	padding: 6px 10px;
+	font-size: 0.9rem;
+	border-radius: 6px;
+	border: none;
+	cursor: pointer;
+}
+.chat-message.invite .invite-actions .invite-accept {
+	background: rgba(var(--green), 0.15);
+	color: rgb(var(--text));
+}
+.chat-message.invite .invite-actions .invite-decline {
+	background: rgba(var(--red), 0.12);
+	color: rgb(var(--text));
+}
+.chat-message.invite .invite-actions .invite-cancel {
+	background: rgba(var(--overlay1), 0.12);
+	color: rgb(var(--text));
+}
+.chat-message.invite .invite-actions .invite-go {
+	background: linear-gradient(90deg, rgb(var(--sapphire)), rgb(var(--blue)));
+	color: rgb(var(--base));
+}
+.chat-message.invite .invite-actions button:hover {
+	transform: translateY(-1px);
+}
+
+/* Invite wrapper inside the input form */
+.chat-input-form .invite-wrapper {
+	position: relative; /* anchor for the popup */
+	display: inline-flex;
+	align-items: center;
+	margin-right: 8px;
+	flex-shrink: 0;
+}
+
+.chat-invite-btn {
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border-radius: 8px;
+	font-size: 20px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(var(--surface0), 0.12);
+	color: rgb(var(--text));
+	border: none;
+	cursor: pointer;
+}
+.chat-invite-btn:hover { background: rgba(var(--surface0), 0.2); }
+
+/* Invite menu popup appears above the button */
+.chat-input-form .invite-menu {
+	position: absolute;
+	bottom: calc(100% + 8px);
+	background: rgb(var(--mantle));
+	border: 1px solid rgba(var(--surface0), 0.5);
+	border-radius: 6px;
+	box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+	min-width: 140px;
+	overflow: hidden;
+}
+.chat-input-form .invite-menu .invite-menu-btn {
+	background: transparent;
+	color: rgb(var(--text));
+	padding: 8px 12px;
+	border: none;
+	text-align: center;
+	cursor: pointer;
+	width: 90%;
+}
+.chat-input-form .invite-menu .invite-menu-btn + .invite-menu-btn {
+	border-top: 1px solid rgba(var(--surface0), 0.06);
+}
+.chat-input-form .invite-menu .invite-menu-btn:hover {
+	background: rgba(var(--surface0), 0.06);
+}
+
+/* small badge showing which game was invited */
+.invite-game-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	background: rgba(var(--overlay1), 0.08);
+	color: rgb(var(--subtext0));
+	margin-left: 8px;
+}
+
 .show-blocked-btn {
 	border: none;
 	padding: 2px;
