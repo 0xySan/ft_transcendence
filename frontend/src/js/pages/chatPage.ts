@@ -25,6 +25,7 @@ const MESSAGES_PAGE = 100; // page size for incremental loading
 const NAVIGATION_DELAY = 150;
 const KEYBOARD_ADJUST_DELAY = 50;
 const SCROLL_THRESHOLD = 100; // px from bottom to consider "near bottom"
+const LOAD_MORE_THRESHOLD = 20; // px from top to trigger loading more messages
 
 const conversations: Conversation = {};
 let activeUser: string | null = null;
@@ -487,7 +488,9 @@ function renderChat() {
 	if (startIndex >= lastPageStart)
 		wasNearBottom = true;
 
-	messagesDiv.innerHTML = loadMessages(startIndex, msgs);
+	// build messages using DOM APIs to avoid unsafe innerHTML usage
+	const fragment = loadMessages(startIndex, msgs);
+	messagesDiv.appendChild(fragment);
 
 	// When a conversation has more messages than the current window, show a small hint at top
 	if (startIndex > 0)
@@ -638,7 +641,7 @@ function renderChat() {
 	let loadingOlder = false;
 	messagesDiv.addEventListener("scroll", () => {
 		if (loadingOlder) return;
-		if (messagesDiv.scrollTop <= 20) {
+		if (messagesDiv.scrollTop <= LOAD_MORE_THRESHOLD) {
 			// at (or near) top
 			const curStart = visibleStart[activeUser!] || 0;
 			if (curStart === 0) return; // no more to load
@@ -696,11 +699,12 @@ function convertTimestampToReadable(ts: Date): string
 }
 
 // Load messages from startIndex to end, grouping consecutive messages from same sender
-function loadMessages(startIndex: number, msgs: Message[]): string
+// Returns a DocumentFragment containing the built message nodes (safe DOM creation)
+function loadMessages(startIndex: number, msgs: Message[]): DocumentFragment
 {
 	const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 	const slice = (msgs.slice(startIndex) || []);
-	let html = "";
+	const fragment = document.createDocumentFragment();
 	for (let i = 0; i < slice.length; ) {
 		const first = slice[i];
 		const globalFirstIdx = startIndex + i;
@@ -708,124 +712,204 @@ function loadMessages(startIndex: number, msgs: Message[]): string
 		// gather group of consecutive messages from same sender within GROUP_WINDOW_MS
 		const group: Message[] = [first];
 		let j = i + 1;
-		while (j < slice.length) {
+		while (j < slice.length)
+		{
 			const cur = slice[j];
-			// stop grouping when sender changes
 			if (cur.sender !== first.sender) break;
-			// stop grouping before an invite message so invites render with their own UI
-			// but if the invite is from a blocked incoming sender, allow grouping (render like regular/blocked messages)
 			if (cur.type === 'invite' && !(cur.sender !== 'me' && blockedUsers.has(cur.sender))) break;
-			// ensure the current message is within GROUP_WINDOW_MS of the group's first message;
-			// this prevents long chains where pairwise gaps are small but the overall span is large
 			if (cur.timestamp.getTime() - first.timestamp.getTime() > GROUP_WINDOW_MS) break;
 			group.push(cur);
 			j++;
 		}
-		// show the timestamp of the group's first message (so newly sent messages don't inherit the latest group's time)
-		const time = convertTimestampToReadable(first.timestamp);
-		// prepare joined safe text: each message becomes a span and separated by <br>
-		const joinedSafe = group
-			.map((m) => escapeHtml(m.text).replace(/\n/g, "<br>"))
-			.map((s) => `<span class="chat-group-text">${s}</span>`)
-			.join(`<br>`);
 
-		// Special rendering for invite messages (invites are single-message semantics)
-		// If the invite is from an incoming blocked sender, fall through and let the blocked-message
-		// rendering handle it so it appears like a regular/blocked message.
+		const time = convertTimestampToReadable(first.timestamp);
+
+		// Helper to append a text with preserved newlines (as <br>) into a parent element
+		function appendTextWithLineBreaks(parent: HTMLElement, text: string)
+		{
+			const parts = text.split('\n');
+			parts.forEach((part, idx) => {
+				parent.appendChild(document.createTextNode(part));
+				if (idx < parts.length - 1)
+					parent.appendChild(document.createElement('br'));
+			});
+		}
+
+		// Invite messages: single-message semantics
 		if (first.type === 'invite' && !(first.sender !== 'me' && blockedUsers.has(first.sender)))
 		{
 			const state = first.inviteState || 'pending';
 			const game = first.game || 'pong';
+			const container = document.createElement('div');
+			container.className = 'chat-message invite';
+			if (first.sender === 'me') container.classList.add('me');
+			container.dataset.index = String(globalFirstIdx);
+			container.dataset.count = String(group.length);
+
+			const timeSpan = document.createElement('span');
+			timeSpan.className = 'chat-time';
+			timeSpan.textContent = time;
+			container.appendChild(timeSpan);
+			container.appendChild(document.createElement('br'));
+
+			const inviteText = document.createElement('div');
+			inviteText.className = 'invite-text';
+			if (first.sender === 'me')
+				inviteText.textContent = `You invited ${String(activeUser || 'player')} to play ${game === 'pong' ? 'Pong' : 'Tetris'}.`;
+			else
+				inviteText.textContent = `${first.sender} invited you to play ${game === 'pong' ? 'Pong' : 'Tetris'}.`;
+			container.appendChild(inviteText);
+
 			if (first.sender === 'me')
 			{
-				if (state === 'pending') // outgoing invite
+				if (state === 'pending')
 				{
-					html += `
-					<div class="chat-message invite me" data-index="${globalFirstIdx}" data-count="${group.length}">
-						<span class="chat-time">${time}</span>
-						<div class="invite-text">You invited ${escapeHtml(activeUser || 'player')} to play ${game === 'pong' ? 'Pong' : 'Tetris'}.</div>
-						<div class="invite-actions"><button class="invite-cancel" data-index="${globalFirstIdx}">Cancel</button></div>
-					</div>`;
+					const actions = document.createElement('div');
+					actions.className = 'invite-actions';
+					const cancelBtn = document.createElement('button');
+					cancelBtn.type = 'button';
+					cancelBtn.className = 'invite-cancel';
+					cancelBtn.dataset.index = String(globalFirstIdx);
+					cancelBtn.textContent = 'Cancel';
+					actions.appendChild(cancelBtn);
+					container.appendChild(actions);
 				}
 				else if (state === 'accepted')
 				{
-					html += `
-					<div class="chat-message invite me accepted" data-index="${globalFirstIdx}">
-						<span class="chat-time">${time}</span>
-						<div class="invite-text">Invite accepted.</div>
-						<div class="invite-actions"><button class="invite-go" data-index="${globalFirstIdx}" data-game="${game}">Play</button></div>
-					</div>`;
+					container.classList.add('accepted');
+					const actions = document.createElement('div');
+					actions.className = 'invite-actions';
+					const goBtn = document.createElement('button');
+					goBtn.type = 'button';
+					goBtn.className = 'invite-go';
+					goBtn.dataset.index = String(globalFirstIdx);
+					goBtn.dataset.game = game;
+					goBtn.textContent = 'Play';
+					actions.appendChild(goBtn);
+					container.appendChild(actions);
 				}
 				else
-				{
-					html += `
-					<div class="chat-message invite me ${state}" data-index="${globalFirstIdx}">
-						<span class="chat-time">${time}</span>
-						<div class="invite-text">Invite ${state}.</div>
-					</div>`;
-				}
+					container.classList.add(state);
 			}
 			else
 			{
-				if (state === 'pending') // incoming invite
+				if (state === 'pending')
 				{
-					html += `
-					<div class="chat-message invite" data-index="${globalFirstIdx}">
-						<span class="chat-time">${time}</span>
-						<div class="invite-text">${escapeHtml(first.sender)} invited you to play ${game === 'pong' ? 'Pong' : 'Tetris'}.</div>
-						<div class="invite-actions"><button class="invite-accept" data-index="${globalFirstIdx}" data-game="${game}">Accept</button> <button class="invite-decline" data-index="${globalFirstIdx}">Decline</button></div>
-					</div>`;
+					const actions = document.createElement('div');
+					actions.className = 'invite-actions';
+					const acceptBtn = document.createElement('button');
+					acceptBtn.type = 'button';
+					acceptBtn.className = 'invite-accept';
+					acceptBtn.dataset.index = String(globalFirstIdx);
+					acceptBtn.dataset.game = game;
+					acceptBtn.textContent = 'Accept';
+					const declineBtn = document.createElement('button');
+					declineBtn.type = 'button';
+					declineBtn.className = 'invite-decline';
+					declineBtn.dataset.index = String(globalFirstIdx);
+					declineBtn.textContent = 'Decline';
+					actions.appendChild(acceptBtn);
+					actions.appendChild(declineBtn);
+					container.appendChild(actions);
 				}
 				else if (state === 'accepted')
 				{
-					html += `
-					<div class="chat-message invite accepted" data-index="${globalFirstIdx}">
-						<span class="chat-time">${time}</span>
-						<div class="invite-text">You accepted ${escapeHtml(first.sender)}'s invite.</div>
-						<div class="invite-actions"><button class="invite-go" data-index="${globalFirstIdx}" data-game="${game}">Play</button></div>
-					</div>`;
+					container.classList.add('accepted');
+					const actions = document.createElement('div');
+					actions.className = 'invite-actions';
+					const goBtn = document.createElement('button');
+					goBtn.type = 'button';
+					goBtn.className = 'invite-go';
+					goBtn.dataset.index = String(globalFirstIdx);
+					goBtn.dataset.game = game;
+					goBtn.textContent = 'Play';
+					actions.appendChild(goBtn);
+					container.appendChild(actions);
 				}
 				else
-				{
-					html += `
-					<div class="chat-message invite ${state}" data-index="${globalFirstIdx}">
-						<span class="chat-time">${time}</span>
-						<div class="invite-text">Invite ${state}.</div>
-					</div>`;
-				}
+					container.classList.add(state);
 			}
 
-			// advance by one (invites are single messages)
+			fragment.appendChild(container);
 			i = i + 1;
 			continue;
 		}
-		// If sender is blocked (and not our own messages), render a single blocked group block
-		if (first.sender !== "me" && blockedUsers.has(first.sender))
+
+		// Blocked incoming sender: render a collapsed block
+		if (first.sender !== 'me' && blockedUsers.has(first.sender))
 		{
-			// consider group hidden if all messages are hidden (default hidden when undefined)
 			const groupHidden = group.every((m) => m.hidden !== false);
-			html += `
-			<div class="chat-message blocked " data-shown="${!groupHidden}" data-index="${globalFirstIdx}" data-count="${group.length}">
-				<span class="chat-blocked-note">${group.length} blocked ${group.length > 1 ? "messages" : "message"} — </span><span class="show-blocked-btn" data-index="${globalFirstIdx}" data-count="${group.length}" aria-pressed="${!groupHidden}">${groupHidden ? "Show" : "Hide"}</span>
-				<div class="blocked-message-content" data-index="${globalFirstIdx}" style="display:${groupHidden ? "none" : "block"}">
-					<span class="chat-time">${time}</span>
-					${joinedSafe}
-				</div>
-			</div>`;
+			const container = document.createElement('div');
+			container.className = 'chat-message blocked';
+			container.dataset.shown = String(!groupHidden);
+			container.dataset.index = String(globalFirstIdx);
+			container.dataset.count = String(group.length);
+
+			const note = document.createElement('span');
+			note.className = 'chat-blocked-note';
+			note.textContent = `${group.length} blocked ${group.length > 1 ? 'messages' : 'message'} — `;
+			container.appendChild(note);
+
+			const toggle = document.createElement('span');
+			toggle.className = 'show-blocked-btn';
+			toggle.dataset.index = String(globalFirstIdx);
+			toggle.dataset.count = String(group.length);
+			toggle.setAttribute('aria-pressed', String(!groupHidden));
+			toggle.textContent = groupHidden ? 'Show' : 'Hide';
+			container.appendChild(toggle);
+
+			const content = document.createElement('div');
+			content.className = 'blocked-message-content';
+			content.dataset.index = String(globalFirstIdx);
+			content.style.display = groupHidden ? 'none' : 'block';
+
+			const timeSpan = document.createElement('span');
+			timeSpan.className = 'chat-time';
+			timeSpan.textContent = time;
+			content.appendChild(timeSpan);
+			content.appendChild(document.createElement('br'));
+
+			// append grouped messages
+			group.forEach((m) => {
+				const span = document.createElement('span');
+				span.className = 'chat-group-text';
+				appendTextWithLineBreaks(span, m.text);
+				content.appendChild(span);
+				// separate messages with a line break
+				content.appendChild(document.createElement('br'));
+			});
+
+			container.appendChild(content);
+			fragment.appendChild(container);
+			i = j;
+			continue;
 		}
-		else
-		{
-			// normal grouped messages: single container, single time, multiple spans separated by <br>
-			const senderClass = first.sender === "me" ? "me" : first.sender;
-			html += `
-			<div class="chat-message ${senderClass}" data-index="${globalFirstIdx}" data-count="${group.length}">
-				<span class="chat-time">${time}</span>
-				${joinedSafe}
-			</div>`;
-		}
+
+		// Normal grouped messages
+		const senderClass = first.sender === 'me' ? 'me' : first.sender;
+		const container = document.createElement('div');
+		container.className = `chat-message ${senderClass}`;
+		container.dataset.index = String(globalFirstIdx);
+		container.dataset.count = String(group.length);
+
+		const timeSpan = document.createElement('span');
+		timeSpan.className = 'chat-time';
+		timeSpan.textContent = time;
+		container.appendChild(timeSpan);
+		container.appendChild(document.createElement('br'));
+
+		group.forEach((m, idx) => {
+			const span = document.createElement('span');
+			span.className = 'chat-group-text';
+			appendTextWithLineBreaks(span, m.text);
+			container.appendChild(span);
+			if (idx < group.length - 1) container.appendChild(document.createElement('br'));
+		});
+
+		fragment.appendChild(container);
 		i = j;
 	}
-	return html;
+	return fragment;
 }
 
 // -------------------------------------
