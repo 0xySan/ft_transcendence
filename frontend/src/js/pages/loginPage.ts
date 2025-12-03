@@ -10,6 +10,10 @@ const loginForm = document.querySelector<HTMLFormElement>('.auth-form-container'
 const usernameInput = document.getElementById('username-text-input') as HTMLInputElement | null;
 const passwordInput = document.getElementById('password-text-input') as HTMLInputElement | null;
 
+/** Shows the error message for a given element
+ * @param element the element whose error message is to be shown
+ * @param message the message to be shown
+ */
 function showErrorMessage(element: HTMLSpanElement, message: string): void {
 	console.log('Showing error message:', message);
 	element.textContent = message;
@@ -17,12 +21,18 @@ function showErrorMessage(element: HTMLSpanElement, message: string): void {
 	element.setAttribute('aria-hidden', 'false');
 }
 
+/** Hides the error message for a given element
+ * @param element the element whose error message is to be hidden
+ */
 function hideErrorMessage(element: HTMLSpanElement): void {
 	element.textContent = '';
 	element.classList.add('hidden');
 	element.setAttribute('aria-hidden', 'true');
 }
 
+/** Handles the login form submission
+ * @param event the submit event
+ */
 function handleLogin(event: Event): void {
 	event.preventDefault();
 	const isUsernameValid = verifyUsernameMailValidity();
@@ -77,6 +87,9 @@ function handleLogin(event: Event): void {
 	}
 }
 
+/** Verifies the validity of the username or email input
+ * @returns true if the username or email is valid, false otherwise
+ */
 function verifyUsernameMailValidity(): boolean {
 	const usernameRegex: RegExp = /^[a-zA-Z0-9_]{3,20}$/;
 	const emailRegex:	RegExp = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
@@ -102,6 +115,9 @@ function verifyUsernameMailValidity(): boolean {
 	return (false);
 }
 
+/** Verifies the validity of the password input
+ * @returns true if the password is valid, false otherwise
+ */
 function verifyPasswordValidity(): boolean {
 	const passwordRegex: RegExp = /^.{8,64}$/;
 	const password: string = passwordInput?.value ?? '';

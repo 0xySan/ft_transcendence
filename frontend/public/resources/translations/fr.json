@@ -50,7 +50,7 @@
   },
   "mailverification": {
     "changeEmail": "Changer d’email",
-    "message": "Nous avons envoyé un email à <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>. Vérifiez votre boîte mail et cliquez sur le lien de vérification pour confirmer votre adresse email.",
+    "message": "Nous avons envoyé un email à <span class=\"font-poppins-semibold\" id=\"verification-email\">[ADDRESS]</span>. Vérifiez votre boîte mail et cliquez sur le lien de vérification pour confirmer votre adresse email.",
     "resendEmail": "Renvoyer l’email",
     "title": "Vérifiez votre boîte mail"
   },
