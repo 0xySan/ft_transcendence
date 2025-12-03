@@ -278,7 +278,7 @@ function renderChat() {
 
 	const profileLink = document.createElement("a");
 	profileLink.className = "chat-header-profile-pic";
-	profileLink.href = `/profile/${activeUser}`;
+	profileLink.href = `/profile/${encodeURIComponent(activeUser)}`;
 	const profileLinkBtn = document.createElement("button");
 	profileLinkBtn.className = "chat-header-btn";
 	profileLinkBtn.title = `View ${activeUser}'s profile`;
@@ -386,7 +386,17 @@ function renderChat() {
 	});
 
 	// hide menu when clicking elsewhere
-	document.addEventListener('click', () => { inviteMenu.style.display = 'none'; });
+	const hideInviteMenu = (event: MouseEvent) => {
+		// Only hide if the click is outside the invite menu and invite button
+		if (
+			!inviteMenu.contains(event.target as Node) &&
+			!inviteBtn.contains(event.target as Node)
+		) {
+			inviteMenu.style.display = 'none';
+		}
+	};
+	document.removeEventListener('click', hideInviteMenu);
+	document.addEventListener('click', hideInviteMenu);
 
 	const messagesDiv = document.createElement("div");
 	messagesDiv.className = "chat-messages";
@@ -401,11 +411,9 @@ function renderChat() {
 
 	const input = document.createElement("div");
 	input.className = "chat-input";
-	var placeholderText;
-	if (blockedUsers.has(activeUser))
-		placeholderText = `You have blocked @${activeUser}. Unblock to send messages.`;
-	else
-		placeholderText = `Type a message to @${activeUser}`;
+	const placeholderText = blockedUsers.has(activeUser)
+		? `You have blocked @${activeUser}. Unblock to send messages.`
+		: `Type a message to @${activeUser}`;
 	input.dataset.placeholder = placeholderText;
 	input.contentEditable = blockedUsers.has(activeUser) ? "false" : "true";
 
@@ -538,7 +546,7 @@ function renderChat() {
 					// const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
 					// const game = target.dataset.game || msg.game || 'pong';
 					// window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
-					window.location.href = '/pong-board'
+					window.location.href = '/pong-board';
 				}, 150);
 				return;
 			}
@@ -560,7 +568,7 @@ function renderChat() {
 				// const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
 				// const game = target.dataset.game || msg.game || 'pong';
 				// window.location.href = `/${game}?opponent=${encodeURIComponent(opponent)}`;
-				window.location.href = '/pong-board'
+				window.location.href = '/pong-board';
 				return;
 			}
 		}
@@ -593,7 +601,7 @@ function renderChat() {
 
 	// Handle Enter key (without Shift) to submit
 	input.addEventListener("keydown", (e: KeyboardEvent) => {
-		if ((e as any).isComposing) return;
+		if ('isComposing' in e && (e as any).isComposing) return;
 
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
@@ -628,7 +636,6 @@ function renderChat() {
 			const curStart = visibleStart[activeUser!] || 0;
 			if (curStart === 0) return; // no more to load
 			loadingOlder = true;
-			const prevHeight = messagesDiv.scrollHeight;
 			const newStart = Math.max(0, curStart - MESSAGES_PAGE);
 			visibleStart[activeUser!] = newStart;
 
@@ -850,6 +857,13 @@ function submitMessage(input: HTMLDivElement, sendBtn: HTMLButtonElement, messag
 function sendInvite(user: string, game: 'pong' | 'tetris' = 'pong')
 {
 	if (!user) return;
+
+	// runtime-validate 'game' to guard against unexpected values (e.g., from external input)
+	if (game !== 'pong' && game !== 'tetris') {
+		console.warn(`sendInvite: invalid game "${String(game)}" provided, defaulting to "pong"`);
+		game = 'pong';
+	}
+
 	// don't allow inviting a blocked user
 	if (blockedUsers.has(user)) return;
 	if (!conversations[user]) conversations[user] = [];
