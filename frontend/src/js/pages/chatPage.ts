@@ -381,7 +381,7 @@ function renderChat() {
 
 	inviteBtn.addEventListener('click', (e) => {
 		e.preventDefault(); e.stopPropagation();
-		if (activeUser === 'me') return;
+		if (activeUser === 'me' || blockedUsers.has(activeUser!)) return;
 		inviteMenu.style.display = inviteMenu.style.display === 'none' ? 'block' : 'none';
 	});
 
@@ -446,6 +446,8 @@ function renderChat() {
 		sendBtn.hidden = true;
 		headerBlockBtn.textContent = "Unblock";
 		headerBlockBtn.setAttribute("aria-pressed", "true");
+		// hide/disable invite UI when partner is blocked
+		inviteWrapper.setAttribute('aria-disabled','true');
 	}
 	else
 	{
@@ -455,6 +457,8 @@ function renderChat() {
 		sendBtn.hidden = input.textContent!.trim() === '';
 		headerBlockBtn.textContent = "Block";
 		headerBlockBtn.setAttribute("aria-pressed", "false");
+		// ensure invite UI is visible/enabled for normal conversations
+		inviteWrapper.removeAttribute('aria-disabled');
 	}
 
 	// Ensure visibleStart exists for this conversation

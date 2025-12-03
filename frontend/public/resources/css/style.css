@@ -701,7 +701,14 @@ button:active {
 	border: none;
 	cursor: pointer;
 }
-.chat-invite-btn:hover { background: rgba(var(--surface0), 0.2); }
+.chat-invite-btn:hover {
+	background: rgba(var(--surface0), 0.2);
+}
+
+.invite-wrapper[aria-disabled="true"] .chat-invite-btn {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
 
 /* Invite menu popup appears above the button */
 .chat-input-form .invite-menu {
