@@ -1,5 +1,42 @@
 export {};
 
+try {
+    const response = await fetch("http://localhost:8080/api/game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: "duck" })
+    });
+
+    const data = await response.json();
+    const ws = new WebSocket('ws://localhost:8080/ws/?user_id=duck&token=' + data.token);
+
+    ws.addEventListener('open', () => {
+        console.log('Connected to WebSocket server.');
+    });
+
+    ws.addEventListener('message', (event) => {
+        console.log('message:', event.data);
+    });
+
+    ws.addEventListener('close', () => {
+        console.log('Disconnected from server.');
+    });
+
+    ws.addEventListener('error', (err) => {
+        console.error('WebSocket error:', err);
+    });
+
+	const launchBtn = getEl<HTMLButtonElement>("lobby.btn.launch");
+
+	addListener(launchBtn, "click", async () => {
+		ws.send(JSON.stringify({ action: "start" }));
+		window.location.href = `/pong-board?token=${data.token}&user_id=duck`;
+	});
+
+} catch (err) {
+    console.error("Erreur :", err);
+}
+
 declare function addListener(
 	target: EventTarget | null,
 	event: string,

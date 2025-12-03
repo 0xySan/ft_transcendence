@@ -111,11 +111,11 @@ export class Games {
             this.velocity_ball.pos_y *= -1;
         }
 
-        console.log(
-            "DEBUG: ball | x = " + this.position_ball.pos_x +
-            " | y = " + this.position_ball.pos_y +
-            " | vx = " + this.velocity_ball.pos_x +
-            " | vy = " + this.velocity_ball.pos_y
-        );
+        // console.log(
+        //     "DEBUG: ball | x = " + this.position_ball.pos_x +
+        //     " | y = " + this.position_ball.pos_y +
+        //     " | vx = " + this.velocity_ball.pos_x +
+        //     " | vy = " + this.velocity_ball.pos_y
+        // );
     }
 }

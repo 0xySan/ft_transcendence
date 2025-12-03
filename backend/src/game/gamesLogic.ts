@@ -16,6 +16,20 @@ function game() {
 
     for (const game_target of games) {
         if (game_target.statement == true) {
+            for (const uuid of game_target.equip_a) {
+                parentPort?.postMessage({ 
+                    action: "send",
+                    user_id: uuid,
+                    ball: { pos_x: game_target.position_ball.pos_x, pos_y: game_target.position_ball.pos_y } 
+                });
+            }
+            for (const uuid of game_target.equip_b) {
+                parentPort?.postMessage({ 
+                    action: "send",
+                    user_id: uuid,
+                    ball: { pos_x: game_target.position_ball.pos_x, pos_y: game_target.position_ball.pos_y } 
+                });
+            }
 
             game_target.updateBall(1920, 1080);
             if (game_target.position_ball.pos_x <= 0) {

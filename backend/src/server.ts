@@ -81,11 +81,12 @@ export async function createThread(options: { workerFile?: string, count?: numbe
 	for (let i = 0; i < count; i++) {
 		const worker = new Worker(workerPath);
 		worker.on("message", (msg) => {
-			console.log("DEBUG: msg = " + msg.action);
 			if (msg.action == "finished") {
 				const player = getPlayerWithUserId(msg.user_id);
-                console.log("DEBUG: user_id = " + msg.user_id + " | token = " + player?.token);
 				player?.socket.close(1000, "game finished");
+			} else if (msg.action == "send") {
+				const player = getPlayerWithUserId(msg.user_id);
+				player?.socket.send(JSON.stringify(msg));
 			}
 		});
 	
@@ -156,7 +157,7 @@ async function start() {
 			}				
 			ws.on('close', () => {
 				console.log('WebSocket disconnected');
-				clientToken.splice(clientToken.indexOf(player), 1);
+				// clientToken.splice(clientToken.indexOf(player), 1);
 			});
 		});
 
