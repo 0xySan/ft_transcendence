@@ -1,0 +1,82 @@
+{
+  "about": {
+    "built-by": "Réalisé comme projet full-stack de fin de cursus par :",
+    "catchphrase": "Jouez, connectez-vous et dépassez l’ordinaire.",
+    "challenge": "Défiez vos amis ou testez vos compétences contre d’autres joueurs dans Pong et Tetris, réimaginés pour le web avec un gameplay fluide en temps réel, des classements dynamiques et un design élégant.",
+    "combination-text": "Transcendence 42 combine des technologies modernes avec le charme nostalgique du rétro-gaming pour offrir une expérience en ligne immersive et compétitive.",
+    "description": "Transcendence est une application web moderne où le fun rencontre la fonctionnalité, une plateforme de jeux sociale conçue pour rassembler les joueurs autour de classiques intemporels.",
+    "title": "À propos de Transcendence 42"
+  },
+  "footer": {
+    "aboutLink": "À propos",
+    "copyrightText": "© 2025 Transcendence 42. Tous droits réservés.",
+    "githubLink": "GitHub",
+    "homeLink": "Accueil",
+    "privacyPolicyLink": "Politique de confidentialité"
+  },
+  "forgotPassword": {
+    "backToLogin": "Retour à la connexion",
+    "emailLabel": "Email :",
+    "instructions": "Entrez votre adresse email ci-dessous pour recevoir un lien de réinitialisation de mot de passe.",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "title": "Mot de passe oublié ?"
+  },
+  "home": {
+    "landingDescription": "Pong rencontre Tetris sur une plateforme sociale créée pour vous faire redécouvrir les jeux de votre enfance !",
+    "playButton": "JOUER"
+  },
+  "lobby": {
+    "customGameButton": "PARTIE PERSONNALISÉE",
+    "multiplayerButton": "MULTIJOUEUR",
+    "players": "Joueurs",
+    "tournamentButton": "TOURNOI",
+    "settingsTitle": "Paramètres",
+    "privateLabel": "Privé",
+    "roomSettingsButton": "Paramètres de la salle",
+    "advancedSettingsButton": "Paramètres avancés",
+    "joinButton": "REJOINDRE",
+    "leaveButton": "QUITTER",
+    "launchButton": "LANCER"
+  },
+  "login": {
+    "forgotPasswordText": "Mot de passe oublié ? <a href=\"/forgot-password\">Réinitialisez-le ici</a>",
+    "loginButton": "Connexion",
+    "loginTitle": "Connexion",
+    "noAccountText": "Vous n'avez pas de compte ? <a href=\"/register\">Inscrivez-vous ici</a>",
+    "passwordLabel": "Mot de passe :",
+    "registerHereLink": "Inscrivez-vous ici",
+    "rememberMeLabel": "Se souvenir de moi",
+    "usernameLabel": "Nom d’utilisateur :"
+  },
+  "mailverification": {
+    "changeEmail": "Changer d’email",
+    "message": "Nous avons envoyé un email à <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>. Vérifiez votre boîte mail et cliquez sur le lien de vérification pour confirmer votre adresse email.",
+    "resendEmail": "Renvoyer l’email",
+    "title": "Vérifiez votre boîte mail"
+  },
+  "navbar": {
+    "homeText": "Accueil",
+    "playText": "Jouer",
+    "leaderboardText": "Classement",
+    "profileText": "Profil",
+    "loginButton": "Connexion",
+    "registerButton": "Inscription"
+  },
+  "register": {
+    "alreadyHaveAccount": "Vous avez déjà un compte ? <a href=\"/login\" class=\"link-peach-to-maroon\" data-translate-key=\"register.loginHereLink\">Connectez-vous ici</a>",
+    "confirmPasswordLabel": "Confirmez le mot de passe :",
+    "createAccount": "Créer un compte",
+    "emailLabel": "Email :",
+    "loginHereLink": "Connectez-vous ici",
+    "passwordLabel": "Mot de passe :",
+    "registerButton": "S’inscrire",
+    "usernameLabel": "Nom d’utilisateur :"
+  },
+  "resetPassword": {
+    "backToLoginLink": "Retour à la connexion",
+    "confirmPasswordLabel": "Confirmez le mot de passe :",
+    "passwordLabel": "Mot de passe :",
+    "resetButton": "Réinitialiser le mot de passe",
+    "title": "Réinitialiser le mot de passe"
+  }
+}

@@ -1,6 +1,9 @@
 export {};
 
 declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
+declare function translatePage(language: string): void;
+declare function translateElement(language: string, element: HTMLElement): void;
+declare function getUserLang(): string;
 
 const emailInput = document.getElementById('email-text-input') as HTMLInputElement | null;
 const resetButton = document.querySelector<HTMLButtonElement>('button[type="submit"]');

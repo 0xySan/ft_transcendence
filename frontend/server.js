@@ -94,7 +94,9 @@ app.get("/*", async (req, reply) => {
 		req.headers["x-requested-with"] === "XMLHttpRequest" ||
 		req.headers["x-dynamic"] === "1";
 
-	const contentHtml = fs.readFileSync(pageFile, "utf8");
+	const userLanguage = detectBrowserLanguage(req);
+
+	const contentHtml = await serveTranslatedHTML(pageFile, userLanguage);
 
 	if (isAjax) {
 		// --- Dynamic request: return only the page content ---
@@ -146,6 +148,87 @@ app.get("/*", async (req, reply) => {
 		reply.type("text/html").send(indexHtml);
 	}
 });
+
+/**
+ * Detects browser language from Accept-Language header
+ * @param {*} req HTTP request
+ * @param {*} fallback fallback language code if none detected
+ * @returns detected language code
+ */
+function detectBrowserLanguage(req, fallback = "en") {
+	const header = req.headers["accept-language"];
+	if (!header) return fallback;
+
+	const first = header.split(",")[0].toLowerCase();
+	const lang = first.split("-")[0];  // "fr-FR" → "fr"
+	return lang;
+}
+
+/** Translates a key to the specified language
+ * @param key translation key (can be nested with dots)
+ * @param userLanguage target language code
+ * @returns translated text
+ */
+async function translateFn(key, userLanguage) {
+	let jsonFile = path.join(publicResourcesDir, `translations`, `${userLanguage}.json`);
+	if (!fs.existsSync(jsonFile)) {
+		console.log(`Can't find translation file for language '${userLanguage}', defaulting to english`);
+		jsonFile = path.join(publicResourcesDir, `translations`, `en.json`);
+		if (!fs.existsSync(jsonFile)) {
+			return `Can't find translation file for language '${userLanguage}`;
+		}
+	}
+	const jsonContent = fs.readFileSync(jsonFile, "utf8");
+	const json = JSON.parse(jsonContent);
+
+	// Retrieve nested value
+	const keys = key.split(".");
+	let value = json;
+	for (const k of keys) {
+		if (value[k] === undefined) {
+			return `Can't find translation text for key '${key}' for language '${userLanguage}'`;
+		}
+		value = value[k];
+	}
+	return typeof value === "string" ? value : key;
+}
+
+/** Serves translated HTML file
+ * @param filePath path to the HTML file
+ * @param userLanguage target language code
+ * @returns translated HTML content
+ */
+async function serveTranslatedHTML(filePath, userLanguage) {
+    console.log(`Serving translated HTML for: ${filePath} with language ${userLanguage}`);
+    let html = fs.readFileSync(filePath, "utf8");
+
+    const regex = /(<[^>]*data-translate-key="([^"]+)"[^>]*>)([\s\S]*?)(<\/[^>]+>)/g;
+
+    let result = "";
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(html)) !== null) {
+        const [full, openTag, key, innerContent, closeTag] = match;
+
+        // Append everything before this match
+        result += html.slice(lastIndex, match.index);
+
+        // Await the translation
+        const translated = await translateFn(key, userLanguage);
+
+        // Insert translated version
+        result += `${openTag}${translated}${closeTag}`;
+
+        lastIndex = regex.lastIndex;
+    }
+
+    // Append the rest of the HTML
+    result += html.slice(lastIndex);
+
+    return result;
+}
+
 
 // --- Start the server ---
 await app.listen({ port: 8080, host: "0.0.0.0" });

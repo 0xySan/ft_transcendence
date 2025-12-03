@@ -1,6 +1,9 @@
 export {};
 
 declare function addListener(target: EventTarget, event: string, handler: EventListenerOrEventListenerObject): void;
+declare function translatePage(language: string): void;
+declare function translateElement(language: string, element: HTMLElement): void;
+declare function getUserLang(): string;
 
 addListener(document, 'DOMContentLoaded', () => {
 	const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));

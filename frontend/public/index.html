@@ -5,6 +5,7 @@
 		<meta charset="UTF-8">
 		<title>Example</title>
 		<link href="style.css" rel="stylesheet">
+		<script src="/js/translationModule.js" type="module" defer></script>
 		<script defer type="module" src="/js/dynamicLoader.js"></script>
 		<script>
 				const listeners = [];
@@ -79,17 +80,17 @@
 					</path>
 				</svg>
 				<div id="nav-left-links">
-					<a href="/" >Home</a>
-					<a href="/" >Play</a>
-					<a href="/" >Leaderboard</a>
-					<a href="/" >Profile</a>
+					<a href="/" data-translate-key="navbar.homeText">Home</a>
+					<a href="/" data-translate-key="navbar.playText">Play</a>
+					<a href="/" data-translate-key="navbar.leaderboardText">Leaderboard</a>
+					<a href="/" data-translate-key="navbar.profileText">Profile</a>
 				</div>
 				<div id="nav-right-links">
 					<a href="/login">
-						<button type="button" id="nav-login-btn">Login</button>
+						<button type="button" id="nav-login-btn" data-translate-key="navbar.loginButton">Login</button>
 					</a>
 					<a href="/register">
-						<button type="button">Register</button>
+						<button type="button" data-translate-key="navbar.registerButton">Register</button>
 					</a>
 				</div>
 			</nav>
@@ -101,15 +102,15 @@
 
 			<footer>
 				<div id="link-text">
-					<a href="/home">Home</a>
+					<a href="/home" data-translate-key="footer.homeLink">Home</a>
 					<span class="footer-divider"></span>
-					<a href="/privacy">Privacy Policy</a>
+					<a href="/privacy" data-translate-key="footer.privacyPolicyLink">Privacy Policy</a>
 					<span class="footer-divider"></span>
-					<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load">GitHub</a>
+					<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load" data-translate-key="footer.githubLink">GitHub</a>
 					<span class="footer-divider"></span>
-					<a href="/about">About</a>
+					<a href="/about" data-translate-key="footer.aboutLink">About</a>
 				</div>
-				<div id="copyright-text" >
+				<div id="copyright-text" data-translate-key="footer.copyrightText">
 					© 2025 Transcendence 42. All rights reserved.
 				</div>
 			</footer>

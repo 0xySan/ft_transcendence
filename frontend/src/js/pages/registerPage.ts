@@ -1,6 +1,10 @@
 export {};
 
 declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
+declare function translatePage(language: string): void;
+declare function translateElement(language: string, element: HTMLElement): void;
+declare function getUserLang(): string;
+
 
 const registerForm = document.querySelector<HTMLFormElement>('.auth-form-container');
 const usernameInput = document.getElementById('username-text-input') as HTMLInputElement | null;
