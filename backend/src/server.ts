@@ -138,6 +138,9 @@ async function start() {
 			}
 			else
 			{
+				// 🔥 AUTH OK → maintenant seulement envoyer le welcome
+				ws.send(JSON.stringify({ event: 'welcome', user_id }));
+				console.log('WebSocket authenticated:', user_id);
 				ws.on('message', (msg) => { 
 					ws.send(`echo: ${msg}`);
 					let str =  msg.toString();
