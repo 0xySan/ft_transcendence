@@ -455,6 +455,10 @@ button:active {
 	text-overflow: ellipsis;
 }
 
+#login-form-error-text {
+	padding: 0.5rem;
+}
+
 .auth-btn {
 	width: 40%;
 	min-width: 8.7rem;

@@ -46,7 +46,7 @@
     "passwordLabel": "Password:",
     "registerHereLink": "Register here",
     "rememberMeLabel": "Remember me",
-    "usernameLabel": "Username:"
+    "usernameLabel": "Username or email:"
   },
   "mailverification": {
     "changeEmail": "Change email",

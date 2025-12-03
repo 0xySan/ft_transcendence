@@ -46,7 +46,7 @@
     "passwordLabel": "Mot de passe :",
     "registerHereLink": "Inscrivez-vous ici",
     "rememberMeLabel": "Se souvenir de moi",
-    "usernameLabel": "Nom d’utilisateur :"
+    "usernameLabel": "Nom d’utilisateur ou adresse email:"
   },
   "mailverification": {
     "changeEmail": "Changer d’email",
