@@ -1170,7 +1170,7 @@ button:active {
 		min-height: 50rem;
 	}
 	#lobby-action-buttons {
-		width: 100%;
+		width: 100% !important;
 	}
 	.lobby-setting-box {
 		min-height: 42rem;
@@ -1279,7 +1279,7 @@ button:active {
 		width: 100%;
 	}
 	#lobby-action-buttons {
-		flex-direction: column;
+		flex-direction: column !important;
 	}
 	#lobby-action-buttons > button {
 		width: 70%;
@@ -1345,9 +1345,9 @@ button:active {
 }
 
 .lobby-btn-active {
-	background-color: rgb(var(--surface1));
+	background-color: rgb(var(--surface1)) !important;
 
-	color: rgb(var(--text));
+	color: rgb(var(--text)) !important;
 }
 
 .lobby-setting-type > button {
@@ -1794,7 +1794,7 @@ nav {
 
 #nav-left-links > a:hover,
 #nav-left-links > a:active {
-	background-color: rgb(var(--surface2));
+	background-color: rgb(var(--surface2)) !important;
 }
 
 #nav-left-links > a {
