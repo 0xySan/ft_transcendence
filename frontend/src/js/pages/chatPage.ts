@@ -271,15 +271,17 @@ function renderChat() {
 	profileLink.className = "chat-header-profile-pic";
 	profileLink.href = `/profile/${activeUser}`;
 	const profileLinkBtn = document.createElement("button");
-	profileLinkBtn.className = "chat-header-profile-btn";
+	profileLinkBtn.className = "chat-header-btn";
 	profileLinkBtn.title = `View ${activeUser}'s profile`;
 	profileLinkBtn.textContent = "Profile";
+	profileLinkBtn.setAttribute("profile-button", "true");
 	profileLink.appendChild(profileLinkBtn);
 
 	const profileImg = document.createElement("img");
 	profileImg.src = profilepics[users.indexOf(activeUser) % profilepics.length];
 	profileImg.alt = `${activeUser}'s profile picture`;
-	profileImg.className = "chat-header-img_profile";
+	profileImg.className = "img_profile";
+	profileImg.setAttribute("chat-header", "true");
 	header.appendChild(profileImg);
 
 	const titleSpan = document.createElement("span");
@@ -290,9 +292,10 @@ function renderChat() {
 
 	// Block/unblock button moved to chat header (not next to each username)
 	const headerBlockBtn = document.createElement("button");
-	headerBlockBtn.className = "chat-header-block-btn";
+	headerBlockBtn.className = "chat-header-btn";
 	headerBlockBtn.textContent = blockedUsers.has(activeUser) ? "Unblock" : "Block";
 	headerBlockBtn.setAttribute("aria-pressed", String(blockedUsers.has(activeUser)));
+	headerBlockBtn.setAttribute("block-button", "true");
 
 	// Hide block button when viewing yourself (optional)
 	if (activeUser === "me") {
