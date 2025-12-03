@@ -17,7 +17,14 @@ function game() {
     for (const game_target of games) {
         if (game_target.statement == true) {
 
-            console.log("DEBUG: time now = " + date / 1000 + " | time game = " + game_target.time / 1000);
+            game_target.updateBall(1920, 1080);
+            if (game_target.position_ball.pos_x <= 0) {
+                game_target.score["A"] += 1;
+                console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
+            } else if (game_target.position_ball.pos_x >= 1920) {
+                game_target.score["B"] += 1;
+                console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
+            }
 
             if (game_target.time <= date) {
                 game_target.statement = false;
@@ -32,7 +39,6 @@ function game() {
         }
     }
 }
-
 
 /**
  * Is a listener for listen every message.
@@ -74,7 +80,7 @@ parentPort?.on("message", (msg) => {
                 return;
             }
         }
-    } 
+    }
     
     /**
      * If the action message is 'getIdWithUserId'.

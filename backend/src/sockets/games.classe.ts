@@ -59,11 +59,11 @@ export class Games {
         this.code = code;
 
         this.position_paddle = { user_id: { pos_x: 0, pos_y: 0 }};
-        this.score = { "equip_a": 0, "equip_b": 0 };
+        this.score = { "A": 0, "B": 0 };
         this.position_ball = { pos_x: 0, pos_y: 0 };
-        this.velocity_ball = { pos_x: 0, pos_y: 0 };
+        this.velocity_ball = { pos_x: 15, pos_y: 15 };
         this.statement = false;
-        this.time = 15000;
+        this.time = 150000;
     }
 
     /**
@@ -92,5 +92,30 @@ export class Games {
         this.velocity_ball = velocity_ball;
         this.time = time;
         this.score = score;
+    }
+
+    /**
+     * Update the ball like in the game Pong.
+     * @param width  - The game field width.
+     * @param height - The game field height.
+     */
+    updateBall(width: number, height: number) {
+        this.position_ball.pos_x += this.velocity_ball.pos_x;
+        this.position_ball.pos_y += this.velocity_ball.pos_y;
+
+        if (this.position_ball.pos_x <= 0 || this.position_ball.pos_x >= width) {
+            this.velocity_ball.pos_x *= -1;
+        }
+
+        if (this.position_ball.pos_y <= 0 || this.position_ball.pos_y >= height) {
+            this.velocity_ball.pos_y *= -1;
+        }
+
+        console.log(
+            "DEBUG: ball | x = " + this.position_ball.pos_x +
+            " | y = " + this.position_ball.pos_y +
+            " | vx = " + this.velocity_ball.pos_x +
+            " | vy = " + this.velocity_ball.pos_y
+        );
     }
 }
