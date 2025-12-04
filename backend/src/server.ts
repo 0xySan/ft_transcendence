@@ -147,7 +147,7 @@ async function start() {
 					let data;
 					try {
 						data = JSON.parse(str);
-						parse(data, player, ws);
+						parse(data, player);
 					}
 					catch (err) {
 						console.log("Invalid JSON");

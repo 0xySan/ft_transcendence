@@ -80,17 +80,17 @@ parentPort?.on("message", (msg) => {
                 return;
             }
         }
-    }
+    } 
     
     /**
-     * If the action message is 'getIdWithUserId'.
+     * If the action message is 'getGameIdWithUserId'.
      * @param user_id - Is a user_id.
      * @returns The game_uuid or null if the user_id is not in game in this worker (thread).
      */
-    else if (msg.action == "getIdWithUserId") {
+    else if (msg.action == "getGameIdWithUserId") {
         for (const target of games) {
             if (target.equip_a.includes(msg.user_id) || target.equip_b.includes(msg.user_id)) {
-                parentPort?.postMessage({ return: "getIdWithUserId", game_uuid: target.game_uuid });
+                parentPort?.postMessage({ return: "getGameIdWithUserId", game_uuid: target.game_uuid });
                 return;
             }
         }
