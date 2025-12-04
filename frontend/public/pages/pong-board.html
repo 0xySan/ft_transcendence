@@ -30,4 +30,86 @@
             <p style="margin: 0;">USERNAME 4</p>
         </div>
     </div>
+    <script>
+        /* ---------------- CONTROLES DES PADDLES ---------------- */
+
+        document.addEventListener("keydown", (e) => {
+            const leftPaddle = document.querySelector('#player1');
+            const rightPaddle = document.querySelector('#player2');
+
+            const speed = 15; // vitesse du déplacement
+
+            // Position actuelle
+            const leftTop = parseInt(window.getComputedStyle(leftPaddle).top);
+            const rightTop = parseInt(window.getComputedStyle(rightPaddle).top);
+
+            switch (e.key) {
+                case "w": // monter le paddle gauche
+                    leftPaddle.style.top = Math.max(leftTop - speed, 0) + "px";
+                    sendPaddleMove("left", leftTop - speed);
+                    break;
+
+                case "s": // descendre le paddle gauche
+                    leftPaddle.style.top = Math.min(leftTop + speed, 520) + "px";
+                    sendPaddleMove("left", leftTop + speed);
+                    break;
+
+                case "ArrowUp": // monter le paddle droit
+                    rightPaddle.style.top = Math.max(rightTop - speed, 0) + "px";
+                    sendPaddleMove("right", rightTop - speed);
+                    break;
+
+                case "ArrowDown": // descendre le paddle droit
+                    rightPaddle.style.top = Math.min(rightTop + speed, 520) + "px";
+                    sendPaddleMove("right", rightTop + speed);
+                    break;
+            }
+        });
+        /* ---------------- WEBSOCKET + START GAME ---------------- */
+        function connectAndStart() {
+            const user_id = document.getElementById("user_id").value.trim();
+            const token = document.getElementById("token").value.trim();
+
+            if (!user_id || !token) {
+            log("[ERREUR] Vous devez remplir les deux champs !");
+            return;
+            }
+
+            log("[INFO] Connexion WebSocket...");
+            // log("compare token: ", token, "with: ", );
+
+            ws = new WebSocket(
+            `ws://localhost:3000/?user_id=${user_id}&token=${token}`
+            );
+
+            ws.onopen = () => {
+            log("[WS] Connecté au serveur.");
+            };
+
+            ws.onmessage = (msg) => {
+            log("[WS] Message reçu : " + msg.data);
+
+            try {
+                const data = JSON.parse(msg.data);
+                if (data.event === "welcome") {
+                log("[WS] Authentification OK pour user " + data.user_id);
+                startGame(); // ⬅️ lance la partie quand le serveur valide
+                }
+            } catch {}
+            };
+
+            ws.onclose = () => {
+            log("[WS] Déconnecté.");
+            };
+        }
+        function sendPaddleMove(side, newTop) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+            ws.send(JSON.stringify({
+                action: "move",
+                side,      // "left" ou "right"
+                position: newTop
+            }));}
+    </script>
 </div>
+
