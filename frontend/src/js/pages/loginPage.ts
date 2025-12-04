@@ -79,7 +79,9 @@ function handleLogin(event: Event): void {
 				errorTextElement.classList.add('error-message');
 				loginForm?.appendChild(errorTextElement);
 			}
-			showErrorMessage(errorTextElement, 'Login failed. Please try again later.');
+			showErrorMessage(errorTextElement,
+    `Login failed. Please try again later${err.message ? ` (${err.message})` : '.'}`);
+
 		});
 	} else{
 		event.stopImmediatePropagation();
