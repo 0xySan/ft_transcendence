@@ -60,7 +60,7 @@ export class Games {
         this.game_uuid = game_uuid;
         this.code = code;
 
-        this.position_paddle = { user_id: { pos_x: 0, pos_y: 0 }};
+        this.position_paddle = { [user_id]: { pos_x: 20, pos_y: 0 }};
         this.score = { "A": 0, "B": 0 };
         this.position_ball = { pos_x: 928 / 2, pos_y: 608 / 2 };
         this.velocity_ball = { pos_x: 15, pos_y: 15 };
@@ -107,19 +107,30 @@ export class Games {
         this.position_ball.pos_x += this.velocity_ball.pos_x;
         this.position_ball.pos_y += this.velocity_ball.pos_y;
 
-        if (this.position_ball.pos_x <= 0 || this.position_ball.pos_x >= width) {
-            this.velocity_ball.pos_x *= -1;
-        }
-
         if (this.position_ball.pos_y <= 15 || this.position_ball.pos_y >= height - 15) {
             this.velocity_ball.pos_y *= -1;
         }
 
-        // console.log(
-        //     "DEBUG: ball | x = " + this.position_ball.pos_x +
-        //     " | y = " + this.position_ball.pos_y +
-        //     " | vx = " + this.velocity_ball.pos_x +
-        //     " | vy = " + this.velocity_ball.pos_y
-        // );
+        const paddleWidth = 10;
+        const paddleHeight = 1000;
+
+        for (const playerId of this.players) {
+            const paddle = this.position_paddle[playerId];
+            if (!paddle) continue;
+
+            if (
+                this.position_ball.pos_x + 10 >= paddle.pos_x &&
+                this.position_ball.pos_x - 10 <= paddle.pos_x + paddleWidth &&
+                this.position_ball.pos_y >= paddle.pos_y &&
+                this.position_ball.pos_y <= paddle.pos_y + paddleHeight
+            ) {
+                this.velocity_ball.pos_x *= -1;
+                break;
+            }
+        }
+
+        if (this.position_ball.pos_x <= 0 || this.position_ball.pos_x >= width) {
+            this.velocity_ball.pos_x *= -1;
+        }
     }
 }
