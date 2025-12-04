@@ -32,6 +32,9 @@ try {
     let player3 = { x: 20, y: canvas.height / 2 - paddleHeight / 2 - 50 };
     let player4 = { x: canvas.width - 30, y: canvas.height / 2 - paddleHeight / 2 - 50 };
 
+    let equip_a = 0;
+    let equip_b = 0;
+
 
     /* ------------------------ WEBSOCKET EVENTS ------------------------ */
 
@@ -40,10 +43,17 @@ try {
     });
 
     ws.addEventListener("message", (event) => {
-        const data = JSON.parse(event.data);
+        try {
+            const data = JSON.parse(event.data);
 
-        if (data.action === "send" && data.ball) {
-            updateBallPosition(data.ball.pos_x, data.ball.pos_y);
+            if (data.action === "send" && data.ball) {
+                updateBallPosition(data.ball.pos_x, data.ball.pos_y);
+                updateName(data.equip_a.player_1, data.equip_a.player_2, data.equip_b.player_3, data.equip_b.player_4);
+                equip_a = Object.keys(data.equip_a).length;
+                equip_b = Object.keys(data.equip_b).length;
+            }
+        } catch {
+            return;
         }
     });
 
@@ -63,6 +73,20 @@ try {
     function updateBallPosition(x: number, y: number) {
         ball.targetX = x;
         ball.targetY = y;
+    }
+
+    function updateName(player_1: string, player_2: string, player_3: string, player_4: string) {
+        const u1 = document.getElementById("username-1");
+        const u2 = document.getElementById("username-2");
+        const u3 = document.getElementById("username-3");
+        const u4 = document.getElementById("username-4");
+
+
+
+        if (u1) u1.textContent = player_1 || "No Player";
+        if (u2) u2.textContent = player_2 || "No Player";
+        if (u3) u3.textContent = player_3 || "No Player";
+        if (u4) u4.textContent = player_4 || "No Player";
     }
 
     function animate() {
@@ -91,17 +115,17 @@ try {
 
         // ---- Paddle 1 ----
         ctx.fillStyle = "red";
-        ctx.fillRect(player1.x, player1.y, paddleWidth, paddleHeight);
+        if (equip_a > 0) ctx.fillRect(player1.x, player1.y, paddleWidth, paddleHeight);
 
         // ---- Paddle 4 ----
-        ctx.fillRect(player3.x, player3.y, paddleWidth, paddleHeight);
+        if (equip_a == 2) ctx.fillRect(player3.x, player3.y, paddleWidth, paddleHeight);
 
         // ---- Paddle 2 ----
         ctx.fillStyle = "blue";
-        ctx.fillRect(player2.x, player2.y, paddleWidth, paddleHeight);
+        if (equip_b > 0) ctx.fillRect(player2.x, player2.y, paddleWidth, paddleHeight);
 
         // ---- Paddle 3 ----
-        ctx.fillRect(player4.x, player4.y, paddleWidth, paddleHeight);
+        if (equip_b == 2) ctx.fillRect(player4.x, player4.y, paddleWidth, paddleHeight);
 
         // ---- Ball ----
         ctx.fillStyle = "white";

@@ -14,46 +14,39 @@ const height_game = 608;
 
 setInterval(game, 50);
 
+function goal(game_target: Games, equip: string) {
+    game_target.score[equip] += 1;
+    console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
+    game_target.position_ball.pos_x = width_game / 2;
+    game_target.position_ball.pos_y = height_game / 2;
+}
+
 function game() {
     let date = Date.now();
 
     for (const game_target of games) {
         if (game_target.statement == true) {
-            for (const uuid of game_target.equip_a) {
+            for (const uuid of game_target.players) {
                 parentPort?.postMessage({ 
                     action: "send",
                     user_id: uuid,
-                    ball: { pos_x: game_target.position_ball.pos_x, pos_y: game_target.position_ball.pos_y } 
-                });
-            }
-            for (const uuid of game_target.equip_b) {
-                parentPort?.postMessage({ 
-                    action: "send",
-                    user_id: uuid,
-                    ball: { pos_x: game_target.position_ball.pos_x, pos_y: game_target.position_ball.pos_y } 
+                    ball: { pos_x: game_target.position_ball.pos_x, pos_y: game_target.position_ball.pos_y },
+                    equip_a: { player_1: game_target.equip_a[0], player_2: game_target.equip_a[1] },
+                    equip_b: { player_1: game_target.equip_b[0], player_2: game_target.equip_b[1] }
                 });
             }
 
             game_target.updateBall(width_game, height_game);
             if (game_target.position_ball.pos_x <= 0) {
-                game_target.score["A"] += 1;
-                console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
-                game_target.position_ball.pos_x = width_game / 2;
-                game_target.position_ball.pos_y = height_game / 2;
+                goal(game_target, "A");
             } else if (game_target.position_ball.pos_x >= width_game) {
-                game_target.score["B"] += 1;
-                console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
-                game_target.position_ball.pos_x = width_game / 2;
-                game_target.position_ball.pos_y = height_game / 2;
+                goal(game_target, "B");
             }
 
             if (game_target.time <= date) {
                 game_target.statement = false;
                 console.log("DEBUG: Partie terminee");
-                for (const user of game_target.equip_a) {
-                    parentPort?.postMessage({ action: "finished", user_id: user });
-                }
-                for (const user of game_target.equip_b) {
+                for (const user of game_target.players) {
                     parentPort?.postMessage({ action: "finished", user_id: user });
                 }
             }

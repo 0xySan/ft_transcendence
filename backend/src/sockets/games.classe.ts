@@ -29,6 +29,8 @@ export class Position {
  * const pos = new Games("019aa6b3-8520-749c-9fc6-6312e1d54979", "484545", "123ABC");
  */
 export class Games {
+    /* List of player */
+    players: string[] = [];
     /* List of string contain uuid of the player for this equip */
     equip_a: string[] = [];
     /* List of string contain uuid of the player for this equip */
@@ -64,6 +66,7 @@ export class Games {
         this.velocity_ball = { pos_x: 15, pos_y: 15 };
         this.statement = false;
         this.time = 150000;
+        this.players.push(user_id);
     }
 
     /**
@@ -76,6 +79,7 @@ export class Games {
         } else {
             this.equip_a.push(user_id);
         }
+        this.players.push(user_id);
     }
 
     /**

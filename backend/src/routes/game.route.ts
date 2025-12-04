@@ -28,9 +28,7 @@ export function getPlayerWithToken(token: string) {
 }
 
 export function getPlayerWithUserId(user_id: string) {
-    console.log("DEBUG: start here = " + clientToken.length);
     for (const target of clientToken) {
-        console.log("DEBUG: token = " + target.token + " | user_id = " + target.player_id);
         if (target.player_id == user_id) {
             return (target);
         }
