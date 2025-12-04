@@ -22,7 +22,6 @@
 	<body class="flex-space-between">
 		<header>
 			<nav>
-				<script defer type="module" src="/js/pages/index.js"></script>
 				<svg	id="nav-menu-svg"
 						viewBox="0 0 42 42"
 						width="50" height="50"
@@ -85,6 +84,12 @@
 					<a href="/" data-translate-key="navbar.leaderboardText">Leaderboard</a>
 					<a href="/" data-translate-key="navbar.profileText">Profile</a>
 				</div>
+				<div id="theme-switcher">
+					<button class="theme-btn" data-theme="catppuccin-latte" style="--c1:rgb(239, 241, 245); --c2:rgb(172, 176, 190); --c3:rgb(108, 111, 133);"></button>
+					<button class="theme-btn" data-theme="catppuccin-frappe" style="--c1:rgb(35, 38, 52); --c2:rgb(48, 52, 70); --c3:rgb(165, 173, 206);"></button>
+					<button class="theme-btn active" data-theme="catppuccin-macchiato" style="--c1:rgb(24, 25, 38); --c2:rgb(36, 39, 58); --c3:rgb(165, 173, 203);"></button>
+					<button class="theme-btn" data-theme="catppuccin-mocha" style="--c1:rgb(17, 17, 27); --c2:rgb(30, 30, 46); --c3:rgb(166, 173, 200);"></button>
+				</div>
 				<div id="nav-right-links">
 					<a href="/login">
 						<button type="button" id="nav-login-btn" data-translate-key="navbar.loginButton">Login</button>
@@ -115,5 +120,6 @@
 				</div>
 			</footer>
 		</div>
+		<script defer type="module" src="/js/index.js"></script>
 	</body>
 </html>

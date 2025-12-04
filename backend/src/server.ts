@@ -15,8 +15,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 }
 
 if (process.env.DOMAIN_NAME === undefined || process.env.DOMAIN_NAME.length === 0) {
-  console.error('FATAL: DOMAIN_NAME is not set in environment variables.');
-  process.exit(1);
+	process.env.DOMAIN_NAME = 'localhost';
 }
 
 const SERVER_PORT = Number(process.env.PORT || 3000);
