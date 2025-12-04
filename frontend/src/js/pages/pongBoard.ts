@@ -66,7 +66,10 @@ try {
     });
 
     // Ping server occasionally
-    setInterval(() => ws.send("CLIENT: ping"), 200);
+    setInterval(() => {
+        ws.send(JSON.stringify({ type: "ping", message: "CLIENT" }));
+    }, 200);
+
 
     /* ------------------------ GAME LOGIC ------------------------ */
 
@@ -135,6 +138,59 @@ try {
     }
 
     draw();
+
+    function sendPaddleMove(side: string, newPosition: number) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            console.log("WS not open, skipping send");
+            return;
+        }
+
+        const payload = {
+            action: "move",
+            user_id: user_id,
+            position: newPosition
+        };
+
+        console.log("Sending WS message:", payload);
+        ws.send(JSON.stringify(payload));
+    }
+
+    /* ---------------- CONTROLES DES PADDLES ---------------- */
+
+    document.addEventListener("keydown", (e) => {
+        const leftPaddle = document.querySelector('#player1') as HTMLElement;
+        if (!leftPaddle) throw new Error("player1-id not found");
+        const rightPaddle = document.querySelector('#player2') as HTMLElement;
+        if (!rightPaddle) throw new Error("player2-id not found");
+
+        const speed = 15;
+
+        // Actualy position
+        const leftTop = parseInt(window.getComputedStyle(leftPaddle).top);
+        const rightTop = parseInt(window.getComputedStyle(rightPaddle).top);
+
+        switch (e.key) {
+            case "w": // up paddle left
+                leftPaddle.style.top = Math.max(leftTop - speed, 0) + "px";
+                sendPaddleMove("left", leftTop - speed);
+                break;
+
+            case "s": // down paddle left
+                leftPaddle.style.top = Math.min(leftTop + speed, 520) + "px";
+                sendPaddleMove("left", leftTop + speed);
+                break;
+
+            case "ArrowUp": // up paddle right
+                rightPaddle.style.top = Math.max(rightTop - speed, 0) + "px";
+                sendPaddleMove("right", rightTop - speed);
+                break;
+
+            case "ArrowDown": // down paddle rught
+                rightPaddle.style.top = Math.min(rightTop + speed, 520) + "px";
+                sendPaddleMove("right", rightTop + speed);
+                break;
+        }
+    });
 
 } catch (err) {
     console.error("Erreur :", err);
