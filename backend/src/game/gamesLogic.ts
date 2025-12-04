@@ -9,7 +9,10 @@ import { Games } from '../sockets/games.classe.js';
 // List of the games in this thread.
 let games: Games[] = []; 
 
-setInterval(game, 200);
+const width_game = 928;
+const height_game = 608;
+
+setInterval(game, 50);
 
 function game() {
     let date = Date.now();
@@ -31,13 +34,17 @@ function game() {
                 });
             }
 
-            game_target.updateBall(1920, 1080);
+            game_target.updateBall(width_game, height_game);
             if (game_target.position_ball.pos_x <= 0) {
                 game_target.score["A"] += 1;
                 console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
-            } else if (game_target.position_ball.pos_x >= 1920) {
+                game_target.position_ball.pos_x = width_game / 2;
+                game_target.position_ball.pos_y = height_game / 2;
+            } else if (game_target.position_ball.pos_x >= width_game) {
                 game_target.score["B"] += 1;
                 console.log("DEBUG: GOALLLLLLLLLLLLLLLLL equip A = " + game_target.score["A"] + " | equip B = " + game_target.score["B"]);
+                game_target.position_ball.pos_x = width_game / 2;
+                game_target.position_ball.pos_y = height_game / 2;
             }
 
             if (game_target.time <= date) {

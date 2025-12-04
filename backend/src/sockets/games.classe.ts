@@ -60,7 +60,7 @@ export class Games {
 
         this.position_paddle = { user_id: { pos_x: 0, pos_y: 0 }};
         this.score = { "A": 0, "B": 0 };
-        this.position_ball = { pos_x: 0, pos_y: 0 };
+        this.position_ball = { pos_x: 928 / 2, pos_y: 608 / 2 };
         this.velocity_ball = { pos_x: 15, pos_y: 15 };
         this.statement = false;
         this.time = 150000;
@@ -107,7 +107,7 @@ export class Games {
             this.velocity_ball.pos_x *= -1;
         }
 
-        if (this.position_ball.pos_y <= 0 || this.position_ball.pos_y >= height) {
+        if (this.position_ball.pos_y <= 15 || this.position_ball.pos_y >= height - 15) {
             this.velocity_ball.pos_y *= -1;
         }
 

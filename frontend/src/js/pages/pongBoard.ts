@@ -1,13 +1,10 @@
 export {};
 
-declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
-// declare function translatePage(language: string): void;
-// declare function translateElement(language: string, element: HTMLElement): void;
-// declare function getUserLang(): string;
-
-console.log("DEBUG: WELCOME !");
-
-
+declare function addListener(
+    target: EventTarget | null, 
+    event: string, 
+    handler: EventListenerOrEventListenerObject
+): void;
 
 try {
     const params = new URLSearchParams(window.location.search);
@@ -16,13 +13,33 @@ try {
 
     const ws = new WebSocket(`ws://localhost:8080/ws/?user_id=${user_id}&token=${token}`);
 
-    const ballEl = document.getElementById("ball") as HTMLDivElement;
+    const canvas = document.getElementById("pong-board") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-    ws.addEventListener('open', () => {
-        console.log('Connected to WebSocket server.');
+    const paddleWidth = 10;
+    const paddleHeight = 80;
+
+    let ball = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        size: 10,
+        targetX: canvas.width / 2,
+        targetY: canvas.height / 2
+    };
+
+    let player1 = { x: 20, y: canvas.height / 2 - paddleHeight / 2 + 50 };
+    let player2 = { x: canvas.width - 30, y: canvas.height / 2 - paddleHeight / 2 + 50 };
+    let player3 = { x: 20, y: canvas.height / 2 - paddleHeight / 2 - 50 };
+    let player4 = { x: canvas.width - 30, y: canvas.height / 2 - paddleHeight / 2 - 50 };
+
+
+    /* ------------------------ WEBSOCKET EVENTS ------------------------ */
+
+    ws.addEventListener("open", () => {
+        console.log("Connected to WebSocket server.");
     });
 
-    ws.addEventListener('message', (event) => {
+    ws.addEventListener("message", (event) => {
         const data = JSON.parse(event.data);
 
         if (data.action === "send" && data.ball) {
@@ -30,71 +47,70 @@ try {
         }
     });
 
-    ws.addEventListener('close', () => {
-        console.log('Disconnected from server.');
+    ws.addEventListener("close", () => {
+        console.log("Disconnected from server.");
     });
 
-    ws.addEventListener('error', (err) => {
-        console.error('WebSocket error:', err);
+    ws.addEventListener("error", (err) => {
+        console.error("WebSocket error:", err);
     });
 
-    setInterval(game, 200);
+    // Ping server occasionally
+    setInterval(() => ws.send("CLIENT: ping"), 200);
 
-    function game() {
-        ws.send("CLIENT: ping");
-    }
+    /* ------------------------ GAME LOGIC ------------------------ */
 
     function updateBallPosition(x: number, y: number) {
-        ballEl.style.left = x + "px";
-        ballEl.style.top = y + "px";
+        ball.targetX = x;
+        ball.targetY = y;
     }
 
-    function sendPaddleMove(side: string, newTop: number) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    function animate() {
+        const smooth = 0.2;
 
-        ws.send(JSON.stringify({
-            action: "move",
-            side,      // "left" ou "right"
-            position: newTop
-        }));
+        ball.x += (ball.targetX - ball.x) * smooth;
+        ball.y += (ball.targetY - ball.y) * smooth;
+
+        draw();
+        requestAnimationFrame(animate);
     }
 
-    /* ---------------- CONTROLES DES PADDLES ---------------- */
+    animate();
 
-    document.addEventListener("keydown", (e) => {
-        const leftPaddle = document.querySelector('#player1') as HTMLElement;
-        if (!leftPaddle) throw new Error("player1-id introuvable");
-        const rightPaddle = document.querySelector('#player2') as HTMLElement;
-        if (!rightPaddle) throw new Error("player2-id introuvable");
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const speed = 15; // vitesse du déplacement
+        // ---- Middle dashed line ----
+        ctx.setLineDash([10, 10]);
+        ctx.strokeStyle = "#fff";
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
 
-        // Position actuelle
-        const leftTop = parseInt(window.getComputedStyle(leftPaddle).top);
-        const rightTop = parseInt(window.getComputedStyle(rightPaddle).top);
+        // ---- Paddle 1 ----
+        ctx.fillStyle = "red";
+        ctx.fillRect(player1.x, player1.y, paddleWidth, paddleHeight);
 
-        switch (e.key) {
-            case "w": // monter le paddle gauche
-                leftPaddle.style.top = Math.max(leftTop - speed, 0) + "px";
-                sendPaddleMove("left", leftTop - speed);
-                break;
+        // ---- Paddle 4 ----
+        ctx.fillRect(player3.x, player3.y, paddleWidth, paddleHeight);
 
-            case "s": // descendre le paddle gauche
-                leftPaddle.style.top = Math.min(leftTop + speed, 520) + "px";
-                sendPaddleMove("left", leftTop + speed);
-                break;
+        // ---- Paddle 2 ----
+        ctx.fillStyle = "blue";
+        ctx.fillRect(player2.x, player2.y, paddleWidth, paddleHeight);
 
-            case "ArrowUp": // monter le paddle droit
-                rightPaddle.style.top = Math.max(rightTop - speed, 0) + "px";
-                sendPaddleMove("right", rightTop - speed);
-                break;
+        // ---- Paddle 3 ----
+        ctx.fillRect(player4.x, player4.y, paddleWidth, paddleHeight);
 
-            case "ArrowDown": // descendre le paddle droit
-                rightPaddle.style.top = Math.min(rightTop + speed, 520) + "px";
-                sendPaddleMove("right", rightTop + speed);
-                break;
-        }
-    });
+        // ---- Ball ----
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    draw();
 
 } catch (err) {
     console.error("Erreur :", err);
