@@ -103,54 +103,37 @@ document.addEventListener('focusin', (e) => {
 });
 
 // Persistent toggle button placed into the user list (moved out of chat header)
-const headerToggleBtn = document.createElement("button");
-headerToggleBtn.className = "chat-header-toggle-users";
+const headerToggleBtn = document.querySelector<HTMLButtonElement>(".chat-header-toggle-users")!;
 function updateToggleBtnText() {
 	headerToggleBtn.setAttribute("aria-pressed", String(userListHidden));
-	// Use compact chevrons so the button doesn't take much space: '◀/▲' to hide, '▶/▼' to show
-	const narrow = window.innerWidth < 700;
-	headerToggleBtn.textContent = narrow ? (userListHidden ? "▼" : "▲") : (userListHidden ? "▶" : "◀");
 	headerToggleBtn.title = userListHidden ? "Show users" : "Hide users";
 }
 updateToggleBtnText();
-// keep the toggle icon responsive when viewport changes
-window.addEventListener('resize', updateToggleBtnText);
-window.addEventListener('orientationchange', updateToggleBtnText);
+
 headerToggleBtn.addEventListener("click", (e) => {
 	e.preventDefault();
 	e.stopPropagation();
 	userListHidden = !userListHidden;
 
 	// physically hide/show the user list element
-	userListDiv.style.display = userListHidden ? "none" : "";
-
-	// expand chat area when hidden; remove inline style when shown so CSS can govern layout
 	if (userListHidden)
-	{
-		chatBlock.style.width = "100%";
-		chatBlock.style.flexGrow = "1";
-	}
+		userListDiv.classList.add('hidden');
 	else
-	{
-		chatBlock.style.width = "";
-		chatBlock.style.flexGrow = "";
-	}
+		userListDiv.classList.remove('hidden');
 
 	updateToggleBtnText();
-	renderUserList();
-	renderChat();
 });
 
 // -------------------------------------
 // DUMMY DATA SETUP
 // -------------------------------------
 const users: string[] = [];
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 6; i++) {
 	users.push("user" + i);
 }
 
 const profilepics: string[] = [];
-for (let _ = 0; _ < 100; _++) {
+for (let _ = 0; _ < 6; _++) {
 	profilepics.push(`https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 10) % 5}.png`);
 }
 
@@ -178,14 +161,14 @@ users.forEach((name, i) => {
 	conversations[name] = list;
 });
 
-conversations["user42"] = [
-	{ sender: "user42", type: 'invite', inviteState: 'pending', game: 'tetris', text: "Wanna play Tetris?", timestamp: new Date(Date.now() + 1) },
-	{ sender: "user42", type: 'invite', inviteState: 'pending', game: 'pong', text: "Wanna play Pong?", timestamp: new Date(Date.now() + 2) },
-	{ sender: "user42", text: "This is a longer message to test how the chat UI handles wrapping and multiple lines. Let's see how it looks when the message exceeds the typical length of a chat bubble. Hopefully, it wraps nicely and remains readable!", timestamp: new Date(Date.now() + 3) },
+conversations["user4"] = [
+	{ sender: "user4", type: 'invite', inviteState: 'pending', game: 'tetris', text: "Wanna play Tetris?", timestamp: new Date(Date.now() + 1) },
+	{ sender: "user4", type: 'invite', inviteState: 'pending', game: 'pong', text: "Wanna play Pong?", timestamp: new Date(Date.now() + 2) },
+	{ sender: "user4", text: "This is a longer message to test how the chat UI handles wrapping and multiple lines. Let's see how it looks when the message exceeds the typical length of a chat bubble. Hopefully, it wraps nicely and remains readable!", timestamp: new Date(Date.now() + 3) },
 	{ sender: "me", text: "Indeed, it seems to be working well!\nNew line test.", timestamp: new Date(Date.now() + 4) },
 ];
 
-conversations["user98"] = []; // empty conversation for testing
+conversations["user2"] = []; // empty conversation for testing
 
 conversations["Dummy"] = [
 	{ sender: "Dummy", text: "Hi there!", timestamp: new Date(Date.now() + 5) },
@@ -208,29 +191,6 @@ function getLastTimestamp(name: string): number
 
 function renderUserList()
 {
-	// Respect the userListHidden state
-	userListDiv.style.display = userListHidden ? "none" : "";
-
-	userListDiv.innerHTML = "";
-
-	// place the persistent toggle into the parent container (so it remains clickable
-	// even if we hide `.user-list`). Prefer `chat-form-container` if available.
-	const container = userListDiv.parentElement as HTMLElement | null;
-	updateToggleBtnText();
-	if (container)
-	{
-		// prefer inserting the toggle immediately before the user list so it occupies its own
-		// space and does not overlap user rows
-		if (container.querySelector('.chat-header-toggle-users') !== headerToggleBtn)
-			container.insertBefore(headerToggleBtn, userListDiv);
-	}
-	else
-	{
-		// fallback: still append to userListDiv
-		if (userListDiv.querySelector('.chat-header-toggle-users') !== headerToggleBtn)
-			userListDiv.insertBefore(headerToggleBtn, userListDiv.firstChild);
-	}
-
 	const sortedUsers = Object.keys(conversations).sort((a, b) => {
 		return getLastTimestamp(b) - getLastTimestamp(a); // descending: newest first
 	});
@@ -238,6 +198,7 @@ function renderUserList()
 	sortedUsers.forEach((name) => {
 		const userItem = document.createElement('div');
 		userItem.className = 'user-item';
+		userItem.dataset.username = name;
 		if (name === activeUser) userItem.classList.add('selected');
 		if (blockedUsers.has(name)) userItem.classList.add('blocked');
 
@@ -248,10 +209,7 @@ function renderUserList()
 
 		const txt = document.createElement('p');
 		txt.className = 'name_profile';
-		if (blockedUsers.has(name))
-			txt.textContent = `${name} 🚫`;
-		else
-			txt.textContent = name;
+		txt.textContent = name;
 
 		userItem.appendChild(img);
 		userItem.appendChild(txt);
@@ -261,12 +219,54 @@ function renderUserList()
 			// initialize visibleStart so only last page is shown
 			const msgs = conversations[name] || [];
 			visibleStart[name] = Math.max(0, msgs.length - MESSAGES_PAGE);
-			renderUserList();
+			reorderUserList(name);
 			renderChat();
 		});
 
 		userListDiv.appendChild(userItem);
 	});
+}
+
+// Reorder existing DOM nodes for the user list without rebuilding everything.
+function reorderUserList(movedUser: string)
+{
+	// find existing DOM node for this user
+	const selector = `.user-item[data-username="${CSS.escape(movedUser)}"]`;
+	const item = userListDiv.querySelector<HTMLDivElement>(selector);
+	if (!item) return;
+	// update selection state
+	userListDiv.querySelectorAll<HTMLDivElement>('.user-item.selected').forEach((el) => {
+		if (el !== item) el.classList.remove('selected');
+	});
+	if (activeUser === movedUser)
+		item.classList.add('selected');
+	else
+		item.classList.remove('selected');
+
+	if (blockedUsers.has(movedUser))
+		item.classList.add('blocked');
+	else
+		item.classList.remove('blocked');
+	// Insert the item into the correct position to keep list sorted by last activity (newest first).
+	// This moves the existing node rather than rebuilding the whole list.
+	const existingItems = Array.from(userListDiv.querySelectorAll<HTMLDivElement>('.user-item'));
+	const movedTs = getLastTimestamp(movedUser);
+	let inserted = false;
+	for (const other of existingItems)
+	{
+		if (other === item) continue;
+		const otherName = other.dataset.username || '';
+		const otherTs = getLastTimestamp(otherName);
+		// place item before the first user with a smaller timestamp (so newest appear first)
+		if (otherTs < movedTs)
+		{
+			userListDiv.insertBefore(item, other);
+			inserted = true;
+			break;
+		}
+	}
+	if (!inserted)
+		userListDiv.appendChild(item); // if we didn't find a smaller timestamp, put it at the end (oldest position)
 }
 
 // initial render of user list
@@ -346,10 +346,11 @@ function renderChat() {
 				});
 			}
 		}
-		// update both sides
-		renderUserList();
+		// update both sides (only the affected user)
+		reorderUserList(activeUser!);
 		renderChat();
 	});
+
 
 	header.appendChild(headerBlockBtn);
 
@@ -550,7 +551,6 @@ function renderChat() {
 			if (target.classList.contains('invite-accept'))
 			{
 				msg.inviteState = 'accepted';
-				renderUserList();
 				renderChat();
 				setTimeout(() => {
 					// const opponent = msg.sender === 'me' ? activeUser! : msg.sender;
@@ -563,14 +563,12 @@ function renderChat() {
 			if (target.classList.contains('invite-decline'))
 			{
 				msg.inviteState = 'declined';
-				renderUserList();
 				renderChat();
 				return;
 			}
 			if (target.classList.contains('invite-cancel'))
 			{
 				msg.inviteState = 'cancelled';
-				renderUserList();
 				renderChat();
 				return;
 			}
@@ -662,16 +660,6 @@ function renderChat() {
 // -------------------------------------
 // MESSAGE RENDERING HELPERS
 // -------------------------------------
-
-// Small helper to avoid XSS from message text
-function escapeHtml(str: string) {
-	return str
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
-}
 
 // Convert messages timestamp to readable format
 function convertTimestampToReadable(ts: Date): string
@@ -940,7 +928,7 @@ function submitMessage(input: HTMLDivElement, sendBtn: HTMLButtonElement, messag
 	clearDraft(activeUser);
 	input.classList.add("empty");
 	sendBtn.hidden = true;
-	renderUserList();
+	reorderUserList(activeUser!);
 	renderChat();
 }
 
@@ -966,6 +954,6 @@ function sendInvite(user: string, game: 'pong' | 'tetris' = 'pong')
 		inviteState: 'pending',
 		game: game,
 	});
-	renderUserList();
+	reorderUserList(user);
 	renderChat();
 }
