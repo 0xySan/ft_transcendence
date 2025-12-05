@@ -5,6 +5,9 @@ import { getUserLang } from "./translationModule.js";
 // Global listeners array to track dynamically added event listeners
 declare global {
 	var listeners: Listener[];
+	interface Window {
+		loadPage: typeof loadPage;
+	}
 }
 
 const contentDiv = document.getElementById('content') as HTMLElement;
@@ -140,6 +143,15 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 	await executeScripts(contentDiv);
 }
 
+export function loadPage(url: string): void {
+	fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
+		.then(res => res.ok ? res.text() : Promise.reject(`HTTP ${res.status}`))
+		.then(html => {
+			updatePage(url, html, 'push');
+		})
+		.catch(err => console.error('Fetch error:', err));
+}
+
 // --- Attach dynamic AJAX submission for forms ---
 function initializeForms(forms: NodeListOf<HTMLFormElement>): void {
 	forms.forEach(form => {
@@ -174,3 +186,4 @@ function initializeForms(forms: NodeListOf<HTMLFormElement>): void {
 
 // --- Start routing after DOM is loaded ---
 document.addEventListener('DOMContentLoaded', setupDynamicRouting);
+window.loadPage = loadPage;

@@ -1,51 +1,79 @@
-export {};
-
-try {
-    const response = await fetch("/api/game", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: "duck" })
-    });
-
-    const data = await response.json();
-    const ws = new WebSocket('ws://localhost:8080/ws/?user_id=duck&token=' + data.token);
-
-    ws.addEventListener('open', () => {
-        console.log('Connected to WebSocket server.');
-    });
-
-    ws.addEventListener('message', (event) => {
-        console.log('message:', event.data);
-    });
-
-    ws.addEventListener('close', () => {
-        console.log('Disconnected from server.');
-    });
-
-    ws.addEventListener('error', (err) => {
-        console.error('WebSocket error:', err);
-    });
-
-	const launchBtn = getEl<HTMLButtonElement>("lobby.btn.launch");
-
-	addListener(launchBtn, "click", async () => {
-		ws.send(JSON.stringify({ action: "start" }));
-		window.location.href = `/pong-board?token=${data.token}&user_id=duck`;
-	});
-
-} catch (err) {
-    console.error("Erreur :", err);
+declare global {
+	interface Window {
+		socket: WebSocket;
+	}
 }
 
-declare function addListener(
-	target: EventTarget | null,
-	event: string,
-	handler: EventListenerOrEventListenerObject,
-	options?: boolean
-): void;
-declare function translatePage(language: string): void;
-declare function translateElement(language: string, element: HTMLElement): void;
-declare function getUserLang(): string;
+
+declare function loadPage(url:string) : void;
+declare function addListener(target: EventTarget | null, event: string, handler: any): void;
+
+export {};
+
+let data: any;
+
+
+
+try {
+	function redirectUser(event: Event) : void{
+		event.preventDefault();
+		event.stopImmediatePropagation();
+		socketConnection.send(JSON.stringify({ action: "start" }));
+		loadPage(`/pong-board?token=${data.token}&user_id=duck`);
+	}
+	const response = await fetch("/api/game", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ user_id: "duck" })
+	});
+
+	data = await response.json();
+	console.log("DEBUG: token = " + data.token);
+	let socketConnection = window.socket;
+
+	if (!socketConnection) {
+		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+		const socketUrl =
+			wsProtocol + "//" + window.location.host + "/ws/" +
+			`?user_id=duck&token=${data.token}`;
+
+
+		window.socket = new WebSocket(socketUrl);
+		socketConnection = window.socket;
+	};
+
+	addListener(socketConnection, 'open', () => {
+		console.log('Connected to WebSocket server.');
+	});
+
+	addListener(socketConnection, 'message', (event: MessageEvent) => {
+    console.log('message:', event.data);
+});
+
+	addListener(socketConnection, "close", (event: CloseEvent) => {
+		console.log("WebSocket closed");
+
+		console.log("Code :", event.code);
+		console.log("Reason :", event.reason);
+		console.log("Clean closure :", event.wasClean);
+	});
+
+
+	addListener(socketConnection, 'error', (err: Event) => {
+		console.error('WebSocket error:', err);
+	});
+
+	const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
+
+	addListener(launchBtn, "click", redirectUser);
+
+} catch (err) {
+	console.error("Erreur :", err);
+}
+
+
+
 
 /**
  * Get element by ID or throw error if missing
