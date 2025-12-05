@@ -521,22 +521,7 @@ function renderChat() {
 			// replace placeholder with actual message content (still escaped)
 			msg.hidden = !msg.hidden;
 			target.setAttribute("aria-pressed", String(!msg.hidden));
-			const contentDiv = container.querySelector<HTMLElement>(".blocked-message-content");
 			container.setAttribute("data-shown", String(!msg.hidden));
-			if (contentDiv)
-			{
-				if (msg.hidden)
-				{
-					contentDiv.style.display = "none";
-					target.textContent = "Show";
-				}
-				else
-				{
-					contentDiv.style.display = "block";
-					target.textContent = "Hide";
-				}
-			}
-
 		}
 
 		// Invite actions: accept / decline / cancel / go
@@ -843,13 +828,11 @@ function loadMessages(startIndex: number, msgs: Message[]): DocumentFragment
 			toggle.dataset.index = String(globalFirstIdx);
 			toggle.dataset.count = String(group.length);
 			toggle.setAttribute('aria-pressed', String(!groupHidden));
-			toggle.textContent = groupHidden ? 'Show' : 'Hide';
 			container.appendChild(toggle);
 
 			const content = document.createElement('div');
 			content.className = 'blocked-message-content';
 			content.dataset.index = String(globalFirstIdx);
-			content.style.display = groupHidden ? 'none' : 'block';
 
 			const timeSpan = document.createElement('span');
 			timeSpan.className = 'chat-time';
