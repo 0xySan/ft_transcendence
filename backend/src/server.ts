@@ -86,7 +86,7 @@ export async function createThread(options: { workerFile?: string, count?: numbe
 				player?.socket.close(1000, "game finished");
 			} else if (msg.action == "send") {
 				const player = getPlayerWithUserId(msg.user_id);
-				console.log("DEBUG: json = " + JSON.stringify(msg));
+				// console.log("DEBUG: json = " + JSON.stringify(msg));
 				player?.socket.send(JSON.stringify(msg));
 			}
 		});

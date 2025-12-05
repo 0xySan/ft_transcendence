@@ -5,6 +5,7 @@
 
 import { parentPort } from "worker_threads";
 import { Games } from '../sockets/games.classe.js';
+import { start } from "repl";
 
 // List of the games in this thread.
 let games: Games[] = []; 
@@ -32,7 +33,9 @@ function game() {
                     user_id: uuid,
                     ball: { pos_x: game_target.position_ball.pos_x, pos_y: game_target.position_ball.pos_y },
                     equip_a: { player_1: game_target.equip_a[0], player_2: game_target.equip_a[1] },
-                    equip_b: { player_1: game_target.equip_b[0], player_2: game_target.equip_b[1] }
+                    equip_b: { player_1: game_target.equip_b[0], player_2: game_target.equip_b[1] },
+                    score_a: game_target.score["A"],
+                    score_b: game_target.score["B"]
                 });
             }
 
