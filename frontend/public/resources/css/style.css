@@ -681,7 +681,6 @@ button:active {
 	clear: both;
 
 	width: auto;
-	max-width: 85%;
 
 	margin-top: 0.5rem;
 	margin-bottom: 4px;
@@ -689,8 +688,6 @@ button:active {
 	box-sizing: border-box;
 
 	border-radius: 8px;
-
-	white-space: pre-line;
 
 	word-wrap: break-word;
 	overflow-wrap: anywhere;
@@ -783,11 +780,11 @@ button:active {
 /* Invite message styling */
 .chat-message.invite {
 	width: 50%;
-	min-width: 15rem;
+	min-width: 13rem;
 	max-width: 25rem;
 
-	margin-bottom: 8px;
-	padding: 8px 10px;
+	margin-bottom: 1rem;
+	padding: 0.25rem 0.3rem;
 
 	background: rgba(var(--sky), 0.04);
 
@@ -806,20 +803,20 @@ button:active {
 }
 
 .chat-message.invite .invite-text {
-	margin-bottom: 6px;
+	margin-bottom: 0.4rem;
 
 	font-weight: 600;
 	color: rgb(var(--text));
 }
 
 .chat-message.invite .invite-actions {
-	gap: 8px;
+	gap: 0.5rem;
 
 	display: flex;
 }
 
 .chat-message.invite .invite-actions button {
-	padding: 6px 10px;
+	padding: 0.3rem 0.4rem;
 
 	border: none;
 	border-radius: 6px;
@@ -845,6 +842,11 @@ button:active {
 	background: rgba(var(--overlay1), 0.12);
 
 	color: rgb(var(--text));
+}
+
+.load-older-hint {
+	text-align: center;
+	padding: 0.2rem 0;
 }
 
 .chat-message.invite .invite-actions .invite-go {
@@ -874,6 +876,10 @@ button:active {
 	flex-shrink: 0;
 }
 
+.chat-messages.hidden {
+	display: none;
+}
+
 .chat-invite-btn {
 	width: 40px;
 	height: 40px;
@@ -900,7 +906,7 @@ button:active {
 	background: rgba(var(--surface0), 0.2);
 }
 
-.invite-wrapper[aria-disabled="true"] .chat-invite-btn {
+.chat-invite-btn.disabled {
 	opacity: 0.4;
 	cursor: not-allowed;
 }
@@ -1115,13 +1121,73 @@ button:active {
 	}
 }
 
-@media (max-height: 500px) {
-	.chat-form-block {
-		height: calc(100vh - 2rem);
+/* -------------------------------------------------------------------------- */
+/*  Landscape phone: stack content left, vertical header on the right         */
+/* -------------------------------------------------------------------------- */
+@media (max-height: 520px) and (orientation: landscape) {
+	/* Keep column stack; reserve space for the vertical header rail on the right */
+	.chat-block {
+		position: relative;
+		padding-right: 4.5rem;
 	}
 
-	.chat-div-container {
-		height: calc(100vh - 2rem);
+	/* Make header a vertical rail on the right */
+	.chat-header {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.75rem 0.4rem;
+		min-width: 64px;
+		border-bottom: none;
+		border-left: 1px solid rgb(var(--surface1));
+		background: rgb(var(--base));
+	}
+
+	.chat-header .img_profile {
+		float: none;
+		margin: 0;
+		width: 34px;
+		height: 34px;
+	}
+
+	.chat-header-title,
+	.chat-header .chat-header-title {
+		float: none;
+		margin: 0;
+		padding: 0;
+		font-size: 0.8rem;
+		text-orientation: mixed;
+		text-align: center;
+	}
+
+	.chat-header .chat-header-btn {
+		float: none;
+		margin-left: 0px;
+		padding: 4px 4px;
+		font-size: 12px;
+	}
+
+	/* Slightly smaller body text for tight landscape space */
+	.chat-messages {
+		font-size: 0.72rem;
+	}
+
+	.chat-message {
+		font-size: 0.72rem;
+	}
+
+	.chat-time {
+		font-size: 0.65rem;
+	}
+
+	.chat-message.invite .invite-actions button {
+		font-size: 0.7rem;
 	}
 }
 
