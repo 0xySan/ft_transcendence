@@ -1,34 +1,60 @@
 /* ==========================================================================
-                              THEMES DEFINITION 
+							  THEMES DEFINITION 
    ========================================================================== */
 
 [data-theme="catppuccin-macchiato"] {
-	--rosewater: 245, 224, 220; /* Primary accent (cursor or highlights) */
-	--flamingo: 242, 205, 205; /* Secondary accent (alerts or highlights) */
-	--pink: 245, 194, 231; /* Vivid accent (used for emphasis) */
-	--mauve: 203, 166, 247; /* Syntax highlighting or active elements */
-	--red: 243, 139, 168; /* Error or critical alert (bright tone) */
-	--maroon: 235, 160, 172; /* Error or danger (muted tone) */
-	--peach: 250, 179, 135; /* Warning (highlight important elements) */
-	--yellow: 249, 226, 175; /* Caution or notification */
-	--green: 166, 227, 161; /* Success or confirmation */
-	--teal: 148, 226, 213; /* Info or moderate success (cyan-green tone) */
-	--sky: 137, 220, 235; /* General information (light cyan) */
-	--sapphire: 116, 199, 236; /* Accent for links or buttons (deep blue) */
-	--blue: 137, 180, 250; /* Primary actions or links (bright blue) */
-	--lavender: 180, 190, 254; /* Soft accent or comments (light lavender) */
-	--text: 202, 211, 245; /* Main text (on dark background) */
-	--subtext1: 184, 192, 224; /* Secondary text (subtitles, captions) */
-	--subtext0: 165, 173, 203; /* Tertiary text (labels, minor info) */
-	--overlay2: 147, 154, 183; /* Light overlay (for elevated surfaces) */
-	--overlay1: 128, 135, 162; /* Medium overlay */
-	--overlay0: 110, 115, 141; /* Dark overlay */
-	--surface2: 91, 96, 120; /* Light UI surface (foreground elements) */
-	--surface1: 73, 77, 100; /* Mid UI surface */
-	--surface0: 54, 58, 79; /* Dark UI surface */
-	--base: 36, 39, 58; /* Main background */
-	--mantle: 30, 32, 48; /* Secondary background (containers) */
-	--crust: 24, 25, 38; /* Tertiary background (deep layers) */
+	--rosewater: 245, 224, 220;
+	/* Primary accent (cursor or highlights) */
+	--flamingo: 242, 205, 205;
+	/* Secondary accent (alerts or highlights) */
+	--pink: 245, 194, 231;
+	/* Vivid accent (used for emphasis) */
+	--mauve: 203, 166, 247;
+	/* Syntax highlighting or active elements */
+	--red: 243, 139, 168;
+	/* Error or critical alert (bright tone) */
+	--maroon: 235, 160, 172;
+	/* Error or danger (muted tone) */
+	--peach: 250, 179, 135;
+	/* Warning (highlight important elements) */
+	--yellow: 249, 226, 175;
+	/* Caution or notification */
+	--green: 166, 227, 161;
+	/* Success or confirmation */
+	--teal: 148, 226, 213;
+	/* Info or moderate success (cyan-green tone) */
+	--sky: 137, 220, 235;
+	/* General information (light cyan) */
+	--sapphire: 116, 199, 236;
+	/* Accent for links or buttons (deep blue) */
+	--blue: 137, 180, 250;
+	/* Primary actions or links (bright blue) */
+	--lavender: 180, 190, 254;
+	/* Soft accent or comments (light lavender) */
+	--text: 202, 211, 245;
+	/* Main text (on dark background) */
+	--subtext1: 184, 192, 224;
+	/* Secondary text (subtitles, captions) */
+	--subtext0: 165, 173, 203;
+	/* Tertiary text (labels, minor info) */
+	--overlay2: 147, 154, 183;
+	/* Light overlay (for elevated surfaces) */
+	--overlay1: 128, 135, 162;
+	/* Medium overlay */
+	--overlay0: 110, 115, 141;
+	/* Dark overlay */
+	--surface2: 91, 96, 120;
+	/* Light UI surface (foreground elements) */
+	--surface1: 73, 77, 100;
+	/* Mid UI surface */
+	--surface0: 54, 58, 79;
+	/* Dark UI surface */
+	--base: 36, 39, 58;
+	/* Main background */
+	--mantle: 30, 32, 48;
+	/* Secondary background (containers) */
+	--crust: 24, 25, 38;
+	/* Tertiary background (deep layers) */
 }
 
 [data-theme="catppuccin-latte"] {
@@ -119,7 +145,7 @@
 }
 
 /* ==========================================================================
-                              FONT-FACE DECLARATION 
+							  FONT-FACE DECLARATION 
    ========================================================================== */
 
 @font-face {
@@ -144,7 +170,7 @@
 }
 
 /* ==========================================================================
-                                FONTS DEFINITION
+								FONTS DEFINITION
    ========================================================================== */
 
 .font-poppins-medium {
@@ -160,7 +186,7 @@
 }
 
 /* ==========================================================================
-                              TEXT COLOR DEFINITION
+							  TEXT COLOR DEFINITION
    ========================================================================== */
 
 .text-color-text {
@@ -176,22 +202,28 @@
 }
 
 .flex-space-between {
-	height: 100vh; /* must have a fixed or inherited height */
+	height: 100vh;
+	/* must have a fixed or inherited height */
 
 	display: flex;
-	flex-direction: column; /* stack vertically */
-	align-items: center; /* center horizontally (align center in Figma) */
-	justify-content: space-between; /* push first to top, last to bottom */
+	flex-direction: column;
+	/* stack vertically */
+	align-items: center;
+	/* center horizontally (align center in Figma) */
+	justify-content: space-between;
+	/* push first to top, last to bottom */
 }
 
 /* ==========================================================================
-                                BASE DEFINITION
+								BASE DEFINITION
    ========================================================================== */
 
 html,
 body {
 	width: 100vw;
-	height: 100vh;
+	/* Use a dynamic --vh variable so mobile on-screen keyboard resizing won't cause layout jumps
+	   JS will set --vh = window.innerHeight * 0.01px on load/resize. */
+	height: calc(var(--vh, 1vh) * 100);
 
 	margin: 0;
 	padding: 0;
@@ -199,7 +231,10 @@ body {
 	font-family: "Poppins-Regular", sans-serif;
 	color: rgb(var(--text));
 
-	overflow: hidden;
+	/* allow page scrolling; hiding overflow prevents the viewport from adjusting properly
+	   when virtual keyboards open on mobile */
+
+	overflow: auto;
 }
 
 #scroll-content {
@@ -214,10 +249,12 @@ body {
 
 #content {
 	width: 100vw;
-	min-height: calc(100% - 6rem); /* account for fixed ui elements */
+	min-height: calc(100% - 6rem);
+	/* account for fixed ui elements */
 
 	padding: 1rem;
-	box-sizing: border-box; /* include padding/border in size */
+	box-sizing: border-box;
+	/* include padding/border in size */
 
 	display: flex;
 	flex-direction: column;
@@ -254,12 +291,26 @@ h1 {
 	opacity: 0;
 }
 
+/* When used on the user list, remove it from layout flow so the chat can expand */
+.user-list.hidden {
+	display: none;
+}
+
+/* When the chat block has the hidden utility, make it expand to fill remaining space.
+   This selector allows toggling the chat area layout purely via the `.hidden` class. */
+.hidden.chat-block,
+.chat-block.hidden {
+	width: 100%;
+
+	flex-grow: 1;
+}
+
 .unloaded {
 	display: none !important;
 }
 
 /* ==========================================================================
-                                BUTTON DEFINITION
+								BUTTON DEFINITION
    ========================================================================== */
 
 button {
@@ -277,10 +328,8 @@ button {
 }
 
 button:hover {
-	background-color: rgba(
-		var(--blue),
-		0.85
-	); /* slightly transparent hover effect */
+	background-color: rgba(var(--blue), 0.85);
+	/* slightly transparent hover effect */
 	/* transform: translateY(-1px); */
 }
 
@@ -301,7 +350,7 @@ button:active {
 }
 
 /* ==========================================================================
-                              GRADIENT DEFINITION
+							  GRADIENT DEFINITION
    ========================================================================== */
 
 .gradient-peach-to-maroon {
@@ -326,13 +375,15 @@ button:active {
 	color: transparent;
 
 	-webkit-background-clip: text;
-	background-clip: text; /* for Firefox */
+	background-clip: text;
+	/* for Firefox */
 	-webkit-text-fill-color: transparent;
 }
 
 /* Wrapper with gradient border */
 .border-gradient-customizable {
-	padding: 4px; /* thickness of the border */
+	padding: 4px;
+	/* thickness of the border */
 
 	background: linear-gradient(
 		90deg,
@@ -340,15 +391,17 @@ button:active {
 		var(--custom-team-color2)
 	);
 
-	border-radius: 12px; /* outer border radius */
+	border-radius: 12px;
+	/* outer border radius */
 
-	display: flex; /* center the inner board */
+	display: flex;
+	/* center the inner board */
 	align-items: center;
 	justify-content: center;
 }
 
 /* ==========================================================================
-                              LANDING PAGE STYLES
+							  LANDING PAGE STYLES
    ========================================================================== */
 
 #landing-div {
@@ -358,8 +411,10 @@ button:active {
 
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start; /* vertical: top */
-	justify-content: flex-start; /* horizontal: left */
+	align-items: flex-start;
+	/* vertical: top */
+	justify-content: flex-start;
+	/* horizontal: left */
 }
 
 @media (max-width: 300px) {
@@ -367,6 +422,7 @@ button:active {
 	#landing-div h1 {
 		font-size: medium;
 	}
+
 	#landing-div p {
 		font-size: small;
 	}
@@ -375,14 +431,769 @@ button:active {
 #landing-descr {
 	max-width: 34rem;
 
-	line-height: 1.5; /* controls spacing between wrapped lines */
+	line-height: 1.5;
+	/* controls spacing between wrapped lines */
 
-	word-wrap: break-word; /* allows long words to break */
+	word-wrap: break-word;
+	/* allows long words to break */
 }
 
 /* ==========================================================================
-                              AUTH PAGES STYLES
-                        LOGIN / REGISTER / RESET PASSWORD
+							  CHAT PAGES STYLES
+   ========================================================================== */
+
+/* The card that contains the user list */
+.chat-div-container {
+	position: relative;
+
+	width: 100%;
+	height: calc(75vh - 2rem);
+
+	padding: 10px;
+	padding-bottom: 20px;
+	gap: 1rem;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--mantle));
+
+	border: 4px solid rgb(var(--surface0));
+	border-radius: 8px;
+
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+}
+
+.chat-div-container .chat-header-toggle-users {
+	position: relative;
+
+	width: 36px;
+	height: 36px;
+
+	margin: 4px 4px;
+	padding: 0;
+	box-sizing: border-box;
+
+	background: rgba(var(--surface1), 0.6);
+
+	border: none;
+	border-radius: 6px;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	font-size: 18px;
+	font-weight: 700;
+	text-align: center;
+	color: rgb(var(--text));
+
+	cursor: pointer;
+}
+
+/* Make sure the user-list respects flex sizing and doesn't force the container taller */
+.chat-div-container .user-list {
+	/* allow it to shrink when container is column */
+	max-width: 100%;
+	min-height: 0;
+
+	box-sizing: border-box;
+
+	word-break: break-word;
+	touch-action: pan-y;
+}
+
+.chat-message.blocked[data-shown="false"] .blocked-message-content {
+	display: none;
+}
+.chat-message.blocked[data-shown="true"] .blocked-message-content {
+	display: block;
+}
+
+.chat-message.blocked[data-shown="false"] .show-blocked-btn::after {
+	content: "Show";
+}
+.chat-message.blocked[data-shown="true"] .show-blocked-btn::after {
+	content: "Hide";
+}
+
+/* User list: fixed width */
+.user-list {
+	width: 275px;
+
+	padding-right: 0.5rem;
+	/* fixed width for left sidebar */
+
+	flex-shrink: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.chat-form-block {
+	width: 100%;
+	height: calc(75vh - 2rem);
+
+	padding: 1rem;
+	/* children go side by side */
+	gap: 1rem;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--mantle));
+
+	border: 4px solid rgb(var(--surface0));
+	border-radius: 8px;
+
+	display: flex;
+	/* horizontal flex container */
+	flex-direction: column;
+}
+
+/* Chat block: fills remaining width */
+.chat-block {
+	/* full height of parent */
+	width: 100%;
+	/* takes all remaining horizontal space */
+	height: 100%;
+	/* scroll inside if needed */
+
+	padding: 1rem;
+	box-sizing: border-box;
+
+	background-color: rgb(var(--base));
+
+	border-radius: 6px;
+
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+
+	color: rgb(var(--text));
+
+	overflow-y: auto;
+}
+
+/* Each user row */
+.user-item {
+	padding: 0.6rem 0.75rem;
+	gap: 0.75rem;
+
+	border-radius: 6px;
+
+	display: flex;
+	align-items: center;
+
+	cursor: pointer;
+}
+
+/* Hover and active styles */
+.user-item:hover {
+	background: rgba(var(--blue), 0.03);
+}
+
+.user-item:active {
+	transform: translateY(1px);
+}
+
+.user-item.selected {
+	background-color: rgba(var(--lavender), 0.2);
+
+	color: rgba(var(--sapphire), 0.9);
+}
+
+.user-item.selected:hover {
+	background: rgba(var(--lavender), 0.1);
+}
+
+.user-item.blocked::after {
+	content: "🚫";
+}
+
+/* Avatar */
+.img_profile {
+	width: 40px;
+	height: 40px;
+
+	background: rgba(var(--crust), 0.3);
+
+	border-radius: 999px;
+
+	object-fit: cover;
+}
+
+.img_profile[chat-header="true"] {
+	float: left;
+
+	width: 28px;
+	height: 28px;
+}
+
+/* Username */
+.name_profile {
+	margin: 0;
+
+	font-size: 0.95rem;
+	color: var(--text);
+}
+
+.user-list::-webkit-scrollbar {
+	width: 10px;
+}
+
+.user-list::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.3);
+
+	border-radius: 999px;
+}
+
+.chat-header-title {
+	float: left;
+
+	margin: 0 10px 0 5px;
+	padding-top: 3px;
+
+	font-size: 0.95rem;
+	color: var(--text);
+}
+
+.chat-div-container .chat-header-toggle-users:hover {
+	background: rgba(var(--surface1), 0.8);
+}
+
+.chat-header {
+	padding: 12px;
+
+	font-weight: bold;
+
+	border-bottom: 1px solid rgb(var(--surface1));
+}
+
+.chat-messages {
+	margin-bottom: 0px;
+	padding: 6px;
+
+	flex: 1;
+
+	overflow-y: auto;
+}
+
+.chat-message {
+	float: left;
+	clear: both;
+
+	width: auto;
+
+	margin-top: 0.5rem;
+	margin-bottom: 4px;
+	padding: 0.5rem;
+	box-sizing: border-box;
+
+	border-radius: 8px;
+
+	word-wrap: break-word;
+	overflow-wrap: anywhere;
+}
+
+/* Cap width on large resolutions and add a small vertical overlap */
+@media (min-width: 1200px) {
+	.chat-message {
+		max-width: 50%;
+
+		margin-top: -6px;
+		/* subtle vertical overlapping between consecutive messages */
+	}
+}
+
+@media (min-width: 1800px) {
+	.chat-message {
+		max-width: 40%;
+
+		margin-top: -8px;
+	}
+}
+
+.chat-time {
+	margin-bottom: 2px;
+
+	font-size: 0.75rem;
+	color: rgba(var(--lavender), 0.6);
+}
+
+.chat-message.me {
+	float: right;
+	clear: both;
+
+	text-align: right;
+	white-space: pre-line;
+
+	word-wrap: break-word;
+}
+
+.chat-header-btn {
+	padding: 6px 12px;
+
+	background: rgba(var(--mantle));
+
+	border: none;
+	border-radius: 4px;
+
+	font-size: 14px;
+	color: rgb(var(--text));
+}
+
+.chat-header-toggle-users[aria-pressed="true"]::after {
+	content: "▶";
+}
+
+.chat-header-toggle-users[aria-pressed="false"]::after {
+	content: "◀";
+}
+
+.chat-header-btn:hover {
+	background: rgb(var(--surface0));
+
+	color: rgb(var(--subtext1));
+}
+
+.chat-header-btn[block-button="true"] {
+	float: right;
+}
+
+.chat-header-btn[profile-button="true"] {
+	/* keep some margin on the left */
+	float: left;
+
+	margin-left: 6px;
+}
+
+.chat-message:hover {
+	background-color: rgb(var(--surface0));
+}
+
+.chat-message.blocked[data-shown="true"] {
+	background-color: rgba(var(--surface2), 0.5);
+}
+
+.chat-message.blocked:hover .show-blocked-btn {
+	color: rgb(var(--blue));
+}
+
+/* Invite message styling */
+.chat-message.invite {
+	width: 50%;
+	min-width: 13rem;
+	max-width: 25rem;
+
+	margin-bottom: 1rem;
+	padding: 0.25rem 0.3rem;
+
+	background: rgba(var(--sky), 0.04);
+
+	border: 1px solid rgba(var(--sapphire), 0.12);
+	border-radius: 8px;
+}
+
+.chat-message.invite.me {
+	background: linear-gradient(
+		90deg,
+		rgba(var(--sapphire), 0.12),
+		rgba(var(--blue), 0.06)
+	);
+
+	border-color: rgba(var(--blue), 0.18);
+}
+
+.chat-message.invite .invite-text {
+	margin-bottom: 0.4rem;
+
+	font-weight: 600;
+	color: rgb(var(--text));
+}
+
+.chat-message.invite .invite-actions {
+	gap: 0.5rem;
+
+	display: flex;
+}
+
+.chat-message.invite .invite-actions button {
+	padding: 0.3rem 0.4rem;
+
+	border: none;
+	border-radius: 6px;
+
+	font-size: 0.9rem;
+
+	cursor: pointer;
+}
+
+.chat-message.invite .invite-actions .invite-accept {
+	background: rgba(var(--green), 0.15);
+
+	color: rgb(var(--text));
+}
+
+.chat-message.invite .invite-actions .invite-decline {
+	background: rgba(var(--red), 0.12);
+
+	color: rgb(var(--text));
+}
+
+.chat-message.invite .invite-actions .invite-cancel {
+	background: rgba(var(--overlay1), 0.12);
+
+	color: rgb(var(--text));
+}
+
+.load-older-hint {
+	text-align: center;
+	padding: 0.2rem 0;
+}
+
+.chat-message.invite .invite-actions .invite-go {
+	background: linear-gradient(90deg, rgb(var(--sapphire)), rgb(var(--blue)));
+
+	color: rgb(var(--base));
+}
+
+.chat-message.invite.me .invite-actions {
+	float: right;
+}
+
+.chat-message.invite .invite-actions button:hover {
+	transform: translateY(-1px);
+}
+
+/* Invite wrapper inside the input form */
+.chat-input-form .invite-wrapper {
+	position: relative;
+
+	margin-right: 8px;
+	/* anchor for the popup */
+
+	display: inline-flex;
+	align-items: center;
+
+	flex-shrink: 0;
+}
+
+.chat-messages.hidden {
+	display: none;
+}
+
+.chat-invite-btn {
+	width: 40px;
+	height: 40px;
+
+	padding: 0;
+
+	background: rgba(var(--surface0), 0.12);
+
+	border: none;
+	border-radius: 8px;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	font-size: 20px;
+	line-height: 1;
+	color: rgb(var(--text));
+
+	cursor: pointer;
+}
+
+.chat-invite-btn:hover {
+	background: rgba(var(--surface0), 0.2);
+}
+
+.chat-invite-btn.disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* Invite menu popup appears above the button */
+.chat-input-form .invite-menu {
+	position: absolute;
+	bottom: calc(100% + 8px);
+
+	min-width: 140px;
+
+	background: rgb(var(--mantle));
+
+	border: 1px solid rgba(var(--surface0), 0.5);
+	border-radius: 6px;
+
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+	overflow: hidden;
+}
+
+.chat-input-form .invite-menu .invite-menu-btn {
+	width: 90%;
+
+	padding: 8px 12px;
+
+	background: transparent;
+
+	border: none;
+
+	text-align: center;
+	color: rgb(var(--text));
+
+	cursor: pointer;
+}
+
+.chat-input-form .invite-menu .invite-menu-btn + .invite-menu-btn {
+	border-top: 1px solid rgba(var(--surface0), 0.06);
+}
+
+.chat-input-form .invite-menu .invite-menu-btn:hover {
+	background: rgba(var(--surface0), 0.06);
+}
+
+/* small badge showing which game was invited */
+.invite-game-badge {
+	margin-left: 8px;
+	padding: 2px 8px;
+
+	background: rgba(var(--overlay1), 0.08);
+
+	border-radius: 999px;
+
+	display: inline-block;
+
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: rgb(var(--subtext0));
+}
+
+.show-blocked-btn {
+	/* prevent it from stretching */
+	max-height: 48px;
+
+	padding: 2px;
+
+	border: none;
+	border-radius: 4px;
+
+	font-size: 12px;
+	color: rgb(var(--overlay0));
+
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.show-blocked-btn:hover {
+	text-decoration: underline;
+}
+
+.chat-blocked-note {
+	font-size: 14px;
+}
+
+.chat-input {
+	min-height: 17px;
+	max-height: 150px;
+
+	padding: 8px;
+
+	background: rgba(var(--surface0), 0.2);
+
+	border: none;
+	border-radius: 4px;
+
+	flex: 1;
+
+	white-space: pre-line;
+	color: rgb(var(--text));
+
+	outline: none;
+	resize: none;
+	overflow-x: hidden;
+	overflow-y: auto;
+	word-wrap: break-word;
+}
+
+.chat-input[contenteditable="false"] {
+	cursor: not-allowed;
+}
+
+.chat-input.empty::before {
+	color: rgba(var(--subtext1), 0.6);
+
+	content: attr(data-placeholder);
+}
+
+.chat-input-form {
+	padding: 10px;
+
+	background: rgba(var(--surface0), 0.2);
+
+	border-radius: 10px;
+
+	display: flex;
+	flex-direction: row;
+
+	border-top: 1px solid rgb(var(--surface0));
+}
+
+.chat-input-form button {
+	/* prevent it from stretching */
+	max-height: 48px;
+
+	margin-left: 6px;
+	padding: 6px 12px;
+
+	background: rgba(var(--sapphire), 0.6);
+
+	border: none;
+	border-radius: 4px;
+
+	font-size: 14px;
+	color: rgb(var(--text));
+
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.chat-input-form button:hover {
+	background: rgba(var(--sapphire), 0.8);
+}
+
+/* On narrow screens, stack vertically and keep the toggle at the top-left inside the container */
+@media (max-width: 700px) {
+	.chat-div-container {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.chat-div-container .chat-header-toggle-users {
+		height: 36px;
+
+		margin: 8px;
+
+		align-self: flex-start;
+	}
+
+	.chat-div-container .user-list {
+		width: 100%;
+		min-height: 0;
+		/* make it a compact horizontal strip on small screens */
+		max-height: 4.25rem;
+
+		padding: 0.25rem 0.5rem;
+		gap: 0.5rem;
+		box-sizing: border-box;
+
+		display: flex;
+		flex: 0 1 auto;
+		flex-direction: row;
+
+		overflow-x: auto;
+		overflow-y: hidden;
+		-webkit-overflow-scrolling: touch;
+		touch-action: pan-x;
+		scroll-behavior: smooth;
+	}
+
+	.chat-div-container .user-list .user-item {
+		flex: 0 0 auto;
+		align-items: center;
+
+		touch-action: manipulation;
+	}
+
+	.chat-div-container .user-list.hidden {
+		display: none;
+	}
+
+	.chat-div-container .chat-block {
+		min-height: 0;
+
+		flex: 1 1 auto;
+	}
+
+	.chat-header-toggle-users[aria-pressed="true"]::after {
+		content: "▼";
+	}
+
+	.chat-header-toggle-users[aria-pressed="false"]::after {
+		content: "▲";
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Landscape phone: stack content left, vertical header on the right         */
+/* -------------------------------------------------------------------------- */
+@media (max-height: 520px) and (orientation: landscape) {
+	/* Keep column stack; reserve space for the vertical header rail on the right */
+	.chat-block {
+		position: relative;
+		padding-right: 4.5rem;
+	}
+
+	/* Make header a vertical rail on the right */
+	.chat-header {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.75rem 0.4rem;
+		min-width: 64px;
+		border-bottom: none;
+		border-left: 1px solid rgb(var(--surface1));
+		background: rgb(var(--base));
+	}
+
+	.chat-header .img_profile {
+		float: none;
+		margin: 0;
+		width: 34px;
+		height: 34px;
+	}
+
+	.chat-header-title,
+	.chat-header .chat-header-title {
+		float: none;
+		margin: 0;
+		padding: 0;
+		font-size: 0.8rem;
+		text-orientation: mixed;
+		text-align: center;
+	}
+
+	.chat-header .chat-header-btn {
+		float: none;
+		margin-left: 0px;
+		padding: 4px 4px;
+		font-size: 12px;
+	}
+
+	/* Slightly smaller body text for tight landscape space */
+	.chat-messages {
+		font-size: 0.72rem;
+	}
+
+	.chat-message {
+		font-size: 0.72rem;
+	}
+
+	.chat-time {
+		font-size: 0.65rem;
+	}
+
+	.chat-message.invite .invite-actions button {
+		font-size: 0.7rem;
+	}
+}
+
+/* ==========================================================================
+							  AUTH PAGES STYLES
+						LOGIN / REGISTER / RESET PASSWORD
    ========================================================================== */
 
 .auth-pages-container {
@@ -490,7 +1301,7 @@ button:active {
 }
 
 /* ==========================================================================
-                             2FA PAGE STYLES 
+							 2FA PAGE STYLES 
    ========================================================================== */
 
 #twoFA-container {
@@ -500,8 +1311,10 @@ button:active {
 
 	display: flex;
 	flex-direction: column;
-	align-items: center; /* vertical: center */
-	justify-content: center; /* horizontal: center */
+	align-items: center;
+	/* vertical: center */
+	justify-content: center;
+	/* horizontal: center */
 }
 
 #twoFA-form-container {
@@ -548,7 +1361,7 @@ button:active {
 }
 
 /* ==========================================================================
-                            ABOUT PAGE STYLES 
+							ABOUT PAGE STYLES 
    ========================================================================== */
 
 #about-container {
@@ -637,7 +1450,7 @@ button:active {
 }
 
 /* ==========================================================================
-                            LOBBY PAGE STYLES 
+							LOBBY PAGE STYLES 
    ========================================================================== */
 
 /** Layout & Positioning **/
@@ -682,22 +1495,27 @@ button:active {
 	#lobby-page {
 		min-height: 96rem;
 	}
+
 	#lobby-info-boxes {
 		min-height: 90rem;
 
 		flex-direction: column;
 	}
+
 	#lobby-player-box,
 	#lobby-mode-setting {
 		width: 100% !important;
 		min-height: 40rem;
 	}
+
 	#lobby-mode-setting {
 		min-height: 50rem;
 	}
+
 	#lobby-action-buttons {
 		width: 100% !important;
 	}
+	
 	.lobby-setting-box {
 		min-height: 42rem;
 	}
@@ -793,24 +1611,30 @@ button:active {
 	#lobby-page {
 		min-height: 105rem;
 	}
+
 	#lobby-mode-buttons {
 		width: 100%;
 
 		flex-direction: column;
 	}
+
 	#lobby-mode-buttons > button {
 		width: 100%;
 	}
+
 	#lobby-action-buttons {
 		flex-direction: column !important;
 	}
+
 	#lobby-action-buttons > button {
 		width: 70%;
 	}
+
 	#lobby-custom-game-button {
 		border-top-left-radius: 0px;
 		border-top-right-radius: 0px;
 	}
+
 	#lobby-tournament-button {
 		border-top-left-radius: 0px;
 		border-top-right-radius: 0px;
@@ -1067,7 +1891,7 @@ button:active {
 }
 
 /* ==========================================================================
-                          PONG BOARD PAGE STYLES 
+						  PONG BOARD PAGE STYLES 
    ========================================================================== */
 
 #pong-board-page {
@@ -1080,8 +1904,10 @@ button:active {
 
 	display: flex;
 	flex-direction: column;
-	align-items: center; /* horizontal */
-	justify-content: center; /* vertical */
+	align-items: center;
+	/* horizontal */
+	justify-content: center;
+	/* vertical */
 }
 
 /* Inner board */
@@ -1091,13 +1917,17 @@ button:active {
 	width: 920px;
 	height: 600px;
 
-	background-color: rgb(var(--base)); /* or transparent if needed */
+	background-color: rgb(var(--base));
+	/* or transparent if needed */
 
-	border-radius: 10px; /* inner radius = outer radius - padding */
+	border-radius: 10px;
+	/* inner radius = outer radius - padding */
 
-	flex: 0 0 auto; /* prevent flex stretching if parent is flex */
+	flex: 0 0 auto;
+	/* prevent flex stretching if parent is flex */
 
-	overflow: hidden; /* keeps players/ball inside rounded corners */
+	overflow: hidden;
+	/* keeps players/ball inside rounded corners */
 }
 
 #player1,
@@ -1165,7 +1995,8 @@ button:active {
 
 	border-radius: 50%;
 
-	transform: translate(-50%, -50%); /* Centers it perfectly */
+	transform: translate(-50%, -50%);
+	/* Centers it perfectly */
 }
 
 /* #center-line {
@@ -1182,10 +2013,12 @@ button:active {
 	top: 0;
 	left: 50%;
 
-	width: 0; /* vertical line */
+	width: 0;
+	/* vertical line */
 	height: 100%;
 
-	transform: translateX(-2px); /*half of 4px border width*/
+	transform: translateX(-2px);
+	/*half of 4px border width*/
 	border-left: 4px dashed rgb(var(--surface0));
 	border-image: none;
 	border-left-style: dashed;
@@ -1261,13 +2094,14 @@ button:active {
 }
 
 /* ==========================================================================
-                              NAVBAR STYLES 
+							  NAVBAR STYLES 
    ========================================================================== */
 
 nav {
 	position: fixed;
 	top: 0;
 	left: 0;
+	z-index: 100;
 
 	width: 100%;
 	height: 5rem;
@@ -1303,9 +2137,11 @@ nav {
 	display: flex;
 	align-items: center;
 }
+
 #nav-left-links > a:first-of-type {
 	border-left: 0px solid;
 }
+
 #nav-right-links {
 	gap: 1.5rem;
 }
@@ -1346,6 +2182,7 @@ nav {
 
 		overflow: visible;
 	}
+
 	#nav-left-links {
 		visibility: hidden;
 		position: fixed;
@@ -1366,6 +2203,7 @@ nav {
 			top 0.3s ease-out,
 			visibility 0.3s linear;
 	}
+
 	#nav-left-links > a {
 		width: 100%;
 
@@ -1374,6 +2212,7 @@ nav {
 		display: flex;
 		flex-direction: column;
 	}
+
 	#nav-left-links.nav-links-visible {
 		visibility: visible;
 		top: 4rem;
@@ -1384,6 +2223,7 @@ nav {
 	#nav-right-links > button {
 		padding: 0.5rem;
 	}
+
 	#nav-right-links {
 		gap: 0.2rem;
 	}
@@ -1420,7 +2260,7 @@ a:visited {
 }
 
 /* ==========================================================================
-                              FOOTER STYLES 
+							  FOOTER STYLES 
    ========================================================================== */
 
 footer {
@@ -1451,16 +2291,19 @@ footer {
 		min-height: calc(100% - 4rem);
 	}
 }
+
 @media (max-width: 250px) {
 	footer {
 		font-size: 0.4rem;
 	}
 }
+
 .footer-divider {
 	width: 1px;
 	height: 1.5rem;
 
-	background-color: rgb(var(--subtext1)); /* line color */
+	background-color: rgb(var(--subtext1));
+	/* line color */
 
 	display: inline-block;
 }
