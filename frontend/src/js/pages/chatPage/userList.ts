@@ -24,19 +24,19 @@ export function renderUserList(onSelectUser: () => void): void {
 		const temp = document.querySelector<HTMLTemplateElement>('.user-item-temp');
 		if (!temp) return;
 
-		const clon = temp.content.cloneNode(true) as DocumentFragment;
-		const divElement = clon.querySelector<HTMLDivElement>('.user-item');
+		const fragment = temp.content.cloneNode(true) as DocumentFragment;
+		const divElement = fragment.querySelector<HTMLDivElement>('.user-item');
 		if (!divElement) return;
 
 		divElement.dataset.username = name;
 
-		const imgElement = clon.querySelector<HTMLImageElement>('.img_profile');
+		const imgElement = fragment.querySelector<HTMLImageElement>('.img_profile');
 		if (imgElement)
 		{
 			const userIdx = users.indexOf(name);
 			imgElement.src = userIdx === -1 ? profilepics[0] : profilepics[userIdx % profilepics.length];
 		}
-		const pElement = clon.querySelector<HTMLParagraphElement>('.name_profile');
+		const pElement = fragment.querySelector<HTMLParagraphElement>('.name_profile');
 		if (pElement) pElement.textContent = name;
 
 		divElement.addEventListener('click', () => {

@@ -162,26 +162,26 @@ function renderSenderInviteButtons(
 	if (state === 'pending')
     {
 		const temp = document.querySelector<HTMLTemplateElement>('.invite-cancel-temp');
-		const clon = temp!.content.cloneNode(true) as DocumentFragment;
+		const fragment = temp!.content.cloneNode(true) as DocumentFragment;
 
-		const cancelBtn = clon.querySelector<HTMLButtonElement>('.invite-cancel');
+		const cancelBtn = fragment.querySelector<HTMLButtonElement>('.invite-cancel');
 		if (cancelBtn)
 			cancelBtn.dataset.index = String(globalFirstIdx);
 
-		container.appendChild(clon);
+		container.appendChild(fragment);
 	}
     else if (state === 'accepted')
     {
 		container.classList.add('accepted');
 		const temp = document.querySelector<HTMLTemplateElement>('.invite-go-temp');
-		const clon = temp!.content.cloneNode(true) as DocumentFragment;
-		const goBtn = clon.querySelector<HTMLButtonElement>('.invite-go');
+		const fragment = temp!.content.cloneNode(true) as DocumentFragment;
+		const goBtn = fragment.querySelector<HTMLButtonElement>('.invite-go');
 		if (goBtn)
         {
 			goBtn.dataset.index = String(globalFirstIdx);
 			goBtn.dataset.game = game;
 		}
-		container.appendChild(clon);
+		container.appendChild(fragment);
 	}
     else
 		container.classList.add(state);
