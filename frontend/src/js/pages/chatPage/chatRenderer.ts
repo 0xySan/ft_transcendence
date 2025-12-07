@@ -190,7 +190,7 @@ export function renderChat(): void {
 		if (blockedUsers.has(activeUser!)) blockedUsers.delete(activeUser!);
 		else {
 			blockedUsers.add(activeUser!);
-			if (activeUser) conversations[activeUser].forEach((element) => { element.hidden = true; });
+			if (activeUser) conversations[activeUser]?.forEach((element) => { element.hidden = true; });
 		}
 		updateBlockedState(activeUser!);
 	});
@@ -231,7 +231,7 @@ export function renderChat(): void {
 	newInput.classList.remove('hidden');
 	newSendBtn.classList.remove('hidden');
 
-	newInviteBtn.title = activeUser ? `Invite ${activeUser} to play` : 'Invite to play';
+	newInviteBtn.title = `Invite ${activeUser} to play`;
 	newInviteBtn.classList.toggle('disabled', activeUser === 'me' || blockedUsers.has(activeUser!));
 	if (blockedUsers.has(activeUser!))
 		newInviteBtn.title = `Cannot invite ${activeUser} (blocked)`;
@@ -242,7 +242,7 @@ export function renderChat(): void {
 	newInput.dataset.placeholder = placeholderText;
 	newInput.contentEditable = blockedUsers.has(activeUser) ? 'false' : 'true';
 
-	const initialDraft = drafts[activeUser || ''] || '';
+	const initialDraft = drafts[activeUser] || '';
 	if (initialDraft && !blockedUsers.has(activeUser)) {
 		newInput.textContent = initialDraft;
 		newInput.classList.remove('empty');

@@ -200,29 +200,29 @@ function renderReceiverInviteButtons(
 	if (state === 'pending')
     {
 		const temp = document.querySelector<HTMLTemplateElement>('.invite-pending-temp');
-		const clon = temp!.content.cloneNode(true) as DocumentFragment;
+		const fragment = temp!.content.cloneNode(true) as DocumentFragment;
 
-		const acceptBtn = clon.querySelector<HTMLButtonElement>('.invite-accept');
+		const acceptBtn = fragment.querySelector<HTMLButtonElement>('.invite-accept');
 		if (acceptBtn)
 			acceptBtn.dataset.index = String(globalFirstIdx);
 
-		const declineBtn = clon.querySelector<HTMLButtonElement>('.invite-decline');
+		const declineBtn = fragment.querySelector<HTMLButtonElement>('.invite-decline');
 		if (declineBtn)
 			declineBtn.dataset.index = String(globalFirstIdx);
-		container.appendChild(clon);
+		container.appendChild(fragment);
 	}
     else if (state === 'accepted')
     {
 		container.classList.add('accepted');
 		const temp = document.querySelector<HTMLTemplateElement>('.invite-go-temp');
-		const clon = temp!.content.cloneNode(true) as DocumentFragment;
-		const goBtn = clon.querySelector<HTMLButtonElement>('.invite-go');
+		const fragment = temp!.content.cloneNode(true) as DocumentFragment;
+		const goBtn = fragment.querySelector<HTMLButtonElement>('.invite-go');
 		if (goBtn)
         {
 			goBtn.dataset.index = String(globalFirstIdx);
 			goBtn.dataset.game = game;
 		}
-		container.appendChild(clon);
+		container.appendChild(fragment);
 	}
     else
 		container.classList.add(state);
@@ -327,13 +327,13 @@ export function updateInviteState(
 	if (newState === 'accepted')
         {
 		const goTemp = document.querySelector<HTMLTemplateElement>('.invite-go-temp');
-		const goClon = goTemp!.content.cloneNode(true) as DocumentFragment;
-		const goBtn = goClon.querySelector<HTMLButtonElement>('.invite-go');
+		const fragment = goTemp!.content.cloneNode(true) as DocumentFragment;
+		const goBtn = fragment.querySelector<HTMLButtonElement>('.invite-go');
 		if (goBtn)
         {
 			goBtn.dataset.index = String(msgIndex);
 			goBtn.dataset.game = msg.game || 'pong';
 		}
-		container.appendChild(goClon);
+		container.appendChild(fragment);
 	}
 }

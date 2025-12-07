@@ -34,18 +34,15 @@ export function submitMessage(
 		timestamp: new Date(),
 	};
 
+	if (!conversations[activeUser]) conversations[activeUser] = [];
 	conversations[activeUser].push(newMsg);
 	const msgIndex = conversations[activeUser].length - 1;
 
 	const len = conversations[activeUser].length;
-	if (!visibleStart[activeUser]) {
+	if (!visibleStart[activeUser])
 		visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-	} else if (
-		visibleStart[activeUser] >= len - 1 - MESSAGES_PAGE ||
-		(messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < 100
-	) {
+	else if (visibleStart[activeUser] >= len - 1 - MESSAGES_PAGE || (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < 100)
 		visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-	}
 
 	input.textContent = '';
 	clearDraft(activeUser);

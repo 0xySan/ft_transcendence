@@ -31,8 +31,11 @@ export function renderUserList(onSelectUser: () => void): void {
 		divElement.dataset.username = name;
 
 		const imgElement = clon.querySelector<HTMLImageElement>('.img_profile');
-		if (imgElement) imgElement.src = profilepics[users.indexOf(name) % profilepics.length];
-
+		if (imgElement)
+		{
+			const userIdx = users.indexOf(name);
+			imgElement.src = userIdx === -1 ? profilepics[0] : profilepics[userIdx % profilepics.length];
+		}
 		const pElement = clon.querySelector<HTMLParagraphElement>('.name_profile');
 		if (pElement) pElement.textContent = name;
 

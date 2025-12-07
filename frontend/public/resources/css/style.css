@@ -1515,11 +1515,7 @@ button:active {
 	#lobby-action-buttons {
 		width: 100% !important;
 	}
-
-	.lobby-setting-box {
-		min-height: 42rem;
-	}
-
+	
 	.lobby-setting-box {
 		min-height: 42rem;
 	}
