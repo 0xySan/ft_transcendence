@@ -8,9 +8,6 @@ declare function addListener(target: EventTarget | null, event: string, handler:
 
 export {};
 try {
-	const params = new URLSearchParams(window.location.search);
-	const user_id = params.get("user_id");
-
 	const canvas = document.getElementById("pong-board") as HTMLCanvasElement;
 	const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -52,9 +49,10 @@ try {
 			if (data.action === "send" && data.ball) {
 				updateBallPosition(data.ball.pos_x, data.ball.pos_y);
 				updateName(data.equip_a.player_1, data.equip_a.player_2, data.equip_b.player_3, data.equip_b.player_4);
-                updateScore(data.score_a, data.score_b);
+                updateScore(data.score_b, data.score_a);
 				equip_a = Object.keys(data.equip_a).length;
 				equip_b = Object.keys(data.equip_b).length;
+				console.log("DEBUG: equip_a = " + equip_a + " | equip_b = " + equip_b + " | data_equip_a = " + Object.keys(data.equip_a) + " | data_equip_b = " + Object.keys(data.equip_b));
 			}
 		} catch {
 			return;
@@ -159,7 +157,6 @@ try {
 
 		const payload = {
 			action: "move",
-			user_id: user_id,
 			position: newPosition
 		};
 

@@ -24,13 +24,17 @@ try {
 
 		data = await response.json();
 
+		console.log("DEBUG: data = ", data);
+		if (data["error"]) {
+			throw new Error("Error in contact api");
+		}
+
 		if (!socketConnection) {
 			const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
 			const socketUrl =
 				wsProtocol + "//" + window.location.host + "/ws/" +
 				`?user_id=duck&token=${data.token}`;
-
 
 			window.socket = new WebSocket(socketUrl);
 			socketConnection = window.socket;
@@ -49,9 +53,13 @@ try {
     	const code = input.value;
 
 		socketConnection.close();
-		await createSocket(code);
-
-		redirectUser(event);
+		try {
+			await createSocket(code);
+			redirectUser(event);
+		}
+		catch (err) {
+			console.error(err);
+		}
 	}
 
 	addListener(socketConnection, 'open', () => {

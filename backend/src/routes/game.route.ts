@@ -9,8 +9,9 @@ import { sv_game } from '../sockets/interfaces/interfaces.type.js';
 import { workers, parties_per_core } from '../server.js';
 import { FastifyReply } from "fastify/types/reply.js";
 import { requirePartialAuth } from '../middleware/auth.middleware.js';
-import { patchGameSchema, postGameSchema, getGameSchema } from '../plugins/swagger/schemas/game.schema.js'
-import { Player } from '../sockets/player.class.js'
+import { patchGameSchema, postGameSchema, getGameSchema } from '../plugins/swagger/schemas/game.schema.js';
+import { Player } from '../sockets/player.class.js';
+import { getProfileByUserId, UserProfile } from '../db/wrappers/main/users/userProfiles.js';
 
 /**
  * Set the clientToken and codes.
@@ -156,7 +157,7 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
     const token = generateRandomToken(32);
     clientToken.push(new Player(workers.indexOf(worker), game.user_id, game_uuid, token));
     // return party Token
-    return (reply.status(202).send({token}));
+    return (reply.status(202).send({token, user_id: game.user_id}));
 }
 
 /**
@@ -187,7 +188,7 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
         }
     }
 
-    return (reply.status(501).send({ error: "Game is full" }));
+    return (reply.status(501).send({ error: "Game is full", user_id: game.user_id }));
 }
 
 /**
@@ -217,6 +218,11 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
         if (userId == null)
             return (reply.status(401).send({ error: "user_is is empty" }));
+
+        console.log("\n\n\n\nDEBUG: HERE user_id = " + userId);
+        const userName = getProfileByUserId(userId)?.display_name;
+        if (userName) game.user_id = userName;
+        else return (reply.status(501).send({ error: "User Profile not find" }));
 
         // (code = null) == Create a game | (code != null) == Join a game
         if (game.code == "null") {

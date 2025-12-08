@@ -28,6 +28,7 @@ function game() {
     for (const game_target of games) {
         if (game_target.statement == true) {
             for (const uuid of game_target.players) {
+                console.log("DEBUG: players = " + game_target.players + " | equip_a = " + game_target.equip_a + " | equip_b = " + game_target.equip_b);
                 parentPort?.postMessage({ 
                     action: "send",
                     user_id: uuid,
