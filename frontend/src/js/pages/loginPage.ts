@@ -63,7 +63,8 @@ function handleLogin(event: Event): void {
 			const data = await res.json();
 			if (res.ok)
 			{
-				if (data.twoFactorRequired)
+				console.log('Login successful:', data);
+				if (data.message === '2FA required.')
 					loadPage('/twofa');
 				else
 					loadPage('/home');
