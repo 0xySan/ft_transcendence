@@ -21,7 +21,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
-import { clientToken, getPlayerWithToken, getPlayerWithUserId } from "./routes/game.route.js";
+import { deletePlayerWithToken, getPlayerWithToken, getPlayerWithUserId } from "./routes/game.route.js";
 import { Player } from "./sockets/player.class.js";
 
 /**
@@ -88,6 +88,11 @@ export async function createThread(options: { workerFile?: string, count?: numbe
 				const player = getPlayerWithUserId(msg.user_id);
 				// console.log("DEBUG: json = " + JSON.stringify(msg));
 				player?.socket.send(JSON.stringify(msg));
+			} else if (msg.action == "start") {
+				const player = getPlayerWithUserId(msg.user_id);
+				console.log("DEBUG: json = " + JSON.stringify(msg));
+				console.log("DEBUG: token = " + player?.token + " | user_id = " + player?.player_id);
+				player?.socket.send(JSON.stringify(msg));
 			}
 		});
 	
@@ -113,16 +118,14 @@ async function start() {
 			console.log("DEBUG: websocket start here !");
 
 			const params = new URLSearchParams(request.url?.split('?')[1]);
-			const user_id = params.get('user_id'); 
 			const token = params.get('token'); 
 
-			console.log(`User connected: ${user_id}`);
-    		ws.send(JSON.stringify({ event: 'welcome', user_id }));
+			console.log(`User connected`);
 
-			if (!user_id || !token)
+			if (!token)
 			{
-				ws.close(1008, 'token or user_id not defined'); // 1008 = Policy Violation
-				console.log('WebSocket rejected: token or user_id not defined', token, user_id);
+				ws.close(1008, 'token or user_id not defined');
+				console.log('WebSocket rejected: token not defined', token);
 				return;
 			}
 
@@ -134,15 +137,14 @@ async function start() {
 			player.setSocket(ws);
 			if (player.token !== token)
 			{
-				ws.close(1008, 'Invalid token or user_id'); // 1008 = Policy Violation
+				ws.close(1008, 'Invalid token or user_id');
 				console.log('WebSocket rejected: invalid token/user_id', player.token, token);
 				return;
 			}
 			else
 			{
-				// 🔥 AUTH OK → maintenant seulement envoyer le welcome
-				ws.send(JSON.stringify({ event: 'welcome', user_id }));
-				console.log('WebSocket authenticated:', user_id);
+				ws.send(JSON.stringify({ event: 'welcome' }));
+				console.log('WebSocket authenticated');
 				ws.on('message', (msg) => { 
 					ws.send(`echo: ${msg}`);
 					let str =  msg.toString();
@@ -158,7 +160,7 @@ async function start() {
 			}				
 			ws.on('close', () => {
 				console.log('WebSocket disconnected');
-				// clientToken.splice(clientToken.indexOf(player), 1);
+				deletePlayerWithToken(token);
 			});
 		});
 

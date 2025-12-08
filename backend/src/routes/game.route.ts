@@ -28,6 +28,16 @@ export function getPlayerWithToken(token: string) {
     return (null);
 }
 
+export function deletePlayerWithToken(token: string) {
+    for (const target of clientToken) {
+        if (target.token == token) {
+            clientToken.splice(clientToken.indexOf(target), 1);
+            return (true);
+        }
+    }
+    return (null);
+}
+
 export function getPlayerWithUserId(user_id: string) {
     for (const target of clientToken) {
         if (target.player_id == user_id) {
@@ -142,6 +152,7 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
     // Create the code and save in the 'codes'
     const code = createCode();
     codes.push(code);
+    console.log("DEBUG: code = " + code);
 
     // Communicated with the worker (thread) for create a game.
     const game_uuid = generateRandomToken(32);

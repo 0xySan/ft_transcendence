@@ -52,6 +52,8 @@ export class Games {
     time: number;
     /* Game statement | false = lobby / true = playing */
     statement: boolean;
+    /* When the game starting */
+    start: boolean = false;
 
     /* Constructor of the Games instance */
     constructor(user_id: string, game_uuid: string, code: string)

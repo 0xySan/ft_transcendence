@@ -48,11 +48,10 @@ try {
 
 			if (data.action === "send" && data.ball) {
 				updateBallPosition(data.ball.pos_x, data.ball.pos_y);
-				updateName(data.equip_a.player_1, data.equip_a.player_2, data.equip_b.player_3, data.equip_b.player_4);
+				updateName(data.equip_a.player_1, data.equip_a.player_2, data.equip_b.player_1, data.equip_b.player_2);
                 updateScore(data.score_b, data.score_a);
 				equip_a = Object.keys(data.equip_a).length;
 				equip_b = Object.keys(data.equip_b).length;
-				console.log("DEBUG: equip_a = " + equip_a + " | equip_b = " + equip_b + " | data_equip_a = " + Object.keys(data.equip_a) + " | data_equip_b = " + Object.keys(data.equip_b));
 			}
 		} catch {
 			return;
@@ -89,8 +88,8 @@ try {
 
 
 		if (u1) u1.textContent = player_1 || "No Player";
-		if (u2) u2.textContent = player_2 || "No Player";
-		if (u3) u3.textContent = player_3 || "No Player";
+		if (u2) u2.textContent = player_3 || "No Player";
+		if (u3) u3.textContent = player_2 || "No Player";
 		if (u4) u4.textContent = player_4 || "No Player";
 	}
 

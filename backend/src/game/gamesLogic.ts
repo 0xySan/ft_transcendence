@@ -28,7 +28,6 @@ function game() {
     for (const game_target of games) {
         if (game_target.statement == true) {
             for (const uuid of game_target.players) {
-                console.log("DEBUG: players = " + game_target.players + " | equip_a = " + game_target.equip_a + " | equip_b = " + game_target.equip_b);
                 parentPort?.postMessage({ 
                     action: "send",
                     user_id: uuid,
@@ -95,6 +94,20 @@ parentPort?.on("message", (msg) => {
             if (target.game_uuid == msg.game_uuid) {
                 target.statement = true;
                 target.time += Date.now();
+
+                for (const uuid of target.players) {
+                    console.log("DEBUG: uuid = " + uuid);
+                    parentPort?.postMessage({ 
+                        action: "start",
+                        user_id: uuid,
+                        ball: { pos_x: target.position_ball.pos_x, pos_y: target.position_ball.pos_y },
+                        equip_a: { player_1: target.equip_a[0], player_2: target.equip_a[1] },
+                        equip_b: { player_1: target.equip_b[0], player_2: target.equip_b[1] },
+                        score_a: target.score["A"],
+                        score_b: target.score["B"]
+                    });
+                }
+
                 return;
             }
         }

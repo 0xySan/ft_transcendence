@@ -15,30 +15,75 @@ try {
 	let socketConnection = window.socket;
 	await createSocket("null");
 
+	function attachSocketListeners(socket: WebSocket) {
+
+		addListener(socket, 'open', () => {
+			console.log('Connected to WebSocket server.');
+		});
+
+		function safeJSONParse(data: string) {
+			try {
+				return JSON.parse(data);
+			} catch {
+				return null;
+			}
+		}
+
+		addListener(socket, 'message', (event: MessageEvent) => {
+			const parsed = safeJSONParse(event.data);
+
+			if (!parsed) {
+				console.log("Received non-JSON message:", event.data);
+				return;
+			}
+
+			console.log("Message JSON:", parsed);
+
+			if (parsed.action === "start") {
+				redirectUser(event);
+			}
+		});
+
+		addListener(socket, "close", (event: CloseEvent) => {
+			console.log("WebSocket closed");
+			console.log("Code :", event.code);
+			console.log("Reason :", event.reason);
+			console.log("Clean closure :", event.wasClean);
+		});
+
+		addListener(socket, 'error', (err: Event) => {
+			console.error('WebSocket error:', err);
+		});
+	}
+
 	async function createSocket(code: string) {
 		const response = await fetch("/api/game", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ code: code })
+			body: JSON.stringify({ code })
 		});
 
 		data = await response.json();
-
 		console.log("DEBUG: data = ", data);
+
 		if (data["error"]) {
 			throw new Error("Error in contact api");
 		}
 
-		if (!socketConnection) {
-			const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+		if (!socketConnection || socketConnection.readyState === WebSocket.CLOSED) {
 
-			const socketUrl =
-				wsProtocol + "//" + window.location.host + "/ws/" +
-				`?user_id=duck&token=${data.token}`;
+			const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+			const socketUrl = wsProtocol + "//" + window.location.host + "/ws/?token=" + data.token;
 
 			window.socket = new WebSocket(socketUrl);
 			socketConnection = window.socket;
-		};
+			console.log("Socket ouvert !");
+
+			attachSocketListeners(socketConnection);
+		}
+		else {
+			console.log("Socket déjà ouverte ou en cours de fermeture.");
+		}
 	}
 
 	function redirectUser(event: Event) : void{
@@ -46,47 +91,39 @@ try {
 		event.stopImmediatePropagation();
 		socketConnection.send(JSON.stringify({ action: "start" }));
 		loadPage(`/pong-board`);
+		console.log("DEBUG: HEREWN WNKELLWNE GLENLK");
 	}
 
 	async function joinUser(event: Event) {
 		const input = document.getElementById("lobby-input") as HTMLInputElement;
-    	const code = input.value;
+		const code = input.value;
 
-		socketConnection.close();
+		if (socketConnection && socketConnection.readyState !== WebSocket.CLOSED) {
+			await new Promise<void>((resolve) => {
+				addListener(socketConnection, "close", () => {
+					console.log("Ancien socket fermée.");
+					resolve();
+				});
+				socketConnection.close();
+			});
+		}
+
+		console.log("DEBUG: join game");
 		try {
 			await createSocket(code);
-			redirectUser(event);
-		}
-		catch (err) {
+		} catch (err) {
 			console.error(err);
 		}
 	}
 
-	addListener(socketConnection, 'open', () => {
-		console.log('Connected to WebSocket server.');
-	});
-
-	addListener(socketConnection, 'message', (event: MessageEvent) => {
-    console.log('message:', event.data);
-});
-
-	addListener(socketConnection, "close", (event: CloseEvent) => {
-		console.log("WebSocket closed");
-
-		console.log("Code :", event.code);
-		console.log("Reason :", event.reason);
-		console.log("Clean closure :", event.wasClean);
-	});
-
-
-	addListener(socketConnection, 'error', (err: Event) => {
-		console.error('WebSocket error:', err);
-	});
-
 	const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
 	const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
 
-	addListener(launchBtn, "click", redirectUser);
+	function startGame() {
+		socketConnection.send(JSON.stringify({ action: "start" }));
+	}
+
+	addListener(launchBtn, "click", startGame);
 	addListener(joinBtn, "click", joinUser);
 
 } catch (err) {
