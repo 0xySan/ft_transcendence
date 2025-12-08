@@ -206,7 +206,7 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 			if (!upgraded)
 				return reply.status(500).send({ message: "Failed to upgrade session." });
 
-			reply.setCookie("session", session.token, {
+			reply.setCookie("session", (request as any).token, {
 				path: "/",
 				httpOnly: true,
 				secure: process.env.NODE_ENV !== "test",
