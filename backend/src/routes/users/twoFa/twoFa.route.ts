@@ -382,11 +382,15 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 
 				// persist base method row
 				try {
+					let isPrimary = false;
+					if (methods.length === 0 && results.filter(r => r.success).length === 0)
+						isPrimary = true;
 					const dbMethod = create2FaMethods({
 						method_id: methodId,
 						user_id: userId,
 						method_type: method.methodType,
 						label: method.label,
+						is_primary: isPrimary,
 						is_verified: method.methodType === 2 ? true : false, // backup codes are already verified
 					});
 					if (!dbMethod) {
