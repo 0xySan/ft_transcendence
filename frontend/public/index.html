@@ -18,6 +18,66 @@
 		<script>
 			window.isFullPageLoaded = true;
 		</script>
+		<script>
+			function updateNavBar(userData) {
+				const loggedOut = document.getElementById("nav-logged-out");
+				const loggedIn = document.getElementById("nav-logged-in");
+
+				const pfpImg = document.getElementById("nav-pfp-img");
+				const pfpFallback = document.getElementById("nav-pfp-fallback");
+				const dropdown = document.getElementById("nav-profile-dropdown");
+				const profileLink = document.getElementById("nav-profile-link");
+				const logoutBtn = document.getElementById("nav-logout-btn");
+				const pfpWrapper = document.getElementById("nav-pfp-wrapper");
+
+				if (!userData || !userData.user || !userData.user.profile) {
+					loggedOut.classList.remove("unloaded");
+					loggedIn.classList.add("unloaded");
+					return;
+				}
+
+				const profile = userData.user.profile;
+				loggedOut.classList.add("unloaded");
+				loggedIn.classList.remove("unloaded");
+
+				profileLink.href = `/profile/${profile.username}`;
+
+				if (profile.profilePicture) {
+					pfpImg.src = profile.profilePicture;
+					pfpImg.classList.remove("unloaded");
+					pfpFallback.classList.add("unloaded");
+				} else {
+					pfpImg.classList.add("unloaded");
+					pfpFallback.classList.remove("unloaded");
+				}
+
+				pfpWrapper.addEventListener("click", (e) => {
+					e.stopPropagation();
+					dropdown.classList.toggle("unloaded");
+				});
+
+				document.addEventListener("click", () => {
+					dropdown.classList.add("unloaded");
+				});
+
+				logoutBtn.addEventListener("click", () => {
+					fetch("/api/auth/logout", { method: "POST" })
+						.then(res => res.ok ? window.location.reload() : null);
+				});
+			}
+			const user = fetch("/api/users/me")
+				.then(res => res.ok ? res.json() : null)
+				.then(data => {
+					updateNavBar(data);
+				})
+				.catch(err => {
+					console.error("Error fetching user data:", err);
+					updateNavBar(null);
+				});
+
+			window.updateNavBar = updateNavBar;
+			window.currentUserPromise = user;
+		</script>
 	</head>
 	<body class="flex-space-between">
 		<header>
@@ -91,13 +151,40 @@
 					<button class="theme-btn" data-theme="catppuccin-mocha" style="--c1:rgb(17, 17, 27); --c2:rgb(30, 30, 46); --c3:rgb(166, 173, 200);"></button>
 				</div>
 				<div id="nav-right-links">
-					<a href="/login">
-						<button type="button" id="nav-login-btn" data-translate-key="navbar.loginButton">Login</button>
-					</a>
-					<a href="/register">
-						<button type="button" data-translate-key="navbar.registerButton">Register</button>
-					</a>
+
+					<!-- Logged out -->
+					<div id="nav-logged-out">
+						<a href="/login">
+							<button type="button" data-translate-key="navbar.loginButton">Login</button>
+						</a>
+						<a href="/register">
+							<button type="button" data-translate-key="navbar.registerButton">Register</button>
+						</a>
+					</div>
+
+					<!-- Logged in -->
+					<div id="nav-logged-in" class="unloaded">
+
+						<!-- Profile picture -->
+						<div id="nav-pfp-wrapper">
+							<img id="nav-pfp-img" class="nav-pfp unloaded">
+							<svg id="nav-pfp-fallback" class="nav-pfp unloaded"
+								viewBox="-2 -2 6 8">
+								<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4"
+									  fill="currentColor"/>
+							</svg>
+						</div>
+
+						<!-- Dropdown -->
+						<div id="nav-profile-dropdown" class="unloaded">
+							<a id="nav-profile-link">Profile</a>
+							<a href="/settings">Settings</a>
+							<button id="nav-logout-btn">Logout</button>
+						</div>
+
+					</div>
 				</div>
+
 			</nav>
 		</header>
 		<div id="scroll-content">
