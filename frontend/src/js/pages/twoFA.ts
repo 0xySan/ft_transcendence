@@ -5,6 +5,7 @@ declare function translatePage(language: string): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
 declare function loadPage(url: string): void;
+declare function updateNavBar(userData: any): void;
 
 const VERIFY_ENDPOINT = '/api/users/twofa/totp/token';
 const LOGIN_ENDPOINT = '/api/users/accounts/login';
@@ -130,56 +131,79 @@ async function patchUserToken(totpToken: string): Promise<void> {
   	}
 }
 
+function refreshNavBarState() {
+	const user = fetch("/api/users/me")
+				.then(res => res.ok ? res.json() : null)
+				.then(data => {
+					updateNavBar(data);
+				})
+				.catch(err => {
+					console.error("Error fetching user data:", err);
+					updateNavBar(null);
+				});
+}
+
 async function verifyTwoFa(code: string): Promise<void> {
-	// disable UI feedback (find inputs)
-	const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));
-	inputs.forEach(i => i.disabled = true);
+  // disable UI feedback (find inputs)
+  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));
+  inputs.forEach(i => i.disabled = true);
 
-	try {
-		const res = await fetch(VERIFY_ENDPOINT, {
-			method: 'POST',
-		  credentials: 'include',
-		  headers: {
-			'Content-Type': 'application/json',
-			'accept-language': getUserLang()
-		  },
-		  body: JSON.stringify({
-			twofa_uuid: primary ? primary.method_id : null,
-			totp_code: code
-		  })
-	});
+  try {
+    const res = await fetch(VERIFY_ENDPOINT, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'accept-language': getUserLang()
+      },
+      body: JSON.stringify({
+        twofa_uuid: primary ? primary.id : null,
+        totp_code: code
+      })
+    });
 
-	if (res.ok) {
-	  // Verified: navigate or show success
-	  console.log('2FA verified');
-	  loadPage('/home');
-	  return;
-	}
+    // If response is OK, read the token from body
+    if (res.ok) {
+      let data: any = {};
+      try {
+        data = await res.json();     // <-- extract token here
+      } catch (_) {
+        console.warn('No JSON body returned from 2FA verify');
+      }
 
-	// handle known error statuses
-	if (res.status === 401 || res.status === 400) {
-	  const err = await res.json().catch(() => ({ message: 'Invalid code' }));
-	  console.error('Verification error:', err);
-	  // show error UI: simple alert for now, replace with nicer UI later
-	  alert(err.message || 'Invalid 2FA code');
-	  // clear inputs and re-focus first
-	  inputs.forEach(i => i.value = '');
-	  if (inputs[0]) inputs[0].focus();
-	  return;
-	}
+      const token = data.token ?? null; // adjust field name if needed
+      patchUserToken(token);
+	  refreshNavBarState();
+      console.log('2FA verified');
+      loadPage('/home');
+      return;
+    }
 
-	// fallback
-	console.error('Verification failed, status', res.status);
-	alert('Verification failed. Try again later.');
+    // handle known error statuses
+    if (res.status === 401 || res.status === 400) {
+      const err = await res.json().catch(() => ({ message: 'Invalid code' }));
+      console.error('Verification error:', err);
+
+      alert(err.message || 'Invalid 2FA code');
+
+      // clear inputs and focus first
+      inputs.forEach(i => i.value = '');
+      if (inputs[0]) inputs[0].focus();
+      return;
+    }
+
+    // fallback
+    console.error('Verification failed, status', res.status);
+    alert('Verification failed. Try again later.');
   } catch (e) {
-	console.error('Network error during verification', e);
-	alert('Network error. Try again.');
+    console.error('Network error during verification', e);
+    alert('Network error. Try again.');
   } finally {
-	// re-enable inputs
-	const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));
-	inputs.forEach(i => i.disabled = false);
+    // re-enable inputs
+    inputs.forEach(i => i.disabled = false);
   }
 }
+
 
 function prepareInputs() {
 	const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));
@@ -187,7 +211,7 @@ function prepareInputs() {
   console.log(inputs);
 
   // Fetch user's registered 2FA methods (ensure cookie sent)
-  fetch('/api/users/twofa', {
+  fetch('/api/users/twofa/', {
 	method: 'GET',
 	credentials: 'include',
   })
