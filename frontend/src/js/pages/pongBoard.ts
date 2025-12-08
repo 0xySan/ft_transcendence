@@ -52,6 +52,7 @@ try {
 			if (data.action === "send" && data.ball) {
 				updateBallPosition(data.ball.pos_x, data.ball.pos_y);
 				updateName(data.equip_a.player_1, data.equip_a.player_2, data.equip_b.player_3, data.equip_b.player_4);
+                updateScore(data.score_a, data.score_b);
 				equip_a = Object.keys(data.equip_a).length;
 				equip_b = Object.keys(data.equip_b).length;
 			}
@@ -94,6 +95,14 @@ try {
 		if (u3) u3.textContent = player_3 || "No Player";
 		if (u4) u4.textContent = player_4 || "No Player";
 	}
+
+
+    function updateScore(score_a: string, score_b: string) {
+        const sc_a = document.getElementById("left-score");
+        const sc_b = document.getElementById("right-score");
+        if (sc_a) sc_a.textContent = score_a || "0";
+        if (sc_b) sc_b.textContent = score_b || "0";
+    }
 
 	function animate() {
 		const smooth = 0.2;

@@ -4,7 +4,6 @@ declare global {
 	}
 }
 
-
 declare function loadPage(url:string) : void;
 declare function addListener(target: EventTarget | null, event: string, handler: any): void;
 
@@ -12,36 +11,48 @@ export {};
 
 let data: any;
 
-
-
 try {
+	let socketConnection = window.socket;
+	await createSocket("null");
+
+	async function createSocket(code: string) {
+		const response = await fetch("/api/game", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ code: code })
+		});
+
+		data = await response.json();
+
+		if (!socketConnection) {
+			const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+			const socketUrl =
+				wsProtocol + "//" + window.location.host + "/ws/" +
+				`?user_id=duck&token=${data.token}`;
+
+
+			window.socket = new WebSocket(socketUrl);
+			socketConnection = window.socket;
+		};
+	}
+
 	function redirectUser(event: Event) : void{
 		event.preventDefault();
 		event.stopImmediatePropagation();
 		socketConnection.send(JSON.stringify({ action: "start" }));
-		loadPage(`/pong-board?token=${data.token}&user_id=duck`);
+		loadPage(`/pong-board`);
 	}
-	const response = await fetch("/api/game", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ user_id: "duck" })
-	});
 
-	data = await response.json();
-	console.log("DEBUG: token = " + data.token);
-	let socketConnection = window.socket;
+	async function joinUser(event: Event) {
+		const input = document.getElementById("lobby-input") as HTMLInputElement;
+    	const code = input.value;
 
-	if (!socketConnection) {
-		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+		socketConnection.close();
+		await createSocket(code);
 
-		const socketUrl =
-			wsProtocol + "//" + window.location.host + "/ws/" +
-			`?user_id=duck&token=${data.token}`;
-
-
-		window.socket = new WebSocket(socketUrl);
-		socketConnection = window.socket;
-	};
+		redirectUser(event);
+	}
 
 	addListener(socketConnection, 'open', () => {
 		console.log('Connected to WebSocket server.');
@@ -65,15 +76,14 @@ try {
 	});
 
 	const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
+	const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
 
 	addListener(launchBtn, "click", redirectUser);
+	addListener(joinBtn, "click", joinUser);
 
 } catch (err) {
 	console.error("Erreur :", err);
 }
-
-
-
 
 /**
  * Get element by ID or throw error if missing

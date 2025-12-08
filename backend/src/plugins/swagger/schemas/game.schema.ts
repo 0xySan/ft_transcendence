@@ -41,10 +41,8 @@ Requires a valid session or authorization token.`,
 	body: {
 		type: "object",
 		properties: {
-			user_id: { type: "string", description: "UUID of the user" },
 			code: { type: "string", nullable: true, description: "Game code (null for creation)" }
-		},
-		required: ["user_id"]
+		}
 	},
 	response: {
 		202: {

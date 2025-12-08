@@ -155,7 +155,6 @@ async function gameCreate(game: sv_game, reply: FastifyReply) {
     // stock uuid and token in map
     const token = generateRandomToken(32);
     clientToken.push(new Player(workers.indexOf(worker), game.user_id, game_uuid, token));
-    console.log("DEBUG: size of clientToken = " + clientToken.length);
     // return party Token
     return (reply.status(202).send({token}));
 }
@@ -220,7 +219,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
             return (reply.status(401).send({ error: "user_is is empty" }));
 
         // (code = null) == Create a game | (code != null) == Join a game
-        if (game.code == null) {
+        if (game.code == "null") {
             return (gameCreate(game, reply));
         } else {
             return (gameJoin(game, reply));
@@ -229,7 +228,6 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
     // ----------------    PATCH METHOD    ----------------------- \\
     fastify.patch("/api/game", { schema: patchGameSchema }, async (request, reply) => {
-        console.log("DEBUG: test 1");
         const game = request.body as sv_game;
         const session = (request as any).session;
         const userId = session?.user_id;
