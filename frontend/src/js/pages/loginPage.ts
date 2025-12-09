@@ -5,6 +5,7 @@ declare function translatePage(language: string): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
 declare function loadPage(url: string): void;
+declare function updateNavBar(userData: any): void;
 
 const loginForm = document.querySelector<HTMLFormElement>('.auth-form-container');
 const usernameInput = document.getElementById('username-text-input') as HTMLInputElement | null;
@@ -30,6 +31,18 @@ function hideErrorMessage(element: HTMLSpanElement): void {
 	element.setAttribute('aria-hidden', 'true');
 }
 
+function refreshNavBarState() {
+	const user = fetch("/api/users/me")
+				.then(res => res.ok ? res.json() : null)
+				.then(data => {
+					updateNavBar(data);
+				})
+				.catch(err => {
+					console.error("Error fetching user data:", err);
+					updateNavBar(null);
+				});
+}
+
 /** Handles the login form submission
  * @param event the submit event
  */
@@ -41,6 +54,7 @@ function handleLogin(event: Event): void {
 	const inputElement: HTMLInputElement | null = document.getElementById('username-text-input') as HTMLInputElement | null;
 	let errorTextElement: HTMLSpanElement | null = document.getElementById('login-form-error-text');
 	console.log('Error element:', errorTextElement);
+	event.stopImmediatePropagation();
 	if (isUsernameValid && isPasswordValid) {
 		if (inputElement?.value.includes('@'))
 			inputElement.name = 'email';
@@ -66,8 +80,10 @@ function handleLogin(event: Event): void {
 				console.log('Login successful:', data);
 				if (data.message === '2FA required.')
 					loadPage('/twofa');
-				else
+				else {
+					refreshNavBarState();
 					loadPage('/home');
+				}
 			}
 			else
 				throw new Error(data.message || `HTTP ${res.status}`);
@@ -84,10 +100,8 @@ function handleLogin(event: Event): void {
     `Login failed. Please try again later${err.message ? ` (${err.message})` : '.'}`);
 
 		});
-	} else{
-		event.stopImmediatePropagation();
+	} else
 		showErrorMessage(errorTextElement!, 'Invalid form input. Please correct the errors and try again.');
-	}
 }
 
 /** Verifies the validity of the username or email input

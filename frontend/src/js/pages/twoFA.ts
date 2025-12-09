@@ -1,7 +1,6 @@
 export {};
 
 declare function addListener(target: EventTarget, event: string, handler: EventListenerOrEventListenerObject): void;
-declare function translatePage(language: string): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
 declare function loadPage(url: string): void;
@@ -102,7 +101,6 @@ async function patchUserToken(totpToken: string): Promise<void> {
 
 		if (res.ok) {
 		  console.log('TOTP token patched successfully');
-		  loadPage('/home');
 		  return;
 		}
 

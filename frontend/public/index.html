@@ -36,6 +36,9 @@
 					return;
 				}
 
+				// It's only a Promise by name, it's actually just a bunch of user data
+				window.currentUserPromise = userData;
+
 				const profile = userData.user.profile;
 				loggedOut.classList.add("unloaded");
 				loggedIn.classList.remove("unloaded");
@@ -65,7 +68,7 @@
 						.then(res => res.ok ? window.location.reload() : null);
 				});
 			}
-			const user = fetch("/api/users/me")
+			fetch("/api/users/me")
 				.then(res => res.ok ? res.json() : null)
 				.then(data => {
 					updateNavBar(data);
@@ -76,7 +79,6 @@
 				});
 
 			window.updateNavBar = updateNavBar;
-			window.currentUserPromise = user;
 		</script>
 	</head>
 	<body class="flex-space-between">
