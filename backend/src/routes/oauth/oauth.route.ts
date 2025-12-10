@@ -4,8 +4,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { oauthSchema } from '../../plugins/swagger/schemas/oauth.schema.js';
+import { oauthSchema, oauthListSchema } from '../../plugins/swagger/schemas/oauth.schema.js';
 import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
+import { getOauthAccountsByUserId } from '../../db/index.js';
 
 const oauthConfigs: Record<string, { url: string; params: Record<string, string> }> = {
 	discord: {
@@ -27,7 +29,34 @@ const oauthConfigs: Record<string, { url: string; params: Record<string, string>
 };
 
 export function oauthRoute(fastify: FastifyInstance) {
-	fastify.get('/:provider', { schema: oauthSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
+	fastify.get('/',
+		{
+			schema: oauthListSchema,
+			validatorCompiler: ({ schema }) => {return () => true;},
+			preHandler: requireAuth
+		},
+		async (request, reply) => {
+			const session = (request as any).session;
+			if (!session || !session.user_id)
+				return reply.status(400).send('You cannot access this ressource');
+
+			const oauthAccounts = getOauthAccountsByUserId(session.user_id);
+
+			const OAuth = oauthAccounts.map(acc => ({
+				provider: acc.provider_name,
+				linkedAt: acc.linked_at,
+				profile: JSON.parse(acc.profile_json)
+			}));
+
+			return reply.send({ oauth: OAuth });
+		});
+	fastify.get(
+		'/:provider',
+		{
+			schema: oauthSchema,
+			validatorCompiler: ({ schema }) => {return () => true;}
+		}, 
+	async (request, reply) => {
 		const { provider } = request.params as { provider: string };
 		const oauthProvider = getOauthProviderByName(provider);
 

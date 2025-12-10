@@ -46,7 +46,7 @@ export async function createFullOrPartialSession(userId: string, request: Fastif
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV !== 'test',
-		sameSite: 'strict',
+		sameSite: 'lax',
 		// 2fa = 10 min else isPersistent ? 30 days : 2 hours
 		maxAge: twoFactorRequired ? 
 			10 * 60 

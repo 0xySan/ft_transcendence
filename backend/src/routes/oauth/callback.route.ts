@@ -7,7 +7,8 @@ import * as OAuth from '../../auth/oauth/types.js';
 
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { oauthCallbackSchema } from '../../plugins/swagger/schemas/callback.schema.js'
-import { createOauthAccount, createUser, getOauthAccountByProviderAndUserId, getOauthProviderByName, getRoleByName, getUserByEmail, oauthAccount, OauthProvider } from '../../db/index.js';
+import geoip from 'geoip-lite';
+import { createOauthAccount, createProfile, createUser, getCountryByCode, getOauthAccountByProviderAndUserId, getOauthProviderByName, getProfileByUsername, getRoleByName, getUserByEmail, oauthAccount, OauthProvider } from '../../db/index.js';
 import { decryptSecret, generateRandomToken, hashString } from '../../utils/crypto.js';
 import { checkTokenValidity } from '../../utils/session.js';
 
@@ -26,12 +27,15 @@ import { createFullOrPartialSession } from '../../auth/oauth/utils.js';
  * @returns Promise resolving to the OAuth token data
  * @throws Error if the token request fails or no access token is returned
  */
-async function fetchUserToken(provider: OauthProvider, tokenUrl:string, code: string): Promise<OAuth.Token> {
+async function fetchUserToken(provider: OauthProvider, tokenUrl:string, code: string, reply: FastifyReply): Promise<OAuth.Token | void> {
 	const secret = decryptSecret(provider.client_secret_encrypted);
 
 	const tokenRes = await fetch(tokenUrl, {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Accept': 'application/json'
+		},
 		body: new URLSearchParams({
 			code,
 			client_id: provider.client_id,
@@ -41,9 +45,12 @@ async function fetchUserToken(provider: OauthProvider, tokenUrl:string, code: st
 		})
 	});
 
+	if (tokenRes.status === 400)
+		return reply.status(400).send('Authorization code invalid or already used.');
+
 	if (!tokenRes.ok)
-		throw new Error(`Token request failed with status ${tokenRes.status}`);
-	
+		return reply.status(500).send(`Token request failed with status ${tokenRes.status}`);
+
 	const tokenData = (await tokenRes.json()) as OAuth.Token;
 	if (!tokenData.access_token)
 		throw new Error('No access token returned');
@@ -132,6 +139,30 @@ async function handleOauthUserCreation(
 		randPass,
 		getRoleByName('user')!.role_id
 	)
+	
+	if (!user)
+		return reply.status(500).send('Failed to create account');
+
+	const existingProfile = getProfileByUsername(userInfo.username);
+	let username = userInfo.email.split('@')[0];
+	if (!existingProfile)
+		username = userInfo.username
+
+	const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
+	let countryId: number | undefined;
+	const geo = geoip.lookup(clientIp);
+	if (geo && geo.country) {
+		const country = getCountryByCode(geo.country);
+		if (country) countryId = country.country_id;
+	}
+
+	const userProfil = createProfile(
+		user.user_id,
+		username,
+		userInfo.username,
+		userInfo.avatar,
+		countryId
+	);
 
 	if (!user)
 		return reply.status(500).send('Failed to create account');
@@ -159,7 +190,7 @@ async function handleOauthUserCreation(
 
 export function oauthCallbackRoutes(fastify: FastifyInstance) {
 	fastify.get(
-	':provider/callback',
+	'/:provider/callback',
 	{
 		schema: oauthCallbackSchema,
 		validatorCompiler: () => () => true
@@ -176,12 +207,14 @@ export function oauthCallbackRoutes(fastify: FastifyInstance) {
 		if (!tokenUrl) return reply.status(500).send('OAuth provider URL not configured');
 
 		try {
-			const tokenData = await fetchUserToken(providerData, tokenUrl, code);
+			const tokenData = await fetchUserToken(providerData, tokenUrl, code, reply);
+
+			if (!tokenData)
+				return;
 
 			const userInfo = await fetchUserInfo(provider, tokenData.access_token);
 
 			const sessionToken = request.cookies.session || request.headers['authorization']?.split(' ')[1];
-
 			if (sessionToken) // If user is logged in, try to link account
 				return handleLoggedInUser(userInfo, provider, request, reply);
 			
