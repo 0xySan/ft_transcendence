@@ -9,13 +9,11 @@ import { checkRateLimit, delayResponse } from "../../../utils/security.js";
 import {
 	getPasswordHashByUserId,
 	getProfileByUsername,
-	getUser2FaMethodsByUserId,
 	getUserByEmail,
 	updateSession,
 	User
 } from "../../../db/index.js";
 import { verifyHashedString, verifyToken } from "../../../utils/crypto.js";
-import { createNewSession } from "../../../utils/session.js";
 import { requirePartialAuth } from "../../../middleware/auth.middleware.js";
 import { createFullOrPartialSession } from "../../../auth/oauth/utils.js";
 

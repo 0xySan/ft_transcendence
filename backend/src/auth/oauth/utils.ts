@@ -3,6 +3,7 @@
  * Utility functions for OAuth operations.
  */
 
+import { FastifyReply, FastifyRequest } from "fastify";
 import { getUser2FaMethodsByUserId } from "../../db/index.js";
 import { createNewSession } from "../../utils/session.js";
 
@@ -11,13 +12,13 @@ import { createNewSession } from "../../utils/session.js";
  * @param userId - The user's uuid
  * @param request - The fastify request object
  * @param reply - The fastify reply object, **its status and reply will be set**
- * @param isPersistent - Affect a `full session` **validity duration**
+ * @param isPersistent - Affect a `full session` **validity duration** @default to `false`
  * @returns The fastify reply object with **success status**
  * 		- `500` - `Failed to create session`
  * 		- `202` - message: '2FA required.', twoFactorRequired: `true`, twoFactorMethods [**list of available methods**]
  * 		- `200` - `Login successful.`
  */
-export async function createFullOrPartialSession(userId: string, request: any, reply: any, isPersistent = false) {
+export async function createFullOrPartialSession(userId: string, request: FastifyRequest, reply: FastifyReply, isPersistent = false) {
 	const user2FaMethods = getUser2FaMethodsByUserId(userId)
 		.filter(method => method.is_verified)
 		.map(method => ({
@@ -45,7 +46,7 @@ export async function createFullOrPartialSession(userId: string, request: any, r
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV !== 'test',
-		sameSite: 'Strict',
+		sameSite: 'strict',
 		// 2fa = 10 min else isPersistent ? 30 days : 2 hours
 		maxAge: twoFactorRequired ? 
 			10 * 60 
