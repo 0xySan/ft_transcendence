@@ -8,31 +8,36 @@ declare function updateNavBar(userData: any): void;
 
 const select = document.getElementById('method-select') as HTMLSelectElement;
 
-const VERIFY_ENDPOINT = '/api/users/twofa/totp/token';
+const VERIFY_TOTP_ENDPOINT = '/api/users/twofa/totp/token';
+const VERIFY_EMAIL_ENDPOINT = '/api/users/twofa/email';
+const VERIFY_BACKUP_ENDPOINT = '/api/users/twofa/backup-codes';
 const LOGIN_ENDPOINT = '/api/users/accounts/login';
 
 let methods = null as any[] | null; // will hold user's 2FA methods
 let primary = null as any | null; // will hold primary TOTP method details
 
 function inputEventOnInput(input: HTMLInputElement, index: number, inputs: HTMLInputElement[]): void {
-	addListener(input, 'input', (e) => {
-		const target = e.target as HTMLInputElement;
-		const value = target.value;
+    addListener(input, 'input', (e) => {
+        const target = e.target as HTMLInputElement;
+        const value = target.value;
 
-		// Only keep one numeric character
-		target.value = value.replace(/[^0-9]/g, '').slice(0, 1);
+        // choose allowed pattern: digits-only for TOTP (method_type === 1), otherwise alphanumeric
+        const forbidRegex = (primary && primary.method_type === 1) ? /[^0-9]/g : /[^0-9A-Za-z]/g;
 
-		// Move to next input if filled
-		if (target.value && index < inputs.length - 1) {
-			inputs[index + 1].focus();
-		}
+        // keep only one allowed character
+        target.value = value.replace(forbidRegex, '').slice(0, 1);
 
-		// If all are filled, you can trigger verification here
-		if (inputs.every((i) => i.value.length === 1)) {
-			const code = inputs.map((i) => i.value).join('');
-			console.log('2FA code:', code);
-		}
-	});
+        // Move to next input if filled
+        if (target.value && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+        }
+
+        // If all are filled, you can trigger verification here
+        if (inputs.every((i) => i.value.length === 1)) {
+            const code = inputs.map((i) => i.value).join('');
+            console.log('2FA code:', code);
+        }
+    });
 }
 
 function backspaceEventOnInput(input: HTMLInputElement, index: number, inputs: HTMLInputElement[]): void {
@@ -53,7 +58,7 @@ function pasteEventOnInput(input: HTMLInputElement, index: number, inputs: HTMLI
 			
 		// Check if paste contains only numbers
 		const onlyNumbers = /^\d+$/.test(paste);
-		if (!onlyNumbers) return;
+		if (!onlyNumbers && primary.method_type == 1) return;
 
 		// Limit to number of inputs
 		const digits = paste.slice(0, inputs.length);
@@ -144,13 +149,26 @@ function refreshNavBarState() {
 				});
 }
 
-async function verifyTwoFa(code: string): Promise<void> {
-  // disable UI feedback (find inputs)
-  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));
-  inputs.forEach(i => i.disabled = true);
+async function postEmailCode(code: string): Promise<Response> {
+	console.log('Verifying 2FA code with method ID:', primary ? primary.id : null);
+		const res = await fetch(VERIFY_EMAIL_ENDPOINT, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept-language': getUserLang()
+			},
+			body: JSON.stringify({
+				uuid: primary ? primary.id : null,
+				code: code
+			})
+		});
+	return res;
+}
 
-	try {
-		const res = await fetch(VERIFY_ENDPOINT, {
+async function postTotpCode(code: string): Promise<Response> {
+	console.log('Verifying 2FA code with method ID:', primary ? primary.id : null);
+		const res = await fetch(VERIFY_TOTP_ENDPOINT, {
 			method: 'POST',
 			credentials: 'include',
 			headers: {
@@ -162,6 +180,48 @@ async function verifyTwoFa(code: string): Promise<void> {
 				totp_code: code
 			})
 		});
+	return res;
+}
+
+async function postBackupCode(code: string): Promise<Response> {
+	console.log('Verifying 2FA code with method ID:', primary ? primary.id : null);
+		const res = await fetch(VERIFY_BACKUP_ENDPOINT, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept-language': getUserLang()
+			},
+			body: JSON.stringify({
+				uuid: primary ? primary.id : null,
+				code: code
+			})
+		});
+	return res;
+}
+
+async function verifyTwoFa(code: string): Promise<void> {
+  // disable UI feedback (find inputs)
+  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-input'));
+  inputs.forEach(i => i.disabled = true);
+
+	try {
+		let res: Response;
+
+		switch (primary.method_type) {
+		case 0:
+			res = await postEmailCode(code);
+			break;
+		case 1:
+			res = await postTotpCode(code);
+			break;
+		case 2:
+			res = await postBackupCode(code);
+			break;
+		default:
+			console.error('Unsupported 2FA type');
+			return;
+		}
 
     	// If response is OK, read the token from body
     	if (res.ok) {
@@ -233,6 +293,7 @@ function prepareInputs() {
 	console.log(inputs);
 
 	// Fetch user's registered 2FA methods (ensure cookie sent)
+	// TODO: Replace this with an attribute in window when backend supports it
 	fetch('/api/users/twofa/', {
 		method: 'GET',
 		credentials: 'include',
