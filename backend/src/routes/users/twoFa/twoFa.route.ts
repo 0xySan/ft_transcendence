@@ -214,7 +214,7 @@ async function createTotpMethod(userEmail: string, methodId: string, label: stri
  * @returns Result object with success status, message, and generated codes
  */
 async function createBackupMethod(methodId: string) {
-	const codes = generateBackupCodes(10, 8);
+	const codes = generateBackupCodes(10, 6);
 
 	const hashedCodes = await Promise.all(
 		codes.map(async (code) => ({
