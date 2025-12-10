@@ -146,7 +146,7 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 				return reply.status(404).send({ message: 'Backup codes not found' });
 
 			const codes = JSON.parse(codeMethod.codes.code_json) as Array<{ hash: string; used: boolean }>;
-			const hashedInput = await hashString(body.code);
+			const hashedInput = await hashString(body.code.toUpperCase());
 
 			const index = codes.findIndex(c => c.hash === hashedInput);
 			if (index === -1 || codes[index].used)
