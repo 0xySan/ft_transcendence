@@ -77,7 +77,7 @@ async function handleUserLoginValidation(
 		return reply.status(400).send({ message: "Login failed. Please try again later." });
 	}
 
-	return {userId , rememberMe};
+	return {userId, rememberMe};
 }
 
 // ---------- Routes ----------
@@ -96,9 +96,7 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 		try {
 			const result = await handleUserLoginValidation(request, reply, startTime, clientIp);
 			if (!result) return;
-
-			createFullOrPartialSession(result.userId, request, reply, result.rememberMe);
-			return ;
+			return createFullOrPartialSession(result.userId, request, reply, result.rememberMe);
 		} catch (err) {
 			console.error("Error in POST /accounts/login:", err);
 			return reply.status(500).send({ message: "Unable to complete login process." });

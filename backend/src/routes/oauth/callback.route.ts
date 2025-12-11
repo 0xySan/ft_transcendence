@@ -8,7 +8,10 @@ import * as OAuth from '../../auth/oauth/types.js';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { oauthCallbackSchema } from '../../plugins/swagger/schemas/callback.schema.js'
 import geoip from 'geoip-lite';
-import { createOauthAccount, createProfile, createUser, getCountryByCode, getOauthAccountByProviderAndUserId, getOauthProviderByName, getProfileByUsername, getRoleByName, getUserByEmail, oauthAccount, OauthProvider } from '../../db/index.js';
+import {	createOauthAccount, createProfile, createUser,
+			getCountryByCode, getOauthAccountByProviderAndUserId,
+			getOauthProviderByName, getProfileByUsername,
+			getRoleByName, getUserByEmail, OauthProvider } from '../../db/index.js';
 import { decryptSecret, generateRandomToken, hashString } from '../../utils/crypto.js';
 import { checkTokenValidity } from '../../utils/session.js';
 
@@ -139,7 +142,7 @@ async function handleOauthUserCreation(
 		userInfo.email,
 		randPass,
 		getRoleByName('user')!.role_id
-	)
+	);
 	
 	if (!user)
 		return reply.status(500).send('Failed to create account');
@@ -147,7 +150,7 @@ async function handleOauthUserCreation(
 	const existingProfile = getProfileByUsername(userInfo.username);
 	let username = userInfo.email.split('@')[0];
 	if (!existingProfile)
-		username = userInfo.username
+		username = userInfo.username;
 
 	let avatarFileName: string | undefined;
 	if (userInfo.avatar) {
@@ -175,9 +178,6 @@ async function handleOauthUserCreation(
 	);
 	if (!userProfile)
 		return reply.status(500).send('Failed to create profile');
-
-	if (!user)
-		return reply.status(500).send('Failed to create account');
 
 	const oauthAcc = createOauthAccount({
 		user_id:			user.user_id,
@@ -246,7 +246,7 @@ export function oauthCallbackRoutes(fastify: FastifyInstance) {
 				userInfo,
 				tokenData,
 				provider,
-				request, reply)
+				request, reply);
 		} catch (error) {
 			console.error('OAuth callback error:', error);
 			return reply.status(500).send('Internal Server Error');

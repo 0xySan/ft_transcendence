@@ -1,17 +1,16 @@
 <script>
 	const urlParams = new URLSearchParams(window.location.search);
 	const isTwofa = urlParams.get('twofa');
-	const requestId = urlParams.get('requestId'); // <-- récupérer le requestId
+	const requestId = urlParams.get('requestId');
 
 	if (window.opener && isTwofa !== null && requestId) {
-		// envoyer l'état et le requestId à la page parent
+		// Send message to the opener window
 		window.opener.postMessage({ 
 			status: 'success', 
 			isTwofa, 
 			requestId 
 		}, window.location.origin);
 
-		// fermer la popup
 		window.close();
 	}
 </script>

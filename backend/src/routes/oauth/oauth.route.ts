@@ -38,7 +38,7 @@ export function oauthRoute(fastify: FastifyInstance) {
 		async (request, reply) => {
 			const session = (request as any).session;
 			if (!session || !session.user_id)
-				return reply.status(400).send('You cannot access this ressource');
+				return reply.status(400).send('You cannot access this resource');
 
 			const oauthAccounts = getOauthAccountsByUserId(session.user_id);
 

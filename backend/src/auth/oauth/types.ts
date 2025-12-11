@@ -41,7 +41,6 @@ export const ProvidersApiUri = {
 interface UserInfoBase {
 	id:			string;
 	email:		string;
-	
 }
 
 interface GUserInfo extends UserInfoBase {
