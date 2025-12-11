@@ -226,3 +226,39 @@ function initAnimation(): void {
 }
 
 initAnimation();
+
+// =========================================================
+// 						THEME  CHANGER
+// =========================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+	const switcher = document.querySelector<HTMLDivElement>('#theme-switcher');
+	if (!switcher) return;
+
+	switcher.addEventListener('click', (e: MouseEvent) => {
+		const target = e.target as HTMLElement;
+		const btn = target.closest<HTMLElement>('.theme-btn');
+		if (!btn) return;
+
+		const buttons = switcher.querySelectorAll<HTMLElement>('.theme-btn');
+		buttons.forEach((b) => b.classList.remove('active'));
+
+		btn.classList.add('active');
+		const selectedTheme = btn.getAttribute('data-theme');
+		if (selectedTheme)
+			document.documentElement.setAttribute('data-theme', selectedTheme);
+	});
+
+	const observer = new MutationObserver(() => {
+		const currentTheme = document.documentElement.getAttribute('data-theme');
+		const buttons = switcher.querySelectorAll<HTMLElement>('.theme-btn');
+		buttons.forEach((btn) => {
+			if (btn.getAttribute('data-theme') === currentTheme)
+				btn.classList.add('active');
+			else
+				btn.classList.remove('active');
+		});
+	});
+
+	observer.observe(switcher, { childList: true, subtree: true });
+});

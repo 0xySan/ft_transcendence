@@ -1,16 +1,16 @@
 <div class="auth-pages-container">
 	<h1 data-translate-key="login.loginTitle">Login</h1>
-	<form class="auth-form-container">
+	<form method="POST" action="/api/users/accounts/login" class="auth-form-container">
 		<div class="div-title-and-text-input">
-			<label for="username" data-translate-key="login.usernameLabel">Username:</label>
-			<input type="text" id="username-text-input" name="username" class="form-input-field" placeholder="Enter your username"/>
-			<span id="login-username-error-text" class="error-message" aria-hidden="true" style="opacity: 0;">
+			<label for="username" data-translate-key="login.usernameLabel">Username or email:</label>
+			<input type="text" id="username-text-input" name="username" class="form-input-field" placeholder="Enter your username or your email"/>
+			<span id="login-username-error-text" class="error-message" aria-hidden="true">
 			</span>
 		</div>
 		<div class="div-title-and-text-input">
 			<label for="password" data-translate-key="login.passwordLabel">Password:</label>
 			<input type="password" id="password-text-input" name="password" class="form-input-field" placeholder="Enter your password"/>
-			<span id="login-password-error-text" class="error-message" aria-hidden="true" style="opacity: 0;">
+			<span id="login-password-error-text" class="error-message" aria-hidden="true">
 			</span>
 			<div class="checkbox-container">
 				<input type="checkbox" id="remember-me-checkbox" name="remember-me"/>
@@ -20,6 +20,7 @@
 		<button type="submit" class="auth-btn" data-translate-key="login.loginButton">
 			Login
 		</button>
+		<span id="login-form-error-text" class="error-message" aria-hidden="true"></span>
 		<div class="oauth-buttons-container">
 			<a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load" title="Login with 42">
 				<svg class="oauth-icon"><use href="/resources/imgs/svg/icons/42.svg#icon-42"></use></svg>

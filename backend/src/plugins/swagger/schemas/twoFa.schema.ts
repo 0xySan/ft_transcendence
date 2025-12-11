@@ -81,7 +81,9 @@ export const createTwoFaMethodsSchema = {
 	summary: "Create new Two-Factor Authentication methods",
 	description:
 		"Allows the authenticated user to create new 2FA methods (Email OTP, Authenticator App TOTP, or Backup Codes). " +
-		"Each method can include custom parameters, such as email address, TOTP algorithm, or duration.",
+		"Each method can include custom parameters, such as email address, TOTP algorithm, or duration." +
+		"Returns the results for each requested method creation, including any necessary setup information." +
+		"If the user has no existing 2FA methods, the first created method will be set as primary automatically.",
 	tags: ["Users: 2FA"],
 	body: {
 		type: "object",

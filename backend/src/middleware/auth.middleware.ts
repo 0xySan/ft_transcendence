@@ -46,4 +46,5 @@ export async function requirePartialAuth(request: FastifyRequest, reply: Fastify
 	}
 
 	(request as any).session = session;
+	(request as any).token = token;
 }

@@ -33,7 +33,7 @@
   },
   "mailverification": {
     "changeEmail": "Change email",
-    "message": "We've sent an email to <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>. Check your inbox and click the verification link to confirm your email address.",
+    "message": "We've sent an email to <span class=\"font-poppins-semibold\" id=\"verification-email\">[ADDRESS]</span>. Check your inbox and click the verification link to confirm your email address.",
     "resendEmail": "Resend Email",
     "title": "Check your mailbox"
   },

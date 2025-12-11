@@ -222,6 +222,20 @@ describe('twoFaRoutes (routes/users/twoFa)', () => {
 		expect(mockedCreateUser2faTotp).toHaveBeenCalled();
 	});
 
+	it ('POST /twofa/ set method as primary when it is the first method for the user', async () => {
+		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'example@example.com' } as any);
+		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);
+		mockedCreate2FaMethods.mockReturnValue({ method_id: 'new1' } as any);
+		const payload = { methods: [{ methodType: 1, label: 'Authenticator App' }] };
+		const res = await app.inject({ method: 'POST', url: '/twofa/', payload });
+		expect(res.statusCode).toBe(201);
+		const body = JSON.parse(res.body);
+		expect(body.results[0]).toMatchObject({ methodType: 1, success: true });
+		expect(mockedCreate2FaMethods).toHaveBeenCalledWith(expect.objectContaining({
+			is_primary: true
+		}));
+	});
+
 	it('POST /twofa/ creates Backup Codes successfully', async () => {
 		mockedGetUserById.mockReturnValue({ user_id: 'user123', email: 'user@example.com' } as any);
 		mockedGetAllMethodsByUserIdByType.mockReturnValue([] as any);

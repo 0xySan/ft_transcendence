@@ -166,7 +166,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				"accountVerification.html",
 				{
 					HEADER: "Welcome to ft_transcendence!",
-					VERIFICATION_LINK: `https://moutig.sh/verify?user=${newUser.user_id}&token=${encodeURIComponent(verificationToken)}`,
+					VERIFICATION_LINK: `https://${process.env.DOMAIN_NAME}/verify?user=${newUser.user_id}&token=${encodeURIComponent(verificationToken)}`,
 				},
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 			).catch(err => console.error("Failed to send email:", err));

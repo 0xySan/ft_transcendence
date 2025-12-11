@@ -8,10 +8,12 @@ import { userDataRoutes } from './data/index.js'
 import { userAccountRoutes } from './accounts/index.js';
 import { userProfileRoutes } from './profile.route.js';
 import { userTwoFaRoutes } from './twoFa/index.js';
+import { userMeRoutes } from './me.route.js';
 
 export function userRoutes(fastify: FastifyInstance) {
 	userDataRoutes(fastify);
 	userAccountRoutes(fastify);
 	userProfileRoutes(fastify);
 	userTwoFaRoutes(fastify);
+	userMeRoutes(fastify);
 }

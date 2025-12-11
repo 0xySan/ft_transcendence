@@ -20,7 +20,7 @@ const RATE_WINDOW = 15 * 60 * 1000;
 const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 
 export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
-	fastify.get(
+	fastify.post(
 		"/accounts/verify",
 		{ schema: verifySchema, validatorCompiler: ({ schema }) => () => true },
 		async (request, reply) => {
@@ -31,7 +31,7 @@ export async function verifyUserAccountRoutes(fastify: FastifyInstance) {
 				return; // rate limit exceeded, response already sent
 			}
 
-			const { token: rawToken, user: rawUser } = request.query as { token?: string; user?: string };
+			const { user: rawUser, token: rawToken } = request.body as { user?: string; token?: string };
 
 			if (!rawToken || !rawUser) {
 				return reply.status(400).send("Missing token or user id");
