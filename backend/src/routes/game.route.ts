@@ -192,6 +192,13 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
 
         // Check if the resul is != null because if the code is not in this thread result == "null".
         if (result != "null") {
+            for (const player of clientToken) {
+                if (player.player_id == game.user_id) {
+                    player.worker_index = workers.indexOf(target);
+                    player.game_id = result;
+                    return reply.status(202).send({ token: player.token });
+                }
+            }
             target.players.push(game.user_id);
             const token = generateRandomToken(32);
             clientToken.push(new Player(workers.indexOf(target), game.user_id, result, token));
@@ -209,17 +216,37 @@ async function gameJoin(game: sv_game, reply: FastifyReply) {
 export async function gameRoutes(fastify: FastifyInstance) {
 
     // ------------------    GET METHOD    ----------------------- \\
-    // fastify.get("/api/game", { schema: getGameSchema }, async (request, reply) => {
-    //     const game = request.body as sv_game;
-    //     const token = generateRandomToken(32);
+    fastify.get("/api/game", { preHandler: requirePartialAuth }, async (request, reply) => {
+        const session = (request as any).session;
+        const userId = session?.user_id;
 
-    //     if (game.user_id == null)
-    //         return (reply.status(401).send({ error: "user_is is empty" }));
-    //     // stock uuid and token in maptarget
-    //     clientToken.set(game.user_id, token);
-    //     // return party Token
-    //     return (reply.status(202).send({token}));
-    // });
+        console.log("DEBUG: Players Size = " + clientToken.length);
+
+        if (!userId)
+            return reply.status(401).send({ error: "user_id is empty" });
+
+        // for (const target of workers) {
+        //     const result = await new Promise<{ found: boolean; game_uuid?: string }>((resolve) => {
+        //         target.worker.once("message", (msg) => resolve(msg));
+        //         target.worker.postMessage({ action: "userInGame", user_id: userId });
+        //     });
+
+        //     if (result.found && result.game_uuid) {
+        //         target.players.push(userId);
+        //         const token = generateRandomToken(32);
+        //         clientToken.push(new Player(workers.indexOf(target), userId, result.game_uuid, token));
+        //         return reply.status(202).send({ token });
+        //     }
+        // }
+
+        for (const player of clientToken) {
+            if (player.player_id == userId) {
+                return reply.status(202).send({ token: player.token });
+            }
+        }
+
+        return reply.status(401).send({ error: "Player isn't in a game" });
+    });
 
     // -----------------    POST METHOD    ----------------------- \\
     fastify.post("/api/game", { preHandler: requirePartialAuth, schema: postGameSchema }, async (request, reply) => {
@@ -231,9 +258,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
             return (reply.status(401).send({ error: "user_is is empty" }));
 
         console.log("\n\n\n\nDEBUG: HERE user_id = " + userId);
-        const userName = getProfileByUserId(userId)?.display_name;
-        if (userName) game.user_id = userName;
-        else return (reply.status(501).send({ error: "User Profile not find" }));
+        game.user_id = userId;
 
         // (code = null) == Create a game | (code != null) == Join a game
         if (game.code == "null") {

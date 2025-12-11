@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { parse } from './sockets/socketParsing.js'
-import WebSocket from 'ws';
+import { getProfileByUserId, UserProfile } from './db/wrappers/main/users/userProfiles.js';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -21,8 +21,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
-import { deletePlayerWithToken, getPlayerWithToken, getPlayerWithUserId } from "./routes/game.route.js";
-import { Player } from "./sockets/player.class.js";
+import { clientToken, deletePlayerWithToken, getPlayerWithToken, getPlayerWithUserId } from "./routes/game.route.js";
 
 /**
  * This interface with a worker (thread) and a list of players in this.
@@ -83,16 +82,15 @@ export async function createThread(options: { workerFile?: string, count?: numbe
 		worker.on("message", (msg) => {
 			if (msg.action == "finished") {
 				const player = getPlayerWithUserId(msg.user_id);
-				player?.socket.close(1000, "game finished");
+				if (player && player.socket) player?.socket.close(1000, "game finished");
 			} else if (msg.action == "send") {
 				const player = getPlayerWithUserId(msg.user_id);
 				// console.log("DEBUG: json = " + JSON.stringify(msg));
-				player?.socket.send(JSON.stringify(msg));
+				if (player && player.socket) player.socket.send(JSON.stringify(msg));
 			} else if (msg.action == "start") {
 				const player = getPlayerWithUserId(msg.user_id);
-				console.log("DEBUG: json = " + JSON.stringify(msg));
-				console.log("DEBUG: token = " + player?.token + " | user_id = " + player?.player_id);
-				player?.socket.send(JSON.stringify(msg));
+				// console.log("DEBUG: token = " + player?.token + " | user_id = " + player?.player_id);
+				if (player && player.socket) player.socket.send(JSON.stringify(msg));
 			}
 		});
 	
@@ -115,12 +113,10 @@ async function start() {
 		createThread();
 
 		wss.on('connection', (ws, request) => {
-			console.log("DEBUG: websocket start here !");
-
 			const params = new URLSearchParams(request.url?.split('?')[1]);
 			const token = params.get('token'); 
 
-			console.log(`User connected`);
+			console.log(`DEBUG: User connected`);
 
 			if (!token)
 			{
@@ -135,6 +131,10 @@ async function start() {
 			}
 
 			player.setSocket(ws);
+			console.log("\n\n\n\n\n\nDEBUG: token list = " + clientToken.length);
+			for (const client of clientToken) {
+				console.log("- uuid = " + client.player_id + " | username = " + getProfileByUserId(client.player_id)?.display_name);
+			}
 			if (player.token !== token)
 			{
 				ws.close(1008, 'Invalid token or user_id');
@@ -160,7 +160,7 @@ async function start() {
 			}				
 			ws.on('close', () => {
 				console.log('WebSocket disconnected');
-				deletePlayerWithToken(token);
+				// deletePlayerWithToken(token);
 			});
 		});
 

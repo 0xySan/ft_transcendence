@@ -10,89 +10,100 @@ declare function addListener(target: EventTarget | null, event: string, handler:
 export {};
 
 let data: any;
+let socketConnection = window.socket;
 
-try {
-	let socketConnection = window.socket;
-	await createSocket("null");
+function redirectUser(event: Event) : void{
+	event.preventDefault();
+	event.stopImmediatePropagation();
+	socketConnection.send(JSON.stringify({ action: "start" }));
+	loadPage(`/pong-board`);
+}
 
-	function attachSocketListeners(socket: WebSocket) {
+function attachSocketListeners(socket: WebSocket) {
 
-		addListener(socket, 'open', () => {
-			console.log('Connected to WebSocket server.');
-		});
+	addListener(socket, 'open', () => {
+		console.log('Connected to WebSocket server.');
+	});
 
-		function safeJSONParse(data: string) {
-			try {
-				return JSON.parse(data);
-			} catch {
-				return null;
-			}
+	function safeJSONParse(data: string) {
+		try {
+			return JSON.parse(data);
+		} catch {
+			return (null);
 		}
-
-		addListener(socket, 'message', (event: MessageEvent) => {
-			const parsed = safeJSONParse(event.data);
-
-			if (!parsed) {
-				console.log("Received non-JSON message:", event.data);
-				return;
-			}
-
-			console.log("Message JSON:", parsed);
-
-			if (parsed.action === "start") {
-				redirectUser(event);
-			}
-		});
-
-		addListener(socket, "close", (event: CloseEvent) => {
-			console.log("WebSocket closed");
-			console.log("Code :", event.code);
-			console.log("Reason :", event.reason);
-			console.log("Clean closure :", event.wasClean);
-		});
-
-		addListener(socket, 'error', (err: Event) => {
-			console.error('WebSocket error:', err);
-		});
 	}
 
-	async function createSocket(code: string) {
-		const response = await fetch("/api/game", {
+	addListener(socket, 'message', (event: MessageEvent) => {
+		const parsed = safeJSONParse(event.data);
+
+		if (!parsed) {
+			console.log("Received non-JSON message:", event.data);
+			return;
+		}
+
+		console.log("Message JSON:", parsed);
+
+		if (parsed.action === "start") {
+			redirectUser(event);
+		}
+	});
+
+	addListener(socket, "close", (event: CloseEvent) => {
+		console.log("WebSocket closed");
+		console.log("Code :", event.code);
+		console.log("Reason :", event.reason);
+		console.log("Clean closure :", event.wasClean);
+	});
+
+	addListener(socket, 'error', (err: Event) => {
+		console.error('WebSocket error:', err);
+	});
+}
+
+export async function createSocket(code: string | null) {
+
+	let	response = null;
+	if (code) {
+		response = await fetch("/api/game", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ code })
 		});
-
-		data = await response.json();
-		console.log("DEBUG: data = ", data);
-
-		if (data["error"]) {
-			throw new Error("Error in contact api");
-		}
-
-		if (!socketConnection || socketConnection.readyState === WebSocket.CLOSED) {
-
-			const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-			const socketUrl = wsProtocol + "//" + window.location.host + "/ws/?token=" + data.token;
-
-			window.socket = new WebSocket(socketUrl);
-			socketConnection = window.socket;
-			console.log("Socket ouvert !");
-
-			attachSocketListeners(socketConnection);
-		}
-		else {
-			console.log("Socket déjà ouverte ou en cours de fermeture.");
-		}
+	} else {
+		response = await fetch("/api/game", {
+			method: "GET"
+		});
 	}
 
-	function redirectUser(event: Event) : void{
-		event.preventDefault();
-		event.stopImmediatePropagation();
-		socketConnection.send(JSON.stringify({ action: "start" }));
-		loadPage(`/pong-board`);
-		console.log("DEBUG: HEREWN WNKELLWNE GLENLK");
+	if (response == null) {
+		new Error("ERROR api");
 	}
+
+	data = await response.json();
+	console.log("DEBUG: data = ", data);
+
+	if (data["error"]) {
+		throw new Error("Error in contact api");
+	}
+
+	if (!socketConnection || socketConnection.readyState === WebSocket.CLOSED) {
+
+		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+		const socketUrl = wsProtocol + "//" + window.location.host + "/ws/?token=" + data.token;
+
+		window.socket = new WebSocket(socketUrl);
+		socketConnection = window.socket;
+		console.log("Socket ouvert !");
+
+		attachSocketListeners(socketConnection);
+	}
+	else {
+		console.log("Socket déjà ouverte ou en cours de fermeture.");
+	}
+}
+
+try {
+	await createSocket("null");
 
 	async function joinUser(event: Event) {
 		const input = document.getElementById("lobby-input") as HTMLInputElement;

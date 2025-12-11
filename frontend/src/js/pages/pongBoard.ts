@@ -4,6 +4,7 @@ declare global {
 	}
 }
 
+declare function loadPage(url:string) : void;
 declare function addListener(target: EventTarget | null, event: string, handler: any): void;
 
 export {};
@@ -13,6 +14,8 @@ try {
 
 	const paddleWidth = 10;
 	const paddleHeight = 80;
+
+	const start_game = Date.now();
 
 	let ball = {
 		x: canvas.width / 2,
@@ -36,13 +39,27 @@ try {
 	let socketConnection = window.socket;
 
 	if (!socketConnection) {
-		document.getElementById('content')!.innerHTML = "ERROR: CONNECTION NOT ESTABLISHED";
-		throw new Error("WebSocket connection not found, please use the lobby page to access this page.");
+		const response = await fetch("/api/game", {
+			method: "GET",
+		});
+
+		const data = await response.json();
+		if (data["error"]) {
+			document.getElementById('content')!.innerHTML = "ERROR: CONNECTION NOT ESTABLISHED";
+			throw new Error("WebSocket connection not found, please use the lobby page to access this page.");
+		}
+
+		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+		const socketUrl = wsProtocol + "//" + window.location.host + "/ws/?token=" + data.token;
+
+		window.socket = new WebSocket(socketUrl);
+		socketConnection = window.socket;
+		console.log("Socket ouvert !");
+
+		// redirectUser()
 	}
 
-
 	addListener(socketConnection, "message", (event: MessageEvent) => {
-		console.log("Pong-board: message recieved");
 		try {
 			const data = JSON.parse(event.data);
 
@@ -53,6 +70,7 @@ try {
 				equip_a = Object.keys(data.equip_a).length;
 				equip_b = Object.keys(data.equip_b).length;
 			}
+			console.log("DEBUG: json = ", data);
 		} catch {
 			return;
 		}
