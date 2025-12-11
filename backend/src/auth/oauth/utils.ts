@@ -13,12 +13,14 @@ import { createNewSession } from "../../utils/session.js";
  * @param request - The fastify request object
  * @param reply - The fastify reply object, **its status and reply will be set**
  * @param isPersistent - Affect a `full session` **validity duration** @default to `false`
+ * @param redirect - Whether we send a redirect uri with the message @default to `false`
+ * @param requestId - The OAuth request id, used for popup handling
  * @returns The fastify reply object with **success status**
  * 		- `500` - `Failed to create session`
  * 		- `202` - message: '2FA required.', twoFactorRequired: `true`, twoFactorMethods [**list of available methods**]
  * 		- `200` - `Login successful.`
  */
-export async function createFullOrPartialSession(userId: string, request: FastifyRequest, reply: FastifyReply, isPersistent = false) {
+export async function createFullOrPartialSession(userId: string, request: FastifyRequest, reply: FastifyReply, isPersistent = false, redirect = false, requestId?: string) {
 	const user2FaMethods = getUser2FaMethodsByUserId(userId)
 		.filter(method => method.is_verified)
 		.map(method => ({
@@ -56,14 +58,18 @@ export async function createFullOrPartialSession(userId: string, request: Fastif
 	});
 
 	if (twoFactorRequired) {
-		return reply.status(202).send({
-			message: '2FA required.',
-			twoFactorRequired: true,
-			twoFactorMethods: user2FaMethods
-		});
+		if (!redirect) {
+			return reply.status(202).send({
+				message: '2FA required.',
+				twoFactorRequired: true,
+				twoFactorMethods: user2FaMethods
+			});
+		} else
+			return reply.redirect('/oauth-popup?twofa=true&requestId=' + (requestId ?? ''));
 	} else {
-		return reply.status(200).send({
-			message: 'Login successful.'
-		});
+		if (!redirect)
+			return reply.status(200).send({ message: 'Login successful.' });
+		else
+			return reply.redirect('/oauth-popup?twofa=false&requestId=' + (requestId ?? ''));
 	}
 }

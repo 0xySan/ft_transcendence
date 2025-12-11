@@ -13,6 +13,7 @@ import { decryptSecret, generateRandomToken, hashString } from '../../utils/cryp
 import { checkTokenValidity } from '../../utils/session.js';
 
 import { createFullOrPartialSession } from '../../auth/oauth/utils.js';
+import { saveAvatarFromUrl } from '../../utils/userData.js';
 
 
 // ======================================
@@ -53,7 +54,7 @@ async function fetchUserToken(provider: OauthProvider, tokenUrl:string, code: st
 
 	const tokenData = (await tokenRes.json()) as OAuth.Token;
 	if (!tokenData.access_token)
-		throw new Error('No access token returned');
+		return reply.status(500).send('No access token returned from provider');
 	
 	return tokenData;
 };
@@ -148,6 +149,15 @@ async function handleOauthUserCreation(
 	if (!existingProfile)
 		username = userInfo.username
 
+	let avatarFileName: string | undefined;
+	if (userInfo.avatar) {
+		try {
+			avatarFileName = await saveAvatarFromUrl(user.user_id.toString(), userInfo.avatar);
+		} catch (err) {
+			console.error("Failed to save avatar:", err);
+		}
+	}
+
 	const clientIp = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
 	let countryId: number | undefined;
 	const geo = geoip.lookup(clientIp);
@@ -156,13 +166,15 @@ async function handleOauthUserCreation(
 		if (country) countryId = country.country_id;
 	}
 
-	const userProfil = createProfile(
+	const userProfile = createProfile(
 		user.user_id,
 		username,
 		userInfo.username,
-		userInfo.avatar,
+		avatarFileName,
 		countryId
 	);
+	if (!userProfile)
+		return reply.status(500).send('Failed to create profile');
 
 	if (!user)
 		return reply.status(500).send('Failed to create account');
@@ -181,7 +193,11 @@ async function handleOauthUserCreation(
 
 	if (!oauthAcc)
 		return reply.status(500).send('Failed to create account');
-	return createFullOrPartialSession(user.user_id, request, reply, true);
+	
+	const queryParams = request.query as Record<string, string>;
+	const requestId = queryParams.state;
+
+	return createFullOrPartialSession(user.user_id, request, reply, true, true, requestId);
 }
 
 // ================================================
@@ -220,8 +236,11 @@ export function oauthCallbackRoutes(fastify: FastifyInstance) {
 			
 			const oauthAccount = getOauthAccountByProviderAndUserId(provider, userInfo.id);
 
+			const queryParams = request.query as Record<string, string>;
+			const requestId = queryParams.state;
+
 			if (oauthAccount)
-				return createFullOrPartialSession(oauthAccount.user_id, request, reply, true);
+				return createFullOrPartialSession(oauthAccount.user_id, request, reply, true, true, requestId);
 
 			return handleOauthUserCreation(
 				userInfo,

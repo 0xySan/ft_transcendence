@@ -65,12 +65,19 @@ export function oauthRoute(fastify: FastifyInstance) {
 		const config = oauthConfigs[provider];
 		if (!config) return reply.status(500).send('OAuth configuration missing');
 
+		// Optional requestId from frontend for popup handling
+		const queryParams = request.query as Record<string, string>;
+		const requestId = queryParams.requestId;
+
 		// Merge client_id and redirect_uri
 		const params: Record<string, string> = {
 			client_id: oauthProvider.client_id,
 			redirect_uri: oauthProvider.discovery_url,
 			...config.params,
 		};
+
+		if (requestId)
+			params.state = requestId;
 
 		let authUrl: string;
 		if (provider === 'forty-two') {
@@ -79,9 +86,8 @@ export function oauthRoute(fastify: FastifyInstance) {
 				.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
 				.join('&');
 			authUrl = `${config.url}?${query}`;
-		} else {
+		} else
 			authUrl = `${config.url}?${new URLSearchParams(params)}`;
-		}
 
 		return reply.redirect(authUrl);
 	});
