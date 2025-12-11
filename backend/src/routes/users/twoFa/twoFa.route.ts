@@ -216,12 +216,10 @@ async function createTotpMethod(userEmail: string, methodId: string, label: stri
 async function createBackupMethod(methodId: string) {
 	const codes = generateBackupCodes(10, 6);
 
-	const hashedCodes = await Promise.all(
-		codes.map(async (code) => ({
-			hash: await hashString(code),
+	const hashedCodes = codes.map((code) => ({
+			hash: encryptSecret(code).toString('base64'),
 			used: false
 		}))
-	);
 
 	const result = createUser2faBackupCodes({
 		method_id: methodId,
