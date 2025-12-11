@@ -1,22 +1,42 @@
 <div id="twoFA-container">
 	<div>
-		<h1>
+		<h1 id="twoFA-title" data-translate-key="twofa.title.default">
 			Check your mailbox
 		</h1>
-		<p>
-			Enter the 6-digits verification code sent to <span class="font-poppins-semibold" id="verification-email" data-address="[ADDRESS]">[ADDRESS]</span>.
+		<p id="twoFA-instructions" data-translate-key="twofa.instructions.default">
+			Enter the 6-digits verification code sent to 
+			<span class="font-poppins-semibold" id="verification-email" data-address="[ADDRESS]">[ADDRESS]</span>.
 		</p>
-		<p id="identification-method-text" class="font-poppins-semibold text-color-text"></p>
+		<p id="identification-method-text" class="font-poppins-semibold text-color-text" data-translate-key="twofa.methodText"></p>
 	</div>
+
 	<div id="twoFA-form-container">
 		<div class="otp-container">
-			<input type="text" maxlength="1" inputmode="numeric" class="otp-input"/>
-			<input type="text" maxlength="1" inputmode="numeric" class="otp-input"/>
-			<input type="text" maxlength="1" inputmode="numeric" class="otp-input"/>
-			<input type="text" maxlength="1" inputmode="numeric" class="otp-input"/>
-			<input type="text" maxlength="1" inputmode="numeric" class="otp-input"/>
-			<input type="text" maxlength="1" inputmode="numeric" class="otp-input"/>
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+		</div>
+
+		<div class="twofa-resend-container" style="margin-top:0.75rem;">
+			<button
+				id="resend-otp-btn"
+				type="button"
+				class="button button-fit-div-width"
+				data-translate-key="twofa.resendButton"
+				aria-live="polite"
+			></button>
+		</div>
+
+		<div class="twoFA-method-select-container">
+			<label for="method" data-translate-key="twofa.otherMethodLabel">
+				Other method of Two Factor Authentication
+			</label>
+			<select name="method" id="method-select"></select>
 		</div>
 	</div>
 </div>
+
 <script type="module" src="/js/pages/twoFA.js"></script>

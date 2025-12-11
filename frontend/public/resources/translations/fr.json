@@ -78,5 +78,22 @@
     "passwordLabel": "Mot de passe :",
     "resetButton": "Réinitialiser le mot de passe",
     "title": "Réinitialiser le mot de passe"
+  },
+  "twofa": {
+    "title": {
+      "totp": "Vérifiez votre application TOTP",
+      "emailTotp": "Vérifiez votre email pour le code",
+      "backupCodes": "Saisissez un de vos codes de secours"
+    },
+    "instructions": {
+      "totp": "Ouvrez votre application TOTP et saisissez le code de vérification à 6 chiffres affiché.",
+      "emailTotp": "Saisissez le code de 6 chiffres envoyé à votre email <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>.",
+      "backupCodes": "Saisissez un de vos codes de secours. Chaque code ne peut être utilisé qu'une seule fois."
+    },
+    "methodText": "Sélectionnez une autre méthode de vérification si nécessaire.",
+    "otpContainer": "",
+    "otherMethodLabel": "Autre méthode d’authentification à deux facteurs",
+    "methodSelect": "",
+    "resendButton": "Renvoyer le code de vérification"
   }
 }
