@@ -1,17 +1,26 @@
 export {};
 
 declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
-declare function translatePage(language: string): void;
-declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
 declare function loadPage(url: string): void;
 
 
 const registerForm = document.querySelector<HTMLFormElement>('.auth-form-container');
 const usernameInput = document.getElementById('username-text-input') as HTMLInputElement | null;
+const displayNameInput = document.getElementById('displayName-text-input') as HTMLInputElement | null;
 const emailInput = document.getElementById('email-text-input') as HTMLInputElement | null;
 const passwordInput = document.getElementById('password-text-input') as HTMLInputElement | null;
 const confirmPasswordInput = document.getElementById('confirm-password-text-input') as HTMLInputElement | null;
+
+const params = new URLSearchParams(window.location.search);
+const preFill = {
+	email: params.get('email') || '',
+	username: params.get('name') || '',
+	displayName: params.get('displayName') || '',
+	provider: params.get('provider') || '',
+	providerId: params.get('providerId') || '',
+	picture: params.get('picture') || ''
+}
 
 
 /** Shows the error message for a given element
@@ -175,6 +184,15 @@ function verifyConfirmPasswordValidity(): boolean {
 	}
 	return (false);
 }
+
+addListener(window, 'load', () => {
+	if (emailInput && preFill.email)
+		emailInput.value = preFill.email;
+	if (usernameInput && preFill.username)
+		usernameInput.value = preFill.username;
+	if (displayNameInput && preFill.displayName)
+		displayNameInput.value = preFill.displayName;
+});
 
 addListener(registerForm, 'submit', handleRegister);
 addListener(usernameInput, 'input', verifyUsernameValidity);

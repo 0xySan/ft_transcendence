@@ -34,3 +34,51 @@ export const oauthSchema = {
 		},
 	},
 };
+
+export const oauthListSchema = {
+	summary: 'List linked OAuth accounts',
+	description: 'Returns all OAuth accounts linked to the authenticated user.',
+	tags: ['OAuth'],
+	response: {
+		200: {
+			description: 'List of OAuth accounts',
+			type: 'object',
+			properties: {
+				oauth: {
+					type: 'array',
+					items: {
+						type: 'object',
+						properties: {
+							provider: { type: 'string', example: 'discord' },
+							linkedAt: { type: 'integer', example: 1765380705242 },
+							profile: {
+								type: 'object',
+								description: 'Raw profile info from the OAuth provider',
+								example: {
+									id: '123456789',
+									username: 'JohnDoe',
+									email: 'johndoe@example.com',
+									avatar: 'https://cdn.example.com/avatar.png'
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		400: {
+			description: 'Invalid request or user not authenticated',
+			type: 'object',
+			properties: {
+				error: { type: 'string', example: 'You cannot access this resource' }
+			}
+		},
+		401: {
+			description: 'Unauthorized',
+			type: 'object',
+			properties: {
+				error: { type: 'string', example: 'Unauthorized' }
+			}
+		}
+	}
+};
