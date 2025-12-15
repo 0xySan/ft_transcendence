@@ -31,6 +31,12 @@ export class Game {
 	/** Configuration of this game */
 	config: config;
 
+	/**
+	 * Creates a new Game instance.
+	 * @param id - unique game ID
+	 * @param ownerId - owner user ID
+	 * @param configOverrides - optional configuration overrides
+	 */
 	constructor(id: string, ownerId: string, configOverrides?: Partial<config>) {
 		this.id = id;
 		this.ownerId = ownerId;
@@ -96,6 +102,11 @@ export class Game {
 		};
 	}
 
+	/**
+	 * Adds a player to the game.
+	 * @param player - The Player object representing the player.
+	 * @returns True if added successfully, false otherwise.
+	 */
 	addPlayer(player: Player) {
 		if (this.players.length >= this.config.game.maxPlayers) return false;
 		this.players.push(player);
@@ -113,17 +124,30 @@ export class Game {
 		return true;
 	}
 
+	/**
+	 * Adds a spectator to the game.
+	 * @param spectator - The Player object representing the spectator.
+	 * @returns True if added successfully, false otherwise.
+	 */
 	addSpectator(spectator: Player) {
 		if (!this.config.game.spectatorsAllowed) return false;
 		this.spectators.push(spectator);
 		return true;
 	}
 
+	/**
+	 * Removes a player or spectator from the game.
+	 * @param playerId - The ID of the player or spectator to remove.
+	 */
 	removePlayer(playerId: string) {
 		this.players = this.players.filter(p => p.id !== playerId);
 		this.spectators = this.spectators.filter(s => s.id !== playerId);
 	}
 
+	/**
+	 * Updates the game settings.
+	 * @param newSettings - Partial configuration to update.
+	 */
 	updateSettings(newSettings: Partial<config>) {
 		this.config = {
 			game: {
@@ -161,6 +185,11 @@ export class Game {
 		};
 	}
 
+	/**
+	 * Broadcasts a message to all players in the game.
+	 * @param type - message type
+	 * @param payload - message payload
+	 */
 	broadcast(type: socket.msgType, payload: socket.payload) {
 		console.log(`Broadcasting message of type ${type} to players in game ${this.id}`);
 		console.log(this.players);
@@ -170,5 +199,17 @@ export class Game {
 			userIds: this.players.map(p => p.id)
 		};
 		parentPort!.postMessage(message);
+	}
+
+	/**
+	 * Retrieves a player or spectator by their ID.
+	 * @param playerId - The ID of the player or spectator to retrieve.
+	 * @returns The Player object if found, otherwise null.
+	 */
+	getPlayerById(playerId: string): Player | null {
+		const player = this.players.find(p => p.id === playerId);
+		if (player) return player;
+		const spectator = this.spectators.find(s => s.id === playerId);
+		return spectator || null;
 	}
 }

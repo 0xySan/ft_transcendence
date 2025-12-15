@@ -41,7 +41,7 @@ export interface pendingConnection {
  * - **create**: Create a new game. - `worker` only.
  * - **send**: Generic send message.
  */
-export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings" | "game";
+export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings" | "game" | "input";
 
 /**
  * Generic message interface for socket communication.
@@ -168,6 +168,45 @@ export interface workerGamePayload extends gamePayload {
 }
 
 /**
+ * Structure representing a single game input.
+ * - **key**: The key associated with the input.
+ * - **pressed**: Boolean indicating whether the key is pressed (true) or released (false).
+ */
+export interface gameInput {
+	key:		string;
+	pressed:	boolean;
+}
+
+/**
+ * Structure representing a frame of inputs.
+ * - **frameId**: The unique identifier for the frame.
+ * - **inputs**: Array of game inputs associated with the frame.
+ */
+export interface inputFrame {
+	frameId:	number;
+	inputs:		gameInput[];
+}
+
+/**
+ * Payload structure for sending multiple frames of inputs.
+ * - **inputs**: Array of input frames.
+ */
+export interface inputPayload {
+	inputs: inputFrame[];
+}
+
+/**
+ * Payload structure for worker thread to handle game inputs.
+ * - **gameId**: Unique identifier for the game.
+ * - **userId**: Unique identifier for the user sending the inputs.
+ */
+export interface workerInputPayload extends inputPayload {
+	gameId: string;
+	userId: string;
+}
+
+
+/**
  * Union type of all possible payloads.
  */
 export type payload =
@@ -177,4 +216,7 @@ export type payload =
 	| workerPlayerPayload
 	| playerSyncPayload
 	| settingsPayload
-	| gamePayload;
+	| gamePayload
+	| workerGamePayload
+	| inputPayload
+	| workerInputPayload;

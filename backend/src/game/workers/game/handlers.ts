@@ -82,3 +82,22 @@ export function settingsHandler(msg: msg.message<msg.settingsPayload>, games: Ma
 	parentPort!.postMessage(message);
 }
 
+/**
+ * Handler for processing player inputs.
+ * @param msg - The message containing the worker input payload.
+ * @param games - The map of active games.
+ */
+export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: Map<string, Game>) {
+	const payload = msg.payload as msg.workerInputPayload;
+	const game = games.get(payload.gameId);
+	if (!game) {
+		console.warn(`Game with ID ${payload.gameId} not found for input handling.`);
+		return;
+	}
+	const player = game.getPlayerById(payload.userId);
+	if (!player) {
+		console.warn(`Player with ID ${payload.userId} not found in game ${payload.gameId} for input handling.`);
+		return;
+	}
+	player.addInputs(payload.inputs);
+}

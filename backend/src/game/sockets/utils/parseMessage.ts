@@ -4,7 +4,11 @@
  */
 
 import * as socket from "../socket.types.js";
-import { parseConnectPayload } from "../handlers/index.js";
+import { 
+	parseConnectPayload,
+	parseInputPayload,
+	parseGamePayload
+} from "../handlers/index.js";
 
 /**
  * General message parser
@@ -18,7 +22,7 @@ export function parseMessage(raw: string): socket.message<socket.payload> | null
 
 		if (typeof parsed !== "object" || !parsed.type || !("payload" in parsed)) return null;
 
-		const validTypes: socket.msgType[] = ["connect", "send"];
+		const validTypes: socket.msgType[] = ["connect", "send", "game", "input"];
 		if (!validTypes.includes(parsed.type as socket.msgType)) return null;
 
 		const type = parsed.type as socket.msgType;
@@ -40,7 +44,9 @@ export function parseMessage(raw: string): socket.message<socket.payload> | null
 function parsePayload(type: socket.msgType, payload: any): socket.payload | null {
 	switch (type) {
 		case "connect": return parseConnectPayload(payload);
-		// add more cases as needed
+		case "game": return parseGamePayload(payload);
+		case "input": return parseInputPayload(payload);
+		case "send": return payload as any;
 		default: return null;
 	}
 }

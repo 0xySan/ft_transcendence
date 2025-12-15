@@ -4,10 +4,12 @@
  */
 
 import { WebSocketServer } from "ws";
-import { parseMessage } from "./utils/parseMessage.js";
-import { handleConnectMessage } from "./handlers/connect.js";
+
 import * as msg from "../sockets/socket.types.js";
+
+import { handleConnectMessage, handleGameMessage, handleInputMessage } from "./handlers/index.js";
 import { addOrRemovePlayerGameWorker } from "../workers/init.js";
+import { parseMessage } from "./utils/parseMessage.js";
 
 export function setupWebSocketServer(wss: WebSocketServer) {
 	wss.on("connection", (wsRaw, req) => {
@@ -29,7 +31,11 @@ export function setupWebSocketServer(wss: WebSocketServer) {
 					handleConnectMessage(ws, req, msg.payload as msg.connectPayload, cleanTimeout); // We pass cleanTimeout to clear on success
 					break;
 				case "game":
-
+					handleGameMessage(ws, msg.payload as msg.gamePayload);
+					break;
+				case "input":
+					handleInputMessage(ws, msg.payload as msg.inputPayload);
+					break;
 			}
 		});
 

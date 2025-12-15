@@ -6,7 +6,7 @@
 import { parentPort } from "worker_threads";
 import { Game } from "./game.class.js";
 import type * as msg from "../../sockets/socket.types.js";
-import { createHandler, playerHandler, settingsHandler } from "./handlers.js";
+import { createHandler, inputsHandler, playerHandler, settingsHandler } from "./handlers.js";
 
 const games: Map<string, Game> = new Map();
 const gameStates: Map<string, "playing" | "paused" | "stopped"> = new Map();
@@ -64,6 +64,10 @@ parentPort!.on("message", (msg: msg.message<msg.payload>) => {
 
 		case "settings":
 			settingsHandler(msg as msg.message<msg.settingsPayload>, games);
+			break;
+
+		case "input":
+			inputsHandler(msg as msg.message<msg.workerInputPayload>, games);
 			break;
 
 		case "game": {
