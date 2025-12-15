@@ -3,11 +3,6 @@ import cookie from '@fastify/cookie';
 import swaggerPlugin from "./plugins/swagger/index.js";
 import { WebSocketServer } from 'ws';
 import { Worker } from 'worker_threads';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import os from 'os';
-import { parse } from './sockets/socketParsing.js'
-import { getProfileByUserId, UserProfile } from './db/wrappers/main/users/userProfiles.js';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -21,7 +16,7 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 	process.exit(1);
 }
 
-import { clientToken, deletePlayerWithToken, getPlayerWithToken, getPlayerWithUserId } from "./routes/game.route.js";
+import { setupWebSocketServer } from "./game/sockets/index.js";
 
 /**
  * This interface with a worker (thread) and a list of players in this.
@@ -59,48 +54,6 @@ async function buildServer() {
 	return app;
 }
 
-/**
- * Create every thread for they games.
- * @param options - Option with a path of a worker (thread) and the number of CPU core.
- */
-export async function createThread(options: { workerFile?: string, count?: number } = {}) {
-	const workerFile = options.workerFile ?? null;
-	const count = options.count ?? os.cpus().length;
-
-	// This check is for the test with vitest.
-	if (!workerFile && process.env.NODE_ENV === "test") return;
-
-	// Get the file path.
-	const __filename = fileURLToPath(import.meta.url);
-	const __dirname = path.dirname(__filename);
-	const workerPath = workerFile ||
-		path.resolve(__dirname, './game/gamesLogic.js');
-
-	// Create the worker (thread).
-	for (let i = 0; i < count; i++) {
-		const worker = new Worker(workerPath);
-		worker.on("message", (msg) => {
-			if (msg.action == "finished") {
-				const player = getPlayerWithUserId(msg.user_id);
-				if (player && player.socket) player?.socket.close(1000, "game finished");
-			} else if (msg.action == "send") {
-				const player = getPlayerWithUserId(msg.user_id);
-				// console.log("DEBUG: json = " + JSON.stringify(msg));
-				if (player && player.socket) player.socket.send(JSON.stringify(msg));
-			} else if (msg.action == "start") {
-				const player = getPlayerWithUserId(msg.user_id);
-				// console.log("DEBUG: token = " + player?.token + " | user_id = " + player?.player_id);
-				if (player && player.socket) player.socket.send(JSON.stringify(msg));
-			}
-		});
-	
-		workers.push({
-		worker: worker,
-		players: []
-		});
-	}
-}
-
 async function start() {
 	try{
 		const app = await buildServer();
@@ -109,61 +62,9 @@ async function start() {
 		const server = app.server;
 
 		const wss = new WebSocketServer({ server });
+		setupWebSocketServer(wss);
 
-		createThread();
-
-		wss.on('connection', (ws, request) => {
-			const params = new URLSearchParams(request.url?.split('?')[1]);
-			const token = params.get('token'); 
-
-			console.log(`DEBUG: User connected`);
-
-			if (!token)
-			{
-				ws.close(1008, 'token or user_id not defined');
-				console.log('WebSocket rejected: token not defined', token);
-				return;
-			}
-
-			const player = getPlayerWithToken(token);
-			if (player == null) {
-				return;
-			}
-
-			player.setSocket(ws);
-			console.log("\n\n\n\n\n\nDEBUG: token list = " + clientToken.length);
-			for (const client of clientToken) {
-				console.log("- uuid = " + client.player_id + " | username = " + getProfileByUserId(client.player_id)?.display_name);
-			}
-			if (player.token !== token)
-			{
-				ws.close(1008, 'Invalid token or user_id');
-				console.log('WebSocket rejected: invalid token/user_id', player.token, token);
-				return;
-			}
-			else
-			{
-				ws.send(JSON.stringify({ event: 'welcome' }));
-				console.log('WebSocket authenticated');
-				ws.on('message', (msg) => { 
-					ws.send(`echo: ${msg}`);
-					let str =  msg.toString();
-					let data;
-					try {
-						data = JSON.parse(str);
-						parse(data, player);
-					}
-					catch (err) {
-						console.log("Invalid JSON");
-					}
-				});
-			}				
-			ws.on('close', () => {
-				console.log('WebSocket disconnected');
-				// deletePlayerWithToken(token);
-			});
-		});
-
+		
 		server.listen(SERVER_PORT, HOST, () => {
 			console.log(`Server listening on http://${HOST}:${SERVER_PORT}`);
 		});

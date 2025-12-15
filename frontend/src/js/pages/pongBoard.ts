@@ -1,6 +1,6 @@
 declare global {
 	interface Window {
-		socket: WebSocket;
+		socket?: WebSocket;
 	}
 }
 
