@@ -81,3 +81,4 @@ export function settingsHandler(msg: msg.message<msg.settingsPayload>, games: Ma
 	};
 	parentPort!.postMessage(message);
 }
+

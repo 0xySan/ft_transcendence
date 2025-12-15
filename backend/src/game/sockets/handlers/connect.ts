@@ -90,6 +90,7 @@ export function handleConnectMessage(
 	wsPendingConnections.delete(payload.token);
 	onSuccess(); // clear timeout
 	ws.id = pending.userId; // associate user ID with WebSocket
+	ws.gameId = pending.gameId; // associate game ID with WebSocket
 	const userProfile = getProfileByUserId(pending.userId);
 	// Try to use display_name, fallback to username then "Guest"
 	const username = userProfile ?

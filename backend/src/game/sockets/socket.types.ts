@@ -7,7 +7,10 @@ import WebSocket from 'ws';
 import * as game from '../workers/game/game.types.js';
 
 export interface gameSocket extends WebSocket {
-	id: string; // user ID associated with the WebSocket connection
+	/** Unique identifier for the connected user */
+	id:		string;
+	/** Current game ID the user is connected to */
+	gameId:	string;
 }
 
 // ===================================
@@ -38,7 +41,7 @@ export interface pendingConnection {
  * - **create**: Create a new game. - `worker` only.
  * - **send**: Generic send message.
  */
-export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings";
+export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings" | "game";
 
 /**
  * Generic message interface for socket communication.
@@ -137,6 +140,34 @@ export interface settingsPayload {
 }
 
 /**
+ * Possible actions that can be performed on a game.
+ * - **start**: Start the game.
+ * - **pause**: Pause the game.
+ * - **resume**: Resume the game.
+ * - **abort**: Abort the game.
+ */
+export type gameAction = "start" | "pause" | "resume" | "abort";
+
+/**
+ * Payload structure for game control messages.
+ * - **action**: Action to be performed on the game.
+ * 	- Possible values: **start**, **pause**, **resume**, **abort**.
+ */
+export interface gamePayload {
+	action: gameAction;
+}
+
+/**
+ * Payload structure for worker thread to handle game control messages.
+ * - **gameId**: Unique identifier for the game.
+ * - **action**: Action to be performed on the game.
+ * 	- Possible values: **start**, **pause**, **resume**, **abort**.
+ */
+export interface workerGamePayload extends gamePayload {
+	gameId: string;
+}
+
+/**
  * Union type of all possible payloads.
  */
 export type payload =
@@ -145,4 +176,5 @@ export type payload =
 	| playerPayload
 	| workerPlayerPayload
 	| playerSyncPayload
-	| settingsPayload;
+	| settingsPayload
+	| gamePayload;

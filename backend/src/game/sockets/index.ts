@@ -28,6 +28,8 @@ export function setupWebSocketServer(wss: WebSocketServer) {
 				case "connect":
 					handleConnectMessage(ws, req, msg.payload as msg.connectPayload, cleanTimeout); // We pass cleanTimeout to clear on success
 					break;
+				case "game":
+
 			}
 		});
 
