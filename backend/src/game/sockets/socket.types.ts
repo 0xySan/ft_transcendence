@@ -40,6 +40,9 @@ export interface pendingConnection {
  * - **playerSync**: Synchronize player list. - `socket` and `worker`.
  * - **create**: Create a new game. - `worker` only.
  * - **send**: Generic send message.
+ * - **settings**: Update game settings. - `socket` and `worker`.
+ * - **game**: Game control message (start/pause/resume/abort). - `socket` and `worker`.
+ * - **input**: Player input frames. - `socket` and `worker`.
  */
 export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings" | "game" | "input";
 
@@ -101,6 +104,7 @@ export interface playerPayload {
 
 /**
  * Payload structure for synchronizing the list of players in a game.
+ * - **ownerId**: Unique identifier for the owner of the game.
  * - **players**: Array of player objects:
  * 	- **playerId**: Unique identifier for the player.
  * 	- **displayName**: Display name of the player.
@@ -108,6 +112,7 @@ export interface playerPayload {
  * 		- Possible values: **player**, **spectator**.
  */
 export interface playerSyncPayload {
+	ownerId:		string;
 	players: Array<{
 		playerId:		string;
 		displayName:	string;
@@ -205,6 +210,31 @@ export interface workerInputPayload extends inputPayload {
 	userId: string;
 }
 
+/**
+ * Payload structure for a full game state update.
+ * Sent from worker to sockets.
+ */
+export interface gameStatePayload {
+	/** Current simulation frame */
+	frameId:	number;
+
+	/** Ball state */
+	ball:		game.ballState;
+
+	/** All paddles indexed by player */
+	paddles:	game.paddleState[];
+
+	/** Optional scores */
+	scores?:	Array<{
+		playerId:	string;
+		score:		number;
+	}>;
+
+	/** Optional game state */
+	state?:	game.state; // "waiting" | "playing" | "ended"
+}
+
+
 
 /**
  * Union type of all possible payloads.
@@ -219,4 +249,5 @@ export type payload =
 	| gamePayload
 	| workerGamePayload
 	| inputPayload
-	| workerInputPayload;
+	| workerInputPayload
+	| gameStatePayload;

@@ -174,3 +174,35 @@ export interface NetworkSettings {
 	/** Rate at which the game state is synchronized over the network. */
 	stateSyncRate:		number;
 }
+
+
+// ------------------------------------
+// Game types for socket communication
+// -----------------------------------
+
+/**
+ * Represents a 2D vector or position.
+ */
+export interface vec2 {
+	x: number;
+	y: number;
+}
+
+/**
+ * Represents the ball state.
+ */
+export interface ballState {
+	position:	vec2;
+	velocity:	vec2;
+	radius:		number;
+}
+
+/**
+ * Represents a paddle state.
+ */
+export interface paddleState {
+	playerId:	string;
+	position:	vec2;
+	width:		number;
+	height:		number;
+}

@@ -42,6 +42,27 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 			game.addSpectator(player); // Fallback to spectator if player slots are full
 			playerStatus = "spectator";
 		}
+		const message : msg.playerSyncPayload = {
+			ownerId: game.ownerId,
+			players: Array.from(game.players.values()).map(p => ({
+				playerId: p.id,
+				displayName: p.name,
+				status: "player" as msg.playerStatus
+			})).concat(
+				Array.from(game.spectators.values()).map(s => ({
+					playerId: s.id,
+					displayName: s.name,
+					status: "spectator" as msg.playerStatus
+				}))
+			)
+		};
+		// Send the updated player list to the new player only
+		const personalMessage = {
+			type: "playerSync",
+			payload: message,
+			userIds: [payload.playerId]
+		};
+		parentPort!.postMessage(personalMessage);
 	}
 	else if (payload.action === "leave") {
 		game.removePlayer(payload.playerId);
@@ -49,6 +70,8 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 			games.delete(game.id); // Clean up empty games
 			return;
 		}
+		if (game.ownerId === payload.playerId) // Transfer ownership if the owner leaves
+			game.ownerId = game.players.length > 0 ? game.players[0].id : (game.spectators.length > 0 ? game.spectators[0].id : "");
 	}
 	const messagePayload: msg.playerPayload = {
 			playerId: payload.playerId,

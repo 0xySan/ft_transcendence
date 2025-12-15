@@ -15,6 +15,10 @@ export class Player {
 	name: string;
 	/** Player score */
 	score: number;
+	/** Player's vertical position */
+	y: number;
+	/** Player's horizontal position */
+	x: number;
 
 	/**
 	 * Buffer to store input frames for the player.
@@ -33,6 +37,8 @@ export class Player {
 		this.name = name;
 		this.score = 0;
 		this.inputBuffer = [];
+		this.x = 0;
+		this.y = 0;
 	}
 
 	/**

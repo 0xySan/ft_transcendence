@@ -7,7 +7,11 @@ declare global {
 export {};
 
 declare function loadPage(url: string): void;
-declare function addListener(target: EventTarget | null, event: string, handler: EventListener): void;
+declare function addListener(
+	target: EventTarget | null,
+	event: string,
+	handler: any,
+): void;
 
 /* -------------------------------------------------------------------------- */
 /* Utils                                                                      */
@@ -27,6 +31,8 @@ function generateCode(): string {
 /* -------------------------------------------------------------------------- */
 let gameId: string | null = null;
 let authToken: string | null = null;
+let myPlayerId: string | null = null;
+let ownerId: string | null = null;
 
 /* -------------------------------------------------------------------------- */
 /* Elements                                                                   */
@@ -42,14 +48,26 @@ const playerCurrentCountEl = getEl<HTMLSpanElement>("player-current-count");
 const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
 
 /* -------------------------------------------------------------------------- */
-/* UI – Modes                                                                  */
+/* UI – Modes                                                                 */
 /* -------------------------------------------------------------------------- */
-type Mode = { button: HTMLButtonElement; tab: HTMLDivElement };
+type Mode = {
+	button: HTMLButtonElement;
+	tab: HTMLDivElement;
+};
 
 const modes: Record<string, Mode> = {
-	multiplayer: { button: getEl("lobby-multiplayer-button"), tab: getEl("lobby-multiplayer-tab") },
-	custom: { button: getEl("lobby-custom-game-button"), tab: getEl("lobby-custom-game-tab") },
-	tournament: { button: getEl("lobby-tournament-button"), tab: getEl("lobby-tournament-tab") },
+	multiplayer: {
+		button: getEl("lobby-multiplayer-button"),
+		tab: getEl("lobby-multiplayer-tab"),
+	},
+	custom: {
+		button: getEl("lobby-custom-game-button"),
+		tab: getEl("lobby-custom-game-tab"),
+	},
+	tournament: {
+		button: getEl("lobby-tournament-button"),
+		tab: getEl("lobby-tournament-tab"),
+	},
 };
 
 function setupModeHandlers(): void {
@@ -66,7 +84,12 @@ function setupModeHandlers(): void {
 /* -------------------------------------------------------------------------- */
 /* UI – Sub tabs                                                              */
 /* -------------------------------------------------------------------------- */
-type SubTabs = { basicBtn: HTMLButtonElement; advBtn: HTMLButtonElement; basicTab: HTMLDivElement; advTab: HTMLDivElement };
+type SubTabs = {
+	basicBtn: HTMLButtonElement;
+	advBtn: HTMLButtonElement;
+	basicTab: HTMLDivElement;
+	advTab: HTMLDivElement;
+};
 
 const subTabs: Record<string, SubTabs> = {
 	custom: {
@@ -91,6 +114,7 @@ function setupSubTabs(): void {
 			tab.basicTab.classList.remove("unloaded");
 			tab.advTab.classList.add("unloaded");
 		});
+
 		addListener(tab.advBtn, "click", () => {
 			tab.advBtn.classList.add("lobby-btn-active");
 			tab.basicBtn.classList.remove("lobby-btn-active");
@@ -101,18 +125,43 @@ function setupSubTabs(): void {
 }
 
 /* -------------------------------------------------------------------------- */
-/* WebSocket & Message Types                                                  */
+/* WebSocket types                                                            */
 /* -------------------------------------------------------------------------- */
-type MsgType = "connect" | "player" | "playerSync";
+type MsgType = "connect" | "player" | "playerSync" | "game";
 
-type SocketMessage<T> = { type: MsgType; payload: T };
+type SocketMessage<T> = {
+	type: MsgType;
+	payload: T;
+};
 
-type ConnectPayload = { token: string };
+type ConnectPayload = {
+	token: string;
+};
 
-type PlayerPayload = { playerId: string; displayName?: string; action: "join" | "leave" };
+type PlayerPayload = {
+	playerId: string;
+	displayName: string;
+	status: "player" | "spectator";
+	action: "join" | "leave";
+};
 
-type PlayerSyncPayload = { players: Array<{ playerId: string; displayName: string }> };
+type PlayerSyncPayload = {
+	ownerId: string;
+	players: Array<{
+		playerId: string;
+		displayName: string;
+		status: "player" | "spectator";
+	}>;
+};
 
+type GamePayload = {
+	action: "start" | "pause" | "resume" | "abort";
+	gameId?: string;
+};
+
+/* -------------------------------------------------------------------------- */
+/* WebSocket                                                                  */
+/* -------------------------------------------------------------------------- */
 function connectWebSocket(token: string): void {
 	if (window.socket) return;
 
@@ -120,28 +169,41 @@ function connectWebSocket(token: string): void {
 	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
 	window.socket = socket;
 
-	socket.addEventListener("open", () => {
-		const msg: SocketMessage<ConnectPayload> = { type: "connect", payload: { token } };
+	addListener(socket, "open", () => {
+		const msg: SocketMessage<ConnectPayload> = {
+			type: "connect",
+			payload: { token },
+		};
 		socket.send(JSON.stringify(msg));
 	});
 
-	socket.addEventListener("message", (event) => {
-		const msg = JSON.parse(event.data) as SocketMessage<PlayerPayload> | SocketMessage<PlayerSyncPayload>;
+	addListener(socket, "message", (event: MessageEvent) => {
+		const msg = JSON.parse(event.data) as SocketMessage<any>;
 
 		switch (msg.type) {
 			case "playerSync":
 				handlePlayerSync(msg.payload as PlayerSyncPayload);
 				break;
+
 			case "player":
 				handlePlayer(msg.payload as PlayerPayload);
 				break;
+
+			case "game":
+				console.log("Game message received:", msg.payload);
+				if ((msg.payload as GamePayload).action === "start") {
+					loadPage("/pong-board");
+				}
+				break;
+
 			default:
 				console.warn("Unknown socket message:", msg);
 		}
 	});
 
-	socket.addEventListener("close", () => {
+	addListener(socket, "close", () => {
 		window.socket = undefined;
+		resetLobbyState();
 	});
 }
 
@@ -150,24 +212,60 @@ function connectWebSocket(token: string): void {
 /* -------------------------------------------------------------------------- */
 function handlePlayerSync(payload: PlayerSyncPayload): void {
 	playerListEl.innerHTML = "";
-	payload.players.forEach((player) => addPlayer(player.playerId, player.displayName));
+	ownerId = payload.ownerId;
+
+	payload.players.forEach((player) => {
+		addPlayer(
+			player.playerId,
+			player.displayName,
+			player.playerId === ownerId
+		);
+	});
+
 	updateCounts(payload.players.length);
+	updateLaunchVisibility();
 }
 
 function handlePlayer(payload: PlayerPayload): void {
-	if (payload.action === "join") addPlayer(payload.playerId, payload.displayName);
-	if (payload.action === "leave") removePlayer(payload.playerId);
+	if (payload.action === "join") {
+		addPlayer(
+			payload.playerId,
+			payload.displayName,
+			payload.playerId === ownerId
+		);
+	}
+
+	if (payload.action === "leave") {
+		removePlayer(payload.playerId);
+	}
+
+	updateLaunchVisibility();
 }
 
 /* -------------------------------------------------------------------------- */
 /* Players UI                                                                 */
 /* -------------------------------------------------------------------------- */
-function addPlayer(id: string, name?: string): void {
+function addPlayer(
+	id: string,
+	name: string,
+	isOwner: boolean
+): void {
 	if (playerListEl.querySelector(`#player-${id}`)) return;
 
+	if (!myPlayerId) myPlayerId = id;
+
 	const el = document.createElement("div");
+	el.classList.add("lobby-player-entry");
 	el.id = `player-${id}`;
-	el.textContent = name ?? "Unknown";
+	el.textContent = name;
+
+	if (isOwner) {
+		const badge = document.createElement("span");
+		badge.classList.add("lobby-owner-badge");
+		badge.textContent = " (owner)";
+		el.appendChild(badge);
+	}
+
 	playerListEl.appendChild(el);
 	updateCounts(playerListEl.children.length);
 }
@@ -175,28 +273,52 @@ function addPlayer(id: string, name?: string): void {
 function removePlayer(id: string): void {
 	const el = playerListEl.querySelector(`#player-${id}`);
 	if (!el) return;
-	playerListEl.removeChild(el);
+
+	el.remove();
 	updateCounts(playerListEl.children.length);
 }
 
 function updateCounts(current: number, max?: number): void {
 	playerCurrentCountEl.textContent = String(current);
-	if (max !== undefined) playerMaxCountEl.textContent = String(max);
+	if (max !== undefined) {
+		playerMaxCountEl.textContent = String(max);
+	}
 }
 
 /* -------------------------------------------------------------------------- */
-/* API – Game creation/join                                                   */
+/* Owner / Launch logic                                                       */
+/* -------------------------------------------------------------------------- */
+function updateLaunchVisibility(): void {
+	const isOwner =
+		myPlayerId !== null &&
+		ownerId !== null &&
+		myPlayerId === ownerId &&
+		gameId !== null;
+
+	launchBtn.classList.toggle("unloaded", !isOwner);
+}
+
+/* -------------------------------------------------------------------------- */
+/* API – Game creation / join                                                 */
 /* -------------------------------------------------------------------------- */
 async function joinGame(code: string): Promise<void> {
-	const payload = /^[A-Z0-9]{4}$/.test(code.toUpperCase()) ? { code: code.toUpperCase() } : { gameId: code };
-	const res = await fetch("/api/game/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-	const data = await res.json();
+	const payload = /^[A-Z0-9]{4}$/.test(code.toUpperCase())
+		? { code: code.toUpperCase() }
+		: { gameId: code };
 
+	const res = await fetch("/api/game/join", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
+
+	const data = await res.json();
 	if (!res.ok) throw new Error(data.error);
+
 	gameId = data.gameId;
 	authToken = data.authToken;
-	if (!authToken) throw new Error("Missing auth token");
 
+	if (!authToken) throw new Error("Missing auth token");
 	connectWebSocket(authToken);
 }
 
@@ -204,10 +326,18 @@ async function createGame(): Promise<void> {
 	const res = await fetch("/api/game/new", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ game: { mode: "online", code: generateCode(), maxPlayers: 4, spectatorsAllowed: true } }),
+		body: JSON.stringify({
+			game: {
+				mode: "online",
+				code: generateCode(),
+				maxPlayers: 4,
+				spectatorsAllowed: true,
+			},
+		}),
 	});
 
 	const data = await res.json();
+
 	gameId = data.gameId;
 	authToken = data.authToken;
 	joinInput.value = data.code;
@@ -224,19 +354,40 @@ addListener(createBtn, "click", createGame);
 
 addListener(leaveBtn, "click", () => {
 	window.socket?.close();
-	playerListEl.innerHTML = "";
-	updateCounts(0, 0);
-	gameId = null;
-	authToken = null;
 });
 
 addListener(launchBtn, "click", () => {
-	if (!gameId) return;
-	fetch("/api/game/launch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gameId }) });
+	if (!window.socket || !gameId) return;
+
+	const msg: SocketMessage<GamePayload> = {
+		type: "game",
+		payload: {
+			action: "start",
+			gameId: gameId,
+		},
+	};
+
+	window.socket.send(JSON.stringify(msg));
 });
+
+/* -------------------------------------------------------------------------- */
+/* Reset                                                                      */
+/* -------------------------------------------------------------------------- */
+function resetLobbyState(): void {
+	playerListEl.innerHTML = "";
+	updateCounts(0, 0);
+
+	gameId = null;
+	authToken = null;
+	myPlayerId = null;
+	ownerId = null;
+
+	launchBtn.classList.add("unloaded");
+}
 
 /* -------------------------------------------------------------------------- */
 /* Init                                                                       */
 /* -------------------------------------------------------------------------- */
+launchBtn.classList.add("unloaded");
 setupModeHandlers();
 setupSubTabs();

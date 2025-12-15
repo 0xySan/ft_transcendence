@@ -30,6 +30,15 @@ export class Game {
 	isFinished: boolean;
 	/** Configuration of this game */
 	config: config;
+	/** Id of the current frame */
+	currentFrameId: number;
+	/** Ball state */
+	ball: {
+		x: number;
+		y: number;
+		vx: number;
+		vy: number;
+	};
 
 	/**
 	 * Creates a new Game instance.
@@ -44,6 +53,14 @@ export class Game {
 		this.spectators = [];
 		this.state = "waiting";
 		this.isFinished = false;
+		this.currentFrameId = 0;
+
+		this.ball = {
+			x: 0,
+			y: 0,
+			vx: 0,
+			vy: 0
+		};
 
 		this.config = {
 			game: {
@@ -192,7 +209,6 @@ export class Game {
 	 */
 	broadcast(type: socket.msgType, payload: socket.payload) {
 		console.log(`Broadcasting message of type ${type} to players in game ${this.id}`);
-		console.log(this.players);
 		const message: worker.workerMessage = {
 			type: type,
 			payload: payload,

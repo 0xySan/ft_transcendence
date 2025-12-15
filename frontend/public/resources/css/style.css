@@ -741,12 +741,30 @@ button:active {
 }
 
 #lobby-player-list {
+
+	width: 100%;
 	gap: 12px;
 
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: flex-start;
+}
+
+.lobby-player-entry {
+
+	width: 95%;
+
+	padding: 0.5rem;
+	background-color: rgb(var(--crust));
+
+	border-radius: 8px;
+
+	font-size: 1.5rem;
+}
+
+.lobby-player-entry:hover {
+	background-color: rgb(var(--surface0));
 }
 
 #lobby-mode-setting {
