@@ -1,0 +1,189 @@
+<div class="auth-pages-container settings-page-container">
+  <h1 data-translate-key="settings.title">Settings</h1>
+
+  <div class="settings-wrapper" style="display:flex; gap:1rem; align-items:flex-start; width:100%;">
+    <!-- Left navigation -->
+    <aside class="settings-nav" style="min-width:220px;">
+      <div class="settings-nav-buttons" style="display:flex; flex-direction:column; gap:0.5rem;">
+        <button type="button" class="button settings-nav-btn" data-section="profile" data-translate-key="settings.section.profile">Profile</button>
+        <button type="button" class="button settings-nav-btn" data-section="security" data-translate-key="settings.section.security">Security</button>
+        <button type="button" class="button settings-nav-btn" data-section="twofa" data-translate-key="settings.section.twofa">Two-Factor</button>
+        <button type="button" class="button settings-nav-btn" data-section="oauth" data-translate-key="settings.section.oauth">OAuth</button>
+      </div>
+    </aside>
+
+    <!-- Right content area (reuses .auth-form-container styling for consistent look) -->
+    <main class="auth-form-container" id="settings-main" style="flex:1; padding:1.25rem;">
+      <!-- Profile -->
+      <section id="profile" class="settings-section" data-section="profile">
+        <h2 data-translate-key="settings.profileTitle">Profile Settings</h2>
+        <form id="profile-form">
+          <div class="div-title-and-text-input">
+            <label for="display-name" data-translate-key="settings.profile.displayNameLabel">Display Name:</label>
+            <input type="text" id="display-name" name="display-name" class="form-input-field" />
+          </div>
+
+          <div class="div-title-and-text-input">
+            <label for="bio" data-translate-key="settings.profile.bioLabel">Bio:</label>
+            <input type="text" id="bio" name="bio" class="form-input-field" />
+          </div>
+
+          <div style="margin-top:1rem;">
+            <button type="submit" class="auth-btn" data-translate-key="settings.profile.updateButton">Update Profile</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Security -->
+      <section id="security" class="settings-section" data-section="security" style="display:none;">
+        <h2 data-translate-key="settings.securityTitle">Security Settings</h2>
+        <form id="security-form">
+          <div class="div-title-and-text-input">
+            <label for="current-password" data-translate-key="settings.security.currentPasswordLabel">Current Password:</label>
+            <input type="password" id="current-password" name="current-password" class="form-input-field" />
+          </div>
+
+          <div class="div-title-and-text-input">
+            <label for="new-password" data-translate-key="settings.security.newPasswordLabel">New Password:</label>
+            <input type="password" id="new-password" name="new-password" class="form-input-field" />
+          </div>
+
+          <div class="div-title-and-text-input">
+            <label for="repeat-password" data-translate-key="settings.security.repeatPasswordLabel">Repeat New Password:</label>
+            <input type="password" id="repeat-password" name="repeat-password" class="form-input-field" />
+          </div>
+
+          <div style="margin-top:1rem;">
+            <button type="submit" class="auth-btn" data-translate-key="settings.security.updatePasswordButton">Update Password</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Two-Factor -->
+      <section id="twofa" class="settings-section" data-section="twofa" style="display:none;">
+        <h2 data-translate-key="settings.twofa.title">Two-Factor Authentication</h2>
+        <p data-translate-key="settings.twofa.instructions">
+          Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.
+        </p>
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+          <a href="/twofa" class="button button-fit-div-width" data-translate-key="settings.twofa.manageButton">Manage 2FA methods</a>
+
+          <button id="enable-totp-btn" type="button" class="button button-fit-div-width" data-translate-key="settings.twofa.enableTotp">
+            Enable TOTP (Authenticator)
+          </button>
+
+          <button id="generate-backup-btn" type="button" class="button button-fit-div-width" data-translate-key="settings.twofa.generateBackupCodes">
+            Generate Backup Codes
+          </button>
+        </div>
+      </section>
+
+      <!-- OAuth -->
+      <section id="oauth" class="settings-section" data-section="oauth" style="display:none;">
+        <h2 data-translate-key="settings.oauth.title">OAuth Accounts</h2>
+        <p data-translate-key="settings.oauth.instructions">
+          Connect or disconnect OAuth providers for quick sign-in.
+        </p>
+
+        <div class="oauth-buttons-container" style="margin-top:1rem;">
+          <a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load" title="Login with 42" data-translate-key="settings.oauth.connect42">
+            <svg class="oauth-icon"><use href="/resources/imgs/svg/icons/42.svg#icon-42"></use></svg>
+          </a>
+
+          <a href="/api/oauth/github" class="oauth-button no-dynamic-load" title="Login with GitHub" data-translate-key="settings.oauth.connectGithub">
+            <svg class="oauth-icon"><use href="/resources/imgs/svg/icons/github.svg#icon-github"></use></svg>
+          </a>
+
+          <a href="/api/oauth/discord" class="oauth-button no-dynamic-load" title="Login with Discord" data-translate-key="settings.oauth.connectDiscord">
+            <svg class="oauth-icon"><use href="/resources/imgs/svg/icons/discord.svg#icon-discord"></use></svg>
+          </a>
+
+          <a href="/api/oauth/google" class="oauth-button no-dynamic-load" title="Login with Google" data-translate-key="settings.oauth.connectGoogle">
+            <svg class="oauth-icon"><use href="/resources/imgs/svg/icons/google.svg#icon-google"></use></svg>
+          </a>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  // Simple section switcher — keeps markup minimal and reuses classes
+  (function () {
+    const navBtns = Array.from(document.querySelectorAll('.settings-nav-btn'));
+    const sections = Array.from(document.querySelectorAll('.settings-section'));
+
+    function showSection(name) {
+      sections.forEach(s => {
+        s.style.display = (s.dataset.section === name) ? '' : 'none';
+      });
+      navBtns.forEach(b => {
+        if (b.dataset.section === name) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      // focus first input in visible section if present
+      const visible = document.querySelector('.settings-section[style*="display:"]') || document.querySelector('.settings-section:not([style])');
+      if (visible) {
+        const firstInput = visible.querySelector('input, button, a');
+        if (firstInput) firstInput.focus();
+      }
+    }
+
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        showSection(btn.dataset.section);
+      });
+    });
+
+    // Initialise to profile
+    showSection('profile');
+
+    // Example hooks for 2FA buttons (implement real behavior in page JS)
+    const enableTotp = document.getElementById('enable-totp-btn');
+    const generateBackup = document.getElementById('generate-backup-btn');
+    if (enableTotp) {
+      enableTotp.addEventListener('click', () => {
+        // navigate user to TOTP creation flow (page handles the rest)
+        window.location.href = '/twofa';
+      });
+    }
+    if (generateBackup) {
+      generateBackup.addEventListener('click', async () => {
+        // trigger backup code generation via API (placeholder)
+        try {
+          const res = await fetch('/api/users/twofa', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ methods: [{ methodType: 2, label: 'Backup Codes' }] })
+          });
+          const data = await res.json();
+          // for development you can console.log; production should show UI modal
+          console.log('Backup codes response', data);
+          alert(data?.results?.[0]?.params?.codes ? 'Backup codes generated — check console.' : 'Backup codes request completed.');
+        } catch (err) {
+          console.error('Backup codes error', err);
+          alert('Failed to generate backup codes.');
+        }
+      });
+    }
+  })();
+</script>
+
+<!-- Lightweight responsive tweak copied into the page so layout stays similar on small screens -->
+<style>
+  @media (max-width: 700px) {
+    .settings-wrapper { flex-direction: column; }
+    .settings-nav { width: 100%; order: -1; }
+    .settings-nav-buttons { flex-direction: row; gap: 0.5rem; overflow-x: auto; }
+    .settings-nav-buttons .settings-nav-btn { flex: 1 0 auto; min-width: 6rem; }
+    .auth-form-container { padding: 1rem; }
+  }
+
+  /* small visual active state — reusing button look but distinct */
+  .settings-nav-btn.active {
+    outline: 2px solid rgba(var(--blue), 0.2);
+    transform: translateY(-1px);
+  }
+</style>

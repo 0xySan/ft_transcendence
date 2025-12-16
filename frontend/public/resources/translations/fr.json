@@ -95,5 +95,42 @@
     "otherMethodLabel": "Autre méthode d’authentification à deux facteurs",
     "methodSelect": "",
     "resendButton": "Renvoyer le code de vérification"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "section": {
+      "profile": "Profil",
+      "security": "Sécurité",
+      "twofa": "Authentification 2FA",
+      "oauth": "OAuth"
+    },
+    "profileTitle": "Paramètres du profil",
+    "profile": {
+      "displayNameLabel": "Nom affiché :",
+      "bioLabel": "Bio :",
+      "updateButton": "Mettre à jour le profil"
+    },
+    "securityTitle": "Paramètres de sécurité",
+    "security": {
+      "currentPasswordLabel": "Mot de passe actuel :",
+      "newPasswordLabel": "Nouveau mot de passe :",
+      "repeatPasswordLabel": "Répéter le nouveau mot de passe :",
+      "updatePasswordButton": "Mettre à jour le mot de passe"
+    },
+    "twofa": {
+      "title": "Authentification à deux facteurs",
+      "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP email et codes de secours.",
+      "manageButton": "Gérer les méthodes 2FA",
+      "enableTotp": "Activer TOTP (Authentificateur)",
+      "generateBackupCodes": "Générer des codes de secours"
+    },
+    "oauth": {
+      "title": "Comptes OAuth",
+      "instructions": "Connectez ou déconnectez des fournisseurs OAuth pour une connexion rapide.",
+      "connect42": "Connecter 42",
+      "connectGithub": "Connecter GitHub",
+      "connectDiscord": "Connecter Discord",
+      "connectGoogle": "Connecter Google"
+    }
   }
 }

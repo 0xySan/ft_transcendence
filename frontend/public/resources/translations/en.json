@@ -79,6 +79,43 @@
     "resetButton": "Reset Password",
     "title": "Reset Password"
   },
+  "settings": {
+    "title": "Settings",
+    "section": {
+      "profile": "Profile",
+      "security": "Security",
+      "twofa": "Two‑Factor",
+      "oauth": "OAuth"
+    },
+    "profileTitle": "Profile Settings",
+    "profile": {
+      "displayNameLabel": "Display Name:",
+      "bioLabel": "Bio:",
+      "updateButton": "Update Profile"
+    },
+    "securityTitle": "Security Settings",
+    "security": {
+      "currentPasswordLabel": "Current Password:",
+      "newPasswordLabel": "New Password:",
+      "repeatPasswordLabel": "Repeat New Password:",
+      "updatePasswordButton": "Update Password"
+    },
+    "twofa": {
+      "title": "Two‑Factor Authentication",
+      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",
+      "manageButton": "Manage 2FA methods",
+      "enableTotp": "Enable TOTP (Authenticator)",
+      "generateBackupCodes": "Generate Backup Codes"
+    },
+    "oauth": {
+      "title": "OAuth Accounts",
+      "instructions": "Connect or disconnect OAuth providers for quick sign‑in.",
+      "connect42": "Connect 42",
+      "connectGithub": "Connect GitHub",
+      "connectDiscord": "Connect Discord",
+      "connectGoogle": "Connect Google"
+    }
+  },
   "twofa": {
     "title": {
       "totp": "Check your TOTP app",
