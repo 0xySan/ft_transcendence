@@ -8,7 +8,6 @@
 				</div>
 			</div>
 			<div id="lobby-player-list">
-				<!-- TODO Player List -->
 			</div>
 		</div>
 		<div id="lobby-mode-setting">
@@ -33,9 +32,128 @@
 					<button class="lobby-rocker-switch" id="lobby-custom-game-advanced-settings-button" data-translate-key="lobby.advancedSettingsButton">Advanced settings</button>
 				</div>
 				<div class="lobby-setting-list" id="lobby-custom-game-basic-settings">
-
+					<div class="lobby-setting-container">
+						<label for="lobby-allow-spectators" data-translate-key="lobby.allowSpectatorsLabel">Allow Spectators</label>
+						<input type="checkbox" id="lobby-allow-spectators" class="lobby-checkbox">
+					</div>
+					<div class="lobby-setting-container">
+						<label for="lobby-game-code" data-translate-key="lobby.gameCodeLabel">Custom Game Code</label>
+						<input type="text" id="lobby-game-code" class="lobby-textbox" maxlength="4" placeholder="Enter code">
+					</div>
+					<div class="lobby-setting-container">
+						<label for="lobby-num-players" data-translate-key="lobby.numPlayersLabel">Number of Players</label>
+						<select id="lobby-num-players" class="lobby-select">
+							<option value="2">2</option>
+							<option value="4">4</option>
+						</select>
+					</div>
+					<div class="lobby-setting-container">
+						<label for="lobby-first-to" data-translate-key="lobby.firstToLabel">First To</label>
+						<span id="lobby-first-to-value">5</span>
+						<input type="range" id="lobby-first-to" class="lobby-slider" min="1" max="10" value="5">
+					</div>
+					<div class="lobby-setting-container">
+						<label for="lobby-win-by" data-translate-key="lobby.winByLabel">Win By</label>
+						<span id="lobby-win-by-value">0</span>
+						<input type="range" id="lobby-win-by" class="lobby-slider" min="0" max="5" value="0">
+					</div>
+					<div id="lobby-basic-settings-buttons">
+						<button id="lobby-reset-settings-button" data-translate-key="lobby.resetSettingsButton">RESET TO DEFAULTS</button>
+						<button id="lobby-save-settings-button" data-translate-key="lobby.saveSettingsButton">SAVE SETTINGS</button>
+					</div>
 				</div>
-				<div class="lobby-setting-list" id="lobby-custom-game-advanced-settings">
+				<div class="lobby-setting-list unloaded" id="lobby-custom-game-advanced-settings">
+					<div class="lobby-setting-list" id="lobby-custom-game-advanced-settings">
+						<!-- ================= BALL SETTINGS ================= -->
+						<div class="lobby-setting-category">
+							<h3>Ball</h3>
+							<div class="lobby-setting-container">
+								<label for="ball-radius">Radius</label>
+								<input type="number" id="ball-radius" min="2" max="50" step="1" value="10">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-initial-speed">Initial Speed</label>
+								<input type="number" id="ball-initial-speed" min="50" max="1000" step="10" value="400">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-max-speed">Max Speed</label>
+								<input type="number" id="ball-max-speed" min="100" max="2000" step="10" value="800">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-speed-increment">Speed Increment</label>
+								<input type="number" id="ball-speed-increment" min="0" max="100" step="1" value="20">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-initial-angle-range">Initial Angle Range</label>
+								<span id="ball-initial-angle-range-value">20</span>°
+								<input type="range" id="ball-initial-angle-range" min="0" max="90" step="1" value="20">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-max-bounce-angle">Max Bounce Angle</label>
+								<span id="ball-max-bounce-angle-value">60</span>°
+								<input type="range" id="ball-max-bounce-angle" min="0" max="90" step="1" value="60">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-allow-spin">Allow Spin</label>
+								<input type="checkbox" id="ball-allow-spin">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-spin-factor">Spin Factor</label>
+								<input type="number" id="ball-spin-factor" min="0" max="5" step="0.1" value="0.5">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-reset-on-score">Reset On Score</label>
+								<input type="checkbox" id="ball-reset-on-score" checked>
+							</div>
+						</div>
+
+						<!-- ================= PADDLE SETTINGS ================= -->
+						<div class="lobby-setting-category">
+							<h3>Paddles</h3>
+							<div class="lobby-setting-container">
+								<label for="paddle-width">Width</label>
+								<input type="number" id="paddle-width" min="5" max="50" step="1" value="10">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="paddle-height">Height</label>
+								<input type="number" id="paddle-height" min="20" max="300" step="5" value="80">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="paddle-margin">Margin</label>
+								<input type="number" id="paddle-margin" min="0" max="100" step="1" value="20">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="paddle-max-speed">Max Speed</label>
+								<input type="number" id="paddle-max-speed" min="50" max="2000" step="10" value="400">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="paddle-acceleration">Acceleration</label>
+								<input type="number" id="paddle-acceleration" min="50" max="5000" step="50" value="1000">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="paddle-friction">Friction</label>
+								<input type="number" id="paddle-friction" min="0" max="1" step="0.01" value="0.9">
+							</div>
+						</div>
+
+						<!-- ================= WORLD SETTINGS ================= -->
+						<div class="lobby-setting-category">
+							<h3>World</h3>
+							<div class="lobby-setting-container">
+								<label for="world-width">Width</label>
+								<input type="number" id="world-width" min="400" max="4000" step="50" value="800">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="world-height">Height</label>
+								<input type="number" id="world-height" min="300" max="3000" step="50" value="600">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="field-wall-thickness">Wall Thickness</label>
+								<input type="number" id="field-wall-thickness" min="0" max="50" step="1" value="10">
+							</div>
+						</div>
+
+					</div>
 
 				</div>
 			</div>
@@ -70,4 +188,5 @@
 		<button id="lobby-btn-create">CREATE GAME</button>
 	</div>
 </div>
-<script src="/js/pages/lobby.js" type="module" defer></script>
+<script src="/js/pages/lobbySocket.js" type="module" defer></script>
+<script src="/js/pages/lobbySettings.js" type="module" defer></script>

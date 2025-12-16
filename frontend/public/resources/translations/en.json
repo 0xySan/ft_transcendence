@@ -36,7 +36,14 @@
     "advancedSettingsButton": "Advanced settings",
     "joinButton": "JOIN",
     "leaveButton": "LEAVE",
-    "launchButton": "LAUNCH"
+    "launchButton": "LAUNCH",
+	"allowSpectatorsLabel": "Allow Spectators",
+	"gameCodeLabel": "Custom Game Code",
+	"numPlayersLabel": "Number of Players",
+	"firstToLabel": "First to",
+	"winByLabel": "Win by",
+	"resetSettingsButton": "Reset to default",
+	"saveSettingsButton": "Save settings"
   },
   "login": {
     "forgotPasswordText": "Forgot your password? <a href=\"/forgot-password\">Reset it here</a>",

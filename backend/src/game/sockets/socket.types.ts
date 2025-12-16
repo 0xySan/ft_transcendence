@@ -6,6 +6,11 @@
 import WebSocket from 'ws';
 import * as game from '../workers/game/game.types.js';
 
+/**
+ * Extended WebSocket interface with additional properties.
+ * - **id**: Unique identifier for the connected user.
+ * - **gameId**: Current game ID the user is connected to.
+ */
 export interface gameSocket extends WebSocket {
 	/** Unique identifier for the connected user */
 	id:		string;

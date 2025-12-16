@@ -48,83 +48,6 @@ const playerCurrentCountEl = getEl<HTMLSpanElement>("player-current-count");
 const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
 
 /* -------------------------------------------------------------------------- */
-/* UI – Modes                                                                 */
-/* -------------------------------------------------------------------------- */
-type Mode = {
-	button: HTMLButtonElement;
-	tab: HTMLDivElement;
-};
-
-const modes: Record<string, Mode> = {
-	multiplayer: {
-		button: getEl("lobby-multiplayer-button"),
-		tab: getEl("lobby-multiplayer-tab"),
-	},
-	custom: {
-		button: getEl("lobby-custom-game-button"),
-		tab: getEl("lobby-custom-game-tab"),
-	},
-	tournament: {
-		button: getEl("lobby-tournament-button"),
-		tab: getEl("lobby-tournament-tab"),
-	},
-};
-
-function setupModeHandlers(): void {
-	Object.values(modes).forEach((mode) => {
-		addListener(mode.button, "click", () => {
-			Object.values(modes).forEach((m) => {
-				m.button.classList.toggle("current-mode", m === mode);
-				m.tab.classList.toggle("unloaded", m !== mode);
-			});
-		});
-	});
-}
-
-/* -------------------------------------------------------------------------- */
-/* UI – Sub tabs                                                              */
-/* -------------------------------------------------------------------------- */
-type SubTabs = {
-	basicBtn: HTMLButtonElement;
-	advBtn: HTMLButtonElement;
-	basicTab: HTMLDivElement;
-	advTab: HTMLDivElement;
-};
-
-const subTabs: Record<string, SubTabs> = {
-	custom: {
-		basicBtn: getEl("lobby-custom-game-basic-settings-button"),
-		advBtn: getEl("lobby-custom-game-advanced-settings-button"),
-		basicTab: getEl("lobby-custom-game-basic-settings"),
-		advTab: getEl("lobby-custom-game-advanced-settings"),
-	},
-	tournament: {
-		basicBtn: getEl("lobby-tournament-basic-settings-button"),
-		advBtn: getEl("lobby-tournament-advanced-settings-button"),
-		basicTab: getEl("lobby-tournament-basic-settings"),
-		advTab: getEl("lobby-tournament-advanced-settings"),
-	},
-};
-
-function setupSubTabs(): void {
-	Object.values(subTabs).forEach((tab) => {
-		addListener(tab.basicBtn, "click", () => {
-			tab.basicBtn.classList.add("lobby-btn-active");
-			tab.advBtn.classList.remove("lobby-btn-active");
-			tab.basicTab.classList.remove("unloaded");
-			tab.advTab.classList.add("unloaded");
-		});
-
-		addListener(tab.advBtn, "click", () => {
-			tab.advBtn.classList.add("lobby-btn-active");
-			tab.basicBtn.classList.remove("lobby-btn-active");
-			tab.advTab.classList.remove("unloaded");
-			tab.basicTab.classList.add("unloaded");
-		});
-	});
-}
-
-/* -------------------------------------------------------------------------- */
 /* WebSocket types                                                            */
 /* -------------------------------------------------------------------------- */
 type MsgType = "connect" | "player" | "playerSync" | "game";
@@ -389,5 +312,3 @@ function resetLobbyState(): void {
 /* Init                                                                       */
 /* -------------------------------------------------------------------------- */
 launchBtn.classList.add("unloaded");
-setupModeHandlers();
-setupSubTabs();

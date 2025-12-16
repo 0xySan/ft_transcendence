@@ -1,223 +1,256 @@
+/* -------------------------------------------------------------------------- */
+/* Global declarations                                                        */
+/* -------------------------------------------------------------------------- */
 declare global {
 	interface Window {
 		socket?: WebSocket;
 	}
 }
 
-declare function loadPage(url:string) : void;
-declare function addListener(target: EventTarget | null, event: string, handler: any): void;
+declare function addListener(
+	target: EventTarget | null,
+	event: string,
+	handler: any,
+): void;
 
 export {};
-try {
-	const canvas = document.getElementById("pong-board") as HTMLCanvasElement;
-	const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-	const paddleWidth = 10;
-	const paddleHeight = 80;
+/* -------------------------------------------------------------------------- */
+/* Types (frontend mirror)                                                     */
+/* -------------------------------------------------------------------------- */
+type Vec2 = {
+	x: number;
+	y: number;
+};
 
-	const start_game = Date.now();
+type BallState = {
+	position: Vec2;
+	velocity: Vec2;
+	radius: number;
+};
 
-	let ball = {
+type PaddleState = {
+	playerId: string;
+	position: Vec2;
+	width: number;
+	height: number;
+};
+
+type GameStatePayload = {
+	frameId: number;
+	ball: BallState;
+	paddles: PaddleState[];
+	scores?: Array<{ playerId: string; score: number }>;
+	state?: "waiting" | "playing" | "ended";
+};
+
+type SocketMessage<T> = {
+	type: "game";
+	payload: T;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Canvas / Rendering setup                                                    */
+/* -------------------------------------------------------------------------- */
+const canvas = document.getElementById("pong-board") as HTMLCanvasElement;
+if (!canvas) throw new Error("Canvas pong-board not found");
+
+const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+if (!ctx) throw new Error("Canvas context unavailable");
+
+/* -------------------------------------------------------------------------- */
+/* Local render state (interpolated)                                           */
+/* -------------------------------------------------------------------------- */
+const renderState = {
+	ball: {
 		x: canvas.width / 2,
 		y: canvas.height / 2,
-		size: 10,
 		targetX: canvas.width / 2,
-		targetY: canvas.height / 2
-	};
+		targetY: canvas.height / 2,
+		radius: 6,
+	},
+	paddles: new Map<string, PaddleState>(),
+	scores: new Map<string, number>(),
+};
 
-	let player1 = { x: 20, y: canvas.height / 2 - paddleHeight / 2 + 50 };
-	let player2 = { x: canvas.width - 30, y: canvas.height / 2 - paddleHeight / 2 + 50 };
-	let player3 = { x: 20, y: canvas.height / 2 - paddleHeight / 2 - 50 };
-	let player4 = { x: canvas.width - 30, y: canvas.height / 2 - paddleHeight / 2 - 50 };
+/* -------------------------------------------------------------------------- */
+/* WebSocket                                                                   */
+/* -------------------------------------------------------------------------- */
+let socketConnection = window.socket;
 
-	let equip_a = 0;
-	let equip_b = 0;
+if (!socketConnection) {
+	const res = await fetch("/api/game");
+	const data = await res.json();
 
+	if (!data?.token) {
+		throw new Error("Missing token – access via lobby");
+	}
 
-	/* ------------------------ WEBSOCKET EVENTS ------------------------ */
+	const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+	socketConnection = new WebSocket(
+		`${protocol}//${location.host}/ws/?token=${data.token}`,
+	);
+	window.socket = socketConnection;
+}
 
-	let socketConnection = window.socket;
+/* -------------------------------------------------------------------------- */
+/* Socket handlers                                                             */
+/* -------------------------------------------------------------------------- */
+addListener(socketConnection, "message", (event: MessageEvent) => {
+	const msg = JSON.parse(event.data) as SocketMessage<GameStatePayload>;
 
-	if (!socketConnection) {
-		const response = await fetch("/api/game", {
-			method: "GET",
-		});
+	if (msg.type !== "game") return;
+	applyGameState(msg.payload);
+});
 
-		const data = await response.json();
-		if (data["error"]) {
-			document.getElementById('content')!.innerHTML = "ERROR: CONNECTION NOT ESTABLISHED";
-			throw new Error("WebSocket connection not found, please use the lobby page to access this page.");
+addListener(socketConnection, "close", () => {
+	console.warn("Disconnected from game server");
+});
+
+addListener(socketConnection, "error", (err: Event) => {
+	console.error("WebSocket error:", err);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Game state application                                                      */
+/* -------------------------------------------------------------------------- */
+function applyGameState(state: GameStatePayload): void {
+	/* Ball */
+	renderState.ball.targetX = state.ball.position.x;
+	renderState.ball.targetY = state.ball.position.y;
+	renderState.ball.radius = state.ball.radius;
+
+	/* Paddles */
+	renderState.paddles.clear();
+	for (const paddle of state.paddles) {
+		renderState.paddles.set(paddle.playerId, paddle);
+	}
+
+	/* Scores */
+	if (state.scores) {
+		renderState.scores.clear();
+		for (const score of state.scores) {
+			renderState.scores.set(score.playerId, score.score);
 		}
-
-		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-		const socketUrl = wsProtocol + "//" + window.location.host + "/ws/?token=" + data.token;
-
-		window.socket = new WebSocket(socketUrl);
-		socketConnection = window.socket;
-		console.log("Socket ouvert !");
-
-		// redirectUser()
+		updateScoreUI(state.scores);
 	}
+}
 
-	addListener(socketConnection, "message", (event: MessageEvent) => {
-		try {
-			const data = JSON.parse(event.data);
+/* -------------------------------------------------------------------------- */
+/* Rendering loop                                                              */
+/* -------------------------------------------------------------------------- */
+function animate(): void {
+	const SMOOTH = 0.25;
 
-			if (data.action === "send" && data.ball) {
-				updateBallPosition(data.ball.pos_x, data.ball.pos_y);
-				updateName(data.equip_a.player_1, data.equip_a.player_2, data.equip_b.player_1, data.equip_b.player_2);
-                updateScore(data.score_b, data.score_a);
-				equip_a = Object.keys(data.equip_a).length;
-				equip_b = Object.keys(data.equip_b).length;
-			}
-			console.log("DEBUG: json = ", data);
-		} catch {
-			return;
-		}
-	});
-
-	addListener(socketConnection, "close", () => {
-		console.log("Pong-board: Disconnected from server.");
-	});
-
-	addListener(socketConnection, "error", (err: Event) => {
-		console.error("Pong-board: WebSocket error:", err);
-	});
-
-	// Ping server occasionally
-	setInterval(() => {
-		socketConnection.send(JSON.stringify({ action: "ping", message: "CLIENT" }));
-	}, 200);
-
-
-	/* ------------------------ GAME LOGIC ------------------------ */
-
-	function updateBallPosition(x: number, y: number) {
-		ball.targetX = x;
-		ball.targetY = y;
-	}
-
-	function updateName(player_1: string, player_2: string, player_3: string, player_4: string) {
-		const u1 = document.getElementById("username-1");
-		const u2 = document.getElementById("username-2");
-		const u3 = document.getElementById("username-3");
-		const u4 = document.getElementById("username-4");
-
-
-
-		if (u1) u1.textContent = player_1 || "No Player";
-		if (u2) u2.textContent = player_3 || "No Player";
-		if (u3) u3.textContent = player_2 || "No Player";
-		if (u4) u4.textContent = player_4 || "No Player";
-	}
-
-
-    function updateScore(score_a: string, score_b: string) {
-        const sc_a = document.getElementById("left-score");
-        const sc_b = document.getElementById("right-score");
-        if (sc_a) sc_a.textContent = score_a || "0";
-        if (sc_b) sc_b.textContent = score_b || "0";
-    }
-
-	function animate() {
-		const smooth = 0.2;
-
-		ball.x += (ball.targetX - ball.x) * smooth;
-		ball.y += (ball.targetY - ball.y) * smooth;
-
-		draw();
-		requestAnimationFrame(animate);
-	}
-
-	animate();
-
-	function draw() {
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-		// ---- Middle dashed line ----
-		ctx.setLineDash([10, 10]);
-		ctx.strokeStyle = "#fff";
-		ctx.beginPath();
-		ctx.moveTo(canvas.width / 2, 0);
-		ctx.lineTo(canvas.width / 2, canvas.height);
-		ctx.stroke();
-		ctx.setLineDash([]);
-
-		// ---- Paddle 1 ----
-		ctx.fillStyle = "red";
-		if (equip_a > 0) ctx.fillRect(player1.x, player1.y, paddleWidth, paddleHeight);
-
-		// ---- Paddle 4 ----
-		if (equip_a == 2) ctx.fillRect(player3.x, player3.y, paddleWidth, paddleHeight);
-
-		// ---- Paddle 2 ----
-		ctx.fillStyle = "blue";
-		if (equip_b > 0) ctx.fillRect(player2.x, player2.y, paddleWidth, paddleHeight);
-
-		// ---- Paddle 3 ----
-		if (equip_b == 2) ctx.fillRect(player4.x, player4.y, paddleWidth, paddleHeight);
-
-		// ---- Ball ----
-		ctx.fillStyle = "white";
-		ctx.beginPath();
-		ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
-		ctx.fill();
-	}
+	renderState.ball.x +=
+		(renderState.ball.targetX - renderState.ball.x) * SMOOTH;
+	renderState.ball.y +=
+		(renderState.ball.targetY - renderState.ball.y) * SMOOTH;
 
 	draw();
+	requestAnimationFrame(animate);
+}
 
-	function sendPaddleMove(side: string, newPosition: number) {
-		if (!socketConnection || socketConnection.readyState !== WebSocket.OPEN) {
-			console.log("socketConnection not open, skipping send");
-			return;
-		}
+animate();
 
-		const payload = {
-			action: "move",
-			position: newPosition
-		};
+/* -------------------------------------------------------------------------- */
+/* Draw                                                                        */
+/* -------------------------------------------------------------------------- */
+function draw(): void {
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		console.log("Sending socketConnection message:", payload);
-		socketConnection.send(JSON.stringify(payload));
+	drawMidLine();
+	drawPaddles();
+	drawBall();
+}
+
+function drawMidLine(): void {
+	ctx.setLineDash([10, 10]);
+	ctx.strokeStyle = "#ffffff";
+	ctx.beginPath();
+	ctx.moveTo(canvas.width / 2, 0);
+	ctx.lineTo(canvas.width / 2, canvas.height);
+	ctx.stroke();
+	ctx.setLineDash([]);
+}
+
+function drawPaddles(): void {
+	ctx.fillStyle = "#ffffff";
+
+	for (const paddle of renderState.paddles.values()) {
+		ctx.fillRect(
+			paddle.position.x,
+			paddle.position.y,
+			paddle.width,
+			paddle.height,
+		);
 	}
+}
 
-	/* ---------------- CONTROLES DES PADDLES ---------------- */
+function drawBall(): void {
+	ctx.beginPath();
+	ctx.arc(
+		renderState.ball.x,
+		renderState.ball.y,
+		renderState.ball.radius,
+		0,
+		Math.PI * 2,
+	);
+	ctx.fillStyle = "#ffffff";
+	ctx.fill();
+}
 
-	document.addEventListener("keydown", (e) => {
-		const leftPaddle = document.querySelector('#player1') as HTMLElement;
-		if (!leftPaddle) throw new Error("player1-id not found");
-		const rightPaddle = document.querySelector('#player2') as HTMLElement;
-		if (!rightPaddle) throw new Error("player2-id not found");
+/* -------------------------------------------------------------------------- */
+/* UI                                                                          */
+/* -------------------------------------------------------------------------- */
+function updateScoreUI(
+	scores: Array<{ playerId: string; score: number }>,
+): void {
+	const left = document.getElementById("left-score");
+	const right = document.getElementById("right-score");
 
-		const speed = 15;
+	if (!left || !right) return;
 
-		// Actualy position
-		const leftTop = parseInt(window.getComputedStyle(leftPaddle).top);
-		const rightTop = parseInt(window.getComputedStyle(rightPaddle).top);
+	left.textContent = String(scores[0]?.score ?? 0);
+	right.textContent = String(scores[1]?.score ?? 0);
+}
 
-		switch (e.key) {
-			case "w": // up paddle left
-				leftPaddle.style.top = Math.max(leftTop - speed, 0) + "px";
-				// sendPaddleMove("left", leftTop - speed);
-				break;
+/* -------------------------------------------------------------------------- */
+/* Inputs → backend                                                            */
+/* -------------------------------------------------------------------------- */
+const inputState = {
+	up: false,
+	down: false,
+};
 
-			case "s": // down paddle left
-				leftPaddle.style.top = Math.min(leftTop + speed, 520) + "px";
-				// sendPaddleMove("left", leftTop + speed);
-				break;
+addListener(document, "keydown", (e: KeyboardEvent) => {
+	if (e.key === "w") setInput("up", true);
+	if (e.key === "s") setInput("down", true);
+});
 
-			case "ArrowUp": // up paddle right
-				rightPaddle.style.top = Math.max(rightTop - speed, 0) + "px";
-				// sendPaddleMove("right", rightTop - speed);
-				break;
+addListener(document, "keyup", (e: KeyboardEvent) => {
+	if (e.key === "w") setInput("up", false);
+	if (e.key === "s") setInput("down", false);
+});
 
-			case "ArrowDown": // down paddle rught
-				rightPaddle.style.top = Math.min(rightTop + speed, 520) + "px";
-				// sendPaddleMove("right", rightTop + speed);
-				break;
-		}
-	});
+function setInput(key: "up" | "down", pressed: boolean): void {
+	if (inputState[key] === pressed) return;
+	inputState[key] = pressed;
 
-} catch (err) {
-	console.error("Erreur :", err);
+	if (!socketConnection || socketConnection.readyState !== WebSocket.OPEN)
+		return;
+
+	socketConnection.send(
+		JSON.stringify({
+			type: "input",
+			payload: {
+				inputs: [
+					{
+						frameId: 0, // server will realign
+						inputs: [{ key, pressed }],
+					},
+				],
+			},
+		}),
+	);
 }

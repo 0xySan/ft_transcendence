@@ -1,0 +1,416 @@
+export {};
+
+declare function addListener(
+	target: EventTarget | null,
+	event: string,
+	handler: EventListener
+): void;
+
+/* ---------------------------
+   Types
+   --------------------------- */
+export interface BallSettings {
+	radius: number;
+	initialSpeed: number;
+	maxSpeed: number;
+	speedIncrement: number;
+	initialAngleRange: number;
+	maxBounceAngle: number;
+	allowSpin: boolean;
+	spinFactor: number;
+	resetOnScore: boolean;
+}
+
+export interface PaddleSettings {
+	width: number;
+	height: number;
+	margin: number;
+	maxSpeed: number;
+	acceleration: number;
+	friction: number;
+}
+
+export interface FieldSettings {
+	wallThickness: number;
+}
+
+export interface WorldSettings {
+	width: number;
+	height: number;
+}
+
+export interface GameSettings {
+	mode: string;
+	firstTo: number;
+	winBy: number;
+	allowSpectators: boolean;
+}
+
+export interface settings {
+	game: GameSettings;
+	ball: BallSettings;
+	paddles: PaddleSettings;
+	field: FieldSettings;
+	world: WorldSettings;
+}
+
+/* ---------------------------
+   Utils
+   --------------------------- */
+function getEl<T extends HTMLElement>(id: string): T {
+	const el = document.getElementById(id);
+	if (!el) throw new Error(`Missing element #${id}`);
+	return el as T;
+}
+
+function readNumber(input: HTMLInputElement, fallback = 0): number {
+	const n = Number(input.value);
+	return Number.isFinite(n) ? n : fallback;
+}
+
+function setInput(input: HTMLInputElement, value: number | boolean): void {
+	if (input.type === "checkbox") input.checked = Boolean(value);
+	else input.value = String(value);
+}
+
+function setSpan(span: HTMLSpanElement | undefined | null, v: string | number): void {
+	if (!span) return;
+	span.textContent = String(v);
+}
+
+/* ---------------------------
+   Defaults / State
+   --------------------------- */
+const defaultSettings: settings = {
+	game: {
+		mode: "online",
+		firstTo: 5,
+		winBy: 0,
+		allowSpectators: true,
+	},
+	ball: {
+		radius: 6,
+		initialSpeed: 400,
+		maxSpeed: 800,
+		speedIncrement: 20,
+		initialAngleRange: 20,
+		maxBounceAngle: 60,
+		allowSpin: false,
+		spinFactor: 0.5,
+		resetOnScore: true,
+	},
+	paddles: {
+		width: 10,
+		height: 80,
+		margin: 20,
+		maxSpeed: 400,
+		acceleration: 1000,
+		friction: 0.9,
+	},
+	field: {
+		wallThickness: 10,
+	},
+	world: {
+		width: 800,
+		height: 600,
+	}
+};
+
+let currentSettings: settings = structuredClone(defaultSettings);
+
+/* ---------------------------
+   UI registry (grouped)
+   --------------------------- */
+const ui = {
+	base: {
+		firstToInput: getEl<HTMLInputElement>("lobby-first-to"),
+		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
+		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
+		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
+		allowSpectators: getEl<HTMLInputElement>("lobby-allow-spectators"),
+	},
+	ball: {
+		radius: getEl<HTMLInputElement>("ball-radius"),
+		initialSpeed: getEl<HTMLInputElement>("ball-initial-speed"),
+		maxSpeed: getEl<HTMLInputElement>("ball-max-speed"),
+		speedIncrement: getEl<HTMLInputElement>("ball-speed-increment"),
+		initialAngleRange: getEl<HTMLInputElement>("ball-initial-angle-range"),
+		initialAngleRangeSpan: getEl<HTMLSpanElement>("ball-initial-angle-range-value"),
+		maxBounceAngle: getEl<HTMLInputElement>("ball-max-bounce-angle"),
+		maxBounceAngleSpan: getEl<HTMLSpanElement>("ball-max-bounce-angle-value"),
+		allowSpin: getEl<HTMLInputElement>("ball-allow-spin"),
+		spinFactor: getEl<HTMLInputElement>("ball-spin-factor"),
+		resetOnScore: getEl<HTMLInputElement>("ball-reset-on-score"),
+	},
+	paddles: {
+		width: getEl<HTMLInputElement>("paddle-width"),
+		height: getEl<HTMLInputElement>("paddle-height"),
+		margin: getEl<HTMLInputElement>("paddle-margin"),
+		maxSpeed: getEl<HTMLInputElement>("paddle-max-speed"),
+		acceleration: getEl<HTMLInputElement>("paddle-acceleration"),
+		friction: getEl<HTMLInputElement>("paddle-friction"),
+	},
+	field: {
+		wallThickness: getEl<HTMLInputElement>("field-wall-thickness"),
+	},
+	world: {
+		width: getEl<HTMLInputElement>("world-width"),
+		height: getEl<HTMLInputElement>("world-height"),
+	},
+	actions: {
+		reset: getEl<HTMLButtonElement>("lobby-reset-settings-button"),
+		save: getEl<HTMLButtonElement>("lobby-save-settings-button"),
+	},
+} as const;
+
+/* ---------------------------
+   Populate UI from state
+   --------------------------- */
+function populateUi(): void {
+	const s = currentSettings;
+
+	// base
+	ui.base.firstToInput.value = String(s.game.firstTo);
+	setSpan(ui.base.firstToSpan, s.game.firstTo);
+	ui.base.winByInput.value = String(s.game.winBy);
+	setSpan(ui.base.winBySpan, s.game.winBy);
+	ui.base.allowSpectators.checked = s.game.allowSpectators;
+	// ball
+	setInput(ui.ball.radius, s.ball.radius);
+	setInput(ui.ball.initialSpeed, s.ball.initialSpeed);
+	setInput(ui.ball.maxSpeed, s.ball.maxSpeed);
+	setInput(ui.ball.speedIncrement, s.ball.speedIncrement);
+	setInput(ui.ball.initialAngleRange, s.ball.initialAngleRange);
+	setSpan(ui.ball.initialAngleRangeSpan, s.ball.initialAngleRange);
+	setInput(ui.ball.maxBounceAngle, s.ball.maxBounceAngle);
+	setSpan(ui.ball.maxBounceAngleSpan, s.ball.maxBounceAngle);
+	setInput(ui.ball.allowSpin, s.ball.allowSpin);
+	setInput(ui.ball.spinFactor, s.ball.spinFactor);
+	setInput(ui.ball.resetOnScore, s.ball.resetOnScore);
+
+	// paddles
+	setInput(ui.paddles.width, s.paddles.width);
+	setInput(ui.paddles.height, s.paddles.height);
+	setInput(ui.paddles.margin, s.paddles.margin);
+	setInput(ui.paddles.maxSpeed, s.paddles.maxSpeed);
+	setInput(ui.paddles.acceleration, s.paddles.acceleration);
+	setInput(ui.paddles.friction, s.paddles.friction);
+
+	// field/world
+	setInput(ui.field.wallThickness, s.field.wallThickness);
+	setInput(ui.world.width, s.world.width);
+	setInput(ui.world.height, s.world.height);
+}
+
+/* ---------------------------
+   Apply partial settings to inputs (public helper)
+   --------------------------- */
+export function setInputsFromPartial(partial: Partial<settings>): void {
+	// merge shallow/deep only for known nests
+	currentSettings = {
+		...currentSettings,
+		...partial,
+		ball: { ...currentSettings.ball, ...(partial.ball ?? {}) },
+		paddles: { ...currentSettings.paddles, ...(partial.paddles ?? {}) },
+		field: { ...currentSettings.field, ...(partial.field ?? {}) },
+		world: { ...currentSettings.world, ...(partial.world ?? {}) },
+		// primitive fields
+		game: {
+			mode: partial.game?.mode ?? currentSettings.game.mode,
+			firstTo: partial.game?.firstTo ?? currentSettings.game.firstTo,
+			winBy: partial.game?.winBy ?? currentSettings.game.winBy,
+			allowSpectators: partial.game?.allowSpectators ?? currentSettings.game.allowSpectators,
+		},
+	};
+
+	// reflect changes in inputs/spans
+	populateUi();
+}
+
+/* ---------------------------
+   Bind helpers
+   --------------------------- */
+function bindNumber(input: HTMLInputElement, onChange: (v: number) => void): void {
+	addListener(input, "input", () => onChange(readNumber(input)));
+}
+function bindCheckbox(input: HTMLInputElement, onChange: (v: boolean) => void): void {
+	addListener(input, "change", () => onChange(input.checked));
+}
+
+/* ---------------------------
+   Wire listeners (logic preserved)
+   --------------------------- */
+function wire(): void {
+	// base
+	addListener(ui.base.firstToInput, "input", () => {
+		const v = readNumber(ui.base.firstToInput, defaultSettings.game.firstTo);
+		currentSettings.game.firstTo = v;
+		setSpan(ui.base.firstToSpan, v);
+	});
+	addListener(ui.base.winByInput, "input", () => {
+		const v = readNumber(ui.base.winByInput, defaultSettings.game.winBy);
+		currentSettings.game.winBy = v;
+		setSpan(ui.base.winBySpan, v);
+	});
+	bindCheckbox(ui.base.allowSpectators, (v) => (currentSettings.game.allowSpectators = v));
+	// ball
+	bindNumber(ui.ball.radius, (v) => (currentSettings.ball.radius = v));
+	bindNumber(ui.ball.initialSpeed, (v) => (currentSettings.ball.initialSpeed = v));
+	bindNumber(ui.ball.maxSpeed, (v) => (currentSettings.ball.maxSpeed = v));
+	bindNumber(ui.ball.speedIncrement, (v) => (currentSettings.ball.speedIncrement = v));
+
+	addListener(ui.ball.initialAngleRange, "input", () => {
+		let v = readNumber(ui.ball.initialAngleRange, defaultSettings.ball.initialAngleRange);
+		if (v < 0) v = 0;
+		if (v > 90) v = 90;
+		currentSettings.ball.initialAngleRange = v;
+		setSpan(ui.ball.initialAngleRangeSpan, v);
+	});
+
+	addListener(ui.ball.maxBounceAngle, "input", () => {
+		let v = readNumber(ui.ball.maxBounceAngle, defaultSettings.ball.maxBounceAngle);
+		if (v < 0) v = 0;
+		if (v > 90) v = 90;
+		currentSettings.ball.maxBounceAngle = v;
+		setSpan(ui.ball.maxBounceAngleSpan, v);
+	});
+
+	bindCheckbox(ui.ball.allowSpin, (v) => (currentSettings.ball.allowSpin = v));
+	bindNumber(ui.ball.spinFactor, (v) => (currentSettings.ball.spinFactor = v));
+	bindCheckbox(ui.ball.resetOnScore, (v) => (currentSettings.ball.resetOnScore = v));
+
+	// paddles
+	bindNumber(ui.paddles.width, (v) => (currentSettings.paddles.width = v));
+	bindNumber(ui.paddles.height, (v) => (currentSettings.paddles.height = v));
+	bindNumber(ui.paddles.margin, (v) => (currentSettings.paddles.margin = v));
+	bindNumber(ui.paddles.maxSpeed, (v) => (currentSettings.paddles.maxSpeed = v));
+	bindNumber(ui.paddles.acceleration, (v) => (currentSettings.paddles.acceleration = v));
+	bindNumber(ui.paddles.friction, (v) => (currentSettings.paddles.friction = v));
+
+	// field / world
+	bindNumber(ui.field.wallThickness, (v) => (currentSettings.field.wallThickness = v));
+	bindNumber(ui.world.width, (v) => (currentSettings.world.width = v));
+	bindNumber(ui.world.height, (v) => (currentSettings.world.height = v));
+
+	// actions
+	addListener(ui.actions.reset, "click", () => {
+		currentSettings = structuredClone(defaultSettings);
+		populateUi();
+	});
+
+	addListener(ui.actions.save, "click", () => {
+		fetch("/api/game/settings", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ settings: currentSettings }),
+		}).then(async (res) => {
+			if (!res.ok) {
+				const data = await res.json();
+				throw new Error(data.error || 'Failed to save settings.');
+			}
+		}).then(() => {
+			alert("Settings saved successfully.");
+		}).catch((error) => {
+			alert(error.message);
+		});
+	});
+}
+
+export function initLobbySettings(initial?: Partial<settings>): void {
+	currentSettings = structuredClone(defaultSettings);
+	if (initial) setInputsFromPartial(initial);
+	populateUi();
+	wire();
+}
+
+export function getCurrentSettings(): settings {
+	return structuredClone(currentSettings);
+}
+
+/* ---------------------------
+   Auto-init
+   --------------------------- */
+initLobbySettings();
+
+
+/* -------------------------------------------------------------------------- */
+/* UI – Modes                                                                 */
+/* -------------------------------------------------------------------------- */
+type Mode = {
+	button: HTMLButtonElement;
+	tab: HTMLDivElement;
+};
+
+const modes: Record<string, Mode> = {
+	multiplayer: {
+		button: getEl("lobby-multiplayer-button"),
+		tab: getEl("lobby-multiplayer-tab"),
+	},
+	custom: {
+		button: getEl("lobby-custom-game-button"),
+		tab: getEl("lobby-custom-game-tab"),
+	},
+	tournament: {
+		button: getEl("lobby-tournament-button"),
+		tab: getEl("lobby-tournament-tab"),
+	},
+};
+
+function setupModeHandlers(): void {
+	Object.values(modes).forEach((mode) => {
+		addListener(mode.button, "click", () => {
+			Object.values(modes).forEach((m) => {
+				m.button.classList.toggle("current-mode", m === mode);
+				m.tab.classList.toggle("unloaded", m !== mode);
+			});
+		});
+	});
+}
+
+/* -------------------------------------------------------------------------- */
+/* UI – Sub tabs                                                              */
+/* -------------------------------------------------------------------------- */
+type SubTabs = {
+	basicBtn: HTMLButtonElement;
+	advBtn: HTMLButtonElement;
+	basicTab: HTMLDivElement;
+	advTab: HTMLDivElement;
+};
+
+const subTabs: Record<string, SubTabs> = {
+	custom: {
+		basicBtn: getEl("lobby-custom-game-basic-settings-button"),
+		advBtn: getEl("lobby-custom-game-advanced-settings-button"),
+		basicTab: getEl("lobby-custom-game-basic-settings"),
+		advTab: getEl("lobby-custom-game-advanced-settings"),
+	},
+	tournament: {
+		basicBtn: getEl("lobby-tournament-basic-settings-button"),
+		advBtn: getEl("lobby-tournament-advanced-settings-button"),
+		basicTab: getEl("lobby-tournament-basic-settings"),
+		advTab: getEl("lobby-tournament-advanced-settings"),
+	},
+};
+
+function setupSubTabs(): void {
+	Object.values(subTabs).forEach((tab) => {
+		addListener(tab.basicBtn, "click", () => {
+			tab.basicBtn.classList.add("lobby-btn-active");
+			tab.advBtn.classList.remove("lobby-btn-active");
+			tab.basicTab.classList.remove("unloaded");
+			tab.advTab.classList.add("unloaded");
+		});
+
+		addListener(tab.advBtn, "click", () => {
+			tab.advBtn.classList.add("lobby-btn-active");
+			tab.basicBtn.classList.remove("lobby-btn-active");
+			tab.advTab.classList.remove("unloaded");
+			tab.basicTab.classList.add("unloaded");
+		});
+	});
+}
+
+setupModeHandlers();
+setupSubTabs();
