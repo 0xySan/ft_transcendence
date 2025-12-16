@@ -46,7 +46,7 @@
 				profileLink.href = `/profile/${profile.username}`;
 
 				if (profile.profilePicture) {
-					pfpImg.src = profile.profilePicture;
+					pfpImg.src = "api/users/data/imgs/" + profile.profilePicture;
 					pfpImg.classList.remove("unloaded");
 					pfpFallback.classList.add("unloaded");
 				} else {

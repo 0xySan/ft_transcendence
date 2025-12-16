@@ -159,10 +159,8 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 			}));
 
 			const index = parsedCodes.findIndex(c => {
-				console.log('Encrypted code hash:', c.hash);
 				const decryptedCode = decryptSecret(c.hash);
-				console.log('Decrypted code:', decryptedCode);
-				return decryptedCode === body.code;
+				return decryptedCode === body.code.toUpperCase();
 			});
 
 			if (index === -1 || codes[index].used)

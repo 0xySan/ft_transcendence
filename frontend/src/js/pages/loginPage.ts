@@ -156,6 +156,58 @@ function verifyPasswordValidity(): boolean {
 	}
 }
 
+
+// ================================================
+// 				OAuth popup handling
+// ================================================
+
+const oauthPopups = new Map();
+
+window.addEventListener("message", (e) => {
+	if (e.origin !== window.location.origin) return;
+	if (!e.data || !e.data.requestId) return;
+
+	console.log("OAuth result:", e.data);
+
+	// Get the popup and close it
+	const popup = oauthPopups.get(e.data.requestId);
+	if (popup && !popup.closed) popup.close();
+	oauthPopups.delete(e.data.requestId);
+
+	if (e.data.isTwofa === "true")
+		loadPage('/twofa');
+	else {
+		refreshNavBarState();
+		loadPage('/home');
+	}
+});
+
+const oauthButtons = document.querySelectorAll<HTMLLinkElement>(".oauth-button");
+
+oauthButtons.forEach((button) => {
+	button.addEventListener("click", (e) => {
+		e.preventDefault();
+
+		const requestId = crypto.randomUUID();
+		const url = `${button.href}?requestId=${requestId}`;
+
+		const popup = window.open(
+			url,
+			"oauth_window_" + requestId,
+			"width=500,height=600,resizable=yes,scrollbars=yes"
+		);
+
+		oauthPopups.set(requestId, popup);
+
+		setTimeout(() => {
+			if (popup && !popup.closed) popup.close();
+			oauthPopups.delete(requestId);
+		}, 120000);
+	});
+});
+
+
+
 addListener(loginForm, 'submit', handleLogin);
 addListener(usernameInput, 'input', verifyUsernameMailValidity);
 addListener(passwordInput, 'input', verifyPasswordValidity);

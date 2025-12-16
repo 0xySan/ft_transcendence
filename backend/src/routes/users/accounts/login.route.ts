@@ -9,13 +9,13 @@ import { checkRateLimit, delayResponse } from "../../../utils/security.js";
 import {
 	getPasswordHashByUserId,
 	getProfileByUsername,
-	getUser2FaMethodsByUserId,
 	getUserByEmail,
-	updateSession
+	updateSession,
+	User
 } from "../../../db/index.js";
 import { verifyHashedString, verifyToken } from "../../../utils/crypto.js";
-import { createNewSession } from "../../../utils/session.js";
 import { requirePartialAuth } from "../../../middleware/auth.middleware.js";
+import { createFullOrPartialSession } from "../../../auth/oauth/utils.js";
 
 // ---------- Rate limiting ----------
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
@@ -28,7 +28,7 @@ async function handleUserLoginValidation(
 	reply: any,
 	startTime: number,
 	clientIp: string
-) {
+): Promise<{ userId: string; rememberMe: boolean } | null> {
 	const passwordRegex = /^.{8,64}$/;
 	const { username, email, password, rememberMe } = request.body as {
 		username?: string;
@@ -50,10 +50,13 @@ async function handleUserLoginValidation(
 	}
 
 	let existingUser;
-	if (email) existingUser = getUserByEmail(email);
-	else if (username) existingUser = getProfileByUsername(username);
+	if (email)
+		existingUser = getUserByEmail(email);
+	else if (username)
+		existingUser = getProfileByUsername(username);
+	const userId = existingUser?.user_id;
 
-	if (!existingUser) {
+	if (!existingUser || !userId) {
 		await delayResponse(startTime, MIN_DELAY);
 		return reply.status(400).send({ message: "Login failed. Please try again later." });
 	}
@@ -74,7 +77,7 @@ async function handleUserLoginValidation(
 		return reply.status(400).send({ message: "Login failed. Please try again later." });
 	}
 
-	return { existingUser, rememberMe };
+	return {userId, rememberMe};
 }
 
 // ---------- Routes ----------
@@ -93,77 +96,10 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 		try {
 			const result = await handleUserLoginValidation(request, reply, startTime, clientIp);
 			if (!result) return;
-
-			const { existingUser, rememberMe } = result;
-
-			const user2FaMethods = getUser2FaMethodsByUserId(existingUser.user_id)
-				.filter(method => method.is_verified)
-				.map(method => ({
-					method_type: method.method_type,
-					label: method.label,
-					is_primary: method.is_primary
-				}));
-
-			// ---- 2FA required ----
-			if (user2FaMethods && user2FaMethods.length > 0) {
-				const session = createNewSession(existingUser.user_id, {
-					ip: request.ip,
-					userAgent: request.headers["user-agent"],
-					ttlMs: 10 * 60 * 1000, // 10 min
-					stage: "partial"
-				});
-
-				if (!session) {
-					await delayResponse(startTime, MIN_DELAY);
-					return reply.status(500).send({ message: "Login failed. Please try again later." });
-				}
-
-				reply.setCookie("session", session.token, {
-					path: "/",
-					httpOnly: true,
-					secure: process.env.NODE_ENV !== "test",
-					sameSite: "strict",
-					maxAge: 10 * 60
-				});
-
-				return reply.status(202).send({
-					message: "2FA required.",
-					twoFactorRequired: true,
-					twoFactorMethods: user2FaMethods
-				});
-			}
-
-			// ---- Normal login ----
-			const session = createNewSession(existingUser.user_id, {
-				ip: request.ip,
-				userAgent: request.headers["user-agent"],
-				stage: "active",
-				isPersistent: rememberMe || false
-			});
-
-			if (!session) {
-				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(500).send({ message: "Login failed. Please try again later." });
-			}
-
-			const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2; // 30j ou 2h
-			reply.setCookie("session", session.token, {
-				path: "/",
-				httpOnly: true,
-				secure: process.env.NODE_ENV !== "test",
-				sameSite: "strict",
-				maxAge
-			});
-
-			return reply.status(202).send({
-				message: "Login successful.",
-				user: { id: existingUser.user_id }
-			});
-
-		} catch (error) {
-			console.error("Error in /accounts/login:", error);
-			await delayResponse(Date.now(), MIN_DELAY);
-			return reply.status(500).send({ message: "Login failed. Please try again later." });
+			return createFullOrPartialSession(result.userId, request, reply, result.rememberMe);
+		} catch (err) {
+			console.error("Error in POST /accounts/login:", err);
+			return reply.status(500).send({ message: "Unable to complete login process." });
 		}
 	});
 
