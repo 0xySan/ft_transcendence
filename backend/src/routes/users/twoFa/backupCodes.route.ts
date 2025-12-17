@@ -6,7 +6,7 @@
 import { FastifyInstance } from 'fastify';
 import { requirePartialAuth } from '../../../middleware/auth.middleware.js';
 import { getUserBCodesMethodById, updateBCodes } from '../../../db/index.js';
-import { generateRandomToken, hashString, signToken, verifyToken } from '../../../utils/crypto.js';
+import { decryptSecret, generateRandomToken, hashString, signToken, verifyToken } from '../../../utils/crypto.js';
 import { checkRateLimit } from '../../../utils/security.js';
 import { getBackupCodesSchema, verifyBackupCodeSchema } from '../../../plugins/swagger/schemas/twoFa.schema.js';
 
@@ -91,9 +91,7 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 	fastify.get(
 		'/twofa/backup-codes',
 		{
-			schema: getBackupCodesSchema,
 			preHandler: requirePartialAuth,
-			validatorCompiler: () => () => true
 		},
 		async (request, reply) => {
 			const userId = requireUser(request, reply);
@@ -114,9 +112,16 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 
 			const codeMethod = getAndValidateMethod(query.uuid, userId, reply);
 			if (!codeMethod) return;
+			const codes = JSON.parse(codeMethod.codes.code_json) as Array<{ hash: string; used: boolean }>;
 
+			const parsedCodes = codes.map(c => ({
+				hash: Buffer.from(c.hash, 'base64'),
+				used: c.used
+			}));
+
+			const decryptedCodes = parsedCodes.map(c => decryptSecret(c.hash));
 			return reply.status(200).send({
-				codes: JSON.parse(codeMethod.codes.code_json)
+				codes: decryptedCodes,
 			});
 		}
 	);
@@ -145,10 +150,19 @@ export async function backupCodesRoute(fastify: FastifyInstance) {
 			if (codeMethod.method.method_type !== 2 || !codeMethod.method.is_verified)
 				return reply.status(404).send({ message: 'Backup codes not found' });
 
-			const codes = JSON.parse(codeMethod.codes.code_json) as Array<{ hash: string; used: boolean }>;
-			const hashedInput = await hashString(body.code);
 
-			const index = codes.findIndex(c => c.hash === hashedInput);
+			const codes = JSON.parse(codeMethod.codes.code_json) as Array<{ hash: string; used: boolean }>;
+
+			const parsedCodes = codes.map(c => ({
+				hash: Buffer.from(c.hash, 'base64'),
+				used: c.used
+			}));
+
+			const index = parsedCodes.findIndex(c => {
+				const decryptedCode = decryptSecret(c.hash);
+				return decryptedCode === body.code.toUpperCase();
+			});
+
 			if (index === -1 || codes[index].used)
 				return reply.status(404).send({ message: 'Backup codes not found' });
 

@@ -36,12 +36,34 @@ export const loginAccountSchema = {
 		],
 	},
 	response: {
+		200: {
+			description: "Login successful",
+			type: "object",
+			properties: {
+				message: { type: "string" }
+			},
+			required: ["message"]
+		},
 		202: {
 			description: "Login accepted (requires 2FA verification).",
 			type: "object",
 			properties: {
 				message: { type: "string" },
+				twoFactorRequired: { type: "boolean" },
+				twoFactorMethods: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							method_type: { type: "string" },
+							label: { type: "string" },
+							is_primary: { type: "boolean" }
+						},
+						required: ["method_type", "label", "is_primary"]
+					}
+				}
 			},
+			required: ["message", "twoFactorRequired", "twoFactorMethods"],
 		},
 		400: {
 			description: "Bad request — missing or invalid fields",

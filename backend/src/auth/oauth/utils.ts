@@ -3,32 +3,73 @@
  * Utility functions for OAuth operations.
  */
 
-import { oauthAccount } from "../../db/index.js";
+import { FastifyReply, FastifyRequest } from "fastify";
+import { getUser2FaMethodsByUserId } from "../../db/index.js";
 import { createNewSession } from "../../utils/session.js";
 
 /**
- * Creates a new session for the given OAuth account and sets the session cookie.
- * @param oauthAccount - The oauthAccount object representing the linked OAuth account
- * @param request - The Fastify request object
- * @param reply - The Fastify reply object
- * @returns A redirect response to the auth success page or an error response
+ * @brief Create and return a `full`/`partial session` depending on if the user has **2FA** configured
+ * @param userId - The user's uuid
+ * @param request - The fastify request object
+ * @param reply - The fastify reply object, **its status and reply will be set**
+ * @param isPersistent - Affect a `full session` **validity duration** @default to `false`
+ * @param redirect - Whether we send a redirect uri with the message @default to `false`
+ * @param requestId - The OAuth request id, used for popup handling
+ * @returns The fastify reply object with **success status**
+ * 		- `500` - `Failed to create session`
+ * 		- `202` - message: '2FA required.', twoFactorRequired: `true`, twoFactorMethods [**list of available methods**]
+ * 		- `200` - `Login successful.`
  */
-export async function returnOauthSession(oauthAccount: any, request: any, reply: any) {
-	const result = createNewSession(oauthAccount.user_id, {
+export async function createFullOrPartialSession(userId: string, request: FastifyRequest, reply: FastifyReply, isPersistent = false, redirect = false, requestId?: string) {
+	const user2FaMethods = getUser2FaMethodsByUserId(userId)
+		.filter(method => method.is_verified)
+		.map(method => ({
+			method_type: method.method_type,
+			label: method.label,
+			is_primary: method.is_primary
+		}));
+
+	let twoFactorRequired = false;
+	if (user2FaMethods.length > 0)
+		twoFactorRequired = true;
+	
+	const session = createNewSession(userId, {
 		ip: request.ip,
-		userAgent: request.headers['user-agent']
+		userAgent: request.headers['user-agent'],
+		stage: twoFactorRequired ? 'partial' : 'active',
+		isPersistent: twoFactorRequired ? false : isPersistent
 	});
 
-	if (!result) {
+	if (!session) {
 		return reply.status(500).send({ error: 'Failed to create session' });
 	}
 
-	reply.setCookie('session', result.token, {
+	reply.setCookie('session', session.token, {
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV !== 'test',
-		sameSite: 'Strict',
-		maxAge: 60 * 60 * 24 * 30 // 30 days
+		sameSite: 'lax',
+		// 2fa = 10 min else isPersistent ? 30 days : 2 hours
+		maxAge: twoFactorRequired ? 
+			10 * 60 
+			: isPersistent ? 
+				60 * 60 * 24 * 30
+				: 60 * 60 * 2
 	});
-	return reply.redirect(`/auth/success?provider=${oauthAccount.provider_name}`);
+
+	if (twoFactorRequired) {
+		if (!redirect) {
+			return reply.status(202).send({
+				message: '2FA required.',
+				twoFactorRequired: true,
+				twoFactorMethods: user2FaMethods
+			});
+		} else
+			return reply.redirect('/oauth-popup?twofa=true&requestId=' + (requestId ?? ''));
+	} else {
+		if (!redirect)
+			return reply.status(200).send({ message: 'Login successful.' });
+		else
+			return reply.redirect('/oauth-popup?twofa=false&requestId=' + (requestId ?? ''));
+	}
 }

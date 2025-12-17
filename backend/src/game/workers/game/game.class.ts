@@ -48,7 +48,7 @@ export class Game {
 	 * @param ownerId - owner user ID
 	 * @param configOverrides - optional configuration overrides
 	 */
-	constructor(id: string, visibility: boolean,  ownerId: string, configOverrides?: Partial<config>) {
+	constructor(id: string,  ownerId: string, configOverrides?: Partial<config>) {
 		this.id = id;
 		this.visibility = false;
 		this.ownerId = ownerId;
@@ -68,6 +68,7 @@ export class Game {
 		this.config = {
 			game: {
 				mode: "online",
+				visibility: this.visibility,
 				maxPlayers: 2,
 				code: "",
 				spectatorsAllowed: false,

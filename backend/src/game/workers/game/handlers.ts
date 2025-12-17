@@ -15,7 +15,7 @@ import { Player } from './player.class.js';
  */
 export function createHandler(msg: msg.message<msg.createPayload>, games: Map<string, Game>) {
 	const payload = msg.payload as msg.createPayload;
-	const game = new Game(payload.uuid, false, payload.ownerId, payload.gameConfig);
+	const game = new Game(payload.uuid, payload.ownerId, payload.gameConfig);
 	games.set(game.id, game);
 }
 
