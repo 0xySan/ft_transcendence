@@ -467,10 +467,9 @@ button:active {
 .chat-div-container .chat-header-toggle-users {
 	position: relative;
 
-	width: 36px;
-	height: 36px;
+	width: 2rem;
+	height: 2rem;
 
-	margin: 4px 4px;
 	padding: 0;
 	box-sizing: border-box;
 
@@ -483,7 +482,7 @@ button:active {
 	align-items: center;
 	justify-content: center;
 
-	font-size: 18px;
+	font-size: 1rem;
 	font-weight: 700;
 	text-align: center;
 	color: rgb(var(--text));
@@ -519,7 +518,7 @@ button:active {
 
 /* User list: fixed width */
 .user-list {
-	width: 275px;
+	width: 12.5rem;
 
 	padding-right: 0.5rem;
 	/* fixed width for left sidebar */
@@ -610,8 +609,8 @@ button:active {
 
 /* Avatar */
 .img_profile {
-	width: 40px;
-	height: 40px;
+	width: 2.5rem;
+	height: 2.5rem;
 
 	background: rgba(var(--crust), 0.3);
 
@@ -623,8 +622,8 @@ button:active {
 .img_profile[chat-header="true"] {
 	float: left;
 
-	width: 28px;
-	height: 28px;
+	width: 1.8rem;
+	height: 1.8rem;
 }
 
 /* Username */
@@ -693,24 +692,6 @@ button:active {
 	overflow-wrap: anywhere;
 }
 
-/* Cap width on large resolutions and add a small vertical overlap */
-@media (min-width: 1200px) {
-	.chat-message {
-		max-width: 50%;
-
-		margin-top: -6px;
-		/* subtle vertical overlapping between consecutive messages */
-	}
-}
-
-@media (min-width: 1800px) {
-	.chat-message {
-		max-width: 40%;
-
-		margin-top: -8px;
-	}
-}
-
 .chat-time {
 	margin-bottom: 2px;
 
@@ -736,7 +717,7 @@ button:active {
 	border: none;
 	border-radius: 4px;
 
-	font-size: 14px;
+	font-size: 0.75rem;
 	color: rgb(var(--text));
 }
 
@@ -881,8 +862,8 @@ button:active {
 }
 
 .chat-invite-btn {
-	width: 40px;
-	height: 40px;
+	width: 2.5rem;
+	height: 2.5rem;
 
 	padding: 0;
 
@@ -895,7 +876,6 @@ button:active {
 	align-items: center;
 	justify-content: center;
 
-	font-size: 20px;
 	line-height: 1;
 	color: rgb(var(--text));
 
@@ -968,7 +948,7 @@ button:active {
 
 .show-blocked-btn {
 	/* prevent it from stretching */
-	max-height: 48px;
+	max-height: 5rem;
 
 	padding: 2px;
 
@@ -991,8 +971,8 @@ button:active {
 }
 
 .chat-input {
-	min-height: 17px;
-	max-height: 150px;
+	min-height: 0.75rem;
+	max-height: 20rem;
 
 	padding: 8px;
 
@@ -1038,7 +1018,7 @@ button:active {
 
 .chat-input-form button {
 	/* prevent it from stretching */
-	max-height: 48px;
+	max-height: 5rem;
 
 	margin-left: 6px;
 	padding: 6px 12px;
@@ -1057,6 +1037,24 @@ button:active {
 
 .chat-input-form button:hover {
 	background: rgba(var(--sapphire), 0.8);
+}
+
+/* Cap width on large resolutions and add a small vertical overlap */
+@media (min-width: 1200px) {
+	.chat-message {
+		max-width: 50%;
+
+		margin-top: -6px;
+		/* subtle vertical overlapping between consecutive messages */
+	}
+}
+
+@media (min-width: 1800px) {
+	.chat-message {
+		max-width: 40%;
+
+		margin-top: -8px;
+	}
 }
 
 /* On narrow screens, stack vertically and keep the toggle at the top-left inside the container */
@@ -1143,7 +1141,7 @@ button:active {
 		justify-content: center;
 		gap: 0.5rem;
 		padding: 0.75rem 0.4rem;
-		min-width: 64px;
+		min-width: 4rem;
 		border-bottom: none;
 		border-left: 1px solid rgb(var(--surface1));
 		background: rgb(var(--base));
@@ -1152,8 +1150,8 @@ button:active {
 	.chat-header .img_profile {
 		float: none;
 		margin: 0;
-		width: 34px;
-		height: 34px;
+		width: 2rem;
+		height: 2rem;
 	}
 
 	.chat-header-title,
