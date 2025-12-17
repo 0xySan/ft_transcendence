@@ -826,8 +826,9 @@ button:active {
 }
 
 .load-older-hint {
-	text-align: center;
+
 	padding: 0.2rem 0;
+	text-align: center;
 }
 
 .chat-message.invite .invite-actions .invite-go {
@@ -1126,48 +1127,62 @@ button:active {
 	/* Keep column stack; reserve space for the vertical header rail on the right */
 	.chat-block {
 		position: relative;
+
 		padding-right: 4.5rem;
 	}
 
 	/* Make header a vertical rail on the right */
 	.chat-header {
 		position: absolute;
-		right: 0;
 		top: 0;
+		right: 0;
 		bottom: 0;
+
+		min-width: 4rem;
+		padding: 0.75rem 0.4rem;
+
+		gap: 0.5rem;
+
+		background: rgb(var(--base));
+
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.75rem 0.4rem;
-		min-width: 4rem;
+
 		border-bottom: none;
 		border-left: 1px solid rgb(var(--surface1));
-		background: rgb(var(--base));
 	}
 
 	.chat-header .img_profile {
 		float: none;
-		margin: 0;
+
 		width: 2rem;
 		height: 2rem;
+
+		margin: 0;
 	}
 
 	.chat-header-title,
 	.chat-header .chat-header-title {
 		float: none;
+
 		margin: 0;
 		padding: 0;
+
 		font-size: 0.8rem;
-		text-orientation: mixed;
+
 		text-align: center;
+
+		text-orientation: mixed;
 	}
 
 	.chat-header .chat-header-btn {
 		float: none;
+
 		margin-left: 0px;
 		padding: 4px 4px;
+
 		font-size: 12px;
 	}
 
@@ -1513,7 +1528,7 @@ button:active {
 	#lobby-action-buttons {
 		width: 100% !important;
 	}
-	
+
 	.lobby-setting-box {
 		min-height: 42rem;
 	}
