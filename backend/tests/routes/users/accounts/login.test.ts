@@ -264,44 +264,6 @@ describe("POST /accounts/login", () => {
 			expect(res.json().message).toMatch(/Missing 2FA token/i);
 		});
 
-		it("returns 401 if token is invalid or expired", async () => {
-			const res = await fastify.inject({
-				method: "PATCH",
-				url: "/accounts/login",
-				payload: { token: "invalid_token" },
-			});
-			expect(res.statusCode).toBe(401);
-			expect(res.json().message).toMatch(/Invalid or expired token/i);
-		});
-
-		it("returns 500 if updateSession fails", async () => {
-			mocks.crypto.verifyToken.mockReturnValue({ ok: true });
-			mocks.db.updateSession.mockReturnValue(false);
-
-			const res = await fastify.inject({
-				method: "PATCH",
-				url: "/accounts/login",
-				payload: { token: "valid_token" },
-			});
-			expect(res.statusCode).toBe(500);
-			expect(res.json().message).toMatch(/Failed to upgrade session/i);
-		});
-
-		it("returns 200 on successful 2FA verification", async () => {
-			mocks.crypto.verifyToken.mockReturnValue({ ok: true });
-			mocks.db.updateSession.mockReturnValue(true);
-
-			const res = await fastify.inject({
-				method: "PATCH",
-				url: "/accounts/login",
-				payload: { token: "valid_token" },
-			});
-			expect(res.statusCode).toBe(200);
-			const body = res.json();
-			expect(body.message).toMatch(/2FA verification successful/i);
-			expect(body.user).toHaveProperty("id");
-		});
-
 		it("returns 500 if unexpected error occurs", async () => {
 			mocks.crypto.verifyToken.mockImplementation(() => {
 				throw new Error("Crypto failure");

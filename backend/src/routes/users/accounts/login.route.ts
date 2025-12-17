@@ -129,6 +129,10 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 			if (!checkRateLimit(requestCount, userId, reply, RATE_LIMIT, RATE_WINDOW))
 				return reply.status(429).send({ message: "Too many login attempts. Please try again later." });
 
+			const cookieToken = request.cookies.session || request.headers['authorization']?.split(' ')[1];
+			if (!cookieToken)
+				return reply.status(401).send({ message: "Unauthorized: No session token" });
+
 			const decoded = verifyToken(token);
 			if (!decoded)
 				return reply.status(401).send({ message: "Invalid or expired token." });
@@ -142,7 +146,7 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 			if (!upgraded)
 				return reply.status(500).send({ message: "Failed to upgrade session." });
 
-			reply.setCookie("session", request.cookies.session || "", {
+			reply.setCookie("session", cookieToken, {
 				path: "/",
 				httpOnly: true,
 				secure: process.env.NODE_ENV !== "test",
