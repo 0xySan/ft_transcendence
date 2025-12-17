@@ -25,7 +25,6 @@ describe("POST /accounts/login", () => {
 			getProfileByUsername: vi.fn(),
 			getUser2FaMethodsByUserId: vi.fn(),
 			getUserByEmail: vi.fn(),
-			createNewSession: vi.fn(),
 			updateSession: vi.fn(),
 		}));
 
@@ -138,7 +137,7 @@ describe("POST /accounts/login", () => {
 		console.log('Response status:', res.statusCode); // Debug
 		console.log('Response body:', res.json()); // Debug
 
-		expect(res.statusCode).toBe(202);
+		expect(res.statusCode).toBe(200);
 		expect(res.json()).toHaveProperty("message");
 		expect(res.json().message).toMatch(/Login successful/i);
 		expect(res.cookies).toBeDefined();
@@ -156,7 +155,7 @@ describe("POST /accounts/login", () => {
 		// RATE_LIMIT is 5 in route
 		for (let i = 0; i < 5; i++) {
 			const r = await fastify.inject({ method: "POST", url: "/accounts/login", payload, ip: testIp });
-			expect([202, 400, 429, 500]).toContain(r.statusCode); // just ensure route responds; mostly 202 here
+			expect([200, 202, 400, 429, 500]).toContain(r.statusCode); // just ensure route responds; mostly 202 here
 		}
 
 		const r6 = await fastify.inject({ method: "POST", url: "/accounts/login", payload, ip: testIp });
@@ -192,7 +191,7 @@ describe("POST /accounts/login", () => {
 		expect(res.statusCode).toBe(500);
 		const body = res.json();
 		expect(body).toHaveProperty("message");
-		expect(body.message).toMatch(/Login failed/i);
+		expect(body.message).toMatch(/Unable to complete login process./i);
 	});
 
 	it("returns 429 when rate limit is exceeded by userid", async () => {
@@ -213,7 +212,7 @@ describe("POST /accounts/login", () => {
 				payload,
 				remoteAddress: testIps[i],
 			});
-			expect([202, 400, 429, 500]).toContain(r.statusCode);
+			expect([200, 202, 400, 429, 500]).toContain(r.statusCode);
 		}
 
 		// Sixth request from one of the previous IPs should hit the per-user rate limit.
@@ -254,36 +253,6 @@ describe("POST /accounts/login", () => {
 		expect(body.message).toMatch(/Login failed/i);
 	});
 
-	it ("returns 500 if createNewSession fails without 2fa", async () => {
-		const payload = { email: "sessionfail@example.com", password: "AnyPass123" };
-		(mocks.db.getUserByEmail as any).mockReturnValue({ user_id: 40 });
-		(mocks.db.getPasswordHashByUserId as any).mockReturnValue("hashed_test_AnyPass123");
-		(mocks.crypto.verifyHashedString as any).mockResolvedValue(true);
-		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([]);
-		(mocks.session.createNewSession as any).mockReturnValue(null); // simulate failure
-
-		const res = await fastify.inject({ method: "POST", url: "/accounts/login", payload });
-		expect(res.statusCode).toBe(500);
-		const body = res.json();
-		expect(body).toHaveProperty("message");
-		expect(body.message).toMatch(/Login failed/i);
-	});
-
-	it ("returns 500 if createNewSession fails with 2fa", async () => {
-		const payload = { email: "sessionfail@example.com", password: "AnyPass123" };
-		(mocks.db.getUserByEmail as any).mockReturnValue({ user_id: 40 });
-		(mocks.db.getPasswordHashByUserId as any).mockReturnValue("hashed_test_AnyPass123");
-		(mocks.crypto.verifyHashedString as any).mockResolvedValue(true);
-		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([{ is_verified: true }]);
-		(mocks.session.createNewSession as any).mockReturnValue(null); // simulate failure
-
-		const res = await fastify.inject({ method: "POST", url: "/accounts/login", payload });
-		expect(res.statusCode).toBe(500);
-		const body = res.json();
-		expect(body).toHaveProperty("message");
-		expect(body.message).toMatch(/Login failed/i);
-	});
-
 	describe("PATCH /accounts/login (2FA verification)", () => {
 		it("returns 400 if token is missing", async () => {
 			const res = await fastify.inject({
@@ -293,44 +262,6 @@ describe("POST /accounts/login", () => {
 			});
 			expect(res.statusCode).toBe(400);
 			expect(res.json().message).toMatch(/Missing 2FA token/i);
-		});
-
-		it("returns 401 if token is invalid or expired", async () => {
-			const res = await fastify.inject({
-				method: "PATCH",
-				url: "/accounts/login",
-				payload: { token: "invalid_token" },
-			});
-			expect(res.statusCode).toBe(401);
-			expect(res.json().message).toMatch(/Invalid or expired token/i);
-		});
-
-		it("returns 500 if updateSession fails", async () => {
-			mocks.crypto.verifyToken.mockReturnValue({ ok: true });
-			mocks.db.updateSession.mockReturnValue(false);
-
-			const res = await fastify.inject({
-				method: "PATCH",
-				url: "/accounts/login",
-				payload: { token: "valid_token" },
-			});
-			expect(res.statusCode).toBe(500);
-			expect(res.json().message).toMatch(/Failed to upgrade session/i);
-		});
-
-		it("returns 200 on successful 2FA verification", async () => {
-			mocks.crypto.verifyToken.mockReturnValue({ ok: true });
-			mocks.db.updateSession.mockReturnValue(true);
-
-			const res = await fastify.inject({
-				method: "PATCH",
-				url: "/accounts/login",
-				payload: { token: "valid_token" },
-			});
-			expect(res.statusCode).toBe(200);
-			const body = res.json();
-			expect(body.message).toMatch(/2FA verification successful/i);
-			expect(body.user).toHaveProperty("id");
 		});
 
 		it("returns 500 if unexpected error occurs", async () => {

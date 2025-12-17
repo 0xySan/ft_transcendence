@@ -4,8 +4,10 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { oauthSchema } from '../../plugins/swagger/schemas/oauth.schema.js';
+import { oauthSchema, oauthListSchema } from '../../plugins/swagger/schemas/oauth.schema.js';
 import { getOauthProviderByName } from '../../db/wrappers/auth/oauth/oauthProviders.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
+import { getOauthAccountsByUserId } from '../../db/index.js';
 
 const oauthConfigs: Record<string, { url: string; params: Record<string, string> }> = {
 	discord: {
@@ -27,7 +29,34 @@ const oauthConfigs: Record<string, { url: string; params: Record<string, string>
 };
 
 export function oauthRoute(fastify: FastifyInstance) {
-	fastify.get('/:provider', { schema: oauthSchema, validatorCompiler: ({ schema }) => {return () => true;} }, async (request, reply) => {
+	fastify.get('/',
+		{
+			schema: oauthListSchema,
+			validatorCompiler: ({ schema }) => {return () => true;},
+			preHandler: requireAuth
+		},
+		async (request, reply) => {
+			const session = (request as any).session;
+			if (!session || !session.user_id)
+				return reply.status(400).send('You cannot access this resource');
+
+			const oauthAccounts = getOauthAccountsByUserId(session.user_id);
+
+			const OAuth = oauthAccounts.map(acc => ({
+				provider: acc.provider_name,
+				linkedAt: acc.linked_at,
+				profile: JSON.parse(acc.profile_json)
+			}));
+
+			return reply.send({ oauth: OAuth });
+		});
+	fastify.get(
+		'/:provider',
+		{
+			schema: oauthSchema,
+			validatorCompiler: ({ schema }) => {return () => true;}
+		}, 
+	async (request, reply) => {
 		const { provider } = request.params as { provider: string };
 		const oauthProvider = getOauthProviderByName(provider);
 
@@ -36,12 +65,19 @@ export function oauthRoute(fastify: FastifyInstance) {
 		const config = oauthConfigs[provider];
 		if (!config) return reply.status(500).send('OAuth configuration missing');
 
+		// Optional requestId from frontend for popup handling
+		const queryParams = request.query as Record<string, string>;
+		const requestId = queryParams.requestId;
+
 		// Merge client_id and redirect_uri
 		const params: Record<string, string> = {
 			client_id: oauthProvider.client_id,
 			redirect_uri: oauthProvider.discovery_url,
 			...config.params,
 		};
+
+		if (requestId)
+			params.state = requestId;
 
 		let authUrl: string;
 		if (provider === 'forty-two') {
@@ -50,9 +86,8 @@ export function oauthRoute(fastify: FastifyInstance) {
 				.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
 				.join('&');
 			authUrl = `${config.url}?${query}`;
-		} else {
+		} else
 			authUrl = `${config.url}?${new URLSearchParams(params)}`;
-		}
 
 		return reply.redirect(authUrl);
 	});

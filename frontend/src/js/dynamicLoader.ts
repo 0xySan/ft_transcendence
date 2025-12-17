@@ -5,6 +5,9 @@ import { getUserLang } from "./translationModule.js";
 // Global listeners array to track dynamically added event listeners
 declare global {
 	var listeners: Listener[];
+	interface Window {
+		loadPage: typeof loadPage;
+	}
 }
 
 const contentDiv = document.getElementById('content') as HTMLElement;
@@ -38,7 +41,7 @@ function clearAllListeners(): void {
 async function executeScripts(container: HTMLElement): Promise<void> {
 	// Reinitialize all forms in the new content
 	const forms = container.querySelectorAll<HTMLFormElement>('form');
-	initializeForms(forms);
+	// initializeForms(forms);
 
 	// Select all <script> elements that have a `src` attribute
 	const scripts = container.querySelectorAll<HTMLScriptElement>('script[src]');
@@ -112,7 +115,7 @@ function setupDynamicRouting(): void {
 
 	// Initialize forms already present in DOM
 	const forms = document.querySelectorAll<HTMLFormElement>('form');
-	initializeForms(forms);
+	// initializeForms(forms);
 }
 
 // --- Update the #content div with new HTML and manage history ---
@@ -140,37 +143,15 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 	await executeScripts(contentDiv);
 }
 
-// --- Attach dynamic AJAX submission for forms ---
-function initializeForms(forms: NodeListOf<HTMLFormElement>): void {
-	forms.forEach(form => {
-		const submitHandler = (e: Event) => {
-			e.preventDefault();
-
-			// Collect form data as JSON
-			const data: Record<string, string> = {};
-			new FormData(form).forEach((value, key) => {
-				data[key] = value.toString();
-			});
-
-			fetch(form.action, {
-				method: form.method,
-				body: JSON.stringify(data),
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Requested-With': 'XMLHttpRequest'
-				}
-			})
-				.then(res => res.ok ? res.text() : Promise.reject(`HTTP ${res.status}`))
-				.then(html => {
-					updatePage(form.action, html, 'push');
-				})
-				.catch(err => console.error('Fetch error:', err));
-		};
-
-		form.addEventListener('submit', submitHandler);
-		listeners.push({ element: form, type: 'submit', callback: submitHandler });
-	});
+export function loadPage(url: string): void {
+	fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
+		.then(res => res.ok ? res.text() : Promise.reject(`HTTP ${res.status}`))
+		.then(html => {
+			updatePage(url, html, 'push');
+		})
+		.catch(err => console.error('Fetch error:', err));
 }
 
 // --- Start routing after DOM is loaded ---
 document.addEventListener('DOMContentLoaded', setupDynamicRouting);
+window.loadPage = loadPage;
