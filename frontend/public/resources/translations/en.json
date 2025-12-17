@@ -46,11 +46,11 @@
     "passwordLabel": "Password:",
     "registerHereLink": "Register here",
     "rememberMeLabel": "Remember me",
-    "usernameLabel": "Username:"
+    "usernameLabel": "Username or email:"
   },
   "mailverification": {
     "changeEmail": "Change email",
-    "message": "We've sent an email to <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>. Check your inbox and click the verification link to confirm your email address.",
+    "message": "We've sent an email to <span class=\"font-poppins-semibold\" id=\"verification-email\">[ADDRESS]</span>. Check your inbox and click the verification link to confirm your email address.",
     "resendEmail": "Resend Email",
     "title": "Check your mailbox"
   },
@@ -78,5 +78,22 @@
     "passwordLabel": "Password:",
     "resetButton": "Reset Password",
     "title": "Reset Password"
+  },
+  "twofa": {
+    "title": {
+      "totp": "Check your TOTP app",
+      "emailTotp": "Check your email for the code",
+      "backupCodes": "Enter one of your backup codes"
+    },
+    "instructions": {
+      "totp": "Open your TOTP app and enter the 6-digit verification code displayed there.",
+      "emailTotp": "Enter the 6-digit code sent to your email <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>.",
+      "backupCodes": "Enter one of your backup codes. Entering a backup code will invalidate it."
+    },
+    "methodText": "Select another verification method if needed.",
+    "otpContainer": "",
+    "otherMethodLabel": "Other method of Two Factor Authentication",
+    "methodSelect": "",
+    "resendButton": "Resend verification code"
   }
 }

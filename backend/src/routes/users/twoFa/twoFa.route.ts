@@ -214,14 +214,12 @@ async function createTotpMethod(userEmail: string, methodId: string, label: stri
  * @returns Result object with success status, message, and generated codes
  */
 async function createBackupMethod(methodId: string) {
-	const codes = generateBackupCodes(10, 8);
+	const codes = generateBackupCodes(10, 6);
 
-	const hashedCodes = await Promise.all(
-		codes.map(async (code) => ({
-			hash: await hashString(code),
+	const hashedCodes = codes.map((code) => ({
+			hash: encryptSecret(code).toString('base64'),
 			used: false
 		}))
-	);
 
 	const result = createUser2faBackupCodes({
 		method_id: methodId,
@@ -382,11 +380,15 @@ export default async function twoFaRoutes(fastify: FastifyInstance) {
 
 				// persist base method row
 				try {
+					let isPrimary = false;
+					if (methods.length === 0 && results.filter(r => r.success).length === 0)
+						isPrimary = true;
 					const dbMethod = create2FaMethods({
 						method_id: methodId,
 						user_id: userId,
 						method_type: method.methodType,
 						label: method.label,
+						is_primary: isPrimary,
 						is_verified: method.methodType === 2 ? true : false, // backup codes are already verified
 					});
 					if (!dbMethod) {

@@ -14,6 +14,10 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
   process.exit(1);
 }
 
+if (process.env.DOMAIN_NAME === undefined || process.env.DOMAIN_NAME.length === 0) {
+	process.env.DOMAIN_NAME = 'localhost';
+}
+
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 

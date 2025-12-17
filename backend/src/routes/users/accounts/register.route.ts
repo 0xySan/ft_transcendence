@@ -50,17 +50,10 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
-			const { username, email, password, oauth, pfp, display_name } = request.body as {
+			const { username, email, password, display_name } = request.body as {
 				username?: string;
 				email?: string;
 				password?: string;
-				oauth?: {
-					provider_name: string;
-					provider_user_id: string;
-					profile_json?: string;
-					id_token_hash?: string;
-				};
-				pfp?: string;
 				display_name?: string;
 			};
 
@@ -71,9 +64,8 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			if (!password && !oauth) {
+			if (!password)
 				return reply.status(400).send({ message: "Missing authentication information." });
-			}
 
 			if (password && !passwordRegex.test(password)) {
 				return reply.status(400).send({
@@ -81,7 +73,6 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			
 			const existingProfile = getProfileByUsername(username);
 
 			if (existingProfile) {
@@ -93,12 +84,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			const existingUser = getUserByEmail(email);
 
-			// --- Silent existence checks (no error exposure) protect against user enumeration ---
-			const existingOauth = oauth
-				? getOauthAccountByProviderAndUserId(oauth.provider_name, oauth.provider_user_id)
-				: null;
-
-			if (existingOauth || existingUser) {
+			if (existingUser) {
 				await delayResponse(startTime, MIN_DELAY);
 				return reply.status(202).send({
 					message: "If the registration is valid, a verification email will be sent shortly."
@@ -106,10 +92,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 			}
 
 			// --- Proceed with creation ---
-			let passwordHash = "";
-			if (password) {
-				passwordHash = await hashString(password);
-			}
+			const passwordHash = await hashString(password);
 
 			const newUser = createUser(email!, passwordHash, getRoleByName('unverified')!.role_id);
 			if (!newUser) {
@@ -125,13 +108,6 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 			}
 
 			let avatarFileName: string | undefined;
-			if (pfp) {
-				try {
-					avatarFileName = await saveAvatarFromUrl(newUser.user_id.toString(), pfp);
-				} catch (err) {
-					console.error("Failed to save avatar:", err);
-				}
-			}
 
 			createProfile(
 				newUser.user_id,
@@ -140,17 +116,6 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				avatarFileName,
 				countryId
 			);
-
-			if (oauth) {
-				createOauthAccount({
-					user_id: newUser.user_id,
-					provider_name: oauth.provider_name,
-					provider_user_id: oauth.provider_user_id,
-					profile_json: oauth.profile_json,
-					id_token_hash: oauth.id_token_hash,
-					linked_at: Date.now(),
-				});
-			}
 
 			const verificationToken = generateRandomToken(32);
 			const encryptedToken = await hashString(verificationToken);
@@ -166,7 +131,7 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 				"accountVerification.html",
 				{
 					HEADER: "Welcome to ft_transcendence!",
-					VERIFICATION_LINK: `https://moutig.sh/verify?user=${newUser.user_id}&token=${encodeURIComponent(verificationToken)}`,
+					VERIFICATION_LINK: `https://${process.env.DOMAIN_NAME}/verify?user=${newUser.user_id}&token=${encodeURIComponent(verificationToken)}`,
 				},
 				`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
 			).catch(err => console.error("Failed to send email:", err));

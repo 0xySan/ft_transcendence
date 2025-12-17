@@ -1,9 +1,10 @@
 <div class="auth-pages-container">
 	<h1 data-translate-key="register.createAccount">Create an Account</h1>
-	<form class="auth-form-container">
+	<form method="POST" action="/api/users/accounts/register" class="auth-form-container">
 		<div class="div-title-and-text-input">
 			<label for="username" data-translate-key="register.usernameLabel">Username:</label>
 			<input type="text" id="username-text-input" name="username" class="form-input-field" placeholder="Choose a username"/>
+			<input type="text" id="displayName-text-input" name="displayName" class="form-input-field" placeholder="Optional display name"/>
 			<span id="register-username-error-text" class="error-message" aria-hidden="true">
 			</span>
 		</div>
@@ -29,6 +30,7 @@
 			<button type="submit" class="button button-fit-div-width background-color-lavender" data-translate-key="register.registerButton">
 				Register
 			</button>
+			<span id="register-form-error-text" class="error-message" aria-hidden="true"></span>
 		</div>
 		<div>
 			<p data-translate-key="register.alreadyHaveAccount">

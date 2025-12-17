@@ -38,8 +38,6 @@ describe("POST /accounts/register", () => {
 
 		vi.doMock("../../../../src/db/wrappers/auth/index.js", () => ({
 			__esModule: true,
-			getOauthAccountByProviderAndUserId: vi.fn(),
-			createOauthAccount: vi.fn(),
 			createEmailVerification: vi.fn().mockResolvedValue({ email: "user@example.com", token: "token123" }),
 		}));
 
@@ -58,11 +56,6 @@ describe("POST /accounts/register", () => {
 				}),
 			};
 		});
-
-		vi.doMock("../../../../src/utils/userData.js", () => ({
-			__esModule: true,
-			saveAvatarFromUrl: vi.fn(),
-		}));
 
 		// Import route AFTER mocks
 		const mod = await import("../../../../src/routes/users/accounts/register.route.js");
@@ -147,33 +140,6 @@ describe("POST /accounts/register", () => {
 		expect(body.message).toMatch(/verification email/i);
 		// ensure profile creation called with expected args
 		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "newuser", "newuser", undefined, undefined);
-	});
-
-	it("creates user with oauth + pfp and calls createOauthAccount and saveAvatarFromUrl", async () => {
-		(mocks.userData.saveAvatarFromUrl as any).mockResolvedValue("avatar_55.png");
-		const payload = {
-			username: "oauthuser",
-			email: "oauth@example.com",
-			oauth: { provider_name: "google", provider_user_id: "12345" },
-			pfp: "https://example.com/avatar.png",
-		};
-		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(202);
-		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "oauthuser", "oauthuser", "avatar_55.png", undefined);
-		expect((mocks.auth.createOauthAccount as any)).toHaveBeenCalled();
-	});
-
-	it("continues creation if saveAvatarFromUrl throws (avatar optional)", async () => {
-		(mocks.userData.saveAvatarFromUrl as any).mockRejectedValue(new Error("download fail"));
-		const payload = {
-			username: "userNoAvatar",
-			email: "noavatar@example.com",
-			oauth: { provider_name: "google", provider_user_id: "z123" },
-			pfp: "https://bad.example/avatar.png",
-		};
-		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(202);
-		expect((mocks.main.createProfile as any)).toHaveBeenCalledWith(1, "userNoAvatar", "userNoAvatar", undefined, undefined);
 	});
 
 	it("returns 500 if createUser fails", async () => {
