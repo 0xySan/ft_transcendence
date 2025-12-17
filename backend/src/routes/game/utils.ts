@@ -5,6 +5,7 @@
 
 import { activeGames } from "../../globals.js";
 import * as game from "../../game/workers/game/game.types.js";
+import * as worker from '../../game/workers/worker.types.js';
 
 /**
  * Checks if a user is already in an active game.
@@ -28,6 +29,7 @@ export function addUserToGame(userId: string, gameId: string, code?: string): vo
 	if (g) g.players.set(userId, null);
 	else activeGames.set(gameId, {
 		worker_id: -1,
+		visibility: true,
 		code: code || '',
 		players: new Map([[userId, null]])
 	});
@@ -45,6 +47,19 @@ export function getGameByCode(code: string) {
 		if (g.code === code) return gameId;
 	}
 	return null;
+}
+
+/**
+ * Retrieves a public game.
+ * @returns list of game is public.
+ */
+export function getPublicGame(): worker.activeGame[] {
+	const games: worker.activeGame[] = [];
+	for (const [id, g] of activeGames.entries()) {
+		if (g.visibility === true)
+			games.push(g);
+	}
+	return (games);
 }
 
 /* ----------------------------- Type Guards ----------------------------- */

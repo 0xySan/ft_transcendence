@@ -37,13 +37,15 @@ export type mode = "online" | "local" | "tournament";
 export type state = "waiting" | "playing" | "ended";
 
 /**
- * General game settings.
+ * General game .
  * - **mode**: The mode of the game.
  * - **code**: The unique code for the game room.
  * - **maxPlayers**: Maximum number of players allowed in the game.
  * - **spectatorsAllowed**: Whether spectators are allowed in the game.
  */
 export interface GameSettings {
+	/**  THe game is private or public. */
+	visibility:			boolean;
 	/** The mode of the game. */
 	mode:				mode;
 	/** The unique code for the game room. */

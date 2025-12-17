@@ -18,6 +18,8 @@ import { parentPort } from "worker_threads";
 export class Game {
 	/** Game unique identifier */
 	id: string;
+	/** Game is private or no */
+	visibility: boolean;
 	/** Owner ID of the game */
 	ownerId: string;
 	/** List of players in the game */
@@ -46,8 +48,9 @@ export class Game {
 	 * @param ownerId - owner user ID
 	 * @param configOverrides - optional configuration overrides
 	 */
-	constructor(id: string, ownerId: string, configOverrides?: Partial<config>) {
+	constructor(id: string, visibility: boolean,  ownerId: string, configOverrides?: Partial<config>) {
 		this.id = id;
+		this.visibility = false;
 		this.ownerId = ownerId;
 		this.players = [];
 		this.spectators = [];

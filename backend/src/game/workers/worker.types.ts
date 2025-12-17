@@ -28,6 +28,7 @@ export interface WorkerInfo {
 export interface activeGame {
 	worker_id:		number;
 	code:			string;
+	visibility:		boolean;
 	players:		Map<string, WebSocket | null>;
 }
 
