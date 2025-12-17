@@ -9,7 +9,7 @@ db; // ensure db is initialized
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
-if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length !== 64) ) {
+if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length !== 64)) {
   console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
   process.exit(1);
 }

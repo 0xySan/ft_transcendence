@@ -152,38 +152,6 @@ export function loadPage(url: string): void {
 		.catch(err => console.error('Fetch error:', err));
 }
 
-// // --- Attach dynamic AJAX submission for forms ---
-// function initializeForms(forms: NodeListOf<HTMLFormElement>): void {
-// 	forms.forEach(form => {
-// 		const submitHandler = (e: Event) => {
-// 			e.preventDefault();
-
-// 			// Collect form data as JSON
-// 			const data: Record<string, string> = {};
-// 			new FormData(form).forEach((value, key) => {
-// 				data[key] = value.toString();
-// 			});
-
-// 			fetch(form.action, {
-// 				method: form.method,
-// 				body: JSON.stringify(data),
-// 				headers: {
-// 					'Content-Type': 'application/json',
-// 					'X-Requested-With': 'XMLHttpRequest'
-// 				}
-// 			})
-// 				.then(res => res.ok ? res.text() : Promise.reject(`HTTP ${res.status}`))
-// 				.then(html => {
-// 					updatePage(form.action, html, 'push');
-// 				})
-// 				.catch(err => console.error('Fetch error:', err));
-// 		};
-
-// 		form.addEventListener('submit', submitHandler);
-// 		listeners.push({ element: form, type: 'submit', callback: submitHandler });
-// 	});
-// }
-
 // --- Start routing after DOM is loaded ---
 document.addEventListener('DOMContentLoaded', setupDynamicRouting);
 window.loadPage = loadPage;

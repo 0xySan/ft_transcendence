@@ -1,222 +1,219 @@
 <!DOCTYPE html>
 <html data-theme="catppuccin-macchiato" lang="en">
-<head>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta charset="UTF-8">
-	<title>Example</title>
-	<link href="style.css" rel="stylesheet">
-	<script src="/js/translationModule.js" type="module" defer></script>
-	<script defer type="module" src="/js/dynamicLoader.js"></script>
-	<script>
-		const listeners = [];
-		function addListener(element, type, callback, options = false) {
-			element.addEventListener(type, callback, options);
-			listeners.push({ element, type, callback, options });
-		}
-	</script>
-	<!-- Flag to indicate full page load completion -> see dupChecker -->
-	<script>
-		window.isFullPageLoaded = true;
-	</script>
-	<script>
-		function updateNavBar(userData) {
-			const loggedOut = document.getElementById("nav-logged-out");
-			const loggedIn = document.getElementById("nav-logged-in");
-			
-			const pfpImg = document.getElementById("nav-pfp-img");
-			const pfpFallback = document.getElementById("nav-pfp-fallback");
-			const dropdown = document.getElementById("nav-profile-dropdown");
-			const profileLink = document.getElementById("nav-profile-link");
-			const logoutBtn = document.getElementById("nav-logout-btn");
-			const pfpWrapper = document.getElementById("nav-pfp-wrapper");
-			
-			if (!userData || !userData.user || !userData.user.profile) {
-				loggedOut.classList.remove("unloaded");
-				loggedIn.classList.add("unloaded");
-				return;
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="UTF-8">
+		<title>Example</title>
+		<link href="style.css" rel="stylesheet">
+		<script src="/js/translationModule.js" type="module" defer></script>
+		<script defer type="module" src="/js/dynamicLoader.js"></script>
+		<script>
+			const listeners = [];
+			function addListener(element, type, callback, options = false) {
+				element.addEventListener(type, callback, options);
+				listeners.push({ element, type, callback, options });
 			}
-			
-			// It's only a Promise by name, it's actually just a bunch of user data
-			window.currentUserPromise = userData;
-			
-			const profile = userData.user.profile;
-			loggedOut.classList.add("unloaded");
-			loggedIn.classList.remove("unloaded");
-			
-			profileLink.href = `/profile/${profile.username}`;
-			
-			if (profile.profilePicture) {
-				pfpImg.src = "api/users/data/imgs/" + profile.profilePicture;
-				pfpImg.classList.remove("unloaded");
-				pfpFallback.classList.add("unloaded");
-			} else {
-				pfpImg.classList.add("unloaded");
-				pfpFallback.classList.remove("unloaded");
-			}
-			
-			pfpWrapper.addEventListener("click", (e) => {
-				e.stopPropagation();
-				dropdown.classList.toggle("unloaded");
-			});
-			
-			document.addEventListener("click", () => {
-				dropdown.classList.add("unloaded");
-			});
-			
-			logoutBtn.addEventListener("click", () => {
-				fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })
-				.then(res => {
-					if (res.ok) {
-						updateNavBar(null);
-						loadPage('/home');
-					}
-					else {
-						null;
-					}
+		</script>
+		<!-- Flag to indicate full page load completion -> see dupChecker -->
+		<script>
+			window.isFullPageLoaded = true;
+		</script>
+		<script>
+			function updateNavBar(userData) {
+				const loggedOut = document.getElementById("nav-logged-out");
+				const loggedIn = document.getElementById("nav-logged-in");
+				
+				const pfpImg = document.getElementById("nav-pfp-img");
+				const pfpFallback = document.getElementById("nav-pfp-fallback");
+				const dropdown = document.getElementById("nav-profile-dropdown");
+				const profileLink = document.getElementById("nav-profile-link");
+				const logoutBtn = document.getElementById("nav-logout-btn");
+				const pfpWrapper = document.getElementById("nav-pfp-wrapper");
+				
+				if (!userData || !userData.user || !userData.user.profile) {
+					loggedOut.classList.remove("unloaded");
+					loggedIn.classList.add("unloaded");
+					return;
+				}
+				
+				// It's only a Promise by name, it's actually just a bunch of user data
+				window.currentUserPromise = userData;
+				
+				const profile = userData.user.profile;
+				loggedOut.classList.add("unloaded");
+				loggedIn.classList.remove("unloaded");
+				
+				profileLink.href = `/profile/${profile.username}`;
+				
+				if (profile.profilePicture) {
+					pfpImg.src = "api/users/data/imgs/" + profile.profilePicture;
+					pfpImg.classList.remove("unloaded");
+					pfpFallback.classList.add("unloaded");
+				} else {
+					pfpImg.classList.add("unloaded");
+					pfpFallback.classList.remove("unloaded");
+				}
+				
+				pfpWrapper.addEventListener("click", (e) => {
+					e.stopPropagation();
+					dropdown.classList.toggle("unloaded");
 				});
+				
+				document.addEventListener("click", () => {
+					dropdown.classList.add("unloaded");
+				});
+				
+				logoutBtn.addEventListener("click", () => {
+					fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })
+					.then(res => {
+						if (res.ok) {
+							updateNavBar(null);
+							loadPage('/home');
+						}
+						else {
+							null;
+						}
+					});
+				});
+			}
+			fetch("/api/users/me")
+			.then(res => res.ok ? res.json() : null)
+			.then(data => {
+				updateNavBar(data);
+			})
+			.catch(err => {
+				console.error("Error fetching user data:", err);
+				updateNavBar(null);
 			});
-		}
-		fetch("/api/users/me")
-		.then(res => res.ok ? res.json() : null)
-		.then(data => {
-			updateNavBar(data);
-		})
-		.catch(err => {
-			console.error("Error fetching user data:", err);
-			updateNavBar(null);
-		});
-		
-		window.updateNavBar = updateNavBar;
-	</script>
-</head>
-<body class="flex-space-between">
-	<header>
-		<nav>
-			<svg	id="nav-menu-svg"
-			viewBox="0 0 42 42"
-			width="50" height="50"
-			xmlns="http://www.w3.org/2000/svg"
-			role="img"
-			aria-label="nav menu icon">
-			<!-- PATH 1: Central circle -->
-			<path	id="nav-menu-p1"
-			d="M 17 21 A 4 4 90 0 0 25 21 A 4 4 90 0 0 17 21"
-			stroke="none" fill="currentColor" stroke-width="0.12">
-			<animate id="nav-menu-p1-morph"
-			attributeName="d"
-			dur="0.2s"
-			fill="freeze"
-			begin="indefinite"
-			values="M 17 21 A 4 4 90 0 0 25 21 A 4 4 90 0 0 17 21;M 1 21 A 4 4 90 0 0 41 21 A 4 4 90 0 0 1 21" />
-		</path>
-		<!-- PATH 2: Upper circle rotation then morph into line -->
-		<path	id="nav-menu-p2"
-		d="M 17 9 C 17 13 21 13 21 13 C 25 13 25 9 25 9 C 25 5 21 5 21 5 C 17 5 17 9 17 9"
-		stroke="none" fill="currentColor" stroke-width="0.12">
-		<animateTransform	id="nav-menu-p2-rot"
-		attributeName="transform"
-		type="rotate"
-		from="0 21 21"
-		to="225 21 21"
-		dur="0.2s"
-		fill="freeze"
-		begin="indefinite" />
-		<animate	id="nav-menu-p2-morph"
-		attributeName="d"
-		dur="0.1s"
-		fill="freeze"
-		begin="indefinite"
-		values="M 17 9 C 17 13 21 13 21 13 C 25 13 25 9 25 9 C 25 5 21 5 21 5 C 17 5 17 9 17 9;M 18 9 C 18 9 18 33 18 33 C 18 37 24 37 24 33 C 24 33 24 9 24 9 C 24 4 18 4 18 9" />
-	</path>
-	<!-- PATH 3: Lower circle rotation then morph into line -->
-	<path	id="nav-menu-p3"
-	d="M 17 33 C 17 37 21 37 21 37 C 25 37 25 33 25 33 C 25 29 21 29 21 29 C 17 29 17 33 17 33"
-	stroke="none" fill="currentColor" stroke-width="0.12">
-	<animateTransform	id="nav-menu-p3-rot"
-	attributeName="transform"
-	type="rotate"
-	from="0 21 21"
-	to="135 21 21"
-	dur="0.2s"
-	fill="freeze"
-	begin="indefinite" />
-	<animate	id="nav-menu-p3-morph"
-	attributeName="d"
-	dur="0.1s"
-	fill="freeze"
-	begin="indefinite"
-	values="M 17 33 C 17 37 21 37 21 37 C 25 37 25 33 25 33 C 25 29 21 29 21 29 C 17 29 17 33 17 33;M 18 33 C 18 38 24 38 24 33 C 24 33 24 9 24 9 C 24 4 18 4 18 9 C 18 9 18 33 18 33" />
-</path>
-</svg>
-<div id="nav-left-links">
-	<a href="/" data-translate-key="navbar.homeText">Home</a>
-	<a href="/lobby" data-translate-key="navbar.playText">Play</a>
-	<a href="/" data-translate-key="navbar.leaderboardText">Leaderboard</a>
-	<a href="/" data-translate-key="navbar.profileText">Profile</a>
-</div>
-<div id="theme-switcher">
-	<button class="theme-btn" data-theme="catppuccin-latte" style="--c1:rgb(239, 241, 245); --c2:rgb(172, 176, 190); --c3:rgb(108, 111, 133);"></button>
-	<button class="theme-btn" data-theme="catppuccin-frappe" style="--c1:rgb(35, 38, 52); --c2:rgb(48, 52, 70); --c3:rgb(165, 173, 206);"></button>
-	<button class="theme-btn active" data-theme="catppuccin-macchiato" style="--c1:rgb(24, 25, 38); --c2:rgb(36, 39, 58); --c3:rgb(165, 173, 203);"></button>
-	<button class="theme-btn" data-theme="catppuccin-mocha" style="--c1:rgb(17, 17, 27); --c2:rgb(30, 30, 46); --c3:rgb(166, 173, 200);"></button>
-</div>
-<div id="nav-right-links">
-	
-	<!-- Logged out -->
-	<div id="nav-logged-out">
-		<a href="/login">
-			<button type="button" data-translate-key="navbar.loginButton">Login</button>
-		</a>
-		<a href="/register">
-			<button type="button" data-translate-key="navbar.registerButton">Register</button>
-		</a>
-	</div>
-	
-	<!-- Logged in -->
-	<div id="nav-logged-in" class="unloaded">
-		
-		<!-- Profile picture -->
-		<div id="nav-pfp-wrapper">
-			<img id="nav-pfp-img" class="nav-pfp unloaded">
-			<svg id="nav-pfp-fallback" class="nav-pfp unloaded"
-			viewBox="-2 -2 6 8">
-			<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4"
-			fill="currentColor"/>
-		</svg>
-	</div>
-	
-	<!-- Dropdown -->
-	<div id="nav-profile-dropdown" class="unloaded">
-		<a id="nav-profile-link">Profile</a>
-		<a href="/settings">Settings</a>
-		<button id="nav-logout-btn">Logout</button>
-	</div>
-	
-</div>
-</div>
-
-</nav>
-</header>
-<div id="scroll-content">
-	<div id="content">
-		<!-- Dynamic content goes here -->
-	</div>
-	
-	<footer>
-		<div id="link-text">
-			<a href="/home" data-translate-key="footer.homeLink">Home</a>
-			<span class="footer-divider"></span>
-			<a href="/privacy" data-translate-key="footer.privacyPolicyLink">Privacy Policy</a>
-			<span class="footer-divider"></span>
-			<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load" data-translate-key="footer.githubLink">GitHub</a>
-			<span class="footer-divider"></span>
-			<a href="/about" data-translate-key="footer.aboutLink">About</a>
+			
+			window.updateNavBar = updateNavBar;
+		</script>
+	</head>
+	<body class="flex-space-between">
+		<header>
+			<nav>
+				<svg	id="nav-menu-svg"
+						viewBox="0 0 42 42"
+						width="50" height="50"
+						xmlns="http://www.w3.org/2000/svg"
+						role="img"
+						aria-label="nav menu icon">
+					<!-- PATH 1: Central circle -->
+					<path	id="nav-menu-p1"
+							d="M 17 21 A 4 4 90 0 0 25 21 A 4 4 90 0 0 17 21"
+							stroke="none" fill="currentColor" stroke-width="0.12">
+						<animate	id="nav-menu-p1-morph"
+									attributeName="d"
+									dur="0.2s"
+									fill="freeze"
+									begin="indefinite"
+									values="M 17 21 A 4 4 90 0 0 25 21 A 4 4 90 0 0 17 21;
+											M 1 21 A 4 4 90 0 0 41 21 A 4 4 90 0 0 1 21" />
+					</path>
+					<!-- PATH 2: Upper circle rotation then morph into line -->
+					<path	id="nav-menu-p2"
+							d="M 17 9 C 17 13 21 13 21 13 C 25 13 25 9 25 9 C 25 5 21 5 21 5 C 17 5 17 9 17 9"
+							stroke="none"
+							fill="currentColor"
+							stroke-width="0.12">
+						<animateTransform	id="nav-menu-p2-rot"
+											attributeName="transform"
+											type="rotate"
+											from="0 21 21"
+											to="225 21 21"
+											dur="0.2s"
+											fill="freeze"
+											begin="indefinite" />
+						<animate	id="nav-menu-p2-morph"
+									attributeName="d"
+									dur="0.1s"
+									fill="freeze"
+									begin="indefinite"
+									values="M 17 9 C 17 13 21 13 21 13 C 25 13 25 9 25 9 C 25 5 21 5 21 5 C 17 5 17 9 17 9;
+											M 18 9 C 18 9 18 33 18 33 C 18 37 24 37 24 33 C 24 33 24 9 24 9 C 24 4 18 4 18 9" />
+					</path>
+					<!-- PATH 3: Lower circle rotation then morph into line -->
+					<path	id="nav-menu-p3"
+							d="M 17 33 C 17 37 21 37 21 37 C 25 37 25 33 25 33 C 25 29 21 29 21 29 C 17 29 17 33 17 33"
+							stroke="none"
+							fill="currentColor"
+							stroke-width="0.12">
+						<animateTransform	id="nav-menu-p3-rot"
+											attributeName="transform"
+											type="rotate"
+											from="0 21 21"
+											to="135 21 21"
+											dur="0.2s"
+											fill="freeze"
+											begin="indefinite" />
+						<animate	id="nav-menu-p3-morph"
+									attributeName="d"
+									dur="0.1s"
+									fill="freeze"
+									begin="indefinite"
+									values="M 17 33 C 17 37 21 37 21 37 C 25 37 25 33 25 33 C 25 29 21 29 21 29 C 17 29 17 33 17 33;M 18 33 C 18 38 24 38 24 33 C 24 33 24 9 24 9 C 24 4 18 4 18 9 C 18 9 18 33 18 33" />
+					</path>
+				</svg>
+				<div id="nav-left-links">
+					<a href="/" data-translate-key="navbar.homeText">Home</a>
+					<a href="/lobby" data-translate-key="navbar.playText">Play</a>
+					<a href="/" data-translate-key="navbar.leaderboardText">Leaderboard</a>
+					<a href="/" data-translate-key="navbar.profileText">Profile</a>
+				</div>
+				<div id="theme-switcher">
+					<button class="theme-btn" data-theme="catppuccin-latte" style="--c1:rgb(239, 241, 245); --c2:rgb(172, 176, 190); --c3:rgb(108, 111, 133);"></button>
+					<button class="theme-btn" data-theme="catppuccin-frappe" style="--c1:rgb(35, 38, 52); --c2:rgb(48, 52, 70); --c3:rgb(165, 173, 206);"></button>
+					<button class="theme-btn active" data-theme="catppuccin-macchiato" style="--c1:rgb(24, 25, 38); --c2:rgb(36, 39, 58); --c3:rgb(165, 173, 203);"></button>
+					<button class="theme-btn" data-theme="catppuccin-mocha" style="--c1:rgb(17, 17, 27); --c2:rgb(30, 30, 46); --c3:rgb(166, 173, 200);"></button>
+				</div>
+				<div id="nav-right-links">
+					<!-- Logged out -->
+					<div id="nav-logged-out">
+						<a href="/login">
+							<button type="button" data-translate-key="navbar.loginButton">Login</button>
+						</a>
+						<a href="/register">
+							<button type="button" data-translate-key="navbar.registerButton">Register</button>
+						</a>
+					</div>
+					<!-- Logged in -->
+					<div id="nav-logged-in" class="unloaded">
+						<!-- Profile picture -->
+						<div id="nav-pfp-wrapper">
+							<img id="nav-pfp-img" class="nav-pfp unloaded">
+							<svg id="nav-pfp-fallback" class="nav-pfp unloaded" viewBox="-2 -2 6 8">
+								<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4" fill="currentColor"/>
+							</svg>
+						</div>
+						<!-- Dropdown -->
+						<div id="nav-profile-dropdown" class="unloaded">
+							<a id="nav-profile-link">Profile</a>
+							<a href="/settings">Settings</a>
+							<button id="nav-logout-btn">Logout</button>
+						</div>
+					</div>
+				</div>
+			</nav>
+		</header>
+		<div id="scroll-content">
+			<div id="content">
+				<!-- Dynamic content goes here -->
+			</div>
+			<footer>
+				<div id="link-text">
+					<a href="/home" data-translate-key="footer.homeLink">Home</a>
+					<span class="footer-divider"></span>
+					<a href="/privacy" data-translate-key="footer.privacyPolicyLink">Privacy Policy</a>
+					<span class="footer-divider"></span>
+					<a href="https://github.com/0xySan/ft_transcendence" class="no-dynamic-load" data-translate-key="footer.githubLink">GitHub</a>
+					<span class="footer-divider"></span>
+					<a href="/about" data-translate-key="footer.aboutLink">About</a>
+				</div>
+				<div id="copyright-text" data-translate-key="footer.copyrightText">
+					© 2025 Transcendence 42. All rights reserved.
+				</div>
+			</footer>
 		</div>
-		<div id="copyright-text" data-translate-key="footer.copyrightText">
-			© 2025 Transcendence 42. All rights reserved.
-		</div>
-	</footer>
-</div>
-<script defer type="module" src="/js/index.js"></script>
-</body>
+		<script defer type="module" src="/js/index.js"></script>
+	</body>
 </html>
