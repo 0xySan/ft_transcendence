@@ -14,7 +14,6 @@ interface Message {
 	hidden?: boolean;
 	type: 'text' | 'invite' | 'system';
 	inviteState?: 'pending' | 'accepted' | 'declined' | 'cancelled';
-	game?: 'pong' | 'tetris';
 }
 
 interface Conversation {
@@ -181,15 +180,13 @@ function seedDummyData(): void {
 			sender: 'user4',
 			type: 'invite',
 			inviteState: 'pending',
-			game: 'tetris',
-			text: 'Wanna play Tetris?',
+			text: 'Wanna play Pong?',
 			timestamp: new Date(Date.now() + 1),
 		},
 		{
 			sender: 'user4',
 			type: 'invite',
 			inviteState: 'pending',
-			game: 'pong',
 			text: 'Wanna play Pong?',
 			timestamp: new Date(Date.now() + 2),
 		},
@@ -216,7 +213,6 @@ function seedDummyData(): void {
 			sender: 'me',
 			type: 'invite',
 			inviteState: 'accepted',
-			game: 'pong',
 			text: 'Wanna play Pong?',
 			timestamp: new Date(Date.now() + 7),
 		},
@@ -281,7 +277,6 @@ function initLayout(): void {
 function renderInviteButtons(
 	container: HTMLDivElement,
 	state: string,
-	game: string,
 	globalFirstIdx: number,
 	user_type: string
 ): void {
@@ -306,10 +301,8 @@ function renderInviteButtons(
 		const temp = document.querySelector<HTMLTemplateElement>('.invite-go-temp');
 		const fragment = temp!.content.cloneNode(true) as DocumentFragment;
 		const goBtn = fragment.querySelector<HTMLButtonElement>('.invite-go');
-		if (goBtn) {
+		if (goBtn)
 			goBtn.dataset.index = String(globalFirstIdx);
-			goBtn.dataset.game = game;
-		}
 		container.appendChild(fragment);
 	}
 	else
@@ -398,7 +391,6 @@ function loadMessages(
 		// Handle invite messages
 		if (first.type === 'invite' && !(first.sender !== 'me' && blockedUsers.has(first.sender))) {
 			const state = first.inviteState || 'pending';
-			const game = first.game || 'pong';
 			const container = document.createElement('div');
 			container.className = 'chat-message invite';
 			if (first.sender === 'me') container.classList.add('me');
@@ -414,15 +406,15 @@ function loadMessages(
 			const inviteText = document.createElement('span');
 			inviteText.className = 'invite-text';
 			if (first.sender === 'me')
-				inviteText.textContent = `You invited ${String(activeUser || 'player')} to play ${game}.`;
+				inviteText.textContent = `You invited ${String(activeUser || 'player')} to play Pong.`;
 			else
-				inviteText.textContent = `${first.sender} invited you to play ${game}.`;
+				inviteText.textContent = `${first.sender} invited you to play Pong.`;
 			container.appendChild(inviteText);
 
 			if (first.sender === 'me')
-				renderInviteButtons(container, state, game, globalFirstIdx, 'sender');
+				renderInviteButtons(container, state, globalFirstIdx, 'sender');
 			else
-				renderInviteButtons(container, state, game, globalFirstIdx, 'receiver');
+				renderInviteButtons(container, state, globalFirstIdx, 'receiver');
 
 			fragment.appendChild(container);
 			i = i + 1;
@@ -503,10 +495,8 @@ function updateInviteState(
 		const goTemp = document.querySelector<HTMLTemplateElement>('.invite-go-temp');
 		const fragment = goTemp!.content.cloneNode(true) as DocumentFragment;
 		const goBtn = fragment.querySelector<HTMLButtonElement>('.invite-go');
-		if (goBtn) {
+		if (goBtn)
 			goBtn.dataset.index = String(msgIndex);
-			goBtn.dataset.game = msg.game || 'pong';
-		}
 		container.appendChild(fragment);
 	}
 }
@@ -554,24 +544,18 @@ function submitMessage(
 	reorderUserList(activeUser);
 }
 
-function sendInvite(user: string, game: 'pong' | 'tetris' = 'pong'): void {
+function sendInvite(user: string): void {
 	if (!user) return;
-	if (game !== 'pong' && game !== 'tetris') {
-		console.warn(
-			`sendInvite: invalid game "${String(game)}" provided, defaulting to "pong"`
-		);
-		game = 'pong';
-	}
+
 	if (blockedUsers.has(user)) return;
 	if (!conversations[user]) conversations[user] = [];
 
 	const inviteMsg: Message = {
 		sender: 'me',
-		text: `invited ${user} to a ${game === 'pong' ? 'Pong' : 'Tetris'} game`,
+		text: `invited ${user} to a pong game`,
 		timestamp: new Date(),
 		type: 'invite',
 		inviteState: 'pending',
-		game,
 	};
 
 	conversations[user].push(inviteMsg);
@@ -680,6 +664,7 @@ function renderUserList(onSelectUser: () => void): void {
 						});
 					}
 					updateChatHeader(name);
+					refreshInputForUser(name);
 				}
 			} else {
 				onSelectUser();
@@ -716,6 +701,9 @@ function updateBlockedUI(user: string): void {
 	input.contentEditable = isBlocked ? 'false' : 'true';
 
 	if (isBlocked) {
+		input.textContent = '';
+		input.classList.add('empty');
+		clearDraft(user);
 		input.classList.add('blocked-conversation');
 		sendBtn.disabled = true;
 		sendBtn.hidden = true;
@@ -725,6 +713,35 @@ function updateBlockedUI(user: string): void {
 		sendBtn.disabled = false;
 		sendBtn.hidden = input.textContent!.trim() === '';
 		inviteWrapper.removeAttribute('aria-disabled');
+	}
+}
+
+function refreshInputForUser(user: string): void {
+	updateBlockedUI(user);
+
+	const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form');
+	if (!form) return;
+
+	const input = form.querySelector<HTMLDivElement>('.chat-input');
+	const sendBtn = form.querySelector<HTMLButtonElement>('.chat-send-btn');
+	if (!input || !sendBtn) return;
+
+	if (blockedUsers.has(user)) {
+		input.textContent = '';
+		input.classList.add('empty');
+		clearDraft(user);
+		sendBtn.hidden = true;
+		return;
+	}
+
+	const draftText = drafts[user] || '';
+	input.textContent = draftText;
+	if (draftText.trim() === '') {
+		input.classList.add('empty');
+		sendBtn.hidden = true;
+	} else {
+		input.classList.remove('empty');
+		sendBtn.hidden = false;
 	}
 }
 
@@ -891,8 +908,7 @@ function renderChat(): void {
 	const newInviteMenuBtns = newInviteMenu.querySelectorAll<HTMLButtonElement>(
 		'.invite-menu-btn'
 	);
-	const newBtnTetris = newInviteMenuBtns[0];
-	const newBtnPong = newInviteMenuBtns[1];
+	const newBtnPong = newInviteMenuBtns[0];
 	newInviteMenu.classList.add('hidden');
 	newInviteWrapper.classList.remove('hidden');
 	newInput.classList.remove('hidden');
@@ -934,21 +950,12 @@ function renderChat(): void {
 		newInviteWrapper.removeAttribute('aria-disabled');
 	}
 
-	newBtnTetris.addEventListener('click', (ev) => {
-		ev.preventDefault();
-		ev.stopPropagation();
-		if (!activeUser) return;
-		if (blockedUsers.has(activeUser)) return;
-		sendInvite(activeUser, 'tetris');
-		newInviteMenu.classList.add('hidden');
-	});
-
 	newBtnPong.addEventListener('click', (ev) => {
 		ev.preventDefault();
 		ev.stopPropagation();
 		if (!activeUser) return;
 		if (blockedUsers.has(activeUser)) return;
-		sendInvite(activeUser, 'pong');
+		sendInvite(activeUser);
 		newInviteMenu.classList.add('hidden');
 	});
 
