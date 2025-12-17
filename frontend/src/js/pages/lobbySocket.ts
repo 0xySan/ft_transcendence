@@ -1,6 +1,9 @@
+import { settings } from "./lobbySettings";
+
 declare global {
 	interface Window {
 		socket?: WebSocket;
+		setPartialLobbyConfig: (partial: Partial<settings>) => void;
 	}
 }
 
@@ -50,7 +53,7 @@ const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
 /* -------------------------------------------------------------------------- */
 /* WebSocket types                                                            */
 /* -------------------------------------------------------------------------- */
-type MsgType = "connect" | "player" | "playerSync" | "game";
+type MsgType = "connect" | "player" | "playerSync" | "game" | "settings";
 
 type SocketMessage<T> = {
 	type: MsgType;
@@ -117,6 +120,9 @@ function connectWebSocket(token: string): void {
 				if ((msg.payload as GamePayload).action === "start") {
 					loadPage("/pong-board");
 				}
+				break;
+			case "settings":
+				window.setPartialLobbyConfig(msg.payload as Partial<settings>);
 				break;
 
 			default:

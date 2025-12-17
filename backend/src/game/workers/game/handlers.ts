@@ -96,7 +96,8 @@ export function settingsHandler(msg: msg.message<msg.settingsPayload>, games: Ma
 		console.warn(`Game with ID ${payload.gameId} not found for settings update.`);
 		return;
 	}
-	game.updateSettings(payload.newSettings);
+
+	game.updateSettings(payload.newSettings, payload.userId);
 	const message = {
 		type: "settings",
 		payload: payload.newSettings,

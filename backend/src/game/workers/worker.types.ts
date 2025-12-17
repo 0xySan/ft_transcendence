@@ -23,11 +23,14 @@ export interface WorkerInfo {
  * Information about an active game.
  * - **worker_id**: Identifier of the worker handling the game.
  * - **code**: 4-character game code.
+ * - **ownerId**: Owner ID of the game.
+ * - **visibility**: Boolean indicating if the game is public or private.
  * - **players**: List of player IDs participating in the game.
  */
 export interface activeGame {
 	worker_id:		number;
 	code:			string;
+	ownerId:		string;
 	visibility:		boolean;
 	players:		Map<string, WebSocket | null>;
 }

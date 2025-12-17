@@ -44,7 +44,7 @@ export type state = "waiting" | "playing" | "ended";
  * - **spectatorsAllowed**: Whether spectators are allowed in the game.
  */
 export interface GameSettings {
-	/**  THe game is private or public. */
+	/**  The game is private or public. */
 	visibility:			boolean;
 	/** The mode of the game. */
 	mode:				mode;

@@ -132,19 +132,28 @@ export function addOrRemovePlayerGameWorker(uuid: string, displayName: string = 
 
 /**
  * Update game settings via the appropriate worker.
- * @param uuid - Game unique identifier
+ * @param uuid - User unique identifier
  * @param newSettings - Partial game configuration settings to be updated
  */
 export function gameUpdateSettings(uuid: string, newSettings: Partial<game.config>) {
+	const gameId = getGameIdByUser(uuid);
+	if (!gameId) return;
 	// Find the worker responsible for this game
-	const workerEntry = workers.find(w => w.activeGames.includes(uuid));
+	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
 	if (!workerEntry) return;
+
+	const activeGame = activeGames.get(gameId);
+	if (!activeGame) return;
+	// Only the original owner can change visibility
+	if (activeGame.ownerId == uuid)
+		activeGame.visibility = newSettings.game?.visibility ?? activeGame.visibility;
 
 	// Notify the worker to update the game settings
 	workerEntry.worker.postMessage({
 		type: "settings",
 		payload: {
-			gameId: uuid,
+			gameId: gameId,
+			userId: uuid,
 			newSettings: newSettings
 		} as msg.settingsPayload
 	} as msg.message<msg.settingsPayload>);

@@ -169,7 +169,11 @@ export class Game {
 	 * Updates the game settings.
 	 * @param newSettings - Partial configuration to update.
 	 */
-	updateSettings(newSettings: Partial<config>) {
+	updateSettings(newSettings: Partial<config>, userId: string) {
+		if (this.ownerId !== userId) {
+			console.warn(`User ${userId} is not the owner of the game ${this.id} and cannot update settings.`);
+			return;
+		}
 		this.config = {
 			game: {
 				...this.config.game,

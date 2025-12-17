@@ -6,6 +6,12 @@ declare function addListener(
 	handler: EventListener
 ): void;
 
+declare global {
+	interface Window {
+		setPartialLobbyConfig: (partial: Partial<settings>) => void;
+	}
+}
+
 /* ---------------------------
    Types
    --------------------------- */
@@ -41,13 +47,17 @@ export interface WorldSettings {
 
 export interface GameSettings {
 	mode: string;
+	spectatorsAllowed: boolean;
+}
+
+export interface ScoringSettings {
 	firstTo: number;
 	winBy: number;
-	allowSpectators: boolean;
 }
 
 export interface settings {
 	game: GameSettings;
+	scoring: ScoringSettings;
 	ball: BallSettings;
 	paddles: PaddleSettings;
 	field: FieldSettings;
@@ -84,9 +94,11 @@ function setSpan(span: HTMLSpanElement | undefined | null, v: string | number): 
 const defaultSettings: settings = {
 	game: {
 		mode: "online",
+		spectatorsAllowed: true,
+	},
+	scoring: {
 		firstTo: 5,
 		winBy: 0,
-		allowSpectators: true,
 	},
 	ball: {
 		radius: 6,
@@ -169,12 +181,13 @@ const ui = {
 function populateUi(): void {
 	const s = currentSettings;
 
-	// base
-	ui.base.firstToInput.value = String(s.game.firstTo);
-	setSpan(ui.base.firstToSpan, s.game.firstTo);
-	ui.base.winByInput.value = String(s.game.winBy);
-	setSpan(ui.base.winBySpan, s.game.winBy);
-	ui.base.allowSpectators.checked = s.game.allowSpectators;
+	// base / scoring
+	ui.base.firstToInput.value = String(s.scoring.firstTo);
+	setSpan(ui.base.firstToSpan, s.scoring.firstTo);
+	ui.base.winByInput.value = String(s.scoring.winBy);
+	setSpan(ui.base.winBySpan, s.scoring.winBy);
+	ui.base.allowSpectators.checked = s.game.spectatorsAllowed;
+
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
 	setInput(ui.ball.initialSpeed, s.ball.initialSpeed);
@@ -205,25 +218,30 @@ function populateUi(): void {
 /* ---------------------------
    Apply partial settings to inputs (public helper)
    --------------------------- */
-export function setInputsFromPartial(partial: Partial<settings>): void {
-	// merge shallow/deep only for known nests
+export function setPartialLobbyConfig(partial: Partial<settings>): void {
 	currentSettings = {
 		...currentSettings,
 		...partial,
+		game: {
+			mode: partial.game?.mode ?? currentSettings.game.mode,
+			spectatorsAllowed:
+				partial.game?.spectatorsAllowed ??
+				currentSettings.game.spectatorsAllowed,
+		},
+		scoring: {
+			firstTo:
+				partial.scoring?.firstTo ??
+				currentSettings.scoring.firstTo,
+			winBy:
+				partial.scoring?.winBy ??
+				currentSettings.scoring.winBy,
+		},
 		ball: { ...currentSettings.ball, ...(partial.ball ?? {}) },
 		paddles: { ...currentSettings.paddles, ...(partial.paddles ?? {}) },
 		field: { ...currentSettings.field, ...(partial.field ?? {}) },
 		world: { ...currentSettings.world, ...(partial.world ?? {}) },
-		// primitive fields
-		game: {
-			mode: partial.game?.mode ?? currentSettings.game.mode,
-			firstTo: partial.game?.firstTo ?? currentSettings.game.firstTo,
-			winBy: partial.game?.winBy ?? currentSettings.game.winBy,
-			allowSpectators: partial.game?.allowSpectators ?? currentSettings.game.allowSpectators,
-		},
 	};
 
-	// reflect changes in inputs/spans
 	populateUi();
 }
 
@@ -241,18 +259,19 @@ function bindCheckbox(input: HTMLInputElement, onChange: (v: boolean) => void): 
    Wire listeners (logic preserved)
    --------------------------- */
 function wire(): void {
-	// base
+	// base / scoring
 	addListener(ui.base.firstToInput, "input", () => {
-		const v = readNumber(ui.base.firstToInput, defaultSettings.game.firstTo);
-		currentSettings.game.firstTo = v;
+		const v = readNumber(ui.base.firstToInput, defaultSettings.scoring.firstTo);
+		currentSettings.scoring.firstTo = v;
 		setSpan(ui.base.firstToSpan, v);
 	});
 	addListener(ui.base.winByInput, "input", () => {
-		const v = readNumber(ui.base.winByInput, defaultSettings.game.winBy);
-		currentSettings.game.winBy = v;
+		const v = readNumber(ui.base.winByInput, defaultSettings.scoring.winBy);
+		currentSettings.scoring.winBy = v;
 		setSpan(ui.base.winBySpan, v);
 	});
-	bindCheckbox(ui.base.allowSpectators, (v) => (currentSettings.game.allowSpectators = v));
+	bindCheckbox(ui.base.allowSpectators, (v) => (currentSettings.game.spectatorsAllowed = v));
+
 	// ball
 	bindNumber(ui.ball.radius, (v) => (currentSettings.ball.radius = v));
 	bindNumber(ui.ball.initialSpeed, (v) => (currentSettings.ball.initialSpeed = v));
@@ -318,15 +337,11 @@ function wire(): void {
 	});
 }
 
-export function initLobbySettings(initial?: Partial<settings>): void {
+function initLobbySettings(initial?: Partial<settings>): void {
 	currentSettings = structuredClone(defaultSettings);
-	if (initial) setInputsFromPartial(initial);
+	if (initial) setPartialLobbyConfig(initial);
 	populateUi();
 	wire();
-}
-
-export function getCurrentSettings(): settings {
-	return structuredClone(currentSettings);
 }
 
 /* ---------------------------
@@ -414,3 +429,5 @@ function setupSubTabs(): void {
 
 setupModeHandlers();
 setupSubTabs();
+
+window.setPartialLobbyConfig = setPartialLobbyConfig;

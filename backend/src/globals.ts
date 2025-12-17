@@ -38,6 +38,8 @@ export const workers: WorkerInfo[] = [];
  * - Value: activeGame object containing:
  * 	- worker_id - **number**, identifier of the worker handling the game
  * 	- code - **string**, 4-character game code
+ * 	- ownerId - **string**, Owner ID of the game
+ * 	- visibility - **boolean**, indicates if the game is public or private
  * 	- players - **string[]**, list of player IDs participating in the game
  */
 export const activeGames: Map<string, worker.activeGame> = new Map();

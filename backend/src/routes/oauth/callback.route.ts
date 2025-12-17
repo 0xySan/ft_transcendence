@@ -124,7 +124,29 @@ function handleLoggedInUser(
 
 	return reply.send('OAuth account linked successfully');
 }
+function sanitizeUsername(inputUsername: string, email: string): string {
+    let username = inputUsername.toLowerCase();        // tout en minuscules
 
+    // Ne garder que lettres, chiffres et _
+    username = username.replace(/[^a-z0-9_]/g, '');
+
+    // Vérifie la longueur
+    if (username.length < 3 || username.length > 20) {
+        // Si invalide, utilise la partie avant @ de l'email
+        username = email.split('@')[0].toLowerCase();
+        username = username.replace(/[^a-z0-9_]/g, '');
+    }
+
+    // Ajuste la longueur
+    if (username.length < 3) {
+        username += generateRandomToken(3).slice(0, 3 - username.length); // compléter si trop court
+    }
+    if (username.length > 20) {
+        username = username.slice(0, 20); // tronquer si trop long
+    }
+
+    return username;
+}
 async function handleOauthUserCreation(
 	userInfo:	OAuth.NormalizedUserInfo,
 	tokenData:	OAuth.Token,
@@ -148,9 +170,8 @@ async function handleOauthUserCreation(
 		return reply.status(500).send('Failed to create account');
 
 	const existingProfile = getProfileByUsername(userInfo.username);
-	let username = userInfo.email.split('@')[0];
-	if (!existingProfile)
-		username = userInfo.username;
+		let username = existingProfile ? userInfo.username : userInfo.username;
+		username = sanitizeUsername(username, userInfo.email);
 
 	let avatarFileName: string | undefined;
 	if (userInfo.avatar) {

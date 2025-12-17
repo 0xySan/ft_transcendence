@@ -142,10 +142,12 @@ export interface workerPlayerPayload  extends playerPayload {
 /**
  * Payload structure for updating game settings.
  * - **gameId**: Unique identifier for the game.
+ * - **userId**: Unique identifier for the user requesting the update.
  * - **newSettings**: Partial configuration settings to be updated.
  */
 export interface settingsPayload {
 	gameId:			string;
+	userId:			string;
 	newSettings:	Partial<game.config>;
 }
 

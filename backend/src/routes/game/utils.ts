@@ -31,7 +31,8 @@ export function addUserToGame(userId: string, gameId: string, code?: string): vo
 		worker_id: -1,
 		visibility: true,
 		code: code || '',
-		players: new Map([[userId, null]])
+		players: new Map([[userId, null]]),
+		ownerId: userId
 	});
 }
 
