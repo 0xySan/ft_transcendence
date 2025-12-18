@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -10 20 20" width="100" height="50">
+	<path 
+		d="M -3 4 
+		   A 1 1 0 0 0 -5 -2 
+		   A 1 1 0 0 0 -15 -2 
+		   A 1 1 0 0 0 -17 4 
+		   L -3 4" 
+		fill="currentColor" 
+		stroke="currentColor" 
+		stroke-width="1.5"/>
+</svg>
