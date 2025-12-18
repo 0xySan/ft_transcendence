@@ -264,30 +264,39 @@ h1 {
 
 #notification-container {
 	position: fixed;
-	bottom: 1rem;
 	right: 1rem;
+	bottom: 1rem;
+	z-index: 9999;
+
+	gap: 0.6rem;
+
 	display: flex;
 	flex-direction: column;
-	gap: 0.6rem;
-	z-index: 9999;
+
 	pointer-events: none;
 }
 
 .notification {
+	position: relative;
+
 	min-width: 260px;
 	max-width: 360px;
+
 	padding: 0.75rem 1rem;
-	border-radius: 8px;
-	font-size: 0.9rem;
-	line-height: 1.35;
-	font-weight: 500;
-	color: rgb(var(--text));
+
 	background: rgb(var(--base));
+
 	border: 1px solid rgba(var(--overlay0), 0.4);
+	border-radius: 8px;
+
+	font-size: 0.9rem;
+	font-weight: 500;
+	line-height: 1.35;
+	color: rgb(var(--text));
+
 	box-shadow:
 		0 10px 30px rgba(0, 0, 0, 0.4),
 		0 0 0 1px rgba(var(--overlay0), 0.25);
-	position: relative;
 	overflow: hidden;
 	animation: notif-slide-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 	pointer-events: auto;
@@ -299,27 +308,33 @@ h1 {
 
 .notification.success {
 	background: rgba(var(--green), 0.42);
+
 	border-left: 4px solid rgb(var(--green));
 }
 
 .notification.warning {
 	background: rgba(var(--peach), 0.42);
+
 	border-left: 4px solid rgb(var(--peach));
 }
 
 .notification.error {
 	background: rgba(var(--red), 0.42);
+
 	border-left: 4px solid rgb(var(--red));
 }
 
 .notification::after {
-	content: "";
 	position: absolute;
-	left: 0;
 	bottom: 0;
-	height: 3px;
+	left: 0;
+
 	width: 100%;
+	height: 3px;
+
 	background: rgba(var(--overlay2), 0.85);
+
+	content: "";
 	transform-origin: left;
 	animation: notif-progress var(--duration) linear forwards;
 }
@@ -854,8 +869,8 @@ button:active {
 }
 
 #lobby-player-list {
-
 	width: 100%;
+
 	gap: 12px;
 
 	display: flex;
@@ -865,10 +880,10 @@ button:active {
 }
 
 .lobby-player-entry {
-
 	width: 95%;
 
 	padding: 0.5rem;
+
 	background-color: rgb(var(--crust));
 
 	border-radius: 8px;
@@ -949,7 +964,8 @@ button:active {
 }
 
 /** Setting Boxes **/
-.lobby-setting-box {
+.lobby-setting-box,
+#lobby-select-mode {
 	width: 100%;
 	height: 92%;
 	min-height: 92%;
@@ -970,6 +986,54 @@ button:active {
 
 	border-top-left-radius: 0px;
 	border-top-right-radius: 0px;
+}
+
+#lobby-select-mode {
+	gap: 0;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
+#lobby-select-mode div:first-child {
+	border-right: dashed 2px rgba(var(--text), 0.75);
+}
+
+#lobby-select-mode > div {
+	width: 50%;
+	height: 80%;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	transition: background-color ease 0.3s;
+}
+
+#lobby-select-mode > div:hover {
+	background-color: rgb(var(--crust));
+}
+
+#lobby-select-mode > div:hover > svg {
+	width: 8.5rem;
+	height: 8.5rem;
+}
+
+#lobby-select-mode > div > svg {
+
+	width: 7.5rem;
+	height: 7.5rem;
+	color: rgb(var(--overlay2));
+
+	transition:
+		width ease 0.15s,
+		height ease 0.15s;
+}
+
+#lobby-select-mode div:last-child > svg {
+	margin-left: 2rem;
 }
 
 .lobby-setting-box-title {
@@ -1183,6 +1247,11 @@ button:active {
 
 #lobby-action-buttons > button {
 	background-color: rgb(var(--red));
+	opacity: 0.5;
+}
+
+#lobby-action-buttons > button.active {
+  opacity: 1;
 }
 
 #lobby-action-buttons > button:last-child {
@@ -1190,39 +1259,47 @@ button:active {
 }
 
 .lobby-setting-list {
-	gap: 0.4rem;
-	background-color: rgb(var(--base));
 	width: 95%;
 	height: 95%;
+
+	margin-bottom: 0rem;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	padding-left: 5%;
+	gap: 0.4rem;
+
+	background-color: rgb(var(--base));
 
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: flex-start;
-	padding-left: 5%;
-	padding-top: 0.5rem;
-	padding-bottom: 0.5rem;
-	margin-bottom: 0rem;
+
 	overflow-y: scroll;
 }
 .lobby-setting-container {
-	padding: 0.5rem;
 	width: 90%;
-	border-radius: 4px;
-	display: flex;
+
+	padding: 0.5rem;
 	gap: 0.5rem;
+
+	border-radius: 4px;
+
+	display: flex;
 }
 
 .lobby-setting-category {
-	background-color: rgb(var(--mantle));
-	border: solid 2px rgb(var(--surface0));
 	width: 90%;
+
 	padding: 0.5rem;
+
+	background-color: rgb(var(--mantle));
+
+	border: solid 2px rgb(var(--surface0));
 }
 
 .lobby-setting-container:hover {
 	background-color: rgb(var(--crust));
-	
 }
 
 /* ==========================================================================

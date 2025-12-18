@@ -374,15 +374,41 @@ const modes: Record<string, Mode> = {
 };
 
 function setupModeHandlers(): void {
-	Object.values(modes).forEach((mode) => {
-		addListener(mode.button, "click", () => {
-			Object.values(modes).forEach((m) => {
-				m.button.classList.toggle("current-mode", m === mode);
-				m.tab.classList.toggle("unloaded", m !== mode);
-			});
-		});
-	});
+
+	let readyCheck = false;
+	
+	// Function check if user click on Online button or offline button for display settings party
+  ["online", "offline"].forEach((selected) => {
+    const selectMode = document.getElementById(selected);
+    
+    if (selectMode) {
+      addListener(selectMode, "click", () => {
+        readyCheck = true;
+		const lobbySelectMode = document.getElementById('lobby-select-mode');
+		if (lobbySelectMode) {
+		lobbySelectMode.classList.toggle("current-mode", false);
+		lobbySelectMode.classList.toggle("unloaded", true);
+        const lobbySettingBox = document.querySelector(".lobby-setting-box");
+        if (lobbySettingBox) {
+          lobbySettingBox.classList.add("current-mode");
+		  lobbySettingBox.classList.remove("unloaded");
+        }
+		}
+        if (readyCheck) {
+          Object.values(modes).forEach((mode) => {
+            addListener(mode.button, "click", () => {
+              Object.values(modes).forEach((m) => {
+                m.button.classList.toggle("current-mode", m === mode);
+                m.tab.classList.toggle("unloaded", m !== mode);
+              });
+            });
+          });
+        }
+      });
+    }
+  });
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* UI – Sub tabs                                                              */

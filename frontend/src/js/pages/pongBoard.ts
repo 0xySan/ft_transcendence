@@ -59,10 +59,10 @@ try {
 		});
 
 		const data = await response.json();
-		if (data["error"]) {
-			document.getElementById('content')!.innerHTML = "ERROR: CONNECTION NOT ESTABLISHED";
-			throw new Error("WebSocket connection not found, please use the lobby page to access this page.");
-		}
+		// if (data["error"]) {
+		// 	document.getElementById('content')!.innerHTML = "ERROR: CONNECTION NOT ESTABLISHED";
+		// 	throw new Error("WebSocket connection not found, please use the lobby page to access this page.");
+		// }
 
 		const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 		const socketUrl = wsProtocol + "//" + window.location.host + "/ws/?token=" + data.token;

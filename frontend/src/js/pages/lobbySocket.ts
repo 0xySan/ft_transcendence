@@ -42,7 +42,7 @@ let ownerId: string | null = null;
 /* -------------------------------------------------------------------------- */
 const joinInput = getEl<HTMLInputElement>("lobby-input");
 const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
-const createBtn = getEl<HTMLButtonElement>("lobby-btn-create");
+const createBtn = getEl<HTMLButtonElement>("online");
 const leaveBtn = getEl<HTMLButtonElement>("lobby-btn-leave");
 const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
 
@@ -285,7 +285,13 @@ async function createGame(): Promise<void> {
 /* Events                                                                     */
 /* -------------------------------------------------------------------------- */
 addListener(joinBtn, "click", () => joinGame(joinInput.value));
-addListener(createBtn, "click", createGame);
+addListener(createBtn, "click", () => {
+	console.log("online party created");
+	createGame();
+	const leaveButton = document.getElementById("lobby-btn-leave") as HTMLButtonElement | null;
+	if (leaveButton)
+  		leaveButton.style.opacity = "1";
+});
 
 addListener(leaveBtn, "click", () => {
 	window.socket?.close();
