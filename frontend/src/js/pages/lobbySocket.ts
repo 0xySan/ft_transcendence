@@ -96,6 +96,7 @@ function connectWebSocket(token: string): void {
 	window.socket = socket;
 
 	addListener(socket, "open", () => {
+		notify('Connected to the game lobby.', { type: 'success' });
 		const msg: SocketMessage<ConnectPayload> = {
 			type: "connect",
 			payload: { token },
@@ -118,11 +119,13 @@ function connectWebSocket(token: string): void {
 			case "game":
 				console.log("Game message received:", msg.payload);
 				if ((msg.payload as GamePayload).action === "start") {
+					notify('The game is starting!', { type: 'success' });
 					loadPage("/pong-board");
 				}
 				break;
 			case "settings":
 				window.setPartialLobbyConfig(msg.payload as Partial<settings>);
+				notify('Game settings have been updated.', { type: 'info' });
 				break;
 
 			default:
@@ -131,6 +134,7 @@ function connectWebSocket(token: string): void {
 	});
 
 	addListener(socket, "close", () => {
+		notify('Disconnected from the game lobby.', { type: 'warning' });
 		window.socket = undefined;
 		resetLobbyState();
 	});
@@ -162,10 +166,12 @@ function handlePlayer(payload: PlayerPayload): void {
 			payload.displayName,
 			payload.playerId === ownerId
 		);
+		notify(`${payload.displayName} has joined the lobby.`, { type: 'info' });
 	}
 
 	if (payload.action === "leave") {
 		removePlayer(payload.playerId);
+		notify(`${payload.displayName} has left the lobby.`, { type: 'info' });
 	}
 
 	updateLaunchVisibility();

@@ -259,6 +259,115 @@ h1 {
 }
 
 /* ==========================================================================
+							Notifications DEFINITION
+   ========================================================================== */
+
+#notification-container {
+	position: fixed;
+	bottom: 1rem;
+	right: 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	z-index: 9999;
+	pointer-events: none;
+}
+
+.notification {
+	min-width: 260px;
+	max-width: 360px;
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+	font-size: 0.9rem;
+	line-height: 1.35;
+	font-weight: 500;
+	color: rgb(var(--text));
+	background: rgb(var(--base));
+	border: 1px solid rgba(var(--overlay0), 0.4);
+	box-shadow:
+		0 10px 30px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(var(--overlay0), 0.25);
+	position: relative;
+	overflow: hidden;
+	animation: notif-slide-in 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	pointer-events: auto;
+}
+
+.notification.normal {
+	border-left: 4px solid rgb(var(--overlay1));
+}
+
+.notification.success {
+	background: rgba(var(--green), 0.42);
+	border-left: 4px solid rgb(var(--green));
+}
+
+.notification.warning {
+	background: rgba(var(--peach), 0.42);
+	border-left: 4px solid rgb(var(--peach));
+}
+
+.notification.error {
+	background: rgba(var(--red), 0.42);
+	border-left: 4px solid rgb(var(--red));
+}
+
+.notification::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	height: 3px;
+	width: 100%;
+	background: rgba(var(--overlay2), 0.85);
+	transform-origin: left;
+	animation: notif-progress var(--duration) linear forwards;
+}
+
+.notification.success::after {
+	background: rgb(var(--green));
+}
+
+.notification.warning::after {
+	background: rgb(var(--peach));
+}
+
+.notification.error::after {
+	background: rgb(var(--red));
+}
+
+.notification.hide {
+	animation: notif-slide-out 0.3s ease forwards;
+}
+
+@keyframes notif-slide-in {
+	from {
+		transform: translateX(120%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes notif-slide-out {
+	to {
+		transform: translateX(120%);
+		opacity: 0;
+	}
+}
+
+@keyframes notif-progress {
+	from {
+		transform: scaleX(1);
+	}
+	to {
+		transform: scaleX(0);
+	}
+}
+
+/* ==========================================================================
                                 BUTTON DEFINITION
    ========================================================================== */
 

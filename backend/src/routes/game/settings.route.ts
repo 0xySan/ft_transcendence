@@ -33,6 +33,7 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 
 			if (!body.settings)
 				return reply.status(400).send({ error: 'Settings data is required.' });
+
 			const [valid, config] = parseGameConfig(body.settings);
 			if (!valid || typeof config === 'string' || !config.game)
 				return reply.status(400).send({ error: config });

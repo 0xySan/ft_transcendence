@@ -98,7 +98,7 @@ const defaultSettings: settings = {
 	},
 	scoring: {
 		firstTo: 5,
-		winBy: 0,
+		winBy: 1,
 	},
 	ball: {
 		radius: 6,
@@ -330,9 +330,9 @@ function wire(): void {
 				throw new Error(data.error || 'Failed to save settings.');
 			}
 		}).then(() => {
-			alert("Settings saved successfully.");
+			notify('Settings saved successfully.', { type: "success" });
 		}).catch((error) => {
-			alert(error.message);
+			notify(`Error saving settings: ${error.message}`, { type: "error" });
 		});
 	});
 }
