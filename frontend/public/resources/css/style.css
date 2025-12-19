@@ -4,57 +4,31 @@
 
 [data-theme="catppuccin-macchiato"] {
 	--rosewater: 245, 224, 220;
-	/* Primary accent (cursor or highlights) */
 	--flamingo: 242, 205, 205;
-	/* Secondary accent (alerts or highlights) */
 	--pink: 245, 194, 231;
-	/* Vivid accent (used for emphasis) */
 	--mauve: 203, 166, 247;
-	/* Syntax highlighting or active elements */
 	--red: 243, 139, 168;
-	/* Error or critical alert (bright tone) */
 	--maroon: 235, 160, 172;
-	/* Error or danger (muted tone) */
 	--peach: 250, 179, 135;
-	/* Warning (highlight important elements) */
 	--yellow: 249, 226, 175;
-	/* Caution or notification */
 	--green: 166, 227, 161;
-	/* Success or confirmation */
 	--teal: 148, 226, 213;
-	/* Info or moderate success (cyan-green tone) */
 	--sky: 137, 220, 235;
-	/* General information (light cyan) */
 	--sapphire: 116, 199, 236;
-	/* Accent for links or buttons (deep blue) */
 	--blue: 137, 180, 250;
-	/* Primary actions or links (bright blue) */
 	--lavender: 180, 190, 254;
-	/* Soft accent or comments (light lavender) */
 	--text: 202, 211, 245;
-	/* Main text (on dark background) */
 	--subtext1: 184, 192, 224;
-	/* Secondary text (subtitles, captions) */
 	--subtext0: 165, 173, 203;
-	/* Tertiary text (labels, minor info) */
 	--overlay2: 147, 154, 183;
-	/* Light overlay (for elevated surfaces) */
 	--overlay1: 128, 135, 162;
-	/* Medium overlay */
 	--overlay0: 110, 115, 141;
-	/* Dark overlay */
 	--surface2: 91, 96, 120;
-	/* Light UI surface (foreground elements) */
 	--surface1: 73, 77, 100;
-	/* Mid UI surface */
 	--surface0: 54, 58, 79;
-	/* Dark UI surface */
 	--base: 36, 39, 58;
-	/* Main background */
 	--mantle: 30, 32, 48;
-	/* Secondary background (containers) */
 	--crust: 24, 25, 38;
-	/* Tertiary background (deep layers) */
 }
 
 [data-theme="catppuccin-latte"] {
@@ -203,15 +177,11 @@
 
 .flex-space-between {
 	height: 100vh;
-	/* must have a fixed or inherited height */
 
 	display: flex;
 	flex-direction: column;
-	/* stack vertically */
 	align-items: center;
-	/* center horizontally (align center in Figma) */
 	justify-content: space-between;
-	/* push first to top, last to bottom */
 }
 
 /* ==========================================================================
@@ -221,8 +191,6 @@
 html,
 body {
 	width: 100vw;
-	/* Use a dynamic --vh variable so mobile on-screen keyboard resizing won't cause layout jumps
-	   JS will set --vh = window.innerHeight * 0.01px on load/resize. */
 	height: calc(var(--vh, 1vh) * 100);
 
 	margin: 0;
@@ -230,9 +198,6 @@ body {
 
 	font-family: "Poppins-Regular", sans-serif;
 	color: rgb(var(--text));
-
-	/* allow page scrolling; hiding overflow prevents the viewport from adjusting properly
-	   when virtual keyboards open on mobile */
 
 	overflow: auto;
 }
@@ -250,11 +215,9 @@ body {
 #content {
 	width: 100vw;
 	min-height: calc(100% - 6rem);
-	/* account for fixed ui elements */
 
 	padding: 1rem;
 	box-sizing: border-box;
-	/* include padding/border in size */
 
 	display: flex;
 	flex-direction: column;
@@ -263,7 +226,6 @@ body {
 }
 
 #content > * {
-	/*automatically center all future direct childrens of #content*/
 	margin-top: auto;
 	margin-bottom: auto;
 }
@@ -277,7 +239,6 @@ h1 {
 	transition: background-color 0.5s ease;
 }
 
-/* utility hidden class (use on any element that should be visually hidden but keep layout reserve) */
 .hidden {
 	visibility: hidden;
 
@@ -291,13 +252,10 @@ h1 {
 	opacity: 0;
 }
 
-/* When used on the user list, remove it from layout flow so the chat can expand */
 .user-list.hidden {
 	display: none;
 }
 
-/* When the chat block has the hidden utility, make it expand to fill remaining space.
-   This selector allows toggling the chat area layout purely via the `.hidden` class. */
 .hidden.chat-block,
 .chat-block.hidden {
 	width: 100%;
@@ -329,8 +287,6 @@ button {
 
 button:hover {
 	background-color: rgba(var(--blue), 0.85);
-	/* slightly transparent hover effect */
-	/* transform: translateY(-1px); */
 }
 
 button:active {
@@ -342,7 +298,6 @@ button:active {
 	max-width: 100%;
 
 	box-sizing: border-box;
-	/* make the button fill the available width inside the flex container */
 
 	display: block;
 
@@ -376,14 +331,11 @@ button:active {
 
 	-webkit-background-clip: text;
 	background-clip: text;
-	/* for Firefox */
 	-webkit-text-fill-color: transparent;
 }
 
-/* Wrapper with gradient border */
 .border-gradient-customizable {
 	padding: 4px;
-	/* thickness of the border */
 
 	background: linear-gradient(
 		90deg,
@@ -392,10 +344,8 @@ button:active {
 	);
 
 	border-radius: 12px;
-	/* outer border radius */
 
 	display: flex;
-	/* center the inner board */
 	align-items: center;
 	justify-content: center;
 }
@@ -412,13 +362,10 @@ button:active {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-	/* vertical: top */
 	justify-content: flex-start;
-	/* horizontal: left */
 }
 
 @media (max-width: 300px) {
-	/* very small screens */
 	#landing-div h1 {
 		font-size: medium;
 	}
@@ -432,10 +379,8 @@ button:active {
 	max-width: 34rem;
 
 	line-height: 1.5;
-	/* controls spacing between wrapped lines */
 
 	word-wrap: break-word;
-	/* allows long words to break */
 }
 
 /* ==========================================================================
@@ -1295,9 +1240,7 @@ button:active {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	/* vertical: center */
 	justify-content: center;
-	/* horizontal: center */
 }
 
 #twoFA-form-container {
@@ -1473,7 +1416,6 @@ button:active {
 	max-height: 30rem;
 }
 
-/** Responsive **/
 @media (max-width: 1165px) {
 	#lobby-page {
 		min-height: 96rem;
@@ -1504,7 +1446,6 @@ button:active {
 	}
 }
 
-/** Box Model **/
 #lobby-player-box {
 	padding: 0.5rem;
 	gap: 12px;
@@ -1559,7 +1500,6 @@ button:active {
 	justify-content: flex-start;
 }
 
-/** Buttons / Modes **/
 #lobby-mode-buttons {
 	width: 100%;
 
@@ -1589,7 +1529,6 @@ button:active {
 	background-color: rgb(var(--surface2));
 }
 
-/** Responsive Small **/
 @media (max-width: 666px) {
 	#lobby-page {
 		min-height: 105rem;
@@ -1624,7 +1563,6 @@ button:active {
 	}
 }
 
-/** Setting Boxes **/
 .lobby-setting-box {
 	width: 100%;
 	height: 100%;
@@ -1720,7 +1658,6 @@ button:active {
 	justify-content: flex-start;
 }
 
-/** Private Checkbox **/
 .lobby-private-checkbox {
 	gap: 0.25rem;
 
@@ -1796,7 +1733,6 @@ button:active {
 	opacity: 1;
 }
 
-/** Action Buttons **/
 #lobby-action-buttons {
 	width: 49%;
 
@@ -1888,12 +1824,9 @@ button:active {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	/* horizontal */
 	justify-content: center;
-	/* vertical */
 }
 
-/* Inner board */
 #pong-board {
 	position: relative;
 
@@ -1901,16 +1834,12 @@ button:active {
 	height: 600px;
 
 	background-color: rgb(var(--base));
-	/* or transparent if needed */
 
 	border-radius: 10px;
-	/* inner radius = outer radius - padding */
 
 	flex: 0 0 auto;
-	/* prevent flex stretching if parent is flex */
 
 	overflow: hidden;
-	/* keeps players/ball inside rounded corners */
 }
 
 #player1,
@@ -1979,7 +1908,6 @@ button:active {
 	border-radius: 50%;
 
 	transform: translate(-50%, -50%);
-	/* Centers it perfectly */
 }
 
 /* #center-line {
@@ -2090,8 +2018,6 @@ nav {
 	height: 5rem;
 
 	padding: 1rem 2rem;
-
-	/* use percent + border-box so padding doesn't cause overflow */
 	box-sizing: border-box;
 
 	background-color: rgb(var(--crust));
@@ -2216,7 +2142,6 @@ nav {
 	}
 }
 
-/* Theme switcher */
 #theme-switcher {
 	position: relative;
 
@@ -2298,12 +2223,11 @@ nav {
 	transform: translateX(0) scale(1);
 }
 
-/* --- Vertical layout on small width --- */
 @media (max-width: 570px) {
 	#theme-switcher {
 		height: auto;
 		max-width: 3rem !important;
-		max-height: 3rem; /* collapsed */
+		max-height: 3rem;
 
 		padding-bottom: 0.5rem;
 
@@ -2321,7 +2245,7 @@ nav {
 
 	#theme-switcher:hover {
 		height: 11.5rem;
-		max-height: 11.5rem !important; /* expanded vertically */
+		max-height: 11.5rem !important;
 
 		padding-top: 0.5rem;
 		padding-left: 0.5rem;
@@ -2446,7 +2370,6 @@ footer {
 	height: 1.5rem;
 
 	background-color: rgb(var(--subtext1));
-	/* line color */
 
 	display: inline-block;
 }
