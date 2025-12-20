@@ -1025,39 +1025,44 @@ function renderChat(): void {
 			container.setAttribute('data-shown', String(!msg.hidden));
 		}
 
-		if (
-			target.classList.contains('invite-accept') ||
-			target.classList.contains('invite-decline') ||
-			target.classList.contains('invite-cancel') ||
-			target.classList.contains('invite-go')
-		) {
-			const idxStr = target.dataset.index;
+		// Handle invite button clicks
+		const inviteBtn = target.closest<HTMLButtonElement>(
+			'.invite-accept, .invite-decline, .invite-cancel, .invite-go'
+		);
+		if (inviteBtn) {
+			const idxStr = inviteBtn.dataset.index;
 			if (!idxStr) return;
 			const idx = Number(idxStr);
 			const msgs = conversations[activeUser!] || [];
 			const msg = msgs[idx];
 			if (!msg) return;
-			const container = target.closest('.chat-message');
+			const container = inviteBtn.closest('.chat-message');
 			if (!container) return;
 
-			if (target.classList.contains('invite-accept')) {
+			if (inviteBtn.classList.contains('invite-accept')) {
 				updateInviteState(container as HTMLElement, msg, 'accepted', idx);
 				setTimeout(() => {
-					window.location.href = `/pong-board?enemy=${activeUser}`;
+					if (window.loadPage)
+						window.loadPage(`/pong-board?enemy=${activeUser}`);
+					else
+						return ; // error popup should happen here
 				}, NAVIGATION_DELAY);
 				return;
 			}
-			if (target.classList.contains('invite-decline')) {
+			if (inviteBtn.classList.contains('invite-decline')) {
 				updateInviteState(container as HTMLElement, msg, 'declined', idx);
 				return;
 			}
-			if (target.classList.contains('invite-cancel')) {
+			if (inviteBtn.classList.contains('invite-cancel')) {
 				updateInviteState(container as HTMLElement, msg, 'cancelled', idx);
 				return;
 			}
-			if (target.classList.contains('invite-go')) {
+			if (inviteBtn.classList.contains('invite-go')) {
 				setTimeout(() => {
-					window.location.href = `/pong-board?enemy=${activeUser}`;
+					if (window.loadPage)
+						window.loadPage(`/pong-board?enemy=${activeUser}`);
+					else
+						return ; // error popup should happen here
 				}, NAVIGATION_DELAY);
 				return;
 			}
