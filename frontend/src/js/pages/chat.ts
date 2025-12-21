@@ -181,25 +181,25 @@ function seedDummyData(): void {
 			type: 'invite',
 			inviteState: 'pending',
 			text: 'Wanna play Pong?',
-			timestamp: new Date(Date.now() + 1),
+			timestamp: new Date(Date.now() - 1),
 		},
 		{
 			sender: 'user4',
 			type: 'invite',
 			inviteState: 'pending',
 			text: 'Wanna play Pong?',
-			timestamp: new Date(Date.now() + 2),
+			timestamp: new Date(Date.now() - 2),
 		},
 		{
 			sender: 'user4',
 			text: 'This is a longer message to test how the chat UI handles wrapping and multiple lines. Let\'s see how it looks when the message exceeds the typical length of a chat bubble. Hopefully, it wraps nicely and remains readable!',
-			timestamp: new Date(Date.now() + 3),
+			timestamp: new Date(Date.now() - 3),
 			type: 'text',
 		},
 		{
 			sender: 'me',
 			text: 'Indeed, it seems to be working well!\nNew line test.',
-			timestamp: new Date(Date.now() + 4),
+			timestamp: new Date(Date.now() - 4),
 			type: 'text',
 		},
 	];
@@ -207,14 +207,14 @@ function seedDummyData(): void {
 	conversations['user2'] = [];
 
 	conversations['Dummy'] = [
-		{ sender: 'Dummy', text: 'Hi there!', timestamp: new Date(Date.now() + 5), type: 'text' },
-		{ sender: 'me', text: 'Hello Dummy, how are you?', timestamp: new Date(Date.now() + 6), type: 'text' },
+		{ sender: 'Dummy', text: 'Hi there!', timestamp: new Date(Date.now() - 5), type: 'text' },
+		{ sender: 'me', text: 'Hello Dummy, how are you?', timestamp: new Date(Date.now() - 6), type: 'text' },
 		{
 			sender: 'me',
 			type: 'invite',
 			inviteState: 'accepted',
 			text: 'Wanna play Pong?',
-			timestamp: new Date(Date.now() + 7),
+			timestamp: new Date(Date.now() - 7),
 		},
 	];
 
@@ -463,8 +463,45 @@ function appendMessageToDOM(msg: Message, index: number): void {
 	const messagesDiv = chatBlock.querySelector<HTMLDivElement>(selector);
 	if (!messagesDiv) return;
 
-	const fragment = loadMessages(index, [msg], index);
-	messagesDiv.appendChild(fragment);
+	const msgs = conversations[activeUser] || [];
+	const prevMsg = index > 0 ? msgs[index - 1] : null;
+
+	const shouldGroup = prevMsg &&
+		prevMsg.sender === msg.sender &&
+		msg.type === 'text' &&
+		prevMsg.type === 'text' &&
+		!(msg.sender !== 'me' && blockedUsers.has(msg.sender)) &&
+		(msg.timestamp.getTime() - prevMsg.timestamp.getTime()) <= GROUP_WINDOW_MS;
+
+	if (shouldGroup && prevMsg)
+	{
+		const lastContainer = messagesDiv.querySelector<HTMLDivElement>('.chat-message:last-of-type');
+		if (lastContainer && !lastContainer.classList.contains('blocked') && !lastContainer.classList.contains('invite')) {
+			const newTextSpan = document.createElement('span');
+			newTextSpan.className = 'chat-group-text';
+			appendTextWithLineBreaks(newTextSpan, msg.text);
+			
+			const currentCount = Number(lastContainer.dataset.count) || 1;
+			lastContainer.dataset.count = String(currentCount + 1);
+			
+			const buttonContainers = lastContainer.querySelectorAll('div');
+			if (buttonContainers.length > 0)
+			{
+				lastContainer.insertBefore(document.createElement('br'), buttonContainers[0]);
+				lastContainer.insertBefore(newTextSpan, buttonContainers[0]);
+			}
+			else
+			{
+				lastContainer.appendChild(document.createElement('br'));
+				lastContainer.appendChild(newTextSpan);
+			}
+		}
+	}
+	else
+	{
+		const fragment = loadMessages(index, [msg], index);
+		messagesDiv.appendChild(fragment);
+	}
 
 	const newCount = Number(messagesDiv.dataset.messageCount) || 0;
 	messagesDiv.dataset.messageCount = String(newCount + 1);
