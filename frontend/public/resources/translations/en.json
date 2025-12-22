@@ -80,11 +80,10 @@
     "title": "Reset Password"
   },
   "settings": {
-    "title": "Settings",
     "section": {
       "profile": "Profile",
       "security": "Security",
-      "twofa": "Two‑Factor",
+      "twofa": "Two-Factor",
       "oauth": "OAuth"
     },
     "profileTitle": "Profile Settings",
@@ -101,19 +100,20 @@
       "updatePasswordButton": "Update Password"
     },
     "twofa": {
-      "title": "Two‑Factor Authentication",
-      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",
-      "manageButton": "Manage 2FA methods",
-      "enableTotp": "Enable TOTP (Authenticator)",
-      "generateBackupCodes": "Generate Backup Codes"
+      "title": "Two-Factor Authentication",
+      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes."
     },
     "oauth": {
       "title": "OAuth Accounts",
-      "instructions": "Connect or disconnect OAuth providers for quick sign‑in.",
-      "connect42": "Connect 42",
-      "connectGithub": "Connect GitHub",
-      "connectDiscord": "Connect Discord",
-      "connectGoogle": "Connect Google"
+      "instructions": "Connect or disconnect OAuth providers for quick sign-in.",
+      "42link": "Link 42",
+      "42unlink": "Unlink 42",
+      "GitHublink": "Link GitHub",
+      "GitHubunlink": "Unlink GitHub",
+      "Discordlink": "Link Discord",
+      "Discordunlink": "Unlink Discord",
+      "Googlelink": "Link Google",
+      "Googleunlink": "Unlink Google"
     }
   },
   "twofa": {

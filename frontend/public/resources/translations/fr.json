@@ -97,7 +97,6 @@
     "resendButton": "Renvoyer le code de vérification"
   },
   "settings": {
-    "title": "Paramètres",
     "section": {
       "profile": "Profil",
       "security": "Sécurité",
@@ -119,18 +118,19 @@
     },
     "twofa": {
       "title": "Authentification à deux facteurs",
-      "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP email et codes de secours.",
-      "manageButton": "Gérer les méthodes 2FA",
-      "enableTotp": "Activer TOTP (Authentificateur)",
-      "generateBackupCodes": "Générer des codes de secours"
+      "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP par e‑mail et codes de secours."
     },
     "oauth": {
       "title": "Comptes OAuth",
       "instructions": "Connectez ou déconnectez des fournisseurs OAuth pour une connexion rapide.",
-      "connect42": "Connecter 42",
-      "connectGithub": "Connecter GitHub",
-      "connectDiscord": "Connecter Discord",
-      "connectGoogle": "Connecter Google"
+      "42link": "Connecter 42",
+      "42unlink": "Déconnecter 42",
+      "GitHublink": "Connecter GitHub",
+      "GitHubunlink": "Déconnecter GitHub",
+      "Discordlink": "Connecter Discord",
+      "Discordunlink": "Déconnecter Discord",
+      "Googlelink": "Connecter Google",
+      "Googleunlink": "Déconnecter Google"
     }
   }
 }
