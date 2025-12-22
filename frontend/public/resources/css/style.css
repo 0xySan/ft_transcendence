@@ -786,7 +786,7 @@ button:active {
 
 #lobby-info-boxes {
 	width: 100%;
-	height: 30rem;
+	/*! height: 25rem; */
 
 	margin-top: 1.5rem;
 	gap: 1.5rem;
@@ -811,7 +811,7 @@ button:active {
 		min-height: 96rem;
 	}
 	#lobby-info-boxes {
-		min-height: 90rem;
+		min-height: 80rem;
 
 		flex-direction: column;
 	}
@@ -825,6 +825,7 @@ button:active {
 	}
 	#lobby-action-buttons {
 		width: 100% !important;
+    
 	}
 	.lobby-setting-box {
 		min-height: 42rem;
@@ -939,6 +940,9 @@ button:active {
 	#lobby-page {
 		min-height: 105rem;
 	}
+	#lobby-info-boxes {
+		height: 90rem;
+	}
 	#lobby-mode-buttons {
 		width: 100%;
 
@@ -998,6 +1002,11 @@ button:active {
 
 #lobby-select-mode div:first-child {
 	border-right: dashed 2px rgba(var(--text), 0.75);
+}
+
+.unclickable {
+	opacity: 0.4;
+	pointer-events: none;
 }
 
 #lobby-select-mode > div {
@@ -1189,7 +1198,6 @@ button:active {
 }
 
 #lobby-join-box {
-	padding: 0.3rem;
 
 	border: 2px solid rgb(var(--surface1));
 	border-radius: 25px;
@@ -1201,8 +1209,6 @@ button:active {
 }
 
 #lobby-join-box > input {
-	width: 70%;
-	min-width: 0;
 
 	background: transparent;
 
@@ -1212,24 +1218,23 @@ button:active {
 
 	font-size: 1rem;
 	color: rgb(var(--text));
-
+	margin-left: 1rem;
+	margin-right: -7rem;
 	outline: none;
 }
+
 
 #lobby-join-box > input::placeholder {
 	color: rgb(var(--overlay1));
 }
 
 #lobby-join-box > button {
-	padding: 0.65rem 1.6rem;
 
 	background-color: rgb(var(--peach));
 
 	border: none;
 	border-radius: 9999px;
 
-	font-size: 0.95rem;
-	font-weight: 600;
 
 	transition:
 		background-color 0.2s,
@@ -1238,11 +1243,11 @@ button:active {
 }
 
 #lobby-join-box > button:hover {
-	transform: scale(1.03);
+font-weight: bold;
 }
 
 #lobby-join-box > button:active {
-	transform: scale(0.98);
+	transform: scale(0.95);
 }
 
 #lobby-action-buttons > button {

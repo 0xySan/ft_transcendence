@@ -42,7 +42,8 @@ let ownerId: string | null = null;
 /* -------------------------------------------------------------------------- */
 const joinInput = getEl<HTMLInputElement>("lobby-input");
 const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
-const createBtn = getEl<HTMLButtonElement>("online");
+const createBtn = getEl<HTMLDivElement>("online");
+
 const leaveBtn = getEl<HTMLButtonElement>("lobby-btn-leave");
 const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
 
@@ -146,7 +147,6 @@ function connectWebSocket(token: string): void {
 function handlePlayerSync(payload: PlayerSyncPayload): void {
 	playerListEl.innerHTML = "";
 	ownerId = payload.ownerId;
-
 	payload.players.forEach((player) => {
 		addPlayer(
 			player.playerId,
@@ -285,8 +285,9 @@ async function createGame(): Promise<void> {
 /* Events                                                                     */
 /* -------------------------------------------------------------------------- */
 addListener(joinBtn, "click", () => joinGame(joinInput.value));
+console.log(createBtn);
 addListener(createBtn, "click", () => {
-	console.log("online party created");
+	
 	createGame();
 	const leaveButton = document.getElementById("lobby-btn-leave") as HTMLButtonElement | null;
 	if (leaveButton)
@@ -317,7 +318,7 @@ addListener(launchBtn, "click", () => {
 function resetLobbyState(): void {
 	playerListEl.innerHTML = "";
 	updateCounts(0, 0);
-
+console.log("coucou");
 	gameId = null;
 	authToken = null;
 	myPlayerId = null;

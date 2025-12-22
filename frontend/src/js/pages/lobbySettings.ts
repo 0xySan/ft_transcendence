@@ -88,6 +88,11 @@ function setSpan(span: HTMLSpanElement | undefined | null, v: string | number): 
 	span.textContent = String(v);
 }
 
+function getElQS<T extends Element>(selector: string): T {
+  const el = document.querySelector(selector);
+  if (!el) throw new Error(`Missing element ${selector}`);
+  return el as T;
+}
 /* ---------------------------
    Defaults / State
    --------------------------- */
@@ -374,40 +379,60 @@ const modes: Record<string, Mode> = {
 };
 
 function setupModeHandlers(): void {
-
 	let readyCheck = false;
-	
-	// Function check if user click on Online button or offline button for display settings party
-  ["online", "offline"].forEach((selected) => {
-    const selectMode = document.getElementById(selected);
-    
-    if (selectMode) {
-      addListener(selectMode, "click", () => {
-        readyCheck = true;
-		const lobbySelectMode = document.getElementById('lobby-select-mode');
-		if (lobbySelectMode) {
-		lobbySelectMode.classList.toggle("current-mode", false);
-		lobbySelectMode.classList.toggle("unloaded", true);
-        const lobbySettingBox = document.querySelector(".lobby-setting-box");
-        if (lobbySettingBox) {
-          lobbySettingBox.classList.add("current-mode");
-		  lobbySettingBox.classList.remove("unloaded");
-        }
-		}
-        if (readyCheck) {
-          Object.values(modes).forEach((mode) => {
-            addListener(mode.button, "click", () => {
-              Object.values(modes).forEach((m) => {
-                m.button.classList.toggle("current-mode", m === mode);
-                m.tab.classList.toggle("unloaded", m !== mode);
-              });
-            });
-          });
-        }
-      });
-    }
-  });
+
+	const userConnected = getElQS<HTMLDivElement>(
+		"#lobby-select-mode div:first-child"
+	);
+	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
+
+	// Check if user is connected for display online mode
+	fetch("/api/users/me")
+		.then(res => {
+			if (res.ok) {
+				userConnected.classList.remove("unclickable");
+				lobbyJoin.classList.remove("unclickable");
+			} else {
+				userConnected.classList.add("unclickable");
+				lobbyJoin.classList.add("unclickable");
+			}
+		})
+		.catch(() => {
+			userConnected.classList.add("unclickable");
+			lobbyJoin.classList.add("unclickable");
+		});
+
+	// Check if user clicks on Online button or Offline button
+	["online", "offline"].forEach((selected) => {
+		const selectMode = getEl<HTMLButtonElement>(selected); // utilisation de getEl
+		addListener(selectMode, "click", () => {
+			readyCheck = true;
+
+			const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+			lobbySelectMode.classList.remove("current-mode");
+			lobbySelectMode.classList.add("unloaded");
+
+			const lobbyButton = getEl<HTMLButtonElement>("lobby-custom-game-button");
+			lobbyButton.classList.add("current-mode");
+
+			const lobbySettingBox = getElQS<HTMLDivElement>(".lobby-setting-box");
+			lobbySettingBox.classList.add("current-mode");
+			lobbySettingBox.classList.remove("unloaded");
+
+			if (readyCheck) {
+				Object.values(modes).forEach((mode) => {
+					addListener(mode.button, "click", () => {
+						Object.values(modes).forEach((m) => {
+							m.button.classList.toggle("current-mode", m === mode);
+							m.tab.classList.toggle("unloaded", m !== mode);
+						});
+					});
+				});
+			}
+		});
+	});
 }
+
 
 
 /* -------------------------------------------------------------------------- */
