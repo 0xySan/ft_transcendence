@@ -59,10 +59,86 @@ menuItems.forEach((item) => {
 });
 
 // ================================================
+// 			User password update handling
+// ================================================
+
+addListener(
+	document.getElementById('security-form'),
+	'submit',
+	async (e) => {
+		e.preventDefault();
+		
+		const form = e.target as HTMLFormElement;
+		const oldPasswordInput = form.querySelector<HTMLInputElement>(
+			'input[name="current-password"]'
+		);
+		const newPasswordInput = form.querySelector<HTMLInputElement>(
+			'input[name="new-password"]'
+		);
+		const repeatPasswordInput = form.querySelector<HTMLInputElement>(
+			'input[name="repeat-password"]'
+		);
+		
+		if (!oldPasswordInput || !newPasswordInput || !repeatPasswordInput) return;
+		
+		const oldPassword = oldPasswordInput.value;
+		const newPassword = newPasswordInput.value;
+		const repeatPassword = repeatPasswordInput.value;
+		
+		if (newPassword !== repeatPassword) {
+			alert('New passwords do not match.');
+			return;
+		}
+		
+		const allowed = await ensureTwoFaIfNeeded();
+		if (!allowed) return;
+
+		let body = {
+			old_password: oldPassword,
+			new_password: newPassword
+		};
+
+		if (typeof allowed === 'string') {
+			(body as any).twoFaToken = allowed;
+		}
+		
+		// From here on, action is authorized
+		fetch('/api/users/accounts/change-password', {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept-language': getUserLang(),
+			},
+			body: JSON.stringify(body)
+		})
+		.then(async (res) => {
+			console.log('Password change response:', res);
+			if (res.ok) {
+				alert('Password updated successfully.');
+				return;
+			}
+			
+			const data = await res.json();
+			if (data.error === 'invalid_old_password') {
+				alert('Current password is incorrect.');
+				return;
+			}
+			
+			if (data.error === 'invalid_new_password') {
+				alert('New password is invalid.');
+				return;
+			}
+			
+			alert('Failed to update password.');
+		});
+});
+
+// ================================================
 // 				2FA popup handling
 // ================================================
 
-async function ensureTwoFaIfNeeded(): Promise<boolean> {
+async function ensureTwoFaIfNeeded(): Promise<string | true | false> {
 	let methods = null as any[] | null;
 	
 	try {
@@ -102,34 +178,35 @@ async function ensureTwoFaIfNeeded(): Promise<boolean> {
 		return true;
 	
 	// At least one valid method → require popup validation
+	// Returns: string (validated token) | false (cancel/timeout/error)
 	return await openTwoFaPopupAndWait();
 }
 
-function openTwoFaPopupAndWait(): Promise<boolean> {
+function openTwoFaPopupAndWait(): Promise<string | false> {
 	return new Promise((resolve) => {
 		const requestId = crypto.randomUUID();
 		let popup: Window | null = null;
-		
+
 		const popupUrl = `/twofa_popup?requestId=${requestId}`;
-		
+
 		popup = window.open(
 			popupUrl,
 			`twofa_popup_${requestId}`,
 			'width=420,height=520,resizable=no'
 		);
-		
+
 		if (!popup) {
 			resolve(false);
 			return;
 		}
-		
+
 		const timeout = window.setTimeout(() => {
 			cleanup();
 			if (popup && !popup.closed)
 				popup.close();
 			resolve(false);
 		}, 120000);
-		
+
 		const closePoll = window.setInterval(() => {
 			if (popup && popup.closed) {
 				cleanup();
@@ -137,37 +214,43 @@ function openTwoFaPopupAndWait(): Promise<boolean> {
 				resolve(false);
 			}
 		}, 300);
-		
+
 		function cleanup() {
 			window.removeEventListener('message', onMessage);
 			clearTimeout(timeout);
 			clearInterval(closePoll);
 		}
-		
+
 		function onMessage(e: MessageEvent) {
 			if (e.origin !== window.location.origin)
 				return;
-			
+
 			if (!e.data || !e.data.type)
 				return;
-			
+
 			switch (e.data.type) {
-				case 'TWOFA_SUCCESS':
-				cleanup();
-				if (popup && !popup.closed)
-					popup.close();
-				resolve(true);
-				break;
-				
+				case 'TWOFA_SUCCESS': {
+					// Expect the popup to send back the validated token
+					const token = (typeof e.data.token === 'string') ? e.data.token : null;
+					cleanup();
+					if (popup && !popup.closed)
+						popup.close();
+					if (token)
+						resolve(token);
+					else
+						resolve(false);
+					break;
+				}
+
 				case 'TWOFA_CANCEL':
-				cleanup();
-				if (popup && !popup.closed)
-					popup.close();
-				resolve(false);
-				break;
+					cleanup();
+					if (popup && !popup.closed)
+						popup.close();
+					resolve(false);
+					break;
 			}
 		}
-		
+
 		addListener(window, 'message', onMessage as EventListener);
 	});
 }
@@ -195,7 +278,7 @@ fetch('/api/oauth/', {
 		oauthButtons.forEach((button) => {
 			const provider = button.href.split('/').pop();
 			if (!provider) return;
-			const isLinked = data.linkedProviders.includes(provider);
+			const isLinked = false; // data.???.includes(provider); --- IGNORE ---
 			const textSpan = button.querySelector<HTMLElement>('.oauth-text');
 			if (!textSpan) return;
 			if (isLinked) {

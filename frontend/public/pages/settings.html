@@ -57,125 +57,127 @@
 					data-translate-key="settings.profile.updateButton"
 					>
 					Update Profile
-				</button>
-			</form>
-		</section>
+					</button>
+				</form>
+			</section>
 		
-		<!-- SECURITY -->
-		<section class="settings-section unloaded" data-section="security">
-			<h2 data-translate-key="settings.securityTitle">Security Settings</h2>
-			
-			<form id="security-form">
-				<div class="div-title-and-text-input">
-					<label for="current-password" data-translate-key="settings.security.currentPasswordLabel">
-						Current Password:
-					</label>
-					<input
-					type="password"
-					id="current-password"
-					class="form-input-field"
-					placeholder="Current password"
-					/>
-				</div>
-				
-				<div class="div-title-and-text-input">
-					<label for="new-password" data-translate-key="settings.security.newPasswordLabel">
-						New Password:
-					</label>
-					<input
-					type="password"
-					id="new-password"
-					class="form-input-field"
-					placeholder="New password"
-					/>
-				</div>
-				
-				<div class="div-title-and-text-input">
-					<label for="repeat-password" data-translate-key="settings.security.repeatPasswordLabel">
-						Repeat New Password:
-					</label>
-					<input
-					type="password"
-					id="repeat-password"
-					class="form-input-field"
-					placeholder="Repeat new password"
-					/>
-				</div>
-				
-				<button
-				type="submit"
-				class="button button-fit-div-width background-color-lavender"
-				data-translate-key="settings.security.updatePasswordButton"
-				>
-				Update Password
-			</button>
-		</form>
-	</section>
+			<!-- SECURITY -->
+			<section class="settings-section unloaded" data-section="security">
+				<h2 data-translate-key="settings.securityTitle">Security Settings</h2>
+
+				<form id="security-form">
+					<div class="div-title-and-text-input">
+						<label for="current-password" data-translate-key="settings.security.currentPasswordLabel">
+							Current Password:
+						</label>
+						<input
+						type="password"
+						id="current-password"
+						name="current-password"
+						class="form-input-field"
+						placeholder="Current password"
+						/>
+					</div>
+
+					<div class="div-title-and-text-input">
+						<label for="new-password" data-translate-key="settings.security.newPasswordLabel">
+							New Password:
+						</label>
+						<input
+						type="password"
+						id="new-password"
+						name="new-password"
+						class="form-input-field"
+						placeholder="New password"
+						/>
+					</div>
+
+					<div class="div-title-and-text-input">
+						<label for="repeat-password" data-translate-key="settings.security.repeatPasswordLabel">
+							Repeat New Password:
+						</label>
+						<input
+						type="password"
+						id="repeat-password"
+						name="repeat-password"
+						class="form-input-field"
+						placeholder="Repeat new password"
+						/>
+					</div>
+
+					<button
+					type="submit"
+					class="button button-fit-div-width background-color-lavender"
+					data-translate-key="settings.security.updatePasswordButton"
+					>
+					Update Password
+					</button>
+				</form>
+			</section>
 	
-	<!-- TWO-FA -->
-	<section class="settings-section unloaded" data-section="twofa">
-		<h2 data-translate-key="settings.twofa.title">Two-Factor Authentication</h2>
-		
-		<p data-translate-key="settings.twofa.instructions">
-			Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.
-		</p>
-		
-		<div class="twofa-actions">
-			<a href="/twofa" class="button button-fit-div-width">
-				Manage 2FA methods
-			</a>
-			
-			<button id="enable-totp-btn" class="button button-fit-div-width">
-				Enable TOTP (Authenticator)
-			</button>
-			
-			<button id="generate-backup-btn" class="button button-fit-div-width">
-				Generate Backup Codes
-			</button>
-		</div>
-	</section>
+			<!-- TWO-FA -->
+			<section class="settings-section unloaded" data-section="twofa">
+				<h2 data-translate-key="settings.twofa.title">Two-Factor Authentication</h2>
+
+				<p data-translate-key="settings.twofa.instructions">
+					Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.
+				</p>
+
+				<div class="twofa-actions">
+					<a href="/twofa" class="button button-fit-div-width">
+						Manage 2FA methods
+					</a>
+
+					<button id="enable-totp-btn" class="button button-fit-div-width">
+						Enable TOTP (Authenticator)
+					</button>
+
+					<button id="generate-backup-btn" class="button button-fit-div-width">
+						Generate Backup Codes
+					</button>
+				</div>
+			</section>
 	
-	<!-- OAUTH -->
-	<section class="settings-section unloaded" data-section="oauth">
-		<h2 data-translate-key="settings.oauth.title">OAuth Accounts</h2>
-		
-		<p data-translate-key="settings.oauth.instructions">
-			Connect or disconnect OAuth providers for quick sign-in.
-		</p>
-		
-		<div class="oauth-buttons-container">
-			<a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load">
-				<svg class="oauth-icon">
-					<use href="/resources/imgs/svg/icons/42.svg#icon-42"></use>
-				</svg>
-				<span class="oauth-text" data-translate-key="settings.oauth.42link">Link 42</span>
-			</a>
-			
-			<a href="/api/oauth/github" class="oauth-button no-dynamic-load">
-				<svg class="oauth-icon">
-					<use href="/resources/imgs/svg/icons/github.svg#icon-github"></use>
-				</svg>
-				<span class="oauth-text" data-translate-key="settings.oauth.GitHublink">Link GitHub</span>
-			</a>
-			
-			<a href="/api/oauth/discord" class="oauth-button no-dynamic-load">
-				<svg class="oauth-icon">
-					<use href="/resources/imgs/svg/icons/discord.svg#icon-discord"></use>
-				</svg>
-				<span class="oauth-text" data-translate-key="settings.oauth.Discordlink">Link Discord</span>
-			</a>
-			
-			<a href="/api/oauth/google" class="oauth-button no-dynamic-load">
-				<svg class="oauth-icon">
-					<use href="/resources/imgs/svg/icons/google.svg#icon-google"></use>
-				</svg>
-				<span class="oauth-text" data-translate-key="settings.oauth.Googlelink">Link Google</span>
-			</a>
-		</div>
-	</section>
-	
-</main>
-</div>
+			<!-- OAUTH -->
+			<section class="settings-section unloaded" data-section="oauth">
+				<h2 data-translate-key="settings.oauth.title">OAuth Accounts</h2>
+
+				<p data-translate-key="settings.oauth.instructions">
+					Connect or disconnect OAuth providers for quick sign-in.
+				</p>
+
+				<div class="oauth-buttons-container">
+					<a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/42.svg#icon-42"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.42link">Link 42</span>
+					</a>
+
+					<a href="/api/oauth/github" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/github.svg#icon-github"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.GitHublink">Link GitHub</span>
+					</a>
+
+					<a href="/api/oauth/discord" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/discord.svg#icon-discord"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.Discordlink">Link Discord</span>
+					</a>
+
+					<a href="/api/oauth/google" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/google.svg#icon-google"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.Googlelink">Link Google</span>
+					</a>
+				</div>
+			</section>
+		</main>
+	</div>
 </div>
 
 <script defer type="module" src="/js/pages/settingsPage.js"></script>
