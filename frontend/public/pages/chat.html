@@ -1,0 +1,52 @@
+<div class="chat-div-container" aria-label="Chat interface">
+	<button class="chat-header-toggle-users" aria-label="Toggle User List"></button>
+	<div class="user-list"></div>
+	<div class="chat-block">
+		<div class="chat-header">
+			<img class="img_profile hidden" chat-header="true">
+			<a class="chat-header-profile-pic hidden">
+				<span class="chat-header-title hidden">Template</span>
+			</a>
+			<button class="chat-header-btn hidden" aria-pressed="false" block-button="true">Block</button>
+		</div>
+		<div class="chat-messages" role="log" aria-live="polite"></div>
+		<form class="chat-input-form" method="post" action="#" novalidate="">
+			<div class="invite-wrapper hidden">
+				<button class="chat-invite-btn">+</button>
+				<div class="invite-menu hidden" role="menu">
+					<button type="button" class="invite-menu-btn">Invite Pong</button>
+				</div>
+			</div>
+			<div class="chat-input hidden" contenteditable="true"></div>
+			<button type="submit" class="chat-send-btn hidden">Send</button>
+		</form>
+	</div>
+</div>
+
+<template class="user-item-temp">
+	<div class="user-item">
+		<img class="img_profile" alt="">
+		<p class="name_profile"></p>
+	</div>
+</template>
+
+<template class="invite-cancel-temp">
+	<div class="invite-actions">
+		<button type="button" class="invite-cancel">Cancel</button>
+	</div>
+</template>
+
+<template class="invite-go-temp">
+	<div class="invite-actions">
+		<button type="button" class="invite-go">Play</button>
+	</div>
+</template>
+
+<template class="invite-pending-temp">
+	<div class="invite-actions">
+		<button type="button" class="invite-accept">Accept</button>
+		<button type="button" class="invite-decline">Decline</button>
+	</div>
+</template>
+
+<script src="/js/pages/chat.js" type="module" defer></script>
