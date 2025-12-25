@@ -4,7 +4,8 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { userImgsSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
+import { userImgsSchema, uploadAvatarUrlSchema, uploadAvatarFileSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
+import { saveAvatarFromUrl, saveAvatarFromFile } from '../../../utils/userData.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -65,6 +66,42 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 		} catch (err) {
 			fastify.log.error({ err }, 'Unhandled error in /data/imgs/:fileName');
 			return reply.status(500).send({ error: 'Internal server error' });
+		}
+	});
+
+	// POST: upload avatar from URL
+	fastify.post('/data/imgs/avatar-url', {
+		schema: uploadAvatarUrlSchema,
+		validatorCompiler: ({ schema }) => { return () => true; }
+	}, async (request, reply) => {
+		try {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+			const { url } = request.body as { url: string };
+			if (!url || typeof url !== 'string') return reply.status(400).send({ error: 'Missing or invalid url' });
+			const fileName = await saveAvatarFromUrl(userId, url);
+			return reply.status(200).send({ success: true, fileName });
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message || 'Failed to upload avatar from URL' });
+		}
+	});
+
+	// POST: upload avatar from file (multipart/form-data)
+	fastify.post('/data/imgs/avatar', {
+		schema: uploadAvatarFileSchema,
+		validatorCompiler: ({ schema }) => { return () => true; }
+	}, async (request, reply) => {
+		try {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+			const file = (request as any).file;
+			if (!file) return reply.status(400).send({ error: 'No file uploaded' });
+			const fileName = await saveAvatarFromFile(userId, file);
+			return reply.status(200).send({ success: true, fileName });
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message || 'Failed to upload avatar' });
 		}
 	});
 }
