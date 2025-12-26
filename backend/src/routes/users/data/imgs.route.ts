@@ -4,6 +4,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { requireAuth } from '../../../middleware/auth.middleware.js';
 import { userImgsSchema, uploadAvatarUrlSchema, uploadAvatarFileSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
 import { saveAvatarFromUrl, saveAvatarFromFile } from '../../../utils/userData.js';
 import path from 'path';
@@ -72,7 +73,8 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 	// POST: upload avatar from URL
 	fastify.post('/data/imgs/avatar-url', {
 		schema: uploadAvatarUrlSchema,
-		validatorCompiler: ({ schema }) => { return () => true; }
+		validatorCompiler: ({ schema }) => { return () => true; },
+		preHandler: requireAuth
 	}, async (request, reply) => {
 		try {
 			const session = (request as any).session;
@@ -90,13 +92,14 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 	// POST: upload avatar from file (multipart/form-data)
 	fastify.post('/data/imgs/avatar', {
 		schema: uploadAvatarFileSchema,
-		validatorCompiler: ({ schema }) => { return () => true; }
+		validatorCompiler: ({ schema }) => { return () => true; },
+		preHandler: requireAuth
 	}, async (request, reply) => {
 		try {
 			const session = (request as any).session;
 			const userId = session?.user_id;
 			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
-			const file = (request as any).file;
+			const file = await request.file();
 			if (!file) return reply.status(400).send({ error: 'No file uploaded' });
 			const fileName = await saveAvatarFromFile(userId, file);
 			return reply.status(200).send({ success: true, fileName });

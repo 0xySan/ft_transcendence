@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import swaggerPlugin from "./plugins/swagger/index.js";
 
 // Initialize db
@@ -31,6 +32,9 @@ async function buildServer() {
 	app.register(cookie, {
 		secret: process.env.COOKIE_SECRET, // for signing cookies
 	});
+
+	// Register multipart plugin for file uploads
+	app.register(fastifyMultipart);
 
 	await app.register(swaggerPlugin);
 

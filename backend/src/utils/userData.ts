@@ -10,11 +10,13 @@ import { promisify } from 'util';
 import fetch from 'node-fetch';
 const streamPipeline = promisify(pipeline);
 
-import { updateProfile } from '../db/index.js';
+import { updateProfile, getProfileByUserId } from '../db/index.js';
 const USER_IMG_DIR = path.join(process.cwd(), 'userData', 'imgs');
 
 function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
-	return updateProfile(Number(userId), { profile_picture: avatarUrl });
+	const profile = getProfileByUserId(String(userId));
+	if (!profile) throw new Error('Profile not found');
+	return updateProfile(profile.profile_id, { profile_picture: avatarUrl });
 }
 
 
