@@ -90,6 +90,12 @@
     "profile": {
       "displayNameLabel": "Display Name:",
       "bioLabel": "Bio:",
+      "avatarLabel": "Avatar:",
+      "avatarMode": {
+        "file": "File",
+        "url": "URL"
+      },
+      "currentAvatarLabel": "Current Avatar:",
       "updateButton": "Update Profile"
     },
     "securityTitle": "Security Settings",
@@ -101,7 +107,13 @@
     },
     "twofa": {
       "title": "Two-Factor Authentication",
-      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes."
+      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",
+      "enableEmailOtpButton": "Enable Email OTP",
+      "enableTotpButton": "Enable TOTP (Authenticator)",
+      "generateBackupCodesButton": "Generate Backup Codes",
+      "disableEmailOtpButton": "Disable Email OTP",
+      "disableTotpButton": "Disable TOTP (Authenticator)",
+      "deleteBackupCodesButton": "Delete Backup Codes"
     },
     "oauth": {
       "title": "OAuth Accounts",

@@ -107,6 +107,12 @@
     "profile": {
       "displayNameLabel": "Nom affiché :",
       "bioLabel": "Bio :",
+      "avatarLabel": "Avatar :",
+      "avatarMode": {
+        "file": "Fichier",
+        "url": "URL"
+      },
+      "currentAvatarLabel": "Avatar actuel :",
       "updateButton": "Mettre à jour le profil"
     },
     "securityTitle": "Paramètres de sécurité",
@@ -118,7 +124,13 @@
     },
     "twofa": {
       "title": "Authentification à deux facteurs",
-      "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP par e‑mail et codes de secours."
+      "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP par e‑mail et codes de secours.",
+      "enableEmailOtpButton": "Activer OTP par e-mail",
+      "enableTotpButton": "Activer TOTP (Authentificateur)",
+      "generateBackupCodesButton": "Générer des codes de secours",
+      "disableEmailOtpButton": "Désactiver OTP par e-mail",
+      "disableTotpButton": "Désactiver TOTP (Authentificateur)",
+      "deleteBackupCodesButton": "Supprimer les codes de secours"
     },
     "oauth": {
       "title": "Comptes OAuth",
