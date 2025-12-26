@@ -34,6 +34,7 @@
 						<input
 						type="text"
 						id="display-name"
+						name="display-name"
 						class="form-input-field"
 						placeholder="Your display name"
 						/>
@@ -45,10 +46,29 @@
 						</label>
 						<textarea
 						id="bio"
+						name="bio"
 						class="form-input-field bio-textarea"
 						rows="4"
 						placeholder="Tell us something about you..."
 						></textarea>
+					</div>
+
+					<div class="div-title-and-text-input">
+						<label for="avatar" data-translate-key="settings.profile.avatarLabel">
+							Avatar:
+						</label>
+						<input
+						type="file"
+						id="avatar"
+						name="avatar"
+						class="form-input-field"
+						accept="image/*"
+						/>
+					</div>
+
+					<div class="current-avatar-container">
+						<p data-translate-key="settings.profile.currentAvatarLabel">Current Avatar:</p>
+						<img id="current-avatar" src="" alt="Current Avatar" class="current-avatar-image"/>
 					</div>
 					
 					<button

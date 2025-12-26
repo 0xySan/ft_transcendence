@@ -58,6 +58,128 @@ menuItems.forEach((item) => {
 	});
 });
 
+// When we arrive at the settings page, we have to update the display name and the bio fields to match current values
+// This is because the user might have changed them elsewhere, and we want to show the latest values
+fetch('/api/users/me', {
+	method: 'GET',
+	credentials: 'include',
+	headers: {
+		'accept-language': getUserLang()
+	}
+})
+.then(async (res) => {
+	if (!res.ok) {
+		console.error('Failed to fetch profile data:', res.status);
+		return;
+	}
+	
+	const data = await res.json();
+	const profile = data.user.profile;
+	if (!profile) {
+		console.error('No profile data received');
+		return;
+	}
+	
+	const displayNameInput = document.querySelector<HTMLInputElement>(
+		'#profile-form input[name="display-name"]'
+	);
+	const bioInput = document.querySelector<HTMLTextAreaElement>(
+		'#profile-form textarea[name="bio"]'
+	);
+	const avatarInput = document.querySelector<HTMLInputElement>(
+		'#profile-form input[name="avatar"]'
+	);
+	const currentAvatarImage = document.querySelector<HTMLImageElement>(
+		'#current-avatar'
+	);
+	
+	if (displayNameInput) displayNameInput.value = profile.displayName || '';
+	if (bioInput) bioInput.value = profile.bio || '';
+	if (avatarInput) avatarInput.value = profile.profilePicture || '';
+	if (currentAvatarImage) currentAvatarImage.src = profile.profilePicture || '';
+})
+.catch((err) => {
+	console.error('Error fetching profile data:', err);
+});
+
+// ================================================
+// 			User profile update handling
+// ================================================
+
+// Should update both display name, bio, and avatar right now
+// It should be possible to update them separately
+addListener(
+	document.getElementById('profile-form'),
+	'submit',
+	(e) => {
+		e.preventDefault();
+		
+		const form = e.target as HTMLFormElement;
+		const displayNameInput = form.querySelector<HTMLInputElement>(
+			'input[name="display-name"]'
+		);
+		const bioInput = form.querySelector<HTMLTextAreaElement>(
+			'textarea[name="bio"]'
+		);
+		const avatarInput = form.querySelector<HTMLInputElement>(
+			'input[name="avatar"]'
+		);
+
+		console.log('Preparing profile update...');
+		console.log('Display Name Input:', displayNameInput);
+		console.log('Bio Input:', bioInput);
+		console.log('Avatar Input:', avatarInput);
+		
+		if (!displayNameInput || !bioInput || !avatarInput) return;
+
+		console.log('Submitting profile update...');
+		
+		const displayName = displayNameInput.value;
+		const bio = bioInput.value;
+		const avatar = avatarInput.value;
+		
+		let body: any = {};
+		if (displayName) body.displayName = displayName;
+		if (bio) body.bio = bio;
+		if (avatar) body.profilePicture = avatar;
+
+		console.log('Profile update body:', body);
+		
+		if (Object.keys(body).length === 0) {
+			return;
+		}
+
+		console.log('Body length > 0, proceeding with update.');
+		
+		// From here on, action is authorized
+		
+		fetch('/api/users/me', {
+			method: 'PATCH',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept-language': getUserLang(),
+			},
+			body: JSON.stringify(body)
+		})
+		.then(async (res) => {
+			console.log('Profile update response:', res);
+			if (res.ok) {
+				alert('Profile updated successfully.');
+				return;
+			}
+			
+			const data = await res.json();
+			if (data.error === 'invalid_display_name') {
+				alert('Display name is invalid.');
+				return;
+			}
+			
+			alert('Failed to update profile.');
+		});
+	}
+);
+
 // ================================================
 // 			User password update handling
 // ================================================
@@ -92,12 +214,12 @@ addListener(
 		
 		const allowed = await ensureTwoFaIfNeeded();
 		if (!allowed) return;
-
+		
 		let body = {
 			old_password: oldPassword,
 			new_password: newPassword
 		};
-
+		
 		if (typeof allowed === 'string') {
 			(body as any).twoFaToken = allowed;
 		}
@@ -132,7 +254,8 @@ addListener(
 			
 			alert('Failed to update password.');
 		});
-});
+	}
+);
 
 // ================================================
 // 				2FA popup handling
@@ -186,27 +309,27 @@ function openTwoFaPopupAndWait(): Promise<string | false> {
 	return new Promise((resolve) => {
 		const requestId = crypto.randomUUID();
 		let popup: Window | null = null;
-
+		
 		const popupUrl = `/twofa_popup?requestId=${requestId}`;
-
+		
 		popup = window.open(
 			popupUrl,
 			`twofa_popup_${requestId}`,
 			'width=420,height=520,resizable=no'
 		);
-
+		
 		if (!popup) {
 			resolve(false);
 			return;
 		}
-
+		
 		const timeout = window.setTimeout(() => {
 			cleanup();
 			if (popup && !popup.closed)
 				popup.close();
 			resolve(false);
 		}, 120000);
-
+		
 		const closePoll = window.setInterval(() => {
 			if (popup && popup.closed) {
 				cleanup();
@@ -214,20 +337,20 @@ function openTwoFaPopupAndWait(): Promise<string | false> {
 				resolve(false);
 			}
 		}, 300);
-
+		
 		function cleanup() {
 			window.removeEventListener('message', onMessage);
 			clearTimeout(timeout);
 			clearInterval(closePoll);
 		}
-
+		
 		function onMessage(e: MessageEvent) {
 			if (e.origin !== window.location.origin)
 				return;
-
+			
 			if (!e.data || !e.data.type)
 				return;
-
+			
 			switch (e.data.type) {
 				case 'TWOFA_SUCCESS': {
 					// Expect the popup to send back the validated token
@@ -241,16 +364,16 @@ function openTwoFaPopupAndWait(): Promise<string | false> {
 						resolve(false);
 					break;
 				}
-
+				
 				case 'TWOFA_CANCEL':
-					cleanup();
-					if (popup && !popup.closed)
-						popup.close();
-					resolve(false);
-					break;
+				cleanup();
+				if (popup && !popup.closed)
+					popup.close();
+				resolve(false);
+				break;
 			}
 		}
-
+		
 		addListener(window, 'message', onMessage as EventListener);
 	});
 }
