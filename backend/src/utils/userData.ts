@@ -17,10 +17,21 @@ function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
 	return updateProfile(Number(userId), { profile_picture: avatarUrl });
 }
 
+
+// Check if buffer is a valid PNG, JPG, or WEBP image by magic number
+function isAllowedImage(buffer: Buffer): boolean {
+	// PNG: 89 50 4E 47 0D 0A 1A 0A
+	if (buffer.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A]))) return true;
+	// JPG: FF D8 FF
+	if (buffer.subarray(0, 3).equals(Buffer.from([0xFF,0xD8,0xFF]))) return true;
+	// WEBP: RIFF....WEBP
+	if (buffer.subarray(0, 4).toString() === 'RIFF' && buffer.subarray(8, 12).toString() === 'WEBP') return true;
+	return false;
+}
+
 /**
  * Save an avatar from a remote URL
  */
-
 export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 	const res = await fetch(imageUrl);
 	if (!res.ok) {
@@ -41,18 +52,27 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 
 	if (!res.body) throw new Error('Response body is null');
 
-	// Handle both Web and Node streams
-	let nodeStream: any;
+	// Download to buffer first for validation
+	let buffer: Buffer;
 	if (typeof res.body.pipe === 'function') {
-		// undici/Node Fetch gives a Node stream (PassThrough)
-		nodeStream = res.body;
+		// Node stream
+		const chunks: Buffer[] = [];
+		for await (const chunk of res.body) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+		buffer = Buffer.concat(chunks);
 	} else {
-		// Standard Fetch gives a Web ReadableStream
+		// Web ReadableStream
 		const { Readable } = await import('stream');
-		nodeStream = Readable.fromWeb(res.body as any);
+		const nodeStream = Readable.fromWeb(res.body as any);
+		const chunks: Buffer[] = [];
+		for await (const chunk of nodeStream) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+		buffer = Buffer.concat(chunks);
 	}
 
-	await streamPipeline(nodeStream, fs.createWriteStream(filePath));
+	if (!isAllowedImage(buffer)) {
+		throw new Error('Downloaded file is not a valid PNG/JPG/WEBP image');
+	}
+
+	await fs.promises.writeFile(filePath, buffer);
 
 	updateUserAvatarInDb(userId, fileName);
 	return fileName;
@@ -69,7 +89,12 @@ export async function saveAvatarFromFile(userId: string, file: any) {
 	// Remove existing avatar if exists
 	if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-	await fs.promises.writeFile(filePath, await file.toBuffer());
+	const buffer = await file.toBuffer();
+	if (!isAllowedImage(buffer)) {
+		throw new Error('Uploaded file is not a valid PNG/JPG/WEBP image');
+	}
+
+	await fs.promises.writeFile(filePath, buffer);
 
 	updateUserAvatarInDb(userId, fileName);
 	return fileName;
