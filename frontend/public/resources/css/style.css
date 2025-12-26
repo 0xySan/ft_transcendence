@@ -2560,3 +2560,15 @@ footer {
 #copyright-text {
 	color: rgb(var(--subtext0));
 }
+
+/* Avatar circle style for settings page */
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(var(--lavender), 0.7);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: block;
+  margin: 0.5em auto;
+}

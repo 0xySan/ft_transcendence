@@ -18,6 +18,7 @@ K extends keyof EventMapFor<T>
 ): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
+declare function updateNavBar(userData: any): void;
 
 type SectionName = string;
 
@@ -69,14 +70,12 @@ fetch('/api/users/me', {
 })
 .then(async (res) => {
 	if (!res.ok) {
-		console.error('Failed to fetch profile data:', res.status);
 		return;
 	}
 	
 	const data = await res.json();
 	const profile = data.user.profile;
 	if (!profile) {
-		console.error('No profile data received');
 		return;
 	}
 	
@@ -86,17 +85,13 @@ fetch('/api/users/me', {
 	const bioInput = document.querySelector<HTMLTextAreaElement>(
 		'#profile-form textarea[name="bio"]'
 	);
-	const avatarInput = document.querySelector<HTMLInputElement>(
-		'#profile-form input[name="avatar"]'
-	);
 	const currentAvatarImage = document.querySelector<HTMLImageElement>(
 		'#current-avatar'
 	);
 	
 	if (displayNameInput) displayNameInput.value = profile.displayName || '';
 	if (bioInput) bioInput.value = profile.bio || '';
-	if (avatarInput) avatarInput.value = profile.profilePicture || '';
-	if (currentAvatarImage) currentAvatarImage.src = profile.profilePicture || '';
+	if (currentAvatarImage) currentAvatarImage.src = `/api/users/data/imgs/${profile.profilePicture || ''}`;
 })
 .catch((err) => {
 	console.error('Error fetching profile data:', err);
@@ -106,12 +101,10 @@ fetch('/api/users/me', {
 // 			User profile update handling
 // ================================================
 
-// Should update both display name, bio, and avatar right now
-// It should be possible to update them separately
 addListener(
 	document.getElementById('profile-form'),
 	'submit',
-	(e) => {
+	async (e) => {
 		e.preventDefault();
 		
 		const form = e.target as HTMLFormElement;
@@ -121,64 +114,119 @@ addListener(
 		const bioInput = form.querySelector<HTMLTextAreaElement>(
 			'textarea[name="bio"]'
 		);
-		const avatarInput = form.querySelector<HTMLInputElement>(
+		const avatarUrlInput = form.querySelector<HTMLInputElement>(
 			'input[name="avatar"]'
 		);
-
-		console.log('Preparing profile update...');
-		console.log('Display Name Input:', displayNameInput);
-		console.log('Bio Input:', bioInput);
-		console.log('Avatar Input:', avatarInput);
+		const avatarFileInput = form.querySelector<HTMLInputElement>(
+			'input[name="avatar-file"]'
+		);
 		
-		if (!displayNameInput || !bioInput || !avatarInput) return;
-
-		console.log('Submitting profile update...');
+		if (!displayNameInput || !bioInput || !avatarUrlInput) return;
 		
-		const displayName = displayNameInput.value;
-		const bio = bioInput.value;
-		const avatar = avatarInput.value;
+		const displayName = displayNameInput.value.trim();
+		const bio = bioInput.value.trim();
+		const avatarUrl = avatarUrlInput.value.trim();
 		
 		let body: any = {};
 		if (displayName) body.displayName = displayName;
 		if (bio) body.bio = bio;
-		if (avatar) body.profilePicture = avatar;
-
-		console.log('Profile update body:', body);
+		
+		// Handle avatar upload: file first, then URL
+		try {
+			if (avatarFileInput && avatarFileInput.files && avatarFileInput.files.length > 0) {
+				const fd = new FormData();
+				fd.append('file', avatarFileInput.files[0]);
+				const upRes = await fetch('/api/users/data/imgs/avatar', {
+					method: 'POST',
+					credentials: 'include',
+					body: fd,
+				});
+				const upData = await upRes.json().catch(() => ({}));
+				if (!upRes.ok) {
+					alert(upData.error || 'Failed to upload avatar file.');
+					return;
+				}
+				if (upData.fileName) body.profilePicture = upData.fileName;
+			} else if (avatarUrl) {
+				// If avatar field looks like a remote URL, attempt server-side download
+				if (/^https?:\/\//i.test(avatarUrl)) {
+					
+					const urlRes = await fetch('/api/users/data/imgs/avatar-url', {
+						method: 'POST',
+						credentials: 'include',
+						headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+						body: JSON.stringify({ url: avatarUrl })
+					});
+					const urlData = await urlRes.json().catch(() => ({}));
+					
+					if (!urlRes.ok) {
+						alert(urlData.error || 'Failed to download avatar from URL.');
+						return;
+					}
+					if (urlData.fileName) body.profilePicture = urlData.fileName;
+				} else {
+					body.profilePicture = avatarUrl;
+				}
+			}
+		} catch (err) {
+			alert('Avatar upload failed.');
+			return;
+		}
 		
 		if (Object.keys(body).length === 0) {
 			return;
 		}
-
-		console.log('Body length > 0, proceeding with update.');
 		
 		// From here on, action is authorized
-		
-		fetch('/api/users/me', {
-			method: 'PATCH',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json',
-				'accept-language': getUserLang(),
-			},
-			body: JSON.stringify(body)
-		})
-		.then(async (res) => {
-			console.log('Profile update response:', res);
+		try {
+			const res = await fetch('/api/users/me', {
+				method: 'PATCH',
+				credentials: 'include',
+				headers: {
+					'Content-Type': 'application/json',
+					'accept-language': getUserLang(),
+				},
+				body: JSON.stringify(body)
+			});
 			if (res.ok) {
+				// Update displayed avatar if server returned a fileName
+				if (body.profilePicture) {
+					const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
+					if (currentAvatarImage) {
+						currentAvatarImage.src = `/api/users/data/imgs/${body.profilePicture}`;
+					}
+				}
+				// Fetch latest user data and update navbar
+				try {
+					const navRes = await fetch('/api/users/me', {
+						method: 'GET',
+						credentials: 'include',
+						headers: { 'accept-language': getUserLang() }
+					});
+					if (navRes.ok) {
+						const navData = await navRes.json();
+						updateNavBar(navData);
+					}
+				} catch (err) {
+					console.error('Failed to update navbar after profile update:', err);
+				}
 				alert('Profile updated successfully.');
 				return;
 			}
 			
-			const data = await res.json();
-			if (data.error === 'invalid_display_name') {
+			const data = await res.json().catch(() => ({}));
+			if (data.error === 'invalid_display_name' || data.message === 'Invalid displayName (must be string, ≤50 chars)') {
 				alert('Display name is invalid.');
 				return;
 			}
-			
 			alert('Failed to update profile.');
-		});
+		} catch (err) {
+			console.error('Profile update error:', err);
+			alert('Failed to update profile.');
+		}
 	}
 );
+
 
 // ================================================
 // 			User password update handling
@@ -431,9 +479,7 @@ fetch('/api/oauth/', {
 
 addListener(window, "message", (e) => {
 	if (e.origin !== window.location.origin) return;
-	if (!e.data || !e.data.requestId) return;
-	
-	console.log("OAuth result:", e.data);
+	if (!e.data || !e.data.requestId) return
 	
 	const popup = oauthPopups.get(e.data.requestId);
 	const button = oauthButtonsPressed.get(e.data.requestId);
@@ -546,6 +592,31 @@ oauthButtons.forEach((button) => {
 		}
 	});
 });
+
+// Avatar input toggle logic
+const avatarFileGroup = document.getElementById('avatar-file-group');
+const avatarUrlGroup = document.getElementById('avatar-url-group');
+const avatarModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="avatar-mode"]');
+
+avatarModeRadios.forEach(radio => {
+	radio.addEventListener('change', () => {
+		if (radio.checked) {
+			const avatarFileInput = document.querySelector<HTMLInputElement>('input[name="avatar-file"]');
+			const avatarUrlInput = document.querySelector<HTMLInputElement>('input[name="avatar"]');
+			if (radio.value === 'file') {
+				if (avatarFileGroup) avatarFileGroup.style.display = '';
+				if (avatarUrlGroup) avatarUrlGroup.style.display = 'none';
+				if (avatarFileInput) avatarFileInput.value = '';
+			} else {
+				if (avatarFileGroup) avatarFileGroup.style.display = 'none';
+				if (avatarUrlGroup) avatarUrlGroup.style.display = '';
+				if (avatarUrlInput) avatarUrlInput.value = '';
+			}
+		}
+	});
+});
+
+
 
 // Initial section
 showSection('profile');
