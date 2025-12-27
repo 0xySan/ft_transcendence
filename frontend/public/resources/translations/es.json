@@ -52,5 +52,24 @@
     "passwordLabel": "Password:",
     "resetButton": "Reset Password",
     "title": "Reset Password"
+  },
+  "chat": {
+    "send": "Enviar",
+    "invite": {
+      "send": "Invitar a jugar a Pong",
+      "accept": "Aceptar",
+      "decline": "Rechazar",
+      "cancel": "Cancelar",
+      "play": "Jugar",
+      "receivedmsg": "@$user te ha invitado a jugar al Pong.",
+      "sentmsg": "Has invitado a @$user a jugar al Pong."
+    },
+    "block": {
+      "blockbtn": "Bloquear",
+      "unblockbtn": "Desbloquear",
+      "placeholder": "Enviar un mensaje a @$user",
+      "blockedPlaceholder": "Has bloqueado a @$user. Desbloquéalo para poder enviarle mensajes.",
+      "loadHint": "Desplácese hacia arriba para cargar los mensajes anteriores"
+    }
   }
 }

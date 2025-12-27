@@ -144,5 +144,24 @@
       "Googlelink": "Connecter Google",
       "Googleunlink": "Déconnecter Google"
     }
+  },
+  "chat": {
+    "send": "Envoyer",
+    "invite": {
+      "send": "Inviter à jouer à Pong",
+      "accept": "Accepter",
+      "decline": "Refuser",
+      "cancel": "Annuler",
+      "play": "Jouer",
+      "receivedmsg": "@$user vous a invité à jouer à Pong.",
+      "sentmsg": "Tu as invité @$user à jouer à Pong."
+    },
+    "block": {
+      "blockbtn": "Bloquer",
+      "unblockbtn": "Débloquer",
+      "placeholder": "Envoyer un message à @$user",
+      "blockedPlaceholder": "Vous avez bloqué @$user. Débloquez-le pour envoyer des messages.",
+      "loadHint": "Défiler vers le haut pour charger les messages précédents"
+    }
   }
 }

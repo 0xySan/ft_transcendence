@@ -144,5 +144,24 @@
     "otherMethodLabel": "Other method of Two Factor Authentication",
     "methodSelect": "",
     "resendButton": "Resend verification code"
+  },
+  "chat": {
+    "send": "Send",
+    "invite": {
+      "send": "Invite to play Pong",
+      "accept": "Accept",
+      "decline": "Decline",
+      "cancel": "Cancel",
+      "play": "Play",
+      "receivedmsg": "@$user invited you to play Pong.",
+      "sentmsg": "You invited @$user to play Pong."
+    },
+    "block": {
+      "blockbtn": "Block",
+      "unblockbtn": "Unblock",
+      "placeholder": "Type a message to @$user",
+      "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
+      "loadHint": "Scroll up to load previous messages"
+    }
   }
 }

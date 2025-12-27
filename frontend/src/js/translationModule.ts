@@ -4,6 +4,7 @@ declare global {
         translatePage: typeof translatePage;
         translateElement: typeof translateElement;
         getUserLang: typeof getUserLang;
+        getTransletedElementText: typeof getTranslatedElementText;
     }
 }
 
@@ -138,8 +139,30 @@ export function translateElement(language: string, element: HTMLElement) {
     });
 }
 
+export function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null> {
+    const correlatedLanguage = correlateLangCode(language);
+    const translationPromise = fetchTranslationJson(correlatedLanguage);
+    if (!translationPromise) return Promise.resolve(null);
+    if (!element || !element.hasAttribute("data-translate-key")) return Promise.resolve(null);
+
+    return translationPromise.then((json) => {
+        if (json) {
+            const key = element.getAttribute("data-translate-key");
+            if (key) {
+                const keys = key.split(".");
+                const translatedText = getNestedJsonValue(json, keys);
+                if (translatedText) {
+                    return translatedText;
+                }
+            }
+        }
+        return null;
+    });
+}
+
 window.translatePage = translatePage;
 window.translateElement = translateElement;
+window.getTransletedElementText = getTranslatedElementText;
 window.getUserLang = getUserLang;
 
 translatePage(getUserLang());

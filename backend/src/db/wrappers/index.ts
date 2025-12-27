@@ -53,3 +53,4 @@ export function getRow<T>(table: string, column: string, value: unknown): T | un
 
 export * from "./auth/index.js";
 export * from "./main/index.js";
+export * from "./chat/index.js";
