@@ -130,7 +130,18 @@
       "generateBackupCodesButton": "Générer des codes de secours",
       "disableEmailOtpButton": "Désactiver OTP par e-mail",
       "disableTotpButton": "Désactiver TOTP (Authentificateur)",
-      "deleteBackupCodesButton": "Supprimer les codes de secours"
+      "deleteBackupCodesButton": "Supprimer les codes de secours",
+      "totpPopupTitle": "Configuration de l'authentificateur",
+      "totpCodeLabel": "Entrez le code de votre application :",
+      "validateTotpButton": "Valider",
+      "totpError": "Code invalide. Veuillez réessayer.",
+      "emailOtpPopupTitle": "Configuration OTP par e-mail",
+      "emailOtpLabel": "Entrez le code envoyé à votre e-mail :",
+      "validateEmailOtpButton": "Valider",
+      "emailOtpError": "Code invalide. Veuillez réessayer.",
+      "backupCodesPopupTitle": "Codes de secours",
+      "backupCodesInfo": "Veuillez noter ces codes et les conserver en lieu sûr. Chaque code ne peut être utilisé qu'une seule fois.",
+      "closeBackupCodesButton": "Fermer"
     },
     "oauth": {
       "title": "Comptes OAuth",

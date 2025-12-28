@@ -143,6 +143,17 @@
     "otpContainer": "",
     "otherMethodLabel": "Other method of Two Factor Authentication",
     "methodSelect": "",
-    "resendButton": "Resend verification code"
+    "resendButton": "Resend verification code",
+    "totpPopupTitle": "Authenticator Setup",
+    "totpCodeLabel": "Enter the code from your app:",
+    "validateTotpButton": "Validate",
+    "totpError": "Invalid code. Please try again.",
+    "emailOtpPopupTitle": "Email OTP Setup",
+    "emailOtpLabel": "Enter the code sent to your email:",
+    "validateEmailOtpButton": "Validate",
+    "emailOtpError": "Invalid code. Please try again.",
+    "backupCodesPopupTitle": "Backup Codes",
+    "backupCodesInfo": "Please write these codes down and keep them safe. Each code can only be used once.",
+    "closeBackupCodesButton": "Close"
   }
 }
