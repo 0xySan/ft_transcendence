@@ -35,7 +35,7 @@
 						type="text"
 						id="display-name"
 						name="display-name"
-						class="form-input-field"
+						class="form-input-field settings-input"
 						placeholder="Your display name"
 						/>
 					</div>
@@ -47,7 +47,7 @@
 						<textarea
 						id="bio"
 						name="bio"
-						class="form-input-field bio-textarea"
+						class="form-input-field bio-textarea settings-textarea"
 						rows="4"
 						placeholder="Tell us something about you..."
 						></textarea>
@@ -73,20 +73,22 @@
 								type="text"
 								id="avatar"
 								name="avatar"
-								class="form-input-field"
+								class="form-input-field settings-input"
 								placeholder="Paste image URL or filename"
 							/>
 						</div>
 					</div>
 
-					<div class="current-avatar-container">
+					<div id="current-avatar-container" class="current-avatar-container" style="display: none;">
 						<p data-translate-key="settings.profile.currentAvatarLabel">Current Avatar:</p>
-						<img id="current-avatar" src="" alt="Current Avatar" class="current-avatar-image avatar-circle"/>
+						<span style="position: relative; display: inline-block;">
+							<img id="current-avatar" src="" alt="Current Avatar" class="current-avatar-image avatar-circle"/>
+						</span>
 					</div>
 					
 					<button
 					type="submit"
-					class="button button-fit-div-width background-color-lavender"
+					class="button button-fit-div-width nav-button"
 					data-translate-key="settings.profile.updateButton"
 					>
 					Update Profile
@@ -107,7 +109,7 @@
 						type="password"
 						id="current-password"
 						name="current-password"
-						class="form-input-field"
+						class="form-input-field settings-input"
 						placeholder="Current password"
 						/>
 					</div>
@@ -120,7 +122,7 @@
 						type="password"
 						id="new-password"
 						name="new-password"
-						class="form-input-field"
+						class="form-input-field settings-input"
 						placeholder="New password"
 						/>
 					</div>
@@ -133,14 +135,14 @@
 						type="password"
 						id="repeat-password"
 						name="repeat-password"
-						class="form-input-field"
+						class="form-input-field settings-input"
 						placeholder="Repeat new password"
 						/>
 					</div>
 
 					<button
 					type="submit"
-					class="button button-fit-div-width background-color-lavender"
+					class="button button-fit-div-width nav-button"
 					data-translate-key="settings.security.updatePasswordButton"
 					>
 					Update Password
@@ -157,15 +159,15 @@
 				</p>
 
 				<div class="twofa-actions">
-					<button id="enable-email-otp-btn" class="button button-fit-div-width" data-translate-key="settings.twofa.enableEmailOtpButton">
+					<button id="enable-email-otp-btn" class="button button-fit-div-width nav-button" data-translate-key="settings.twofa.enableEmailOtpButton">
 						Enable Email OTP
 					</button>
 
-					<button id="enable-totp-btn" class="button button-fit-div-width" data-translate-key="settings.twofa.enableTotpButton">
+					<button id="enable-totp-btn" class="button button-fit-div-width nav-button" data-translate-key="settings.twofa.enableTotpButton">
 						Enable TOTP (Authenticator)
 					</button>
 
-					<button id="generate-backup-btn" class="button button-fit-div-width" data-translate-key="settings.twofa.generateBackupCodesButton">
+					<button id="generate-backup-btn" class="button button-fit-div-width nav-button" data-translate-key="settings.twofa.generateBackupCodesButton">
 						Generate Backup Codes
 					</button>
 				</div>
