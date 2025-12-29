@@ -14,12 +14,8 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
 CREATE TABLE IF NOT EXISTS chat_conversation_members (
 	conversation_id INTEGER NOT NULL,
 	user_id TEXT NOT NULL,
-	role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('member','admin')),
-	status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','left','banned')),
-	joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	last_read_message_id INTEGER,
 	last_read_at DATETIME,
-	notifications_muted BOOLEAN NOT NULL DEFAULT 0,
 	PRIMARY KEY (conversation_id, user_id),
 	FOREIGN KEY (conversation_id) REFERENCES chat_conversations(conversation_id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
