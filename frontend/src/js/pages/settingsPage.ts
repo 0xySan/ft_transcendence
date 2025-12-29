@@ -703,9 +703,11 @@ const oauthPopups = new Map<string, Window>();
 const oauthButtonsPressed = new Map<string, HTMLElement>();
 const oauthInProgress = new Set<HTMLElement>(); // debounce per button
 
+let usersOauthProviders: Record<string, any> = {};
 
 fetch('/api/oauth/', {
 	method: 'GET',
+	credentials: 'include',
 	headers: {
 		'Content-Type': 'application/json',
 		'accept-language': getUserLang()
@@ -714,10 +716,14 @@ fetch('/api/oauth/', {
 .then(async res => {
 	const data = await res.json();
 	if (res.ok) {
+		usersOauthProviders = data.oauth.reduce((acc: Record<string, any>, curr: any) => {
+			acc[curr.provider] = curr;
+			return acc;
+		}, {});
 		oauthButtons.forEach((button) => {
 			const provider = button.href.split('/').pop();
 			if (!provider) return;
-			const isLinked = false; // data.???.includes(provider); --- IGNORE ---
+			const isLinked = data.oauth.some((acc: any) => acc.provider === provider);
 			const textSpan = button.querySelector<HTMLElement>('.oauth-text');
 			if (!textSpan) return;
 			if (isLinked) {
@@ -789,8 +795,7 @@ addListener(window, 'message', (e) => {
 oauthButtons.forEach((button) => {
 	addListener(button, "click", async (e) => {
 		e.preventDefault();
-		
-		// 🔐 1. Ensure 2FA first
+
 		const allowed = await ensureTwoFaIfNeeded();
 		if (!allowed) return;
 		
@@ -801,9 +806,10 @@ oauthButtons.forEach((button) => {
 			// ======================
 			const provider = button.href.split('/').pop();
 			if (!provider) return;
-			
-			fetch(`/api/oauth/${provider}/unlink`, {
+
+			fetch(`/api/oauth/${provider}/unlink?providerUserId=${usersOauthProviders[provider]?.providerUserId}`, {
 				method: 'GET',
+				credentials: 'include',
 				headers: {
 					'Content-Type': 'application/json',
 					'accept-language': getUserLang()
@@ -836,7 +842,7 @@ oauthButtons.forEach((button) => {
 		// ======================
 		if (oauthInProgress.has(button)) return;
 		oauthInProgress.add(button);
-		
+
 		const requestId = crypto.randomUUID();
 		const url = `${button.href}?requestId=${requestId}`;
 		

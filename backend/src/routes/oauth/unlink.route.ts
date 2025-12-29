@@ -21,7 +21,7 @@ export function oauthUnlinkRoute(fastify: FastifyInstance) {
 				return reply.status(401).send('Unauthorized: Invalid or missing session');
 
 			const { provider } = request.params as { provider: string };
-			const providerUserId = request.params.providerUserId as string;
+			const { providerUserId } = request.query as { providerUserId: string };
 			if (!provider || provider.trim() === '' || !providerUserId || providerUserId.trim() === '')
 				return reply.status(400).send('Provider and providerUserId params are required');
 
@@ -30,7 +30,7 @@ export function oauthUnlinkRoute(fastify: FastifyInstance) {
 				return reply.status(404).send('Account not found');
 
 			try {
-				const stmt = db.prepare('DELETE FROM oauth_accounts WHERE provider_user_id = ? AND provider = ? AND user_id = ?');
+				const stmt = db.prepare('DELETE FROM oauth_accounts WHERE provider_user_id = ? AND provider_name = ? AND user_id = ?');
 				const result = stmt.run(account.provider_user_id, provider, session.user_id);
 				if (result.changes === 0)
 					return reply.status(500).send('Failed to unlink account');
