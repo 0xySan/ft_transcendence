@@ -9,7 +9,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { oauthCallbackSchema } from '../../plugins/swagger/schemas/callback.schema.js'
 import geoip from 'geoip-lite';
 import {	createOauthAccount, createProfile, createUser,
-			getCountryByCode, getOauthAccountByProviderAndUserId,
+			getCountryByCode, getOauthAccountByProviderAndProviderUserId,
 			getOauthProviderByName, getProfileByUsername,
 			getRoleByName, getUserByEmail, OauthProvider } from '../../db/index.js';
 import { decryptSecret, generateRandomToken, hashString } from '../../utils/crypto.js';
@@ -107,7 +107,7 @@ function handleLoggedInUser(
 	if (!session || !session.user_id)
 		return reply.status(401).send('Unauthorized: Invalid or expired session');
 
-	const oauthAccount = getOauthAccountByProviderAndUserId(provider, userInfo.id);
+	const oauthAccount = getOauthAccountByProviderAndProviderUserId(provider, userInfo.id);
 	if (oauthAccount) // OAuth account already linked
 		return reply.status(400).send('OAuth account already linked');
 
@@ -234,7 +234,7 @@ export function oauthCallbackRoutes(fastify: FastifyInstance) {
 			if (sessionToken) // If user is logged in, try to link account
 				return handleLoggedInUser(userInfo, provider, request, reply);
 			
-			const oauthAccount = getOauthAccountByProviderAndUserId(provider, userInfo.id);
+			const oauthAccount = getOauthAccountByProviderAndProviderUserId(provider, userInfo.id);
 
 			const queryParams = request.query as Record<string, string>;
 			const requestId = queryParams.state;

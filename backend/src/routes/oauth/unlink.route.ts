@@ -6,7 +6,7 @@
 import { FastifyInstance } from "fastify";
 import { oauthUnlinkSchema } from "../../plugins/swagger/schemas/unlinkOauth.schema.js";
 import { requireAuth } from "../../middleware/auth.middleware.js";
-import { db, getOauthAccountByProviderAndUserId } from "../../db/index.js";
+import { db, getOauthAccountByProviderAndProviderUserId } from "../../db/index.js";
 
 export function oauthUnlinkRoute(fastify: FastifyInstance) {
 	fastify.get('/:provider/unlink',
@@ -21,10 +21,11 @@ export function oauthUnlinkRoute(fastify: FastifyInstance) {
 				return reply.status(401).send('Unauthorized: Invalid or missing session');
 
 			const { provider } = request.params as { provider: string };
-			if (!provider)
-				return reply.status(400).send('Provider param is required');
+			const providerUserId = request.params.providerUserId as string;
+			if (!provider || provider.trim() === '' || !providerUserId || providerUserId.trim() === '')
+				return reply.status(400).send('Provider and providerUserId params are required');
 
-			const account = getOauthAccountByProviderAndUserId(provider, session.user_id);
+			const account = getOauthAccountByProviderAndProviderUserId(provider, providerUserId);
 			if (!account)
 				return reply.status(404).send('Account not found');
 

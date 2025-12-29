@@ -17,14 +17,9 @@ import {
 	getRoleByName
 } from '../../../db/wrappers/main/index.js';
 
-import { 
-	getOauthAccountByProviderAndUserId,
-	createEmailVerification,
-	createOauthAccount
-} from '../../../db/wrappers/auth/index.js';
+import { createEmailVerification } from '../../../db/wrappers/auth/index.js';
 
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
-import { saveAvatarFromUrl } from '../../../utils/userData.js';
 import { sendMail } from "../../../utils/mail/mail.js";
 import { checkRateLimit, delayResponse } from "../../../utils/security.js";
 
