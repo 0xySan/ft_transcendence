@@ -3,7 +3,9 @@
 // ============================================================================
 // Complete chat system with messaging, user list, layout, and invite handling
 
-import {getTranslatedElementText, translateElement, getUserLang} from '../translationModule.js';
+declare function translateElement(language: string, element: HTMLElement): void;
+declare function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null>;
+declare function getUserLang(): string;
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -42,6 +44,7 @@ const LOAD_MORE_THRESHOLD = 20;
 const TIMEOUT_DELAY = 50;
 const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes for grouping messages
 const DRAFTS_KEY = 'chat_drafts';
+const LAST_ACTIVE_USER_KEY = 'chat_last_active_user';
 const API_BASE = '/api/chat';
 const DEFAULT_AVATAR = '/resources/imgs/default-avatar.svg';
 const LANG = getUserLang() || 'en';
@@ -59,6 +62,10 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 		...options,
 	});
 	if (!res.ok) {
+		if (res.status === 401) {
+			window.location.href = '/';
+			throw new Error('Unauthorized');
+		}
 		const text = await res.text();
 		throw new Error(`API ${res.status}: ${text || res.statusText}`);
 	}
@@ -98,6 +105,12 @@ let userListHidden = false;
 
 function setActiveUser(user: string | null): void {
 	activeUser = user;
+	try {
+		if (user) sessionStorage.setItem(LAST_ACTIVE_USER_KEY, user);
+		else sessionStorage.removeItem(LAST_ACTIVE_USER_KEY);
+	} catch (_) {
+		// ignore storage failures
+	}
 }
 
 function saveDraft(user: string | null, text: string): void {
@@ -305,12 +318,24 @@ async function loadChatData(): Promise<void> {
 		});
 
 		if (users.length > 0) {
-			setActiveUser(users[0]);
+			const saved = (() => {
+				try { return sessionStorage.getItem(LAST_ACTIVE_USER_KEY); } catch (_) { return null; }
+			})();
+			const initialUser = saved && users.includes(saved) ? saved : users[0];
+			setActiveUser(initialUser);
 			renderUserList(renderChat);
+			// Ensure the active conversation renders immediately without requiring a click
+			renderChat();
+			// Keep user list selection state in sync
+			if (initialUser) reorderUserList(initialUser);
 		} else {
 			chatBlock.innerHTML = '<p class="chat-empty">No conversations yet.</p>';
 		}
 	} catch (err) {
+		if (err instanceof Error && err.message.toLowerCase().includes('unauthorized')) {
+			// Already redirected in apiFetch
+			return;
+		}
 		console.error('Failed to load chat data:', err);
 	}
 }

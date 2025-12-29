@@ -4,7 +4,7 @@ declare global {
         translatePage: typeof translatePage;
         translateElement: typeof translateElement;
         getUserLang: typeof getUserLang;
-        getTransletedElementText: typeof getTranslatedElementText;
+        getTranslatedElementText: typeof getTranslatedElementText;
     }
 }
 
@@ -162,7 +162,7 @@ export function getTranslatedElementText(language: string, element: HTMLElement)
 
 window.translatePage = translatePage;
 window.translateElement = translateElement;
-window.getTransletedElementText = getTranslatedElementText;
+window.getTranslatedElementText = getTranslatedElementText;
 window.getUserLang = getUserLang;
 
 translatePage(getUserLang());
