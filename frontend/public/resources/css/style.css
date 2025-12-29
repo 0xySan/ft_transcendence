@@ -1506,6 +1506,40 @@ button:active {
 }
 
 /* ==========================================================================
+							PROFILE PAGE STYLES 
+   ========================================================================== */
+
+#profile-div {
+	background-image: url("/resources/imgs/background.gif");
+	width: 100vw;
+	height: calc(100vh - 11rem);
+	margin-top: -1rem;
+	margin-bottom: -1rem;
+}
+
+.profile-info {
+	position: relative;
+	max-width: 720px;
+	margin: 20vh auto 0;
+	padding: 32px;
+
+	color: #fff;
+
+	background:
+		linear-gradient(
+		to bottom,
+		rgba(0,0,0,0.6),
+		rgba(0,0,0,0.35)
+		);
+
+	border-radius: 12px;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+
+	box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+}
+
+/* ==========================================================================
 							  AUTH PAGES STYLES
 						LOGIN / REGISTER / RESET PASSWORD
    ========================================================================== */
@@ -2489,6 +2523,7 @@ button:active {
 
 	color: rgb(var(--red));
 }
+
 .score-right {
 	gap: 12px;
 
@@ -2875,7 +2910,7 @@ nav {
 }
 
 /* ==========================================================================
-                               LINK STYLES 
+							   LINK STYLES 
    ========================================================================== */
 
 a {
@@ -3029,6 +3064,37 @@ footer {
 	background-color: rgb(var(--lavender));
 
 	color: rgb(var(--surface0));
+}
+
+.oauth-text {
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .settings-layout {
+	flex-direction: column;
+  }
+
+  .settings-sidebar {
+	width: 100%;
+  }
+
+  .settings-menu {
+	display: flex;
+	gap: 0.25rem;
+	overflow-x: auto;
+  }
+
+  .settings-item {
+	white-space: nowrap;
+	margin-bottom: 0;
+  }
+
+  .settings-item.active::before {
+	display: none;
+  }
 }
 
 /* Keep settings layout stable when switching sections */
