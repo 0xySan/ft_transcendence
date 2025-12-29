@@ -14,7 +14,6 @@ type SqliteDatabase = Database.Database;
 // Import seeder functions
 import { populateCountries } from "./countries.js";
 import { seedOAuthProviders } from "./oauthProvider.js";
-import { seedChatDemoData } from "./chat.js";
 
 function isTestEnv(): boolean {
   // Type guard for import.meta.vitest
@@ -97,12 +96,6 @@ export function initializeDatabase(): SqliteDatabase {
 			process.exit(1);
 		}
 
-		try {
-			seedChatDemoData(db);
-		} catch (err) {
-			console.error(`Failed to seed chat demo data: ${(err as Error).message}`);
-		}
-
 		if (!isTestEnv()) {
 			try {
 				seedOAuthProviders(db);
@@ -120,16 +113,6 @@ export function initializeDatabase(): SqliteDatabase {
 		if (chatSql.trim().length > 0) {
 			db.exec(chatSql);
 			log(`Ensured chat schema from ${chatSqlFile}`);
-		}
-
-		// If the DB already existed but has no chat data, still seed demo chats.
-		try {
-			const { count } = db.prepare("SELECT COUNT(*) as count FROM chat_conversations").get() as { count: number };
-			if (count === 0) {
-				seedChatDemoData(db);
-			}
-		} catch (err) {
-			console.error(`Failed to seed chat demo data on existing DB: ${(err as Error).message}`);
 		}
 	}
 	console.log = log; // Restore original console.log if it was overridden
