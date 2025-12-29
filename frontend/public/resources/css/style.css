@@ -2278,6 +2278,40 @@ button:active {
 }
 
 /* ==========================================================================
+							PROFILE PAGE STYLES 
+   ========================================================================== */
+
+#profile-div {
+	background-image: url("/resources/imgs/background.gif");
+	width: 100vw;
+	height: calc(100vh - 11rem);
+	margin-top: -1rem;
+	margin-bottom: -1rem;
+}
+
+.profile-info {
+	position: relative;
+	max-width: 720px;
+	margin: 20vh auto 0;
+	padding: 32px;
+
+	color: #fff;
+
+	background:
+		linear-gradient(
+		to bottom,
+		rgba(0,0,0,0.6),
+		rgba(0,0,0,0.35)
+		);
+
+	border-radius: 12px;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+
+	box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+}
+
+/* ==========================================================================
 							  AUTH PAGES STYLES
 						LOGIN / REGISTER / RESET PASSWORD
    ========================================================================== */
@@ -3348,7 +3382,7 @@ button:active {
 }
 
 /* ==========================================================================
-                            SETTINGS PAGE STYLES
+							SETTINGS PAGE STYLES
    ========================================================================== */
 
 .settings-layout {
@@ -3849,7 +3883,7 @@ nav {
 }
 
 /* ==========================================================================
-                               LINK STYLES 
+							   LINK STYLES 
    ========================================================================== */
 
 a {
