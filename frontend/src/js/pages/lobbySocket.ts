@@ -1,9 +1,11 @@
-import { settings } from "./lobbySettings";
+import type { Settings } from "../global";
 
 declare global {
 	interface Window {
 		socket?: WebSocket;
-		setPartialLobbyConfig: (partial: Partial<settings>) => void;
+		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
+		localPlayerId?: string;
+		pendingGameStart?: gameStartAckPayload;
 	}
 }
 
@@ -81,10 +83,36 @@ type PlayerSyncPayload = {
 	}>;
 };
 
+type gameAction = "start" | "pause" | "resume" | "abort";
+
 type GamePayload = {
-	action: "start" | "pause" | "resume" | "abort";
-	gameId?: string;
+	action:		gameAction;
+	gameId?:	string;
 };
+
+/**
+ * Possible sides a player can be assigned to.
+ * - **left**: Left side of the game.
+ * - **right**: Right side of the game.
+ */
+export type PlayerSide = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "left" | "right";
+
+/**
+ * Mapping of player IDs to their assigned sides.
+ */
+export type PlayerSideMap = Record<string, PlayerSide>;
+
+/**
+ * Payload structure for acknowledging the start of a game.
+ * - **action**: The game action performed (should be "start").
+ * - **playerSides**: Mapping of player IDs to their assigned sides.
+ * - **startTime**: Timestamp indicating when the game started - 3 seconds.
+ */
+export interface gameStartAckPayload {
+	action:			gameAction;
+	playerSides:	PlayerSideMap;
+	startTime:		number;
+}
 
 /* -------------------------------------------------------------------------- */
 /* WebSocket                                                                  */
@@ -121,11 +149,12 @@ function connectWebSocket(token: string): void {
 				console.log("Game message received:", msg.payload);
 				if ((msg.payload as GamePayload).action === "start") {
 					notify('The game is starting!', { type: 'success' });
+					window.pendingGameStart = msg.payload as gameStartAckPayload;
 					loadPage("/pong-board");
 				}
 				break;
 			case "settings":
-				window.setPartialLobbyConfig(msg.payload as Partial<settings>);
+				window.setPartialLobbyConfig(msg.payload as Partial<Settings>);
 				notify('Game settings have been updated.', { type: 'info' });
 				break;
 
@@ -154,6 +183,10 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 			player.playerId === ownerId
 		);
 	});
+
+	if (myPlayerId !== null) {
+		window.localPlayerId = myPlayerId;
+	}
 
 	updateCounts(payload.players.length);
 	updateLaunchVisibility();
@@ -318,7 +351,6 @@ addListener(launchBtn, "click", () => {
 function resetLobbyState(): void {
 	playerListEl.innerHTML = "";
 	updateCounts(0, 0);
-console.log("coucou");
 	gameId = null;
 	authToken = null;
 	myPlayerId = null;

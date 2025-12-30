@@ -247,9 +247,13 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (!btn) return;
 
 		const buttons = switcher.querySelectorAll<HTMLElement>('.theme-btn');
-		buttons.forEach((b) => b.classList.remove('active'));
+		buttons.forEach((b) => {
+			b.classList.remove('active');
+			b.setAttribute('aria-pressed', 'false'); // Accessibility
+		});
 
 		btn.classList.add('active');
+		btn.setAttribute('aria-pressed', 'true');
 		const selectedTheme = btn.getAttribute('data-theme');
 		if (selectedTheme)
 			document.documentElement.setAttribute('data-theme', selectedTheme);
@@ -260,9 +264,15 @@ document.addEventListener('DOMContentLoaded', () => {
 		const buttons = switcher.querySelectorAll<HTMLElement>('.theme-btn');
 		buttons.forEach((btn) => {
 			if (btn.getAttribute('data-theme') === currentTheme)
+			{
 				btn.classList.add('active');
+				btn.setAttribute('aria-pressed', 'true');
+			}
 			else
+			{
 				btn.classList.remove('active');
+				btn.setAttribute('aria-pressed', 'false');
+			}
 		});
 	});
 

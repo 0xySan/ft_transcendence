@@ -1,4 +1,4 @@
-export {};
+import type { Settings } from "../global";
 
 declare function addListener(
 	target: EventTarget | null,
@@ -8,60 +8,9 @@ declare function addListener(
 
 declare global {
 	interface Window {
-		setPartialLobbyConfig: (partial: Partial<settings>) => void;
+		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
+		lobbySettings?: Settings;
 	}
-}
-
-/* ---------------------------
-   Types
-   --------------------------- */
-export interface BallSettings {
-	radius: number;
-	initialSpeed: number;
-	maxSpeed: number;
-	speedIncrement: number;
-	initialAngleRange: number;
-	maxBounceAngle: number;
-	allowSpin: boolean;
-	spinFactor: number;
-	resetOnScore: boolean;
-}
-
-export interface PaddleSettings {
-	width: number;
-	height: number;
-	margin: number;
-	maxSpeed: number;
-	acceleration: number;
-	friction: number;
-}
-
-export interface FieldSettings {
-	wallThickness: number;
-}
-
-export interface WorldSettings {
-	width: number;
-	height: number;
-}
-
-export interface GameSettings {
-	mode: string;
-	spectatorsAllowed: boolean;
-}
-
-export interface ScoringSettings {
-	firstTo: number;
-	winBy: number;
-}
-
-export interface settings {
-	game: GameSettings;
-	scoring: ScoringSettings;
-	ball: BallSettings;
-	paddles: PaddleSettings;
-	field: FieldSettings;
-	world: WorldSettings;
 }
 
 /* ---------------------------
@@ -96,7 +45,7 @@ function getElQS<T extends Element>(selector: string): T {
 /* ---------------------------
    Defaults / State
    --------------------------- */
-const defaultSettings: settings = {
+const defaultSettings: Settings = {
 	game: {
 		mode: "online",
 		spectatorsAllowed: true,
@@ -133,7 +82,7 @@ const defaultSettings: settings = {
 	}
 };
 
-let currentSettings: settings = structuredClone(defaultSettings);
+let currentSettings: Settings = structuredClone(defaultSettings);
 
 /* ---------------------------
    UI registry (grouped)
@@ -223,7 +172,7 @@ function populateUi(): void {
 /* ---------------------------
    Apply partial settings to inputs (public helper)
    --------------------------- */
-export function setPartialLobbyConfig(partial: Partial<settings>): void {
+export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 	currentSettings = {
 		...currentSettings,
 		...partial,
@@ -248,6 +197,7 @@ export function setPartialLobbyConfig(partial: Partial<settings>): void {
 	};
 
 	populateUi();
+	window.lobbySettings = structuredClone(currentSettings);
 }
 
 /* ---------------------------
@@ -342,10 +292,11 @@ function wire(): void {
 	});
 }
 
-function initLobbySettings(initial?: Partial<settings>): void {
+function initLobbySettings(initial?: Partial<Settings>): void {
 	currentSettings = structuredClone(defaultSettings);
 	if (initial) setPartialLobbyConfig(initial);
 	populateUi();
+	window.lobbySettings = structuredClone(currentSettings);
 	wire();
 }
 

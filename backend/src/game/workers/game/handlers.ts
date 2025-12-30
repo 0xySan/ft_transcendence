@@ -5,6 +5,7 @@
 
 import { parentPort } from 'worker_threads';
 import * as msg from '../../sockets/socket.types.js';
+import type * as worker from '../worker.types.js';
 import { Game } from '../game/game.class.js';
 import { Player } from './player.class.js';
 
@@ -24,7 +25,7 @@ export function createHandler(msg: msg.message<msg.createPayload>, games: Map<st
  * @param msg - The message containing the player payload.
  * @param games - The map of active games.
  */
-export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<string, Game>) {
+export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<string, Game>, gameStates: Map<string, "playing" | "paused" | "stopped">) {
 	const payload = msg.payload as msg.workerPlayerPayload;
 	const game = games.get(payload.gameId);
 	if (!game) {
@@ -70,6 +71,8 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 			games.delete(game.id); // Clean up empty games
 			return;
 		}
+		if (game.players.length < 2)
+			gameStates.set(payload.gameId, "paused");
 		if (game.ownerId === payload.playerId) // Transfer ownership if the owner leaves
 			game.ownerId = game.players.length > 0 ? game.players[0].id : (game.spectators.length > 0 ? game.spectators[0].id : "");
 	}
@@ -108,7 +111,7 @@ export function settingsHandler(msg: msg.message<msg.settingsPayload>, games: Ma
 
 /**
  * Handler for processing player inputs.
- * @param msg - The message containing the worker input payload.
+ * @param msg - The message containing the input payload.
  * @param games - The map of active games.
  */
 export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: Map<string, Game>) {
@@ -118,10 +121,75 @@ export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: M
 		console.warn(`Game with ID ${payload.gameId} not found for input handling.`);
 		return;
 	}
+
 	const player = game.getPlayerById(payload.userId);
 	if (!player) {
 		console.warn(`Player with ID ${payload.userId} not found in game ${payload.gameId} for input handling.`);
 		return;
 	}
-	player.addInputs(payload.inputs);
+
+	if (!payload.inputs || payload.inputs.length === 0) return;
+
+	console.log(`Processing inputs for player ${payload.userId} in game ${payload.gameId}`);
+	console.log(payload.inputs);
+
+	// calibrate frameOffset if needed
+	const clientLatest = Math.max(...payload.inputs.map(f => f.frameId));
+	if (player.frameOffset === undefined) {
+		const estimatedNetworkLag = game.config.network.inputDelayFrames ?? 2;
+		player.frameOffset = game.currentFrameId - clientLatest - estimatedNetworkLag;
+	}
+
+	const MAX_PAST_FRAMES = 120;
+	const MAX_FUTURE_FRAMES = 10;
+
+	const acceptedFrames: { serverFrame: number; inputs: msg.gameInput[] }[] = [];
+
+	for (const inputFrame of payload.inputs) {
+		const serverFrame = inputFrame.frameId + (player.frameOffset ?? 0);
+
+		if (serverFrame < game.currentFrameId - MAX_PAST_FRAMES) continue;
+		if (serverFrame > game.currentFrameId + MAX_FUTURE_FRAMES) continue;
+
+		// store for possible replay / ordering
+		player.addInputsForServerFrame(serverFrame, inputFrame.inputs);
+
+		// apply immediately to player state
+		player.applyPersistentInputs(inputFrame.inputs);
+
+		acceptedFrames.push({ serverFrame, inputs: inputFrame.inputs });
+	}
+
+	// ack last accepted frame to sender (optional but useful)
+	if (acceptedFrames.length > 0) {
+		const lastAccepted = acceptedFrames[acceptedFrames.length - 1].serverFrame;
+		const ackMsg = {
+			type: "inputAck",
+			payload: { lastAcceptedServerFrame: lastAccepted },
+			userIds: [player.id]
+		};
+		parentPort!.postMessage(ackMsg);
+	}
+
+	// broadcast validated inputs to other players (serverFrame numbers)
+	if (acceptedFrames.length > 0) {
+		const clientInputPayload: msg.clientInputPayload = {
+			userId: payload.userId,
+			inputs: acceptedFrames.map(f => ({
+				frameId: f.serverFrame,
+				inputs: f.inputs
+			}))
+		};
+
+		const recieverIds = game.players
+			.filter(p => p.id !== payload.userId)
+			.map(p => p.id);
+
+		const message: worker.workerMessage = {
+			type: "input",
+			payload: clientInputPayload,
+			userIds: recieverIds
+		};
+		parentPort!.postMessage(message);
+	}
 }

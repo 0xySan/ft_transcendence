@@ -171,11 +171,13 @@ export interface gamePayload {
 
 /**
  * Payload structure for worker thread to handle game control messages.
+ * - **userId**: Unique identifier for the user requesting the action.
  * - **gameId**: Unique identifier for the game.
  * - **action**: Action to be performed on the game.
  * 	- Possible values: **start**, **pause**, **resume**, **abort**.
  */
 export interface workerGamePayload extends gamePayload {
+	userId:	string;
 	gameId: string;
 }
 
@@ -211,10 +213,44 @@ export interface inputPayload {
  * Payload structure for worker thread to handle game inputs.
  * - **gameId**: Unique identifier for the game.
  * - **userId**: Unique identifier for the user sending the inputs.
+ * - **inputs**: Array of input frames.
  */
 export interface workerInputPayload extends inputPayload {
 	gameId: string;
 	userId: string;
+}
+
+/**
+ * Payload structure for client to send game inputs.
+ * - **userId**: Unique identifier for the user sending the inputs.
+ * - **inputs**: Array of input frames.
+ */
+export interface clientInputPayload extends inputPayload {
+	userId: string;
+}
+
+/**
+ * Possible sides a player can be assigned to.
+ * - **left**: Left side of the game.
+ * - **right**: Right side of the game.
+ */
+export type PlayerSide = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "left" | "right";
+
+/**
+ * Mapping of player IDs to their assigned sides.
+ */
+export type PlayerSideMap = Record<string, PlayerSide>;
+
+/**
+ * Payload structure for acknowledging the start of a game.
+ * - **action**: The game action performed (should be "start").
+ * - **playerSides**: Mapping of player IDs to their assigned sides.
+ * - **startTime**: Timestamp indicating when the game started - 3 seconds.
+ */
+export interface gameStartAckPayload {
+	action:			gameAction;
+	playerSides:	PlayerSideMap;
+	startTime:		number;
 }
 
 /**
@@ -257,4 +293,5 @@ export type payload =
 	| workerGamePayload
 	| inputPayload
 	| workerInputPayload
+	| clientInputPayload
 	| gameStatePayload;
