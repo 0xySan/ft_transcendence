@@ -915,6 +915,7 @@ button:active {
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
+	height: 2.3rem;
 }
 
 #lobby-mode-buttons > button {
@@ -1252,7 +1253,7 @@ font-weight: bold;
 
 #lobby-action-buttons > button {
 	background-color: rgb(var(--red));
-	opacity: 0.5;
+	/* opacity: 0.5; */
 }
 
 #lobby-action-buttons > button.active {

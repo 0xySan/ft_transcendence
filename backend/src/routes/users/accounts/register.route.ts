@@ -86,8 +86,8 @@ export async function newUserAccountRoutes(fastify: FastifyInstance) {
 
 			if (existingUser) {
 				await delayResponse(startTime, MIN_DELAY);
-				return reply.status(202).send({
-					message: "If the registration is valid, a verification email will be sent shortly."
+				return reply.status(400).send({
+					message: "This email is already registered. Please use a different email."
 				});
 			}
 

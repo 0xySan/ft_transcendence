@@ -42,7 +42,7 @@ let ownerId: string | null = null;
 /* -------------------------------------------------------------------------- */
 const joinInput = getEl<HTMLInputElement>("lobby-input");
 const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
-const createBtn = getEl<HTMLDivElement>("online");
+const createBtn = getEl<HTMLDivElement>("lobby-online");
 
 const leaveBtn = getEl<HTMLButtonElement>("lobby-btn-leave");
 const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
@@ -107,7 +107,7 @@ function connectWebSocket(token: string): void {
 
 	addListener(socket, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data) as SocketMessage<any>;
-
+console.log(msg.type);
 		switch (msg.type) {
 			case "playerSync":
 				handlePlayerSync(msg.payload as PlayerSyncPayload);
@@ -156,7 +156,7 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 	});
 
 	updateCounts(payload.players.length);
-	updateLaunchVisibility();
+	updateLaunchVisibility("");
 }
 
 function handlePlayer(payload: PlayerPayload): void {
@@ -174,7 +174,7 @@ function handlePlayer(payload: PlayerPayload): void {
 		notify(`${payload.displayName} has left the lobby.`, { type: 'info' });
 	}
 
-	updateLaunchVisibility();
+	updateLaunchVisibility("");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -223,14 +223,27 @@ function updateCounts(current: number, max?: number): void {
 /* -------------------------------------------------------------------------- */
 /* Owner / Launch logic                                                       */
 /* -------------------------------------------------------------------------- */
-function updateLaunchVisibility(): void {
+export function updateLaunchVisibility(mode:string): void {
+
 	const isOwner =
 		myPlayerId !== null &&
 		ownerId !== null &&
 		myPlayerId === ownerId &&
 		gameId !== null;
 
-	launchBtn.classList.toggle("unloaded", !isOwner);
+	if (mode === "lobby-online")
+	{
+		launchBtn.classList.toggle("unloaded", !isOwner);
+		if (isOwner)
+		{
+			launchBtn.classList.remove("unclickable");
+			launchBtn.style.opacity = "1";
+		}
+		else
+			launchBtn.style.opacity = "0.4";
+	}
+	else
+		launchBtn.classList.remove("unloaded");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -285,7 +298,7 @@ async function createGame(): Promise<void> {
 /* Events                                                                     */
 /* -------------------------------------------------------------------------- */
 addListener(joinBtn, "click", () => joinGame(joinInput.value));
-console.log(createBtn);
+
 addListener(createBtn, "click", () => {
 	
 	createGame();
@@ -312,13 +325,19 @@ addListener(launchBtn, "click", () => {
 	window.socket.send(JSON.stringify(msg));
 });
 
+const lobbyOnline: any = document.getElementById("lobby-select-mode");
+
+addListener(lobbyOnline, 'click', () => {
+  const mode = lobbyOnline.value === "lobby-online" ? "lobby-online" : "lobby-offline";
+  updateLaunchVisibility(mode);
+});
+
 /* -------------------------------------------------------------------------- */
 /* Reset                                                                      */
 /* -------------------------------------------------------------------------- */
 function resetLobbyState(): void {
 	playerListEl.innerHTML = "";
 	updateCounts(0, 0);
-console.log("coucou");
 	gameId = null;
 	authToken = null;
 	myPlayerId = null;

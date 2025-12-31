@@ -1,3 +1,5 @@
+
+
 export {};
 
 declare function addListener(
@@ -380,16 +382,17 @@ const modes: Record<string, Mode> = {
 
 function setupModeHandlers(): void {
 	let readyCheck = false;
-
-	const userConnected = getElQS<HTMLDivElement>(
-		"#lobby-select-mode div:first-child"
-	);
+	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
+	const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
+	const leaveBtn = getEl<HTMLButtonElement>("lobby-btn-leave");
+	const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
+	const userConnected = getElQS<HTMLDivElement>("#lobby-select-mode div:first-child");
 	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
 
-	// Check if user is connected for display online mode
 	fetch("/api/users/me")
 		.then(res => {
 			if (res.ok) {
+				lobbyActionButtons.classList.remove("unloaded");
 				userConnected.classList.remove("unclickable");
 				lobbyJoin.classList.remove("unclickable");
 			} else {
@@ -402,11 +405,22 @@ function setupModeHandlers(): void {
 			lobbyJoin.classList.add("unclickable");
 		});
 
-	// Check if user clicks on Online button or Offline button
-	["online", "offline"].forEach((selected) => {
-		const selectMode = getEl<HTMLButtonElement>(selected); // utilisation de getEl
+	["lobby-online", "lobby-offline"].forEach((selected) => {
+		const selectMode = getEl<HTMLButtonElement>(selected);
 		addListener(selectMode, "click", () => {
 			readyCheck = true;
+
+			if (selected === "lobby-offline") {
+				lobbyActionButtons.classList.remove("unloaded");
+				joinBtn.classList.add("unloaded");
+				leaveBtn.classList.add("unloaded");
+				launchBtn.classList.remove("unloaded");
+				lobbyJoin.classList.add("unloaded");
+			} else if (selected === "lobby-online") {
+				joinBtn.classList.remove("unloaded");
+				leaveBtn.classList.remove("unloaded");
+				launchBtn.classList.add("unloaded");
+			}
 
 			const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
 			lobbySelectMode.classList.remove("current-mode");
@@ -432,6 +446,7 @@ function setupModeHandlers(): void {
 		});
 	});
 }
+
 
 
 
