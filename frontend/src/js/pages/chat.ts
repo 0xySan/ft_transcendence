@@ -46,7 +46,7 @@ const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes for grouping messages
 const DRAFTS_KEY = 'chat_drafts';
 const LAST_ACTIVE_USER_KEY = 'chat_last_active_user';
 const API_BASE = '/api/chat';
-const DEFAULT_AVATAR = '/resources/imgs/default-avatar.svg';
+const DEFAULT_AVATAR = document.querySelector<HTMLTemplateElement>('.default-pfp-temp')!.content.cloneNode(true) as DocumentFragment;
 const LANG = getUserLang() || 'en';
 
 // Chat State
@@ -77,7 +77,7 @@ const loadingOlderMessages: Record<string, boolean> = {};
 const conversationMeta: Record<string, { conversationId: number; userId: string; membersById: Record<string, string> }> = {};
 const userIdToName: Record<string, string> = {};
 const userNameToUserId: Record<string, string> = {};
-const userIdToAvatar: Record<string, string> = {};
+const userIdToAvatar: Record<string, string | DocumentFragment> = {};
 const userIdToUsername: Record<string, string> = {}; // prefer username for profile links
 let currentUserId: string | null = null;
 const allMessagesLoaded: Record<string, boolean> = {};
@@ -93,7 +93,7 @@ const drafts: Record<string, string> = (() => {
 
 // User and profile pictures
 const users: string[] = [];
-const profilepics: string[] = [];
+const profilepics: (string | DocumentFragment)[] = [];
 
 // Layout state
 let userListHidden = false;
@@ -102,6 +102,18 @@ let userListHidden = false;
 // HELPER FUNCTIONS
 // ============================================================================
 
+function setAvatarToElement(imgElement: HTMLImageElement, avatar: string | DocumentFragment): void {
+	if (typeof avatar === 'string')
+		imgElement.src = avatar;
+	else if (avatar instanceof DocumentFragment) {
+		if (imgElement.getAttribute('chat-header') === 'true') {
+			avatar.getElementById('nav-pfp-fallback')!.setAttribute('chat-header', 'true');
+			imgElement.replaceWith(avatar.cloneNode(true));
+		}
+		else 
+			imgElement.replaceWith(avatar.cloneNode(true));
+	}
+}
 
 function setActiveUser(user: string | null): void {
 	activeUser = user;
@@ -278,7 +290,8 @@ async function loadChatData(): Promise<void> {
 				membersById[m.userId] = name;
 				userIdToName[m.userId] = name;
 				userNameToUserId[name] = m.userId;
-				userIdToAvatar[m.userId] = m.profilePicture ? `/api/users/data/imgs/${m.profilePicture}` : DEFAULT_AVATAR;
+				if (m.profilePicture) userIdToAvatar[m.userId] = `/api/users/data/imgs/${m.profilePicture}`;
+				else userIdToAvatar[m.userId] = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
 				if (m.username) userIdToUsername[m.userId] = m.username; // store username
 			});
 
@@ -293,7 +306,7 @@ async function loadChatData(): Promise<void> {
 			};
 
 			users.push(peerName);
-			profilepics.push(peer.profilePicture ? `/api/users/data/imgs/${peer.profilePicture}` : DEFAULT_AVATAR);
+			profilepics.push(peer.profilePicture ? `/api/users/data/imgs/${peer.profilePicture}` : (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
 			conversations[peerName] = [];
 
 			messagePromises.push(
@@ -832,8 +845,8 @@ function renderUserList(onSelectUser: () => void): void {
 		const imgElement = fragment.querySelector<HTMLImageElement>('.img_profile');
 		if (imgElement) {
 			const userId = conversationMeta[name]?.userId;
-			const avatar = userId ? userIdToAvatar[userId] : DEFAULT_AVATAR;
-			imgElement.src = avatar || DEFAULT_AVATAR;
+			const avatar = userId ? userIdToAvatar[userId] : DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+			setAvatarToElement(imgElement, avatar || (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
 		}
 		const pElement = fragment.querySelector<HTMLParagraphElement>('.name_profile');
 		if (pElement) {
@@ -977,7 +990,7 @@ function updateChatHeader(user: string): void {
 	const avatar = conversationMeta[user]?.userId
 		? userIdToAvatar[conversationMeta[user].userId]
 		: profilepics[users.indexOf(user) % Math.max(1, profilepics.length)];
-	profileImg.src = avatar || DEFAULT_AVATAR;
+	setAvatarToElement(profileImg, avatar || (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
 	titleSpan.textContent = user;
 	const usernameForLink = conversationMeta[user]?.userId
 		? (userIdToUsername[conversationMeta[user].userId] || user)

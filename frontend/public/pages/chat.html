@@ -1,10 +1,10 @@
 <div class="chat-div-container" aria-label="Chat interface">
 	<button class="chat-header-toggle-users" aria-label="Toggle User List"></button>
 	<div class="user-list">
-		<div class="user-item" data-username="Tournament">
+		<!-- <div class="user-item" data-username="Tournament">
 			<img class="img_profile" alt="" src="/resources/imgs/tournament.jpg">
 		<p class="name_profile">Tournament</p>
-		</div>
+		</div> -->
 	</div>
 	<div class="chat-block">
 		<div class="chat-header">
@@ -52,6 +52,12 @@
 		<button type="button" class="invite-accept" data-translate-key="chat.invite.accept">Accept</button>
 		<button type="button" class="invite-decline" data-translate-key="chat.invite.decline">Decline</button>
 	</div>
+</template>
+
+<template class="default-pfp-temp">
+	<svg id="nav-pfp-fallback" class="img_profile" viewBox="-2 -2 6 8">
+		<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4" fill="currentColor"></path>
+	</svg>
 </template>
 
 <script src="/js/pages/chat.js" type="module" defer></script>
