@@ -995,7 +995,7 @@ function updateChatHeader(user: string): void {
 	const usernameForLink = conversationMeta[user]?.userId
 		? (userIdToUsername[conversationMeta[user].userId] || user)
 		: user;
-	profileLink.href = `/profile/${encodeURIComponent(usernameForLink)}`;
+	profileLink.href = `/profile?user=${encodeURIComponent(usernameForLink)}`;
 
 	const isBlocked = blockedUsers.has(user);
 	headerBlockBtn.dataset.translateKey = isBlocked ? "chat.block.unblockbtn" : "chat.block.blockbtn";
