@@ -92,20 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 sendBtn.textContent = 'Send Email';
                 return;
             }
-            // 2. Send email with code using UUID returned from creation
-            const sendRes = await fetch(`/api/users/twofa/email/send`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uuid: methodUuid })
-            });
-            if (!sendRes.ok) {
-                errorDiv.style.display = '';
-                errorDiv.textContent = 'Failed to send email.';
-                sendBtn.disabled = false;
-                sendBtn.textContent = firstSend ? 'Send Email' : 'Resend';
-                return;
-            }
             sendMsgDiv.style.display = '';
             sendMsgDiv.textContent = 'Email sent! Please check your inbox.';
             // Show OTP inputs, label and enable them

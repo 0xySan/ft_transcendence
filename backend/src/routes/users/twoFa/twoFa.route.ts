@@ -114,7 +114,7 @@ function generateNumericCode(): string {
  * @param len Length of each code
  * @returns Array of backup codes
  */
-function generateBackupCodes(count = 10, len = 8): string[] {
+export function generateBackupCodes(count = 10, len = 8): string[] {
 	const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O, I/1
 	const codes: string[] = [];
 	for (let i = 0; i < count; i++) {

@@ -9,10 +9,11 @@ import { emailSendSchema, emailTokenSchema, emailValidateSchema } from '../../..
 
 import { requirePartialAuth } from '../../../middleware/auth.middleware.js';
 import { getUser2faEmailOtpByMethodId, getUser2FaMethodsByUserId, getUserById, updateUser2faEmailOtp, getProfileByUserId, getUser2FaMethodsById, update2FaMethods, user2faEmailOtp } from '../../../db/index.js';
-import { generateRandomToken, hashString, signToken } from '../../../utils/crypto.js';
+import { generateRandomToken, hashString, signToken, verifyHashedString } from '../../../utils/crypto.js';
 
 import { sendMail } from "../../../utils/mail/mail.js";
 import { checkRateLimit } from '../../../utils/security.js';
+import { generateBackupCodes } from './twoFa.route.js';
 
 interface twoFaEmailBody {
 	uuid: string;
@@ -61,8 +62,8 @@ async function checkEmailOtpRequest(
 
 			// --- Verify code ---
 			try {
-				const hashed = await hashString(body.code);
-				if (hashed !== emailMethod.last_sent_code_hash) {
+				const correct = verifyHashedString(body.code, emailMethod.last_sent_code_hash!);
+				if (!correct) {
 					updateUser2faEmailOtp(emailMethod.email_otp_id, {
 						attempts: (emailMethod.attempts ?? 0) + 1,
 					});
@@ -110,7 +111,7 @@ export default async function emailSendRoutes(fastify: FastifyInstance) {
 				if (!emailMethod)
 					return reply.status(400).send({ message: '2fa not found' });
 
-				const otp_code = generateRandomToken(6).toUpperCase();
+				const otp_code = generateBackupCodes(1, 6)[0];
 				const hashed_otp = await hashString(otp_code);
 
 				const update = updateUser2faEmailOtp(emailMethod.email_otp_id, {
