@@ -122,6 +122,15 @@
       "repeatPasswordLabel": "Répéter le nouveau mot de passe :",
       "updatePasswordButton": "Mettre à jour le mot de passe"
     },
+    "authMethods": {
+      "emailOtpPopupTitle": "Configuration OTP par e-mail",
+      "emailAddressLabel": "Entrez l'adresse e-mail à utiliser pour l'authentification à deux facteurs :",
+      "sendEmailOtpButton": "Envoyer l'e-mail",
+      "emailSentMsg": "E-mail envoyé ! Veuillez vérifier votre boîte de réception.",
+      "emailOtpLabel": "Entrez le code envoyé à votre e-mail :",
+      "validateEmailOtpButton": "Valider",
+      "emailOtpError": "Code invalide. Veuillez réessayer."
+    },
     "twofa": {
       "title": "Authentification à deux facteurs",
       "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP par e‑mail et codes de secours.",

@@ -237,25 +237,14 @@ function setupTwoFaButtonEvents() {
             const enabled = emailBtn.classList.contains('button-danger');
             const allowed = await ensureTwoFaIfNeeded();
             if (!allowed) return;
-            if (!enabled) {
-                // Enable Email OTP: call server first
-                let body: any = { methods: [{ methodType: 0, label: 'Email OTP' }] };
-                if (typeof allowed === 'string') body.twoFaToken = allowed;
-                const res = await fetch('/api/users/twofa/', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
-                    body: JSON.stringify(body)
-                });
-                if (res.ok) {
-                    const result = await res.json();
-                    const methodId = result.results && result.results[0] && result.results[0].methodId;
-                    if (methodId) {
-                        window.open(`/email_otp_popup?uuid=${encodeURIComponent(methodId)}`, 'email_otp_popup', 'width=420,height=520');
-                    }
-                }
-                updateTwoFaButtons();
-            } else {
+			if (!enabled) {
+				// Open the email OTP popup for setup (creation is handled there)
+				let popupUrl = '/email_otp_popup';
+				if (typeof allowed === 'string') {
+					popupUrl += `?twoFaToken=${encodeURIComponent(allowed)}`;
+				}
+				window.open(popupUrl, 'email_otp_popup', 'width=420,height=520');
+			} else {
                 // Disable Email OTP
                 let body: any = { changes: {} };
                 const res = await fetch('/api/users/twofa/', { method: 'GET', credentials: 'include' });

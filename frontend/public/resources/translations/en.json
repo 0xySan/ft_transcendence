@@ -105,6 +105,15 @@
       "repeatPasswordLabel": "Repeat New Password:",
       "updatePasswordButton": "Update Password"
     },
+    "authMethods": {
+      "emailOtpPopupTitle": "Email OTP Setup",
+      "emailAddressLabel": "Enter the email address to use for Two-Factor Authentication:",
+      "sendEmailOtpButton": "Send Email",
+      "emailSentMsg": "Email sent! Please check your inbox.",
+      "emailOtpLabel": "Enter the code sent to your email:",
+      "validateEmailOtpButton": "Validate",
+      "emailOtpError": "Invalid code. Please try again."
+    },
     "twofa": {
       "title": "Two-Factor Authentication",
       "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",

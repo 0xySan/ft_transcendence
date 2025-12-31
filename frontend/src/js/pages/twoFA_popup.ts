@@ -180,7 +180,7 @@ async function init() {
 	const res = await fetch('/api/users/twofa/', { credentials: 'include' });
 	const data = await res.json();
 
-	methods = data.twoFaMethods ?? [];
+	methods = (data.twoFaMethods ?? []).filter((m: any) => m.is_verified);
 	primary = methods.find((m: any) => m.is_primary);
 
 	methods.forEach((m, i) => {
