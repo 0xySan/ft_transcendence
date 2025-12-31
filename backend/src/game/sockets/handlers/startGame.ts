@@ -36,6 +36,7 @@ export function handleGameMessage(
 	workerEntry.worker.postMessage({
 		type: "game",
 		payload: {
+			userId: ws.id,
 			gameId: ws.gameId,
 			action: payload.action
 		} as socket.workerGamePayload

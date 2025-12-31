@@ -117,7 +117,7 @@ export class Game {
 			},
 			network: {
 				inputDelayFrames: 2,
-				stateSyncRate: 30,
+				stateSyncRate: 12,
 				...(configOverrides?.network ?? {}),
 			}
 		};
@@ -235,5 +235,22 @@ export class Game {
 		if (player) return player;
 		const spectator = this.spectators.find(s => s.id === playerId);
 		return spectator || null;
+	}
+
+	/**
+	 * Checks if a user is the owner of the game.
+	 * @param userId - The ID of the user to check.
+	 * @returns True if the user is the owner, false otherwise.
+	 */
+	isOwner(userId: string): boolean {
+		return this.ownerId === userId;
+	}
+
+	getPlayerSidesMap(): socket.PlayerSideMap {
+	 const map: socket.PlayerSideMap = {};
+		this.players.forEach((player, index) => {
+			map[player.id] = index === 0 ? "left" : "right";
+		});
+	 return map;
 	}
 }

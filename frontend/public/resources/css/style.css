@@ -825,7 +825,6 @@ button:active {
 	}
 	#lobby-action-buttons {
 		width: 100% !important;
-    
 	}
 	.lobby-setting-box {
 		min-height: 42rem;
@@ -1032,9 +1031,9 @@ button:active {
 }
 
 #lobby-select-mode > div > svg {
-
 	width: 7.5rem;
 	height: 7.5rem;
+
 	color: rgb(var(--overlay2));
 
 	transition:
@@ -1199,7 +1198,6 @@ button:active {
 }
 
 #lobby-join-box {
-
 	border: 2px solid rgb(var(--surface1));
 	border-radius: 25px;
 
@@ -1210,7 +1208,9 @@ button:active {
 }
 
 #lobby-join-box > input {
+	margin-right: -7rem;
 
+	margin-left: 1rem;
 	background: transparent;
 
 	border: none;
@@ -1219,23 +1219,19 @@ button:active {
 
 	font-size: 1rem;
 	color: rgb(var(--text));
-	margin-left: 1rem;
-	margin-right: -7rem;
+
 	outline: none;
 }
-
 
 #lobby-join-box > input::placeholder {
 	color: rgb(var(--overlay1));
 }
 
 #lobby-join-box > button {
-
 	background-color: rgb(var(--peach));
 
 	border: none;
 	border-radius: 9999px;
-
 
 	transition:
 		background-color 0.2s,
@@ -1244,7 +1240,7 @@ button:active {
 }
 
 #lobby-join-box > button:hover {
-font-weight: bold;
+	font-weight: bold;
 }
 
 #lobby-join-box > button:active {
@@ -1257,7 +1253,7 @@ font-weight: bold;
 }
 
 #lobby-action-buttons > button.active {
-  opacity: 1;
+	opacity: 1;
 }
 
 #lobby-action-buttons > button:last-child {
@@ -1311,195 +1307,109 @@ font-weight: bold;
 /* ==========================================================================
                           PONG BOARD PAGE STYLES 
    ========================================================================== */
+/* Root layout */
+#pong-page {
+	width: 100%;
+	height: 100dvh;
+	padding: 8px;
+	gap: 8px;
 
-#pong-board-page {
-	--custom-team-color1: rgb(var(--red));
-	--custom-team-color2: rgb(var(--blue));
+	box-sizing: border-box;
 
-	max-width: 920px;
-
-	gap: 20px;
+	background-color: rgb(var(--base));
 
 	display: flex;
 	flex-direction: column;
-	align-items: center; /* horizontal */
-	justify-content: center; /* vertical */
 }
 
-/* Inner board */
-#pong-board {
-	position: relative;
+/* Bars (top & bottom) */
+.pong-bar {
+	width: 100%;
+	max-width: 1100px;
 
-	width: 920px;
-	height: 600px;
+	margin: 0 auto;
 
-	background-color: rgb(var(--base)); /* or transparent if needed */
-
-	border-radius: 10px; /* inner radius = outer radius - padding */
-
-	flex: 0 0 auto; /* prevent flex stretching if parent is flex */
-
-	overflow: hidden; /* keeps players/ball inside rounded corners */
-}
-
-#player1,
-#player2,
-#player3,
-#player4,
-#ball,
-#center-line {
-	position: absolute;
-
-	display: block;
-}
-
-#player1,
-#player2,
-#player3,
-#player4 {
-	width: 10px;
-	height: 80px;
-
-	border-radius: 20px;
-}
-
-#player1,
-#player3 {
-	background: var(--custom-team-color1);
-}
-
-#player2,
-#player4 {
-	background: var(--custom-team-color2);
-}
-
-#player1 {
-	top: 160px;
-	left: 20px;
-}
-
-#player2 {
-	top: 160px;
-	right: 20px;
-}
-
-#player3 {
-	top: 480px;
-	left: 20px;
-}
-
-#player4 {
-	top: 480px;
-	right: 20px;
-}
-
-#ball {
-	--ball-width: 12px;
-	--ball-height: 12px;
-
-	top: 50%;
-	left: 50%;
-
-	width: var(--ball-width);
-	height: var(--ball-height);
-
-	background: rgb(var(--overlay2));
-
-	border-radius: 50%;
-
-	transform: translate(-50%, -50%); /* Centers it perfectly */
-}
-
-/* #center-line {
-  width: 2px;
-  height: 100%;
-  left: 50%;
-  top: 0;
-  background: white;
-  opacity: 0.3;
-} */
-
-#center-line {
-	position: absolute;
-	top: 0;
-	left: 50%;
-
-	width: 0; /* vertical line */
-	height: 100%;
-
-	transform: translateX(-2px); /*half of 4px border width*/
-	border-left: 4px dashed rgb(var(--surface0));
-	border-image: none;
-	border-left-style: dashed;
-	border-left-width: 4px;
-	border-left-color: rgb(var(--surface0));
-}
-
-.info-bar-pong-board {
-	width: 920px;
-
-	gap: auto;
+	gap: 8px;
 
 	display: flex;
-	flex-direction: row;
-	align-content: top;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.left-side-username-info {
-	width: 240px;
+/* Player blocks */
+.player {
+	min-width: 120px;
 
-	padding: 0.5rem;
+	padding: 6px 10px;
+	border: 2px solid currentColor;
 
-	border: 2px solid var(--custom-team-color1);
-	border-radius: 5px;
+	border-radius: 6px;
 
 	display: flex;
-	flex-direction: row;
-	align-content: center;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+
+	font-weight: 600;
+}
+
+.player.left {
+	color: rgb(var(--red));
+}
+
+.player.right {
+	color: rgb(var(--blue));
+}
+
+/* Center info (timer + score) */
+.center-info {
+
+	gap: 4px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+#match-timer {
+	font-size: 14px;
+
+	opacity: 0.8;
+}
+
+.score {
+
+	gap: 12px;
+	display: flex;
+	align-items: center;
+
+	font-size: 32px;
+	font-weight: bold;
+}
+
+/* Game container */
+#pong-board-container {
+
+	width: 100%;
+	display: flex;
+	flex: 1;
+	align-items: center;
 	justify-content: center;
 }
 
-.right-side-username-info {
-	width: 240px;
+/* Board wrapper */
+#pong-board {
+	width: 100%;
+	height: 100%;
 
-	padding: 0.5rem;
+	background-color: rgb(var(--crust));
 
-	border: 2px solid var(--custom-team-color2);
-	border-radius: 5px;
-
-	display: flex;
-	flex-direction: row;
-	align-content: center;
-	justify-content: center;
-}
-
-#score-counters {
-	gap: 28px;
+	border-radius: 12px;
 
 	display: flex;
-	flex-direction: row;
-	align-content: center;
+	align-items: center;
 	justify-content: center;
-}
 
-#left-score {
-	width: 110px;
-
-	text-align: right;
-}
-
-#score-separator {
-	width: 1px;
-
-	text-align: center;
-}
-
-#right-score {
-	width: 110px;
-
-	text-align: left;
+	overflow: hidden;
 }
 
 /* ==========================================================================
@@ -1765,9 +1675,9 @@ nav {
 }
 
 .nav-pfp {
-	width: 2.5rem;
+	width: 3rem;
 
-	padding-top: 1rem;
+	margin-top: 0.3rem;
 
 	border-radius: 50%;
 
