@@ -1558,11 +1558,12 @@ button:active {
 }
 
 .profile-info-username {
-	font-family: "Poppins-SemiBold", sans-serif;
-	font-size: 1.5rem;
-	color: rgb(var(--text));
-	margin-left: 7rem;
-	margin-top: -1.5rem;
+	display: flex;
+
+	font-size: 0.9rem;
+	color: rgb(var(--subtext0));
+	margin-top: -0.8rem;
+	margin-left: 7.1rem;
 }
 
 .profile-info-flag {
@@ -1573,12 +1574,11 @@ button:active {
 }
 
 .profile-display-name {
-	display: flex;
-
-	font-size: 0.9rem;
-	color: rgb(var(--subtext0));
-	margin-top: -0.8rem;
-	margin-left: 7.1rem;
+	font-family: "Poppins-SemiBold", sans-serif;
+	font-size: 1.5rem;
+	color: rgb(var(--text));
+	margin-left: 7rem;
+	margin-top: -1.5rem;
 }
 
 /* ==========================================================================
