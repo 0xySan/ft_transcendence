@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const closeBtn = document.getElementById('close-backup-codes-btn');
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => window.close());
+        closeBtn.addEventListener('click', () => {
+            try {
+                if (window.opener && typeof window.opener.postMessage === 'function') {
+                    window.opener.postMessage({ type: 'TWOFA_CREATION_SUCCESS' }, window.location.origin || '*');
+                }
+            } catch (err) {}
+            window.close();
+        });
     }
 });

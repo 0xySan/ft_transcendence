@@ -165,6 +165,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ uuid: methodUuid, code })
             });
             if (res.ok) {
+                // Notify opener (if present) about success so settings UI can refresh
+                try {
+                        if (window.opener && typeof window.opener.postMessage === 'function') {
+                            window.opener.postMessage({ type: 'TWOFA_CREATION_SUCCESS' }, window.location.origin || '*');
+                        }
+                } catch (err) {}
                 window.close();
             } else {
                 errorDiv.style.display = '';

@@ -767,17 +767,17 @@ addListener(window, "message", (e) => {
 	button.dataset.state = 'unlinked';
 });
 
-// Listen for TOTP setup completion from popup to refresh UI
+// Listen for TOTP/creation completion from popups to refresh UI
 addListener(window, 'message', (e) => {
 	if (e.origin !== window.location.origin) return;
-	if (!e.data || e.data.type !== 'totp-setup-done') return;
+	if (!e.data || e.data.type !== 'TWOFA_CREATION_SUCCESS') return;
 	try {
-		alert('Two-factor authentication (TOTP) configured successfully.');
+		alert('Two-factor authentication configured successfully.');
 	} catch {}
 	try {
 		updateTwoFaButtons();
 	} catch (err) {
-		console.warn('Failed to update 2FA buttons after totp setup message:', err);
+		console.warn('Failed to update 2FA buttons after creation message:', err);
 	}
 });
 
@@ -892,8 +892,6 @@ avatarModeRadios.forEach(radio => {
 		}
 	});
 });
-
-
 
 // Initial section
 showSection('profile');

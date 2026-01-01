@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Notify opener that TOTP setup completed so parent can refresh UI
             try {
                 if (window.opener && typeof window.opener.postMessage === 'function') {
-                    window.opener.postMessage({ type: 'totp-setup-done' }, window.location.origin);
+                    window.opener.postMessage({ type: 'TWOFA_CREATION_SUCCESS' }, window.location.origin);
                 }
             } catch (err) {
                 // ignore — best-effort notification
