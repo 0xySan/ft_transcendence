@@ -15,7 +15,7 @@ const requestCount_email: Record<string, { count: number; lastReset: number }> =
 const requestCount_ip: Record<string, { count: number; lastReset: number }> = {};
 const RATE_WINDOW = 15 * 60 * 1000;
 const MIN_DELAY = 500;
-const RATE_LIMIT = 5;
+const RATE_LIMIT = 25;
 
 export async function passwordResetRoutes(fastify: FastifyInstance) {
     const emailRegex = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;

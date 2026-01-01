@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Create email OTP method via the generic 2FA creation endpoint
             const createOtpMethodIfNeeded = () => {
                 if (methodUuid) return Promise.resolve(methodUuid);
-                const body: any = { methods: [{ methodType: 0, params: { email } }] };
+
+                const body: any = { methods: [{ methodType: 0, label: `Email (${email})`, params: { email } }] };
                 if (twoFaToken) body.twoFaToken = twoFaToken;
                 return fetch('/api/users/twofa/', {
                     method: 'POST',
