@@ -124,6 +124,17 @@
     "methodSelect": "",
     "resendButton": "Renvoyer le code de vérification"
   },
+  "publicLobbies": {
+    "title": "Salles publiques",
+    "summary": "Résumé",
+    "selectHint": "Sélectionnez une salle pour voir les détails.",
+    "updateButton": "Mettre à jour",
+    "columns": {
+      "code": "Code",
+      "owner": "Propriétaire",
+      "players": "Joueurs"
+    }
+  },
   "settings": {
     "section": {
       "profile": "Profil",
@@ -212,9 +223,9 @@
       "blockedPlaceholder": "Vous avez bloqué @$user. Débloquez-le pour envoyer des messages.",
       "loadHint": "Défiler vers le haut pour charger les messages précédents"
     },
-	"loginPrompt": {
-		"text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
-		"loginButton": "Connexion"
-	}
+	  "loginPrompt": {
+		  "text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
+		  "loginButton": "Connexion"
+	  }
   }
 }

@@ -219,4 +219,16 @@
 		"loginButton": "Login"
 	}
   }
+  ,
+  "publicLobbies": {
+    "title": "Public Lobbies",
+    "summary": "Summary",
+    "selectHint": "Select a lobby to see details.",
+    "updateButton": "Update",
+    "columns": {
+      "code": "Code",
+      "owner": "Owner",
+      "players": "Players"
+    }
+  }
 }
