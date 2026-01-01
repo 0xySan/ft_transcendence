@@ -138,6 +138,17 @@
     "methodSelect": "",
     "resendButton": "Renvoyer le code de vérification"
   },
+  "publicLobbies": {
+    "title": "Salles publiques",
+    "summary": "Résumé",
+    "selectHint": "Sélectionnez une salle pour voir les détails.",
+    "updateButton": "Mettre à jour",
+    "columns": {
+      "code": "Code",
+      "owner": "Propriétaire",
+      "players": "Joueurs"
+    }
+  },
   "settings": {
     "section": {
       "profile": "Profil",
