@@ -68,7 +68,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 	});
 	if (!res.ok) {
 		if (res.status === 401) {
-			window.location.href = '/';
+			window.loadPage('/');
 			throw new Error('Unauthorized');
 		}
 		const text = await res.text();
