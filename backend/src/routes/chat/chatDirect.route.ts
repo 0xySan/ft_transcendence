@@ -5,6 +5,8 @@ import {
 } from "../../db/wrappers/chat/chatConversations.js";
 import {
   addConversationMember,
+	getConversationMember,
+	setConversationMemberStatus,
 } from "../../db/wrappers/chat/chatConversationMembers.js";
 
 export async function chatDirectRoutes(fastify: FastifyInstance) {
@@ -26,8 +28,19 @@ export async function chatDirectRoutes(fastify: FastifyInstance) {
 			const conversation = ensureDirectConversation(userId, targetUserId, userId);
 			if (!conversation) return reply.status(500).send({ message: "Failed to create conversation" });
 
-			addConversationMember(conversation.conversation_id, userId, "admin", "active");
-			addConversationMember(conversation.conversation_id, targetUserId, "member", "active");
+			// Only add/reactivate the requesting user (do not auto-add target)
+			const existing = getConversationMember(conversation.conversation_id, userId);
+			if (!existing) {
+				addConversationMember(conversation.conversation_id, userId, "admin", "active");
+			} else if (existing.status !== "active") {
+				setConversationMemberStatus(conversation.conversation_id, userId, "active");
+			}
+
+			// Ensure target user has a membership row for peer metadata, but keep them inactive on their side
+			const targetMember = getConversationMember(conversation.conversation_id, targetUserId);
+			if (!targetMember) {
+				addConversationMember(conversation.conversation_id, targetUserId, "member", "left");
+			}
 
 			return reply.status(201).send({ conversationId: conversation.conversation_id });
 		}

@@ -506,8 +506,10 @@ button:active {
 }
 
 .user-item {
+	position: relative;
 	padding: 0.6rem 0.75rem;
 	gap: 0.75rem;
+	width: 11rem;
 
 	border-radius: 6px;
 
@@ -539,6 +541,10 @@ button:active {
 	content: "🚫";
 }
 
+.user-item.blocked:hover::after {
+	content: "";
+}
+
 .img_profile {
 	width: 2.5rem;
 	height: 2.5rem;
@@ -559,9 +565,30 @@ button:active {
 
 .name_profile {
 	margin: 0;
+	max-width: 6rem;
 
 	font-size: 0.95rem;
-	color: var(--text);
+}
+
+.name-profile-remove {
+	position: absolute;
+	right: 1.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	margin-left: 0.25rem;
+
+	font-size: 0.95rem;
+	color: rgb(var(--subtext1));
+	visibility: hidden;
+}
+
+.name-profile-remove:hover {
+	color: rgba(var(--sapphire), 0.9);
+	font-weight: bold;
+}
+
+.user-item:hover .name-profile-remove {
+	visibility: visible;
 }
 
 .user-list::-webkit-scrollbar {
@@ -582,6 +609,10 @@ button:active {
 
 	font-size: 0.95rem;
 	color: var(--text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 35vw;
 }
 
 .chat-div-container .chat-header-toggle-users:hover {
@@ -1036,6 +1067,14 @@ button:active {
 	.chat-header-toggle-users[aria-pressed="false"]::after {
 		content: "▲";
 	}
+
+	.user-item.blocked::after {
+		display: none;
+	}
+
+	.user-item.selected .name-profile-remove {
+		visibility: visible;
+	}
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
@@ -1089,6 +1128,13 @@ button:active {
 		text-orientation: mixed;
 	}
 
+	.chat-header-title {
+		max-width: 4rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: block;
+	}
+
 	.chat-header .chat-header-btn {
 		float: none;
 
@@ -1112,6 +1158,14 @@ button:active {
 
 	.chat-message.invite .invite-actions button {
 		font-size: 0.7rem;
+	}
+
+	.user-item.blocked::after {
+		display: none;
+	}
+
+	.user-item.selected .name-profile-remove {
+		visibility: visible;
 	}
 }
 

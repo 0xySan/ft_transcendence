@@ -56,9 +56,14 @@ const blockedUsers: Set<string> = new Set();
 const activeUsers: Set<string> = new Set();
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+	const headers: HeadersInit = { ...(options.headers || {}) };
+	if (options.body !== undefined && !(headers as Record<string, string>)['Content-Type']) {
+		(headers as Record<string, string>)['Content-Type'] = 'application/json';
+	}
+
 	const res = await fetch(path, {
 		credentials: 'include',
-		headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+		headers,
 		...options,
 	});
 	if (!res.ok) {
@@ -341,8 +346,6 @@ async function loadChatData(): Promise<void> {
 			renderChat();
 			// Keep user list selection state in sync
 			if (initialUser) reorderUserList(initialUser);
-		} else {
-			chatBlock.innerHTML = '<p class="chat-empty">No conversations yet.</p>';
 		}
 	} catch (err) {
 		if (err instanceof Error && err.message.toLowerCase().includes('unauthorized')) {
@@ -827,6 +830,40 @@ function reorderUserList(movedUser: string): void {
 	if (!inserted) userListDiv.appendChild(item);
 }
 
+function addNewUserToConversation(conversationId: number, senderId: string, senderInfo: { displayName?: string; username?: string; profilePicture?: string; userId?: string }): string | null {
+	// Check if user already exists
+	const existingEntry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
+	if (existingEntry) return existingEntry[0]; // User already in list
+
+	// Create a new conversation entry for this user
+	const peerName = senderInfo.displayName || senderInfo.username || senderId;
+	const userId = senderInfo.userId || senderId;
+	
+	conversationMeta[peerName] = {
+		conversationId,
+		userId,
+		membersById: { [userId]: peerName }
+	};
+
+	if (senderInfo.userId) userIdToUsername[senderInfo.userId] = senderInfo.username || peerName;
+	if (senderInfo.profilePicture) {
+		userIdToAvatar[userId] = `/api/users/data/imgs/${senderInfo.profilePicture}`;
+	} else {
+		userIdToAvatar[userId] = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+	}
+
+	conversations[peerName] = [];
+	activeUsers.add(peerName);
+	visibleStart[peerName] = 0;
+	allMessagesLoaded[peerName] = false;
+
+	// Re-render the user list to show the new user
+	userListDiv.innerHTML = '';
+	renderUserList(renderChat);
+
+	return peerName;
+}
+
 function renderUserList(onSelectUser: () => void): void {
 	const sortedUsers = Object.keys(conversations).sort(
 		(a, b) => getLastTimestamp(b) - getLastTimestamp(a)
@@ -904,6 +941,77 @@ function renderUserList(onSelectUser: () => void): void {
 				onSelectUser();
 			}
 		});
+
+		// Add remove user functionality
+		const removeBtn = fragment.querySelector<HTMLSpanElement>('.name-profile-remove');
+		if (removeBtn) {
+			removeBtn.addEventListener('click', async (e) => {
+				e.stopPropagation(); // Prevent triggering the user selection
+
+				// Call API to leave the conversation
+				const conversationId = conversationMeta[name]?.conversationId;
+				if (conversationId) {
+					try {
+						await apiFetch(`${API_BASE}/conversations/${conversationId}`, {
+							method: 'DELETE'
+						});
+					} catch (err) {
+						console.error('Failed to leave conversation:', err);
+						return;
+					}
+				}
+
+				// If the removed user was active, switch to another user or clear the chat
+				if (activeUser === name) {
+					// Find the next available user or clear the view
+					const remainingUsers = Object.keys(conversations).filter(u => u !== name);
+					if (remainingUsers.length > 0) {
+						setActiveUser(remainingUsers[0]);
+						activeUsers.add(remainingUsers[0]);
+					} else {
+						setActiveUser(null);
+						activeUsers.clear();
+					}
+				}
+
+				// Remove all chat elements for this user
+				const messagesSelector = `.chat-messages[user="${CSS.escape(name)}"]`;
+				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(messagesSelector);
+				if (messagesDiv) {
+					messagesDiv.remove();
+				}
+
+				// Remove from conversations and related tracking
+				delete conversations[name];
+				delete conversationMeta[name];
+				delete visibleStart[name];
+				delete scrollPositions[name];
+				delete loadingOlderMessages[name];
+				delete allMessagesLoaded[name];
+				activeUsers.delete(name);
+
+				// Remove the user item from the DOM
+				divElement.remove();
+
+				// If we switched to a different user, render the chat for that user
+				if (activeUser) {
+					renderChat();
+				} else {
+					// Clear the entire chat-block if no users left
+					const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
+					const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
+					const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
+					const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
+					const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
+					const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+					profileImg.classList.add('hidden');
+					titleSpan.classList.add('hidden');
+					profileLink.classList.add('hidden');
+					headerBlockBtn.classList.add('hidden');
+					form.classList.add('hidden');
+				}
+			});
+		}
 
 		userListDiv.appendChild(divElement);
 	});
@@ -1084,6 +1192,7 @@ function renderChat(): void {
 	updateChatHeader(activeUser);
 
 	const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+	form.classList.remove('hidden');
 
 	let messagesDiv = chatBlock.querySelector<HTMLDivElement>(currentSelector);
 	if (!messagesDiv) {
@@ -1424,41 +1533,76 @@ export {};
 function startChatStream() {
   let es = new EventSource("/api/chat/stream", { withCredentials: true });
 
-  const onMessage = (ev: MessageEvent) => {
-    try {
-      const payload = JSON.parse(ev.data) as { conversationId: number; message: any };
-      const { conversationId } = payload;
-      const msg = payload.message;
+	const onMessage = async (ev: MessageEvent) => {
+		try {
+			const payload = JSON.parse(ev.data) as { conversationId: number; message: any };
+			const { conversationId } = payload;
+			const msg = payload.message;
 
-      // Ignore my own message (already appended after POST)
-      if (msg?.sender_id && msg.sender_id === currentUserId) return;
+			// Ignore my own message (already appended after POST)
+			if (msg?.sender_id && msg.sender_id === currentUserId) return;
 
-      // Find username by conversationId
-      const entry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
-      if (!entry) return;
-
-      const username = entry[0];
-      const membersById = conversationMeta[username]?.membersById || {};
-      const mapped = mapApiMessage(msg, membersById);
-
-      const arr = conversations[username] || (conversations[username] = []);
+			// Find username by conversationId
+			let entry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
       
-      // Deduplicate by message id for new messages
-      if (mapped.id && arr.some((m) => m.id === mapped.id)) return;
+			// If this is a new conversation not in our list, reload conversations to add the new user
+			if (!entry) {
+				if (msg?.sender_id && msg.sender_id !== currentUserId) {
+					const prevActive = activeUser;
+					try {
+						await loadChatData();
+					} catch (err) {
+						console.error('Failed to reload chat data:', err);
+					}
 
-      arr.push(mapped);
+					// Restore previous active user if still present
+					if (prevActive && conversations[prevActive]) {
+						setActiveUser(prevActive);
+						reorderUserList(prevActive);
+						renderChat();
+					}
 
-      if (activeUser === username) {
-        const messagesDiv = chatBlock.querySelector<HTMLDivElement>(
-          `.chat-messages[user="${CSS.escape(username)}"]`
-        );
-        if (messagesDiv) appendMessageToDOM(mapped, arr.length - 1);
-      }
-      reorderUserList(username);
-    } catch (e) {
-      console.error('Error in chat stream onMessage:', e);
-    }
-  };
+					// Now try again to find the entry
+					entry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
+
+					// Fallback: if still missing, create a minimal entry using sender info
+					if (!entry && msg?.sender_id) {
+						const syntheticUser = addNewUserToConversation(conversationId, msg.sender_id, {
+							userId: msg.sender_id,
+							username: msg.sender_username,
+							displayName: msg.sender_display_name,
+							profilePicture: msg.sender_profile_picture,
+						});
+						if (syntheticUser) {
+							entry = [syntheticUser, conversationMeta[syntheticUser]] as [string, { conversationId: number; userId: string; membersById: Record<string, string> }];
+						}
+					}
+				}
+				if (!entry) return;
+			}
+
+			const username = entry[0];
+			const membersById = conversationMeta[username]?.membersById || {};
+			const mapped = mapApiMessage(msg, membersById);
+
+			const arr = conversations[username] || (conversations[username] = []);
+      
+			// Deduplicate by message id for new messages
+			if (mapped.id && arr.some((m) => m.id === mapped.id)) return;
+
+			arr.push(mapped);
+
+			if (activeUser === username) {
+				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(
+					`.chat-messages[user="${CSS.escape(username)}"]`
+				);
+				if (messagesDiv) appendMessageToDOM(mapped, arr.length - 1);
+			}
+			reorderUserList(username);
+		} catch (e) {
+			console.error('Error in chat stream onMessage:', e);
+		}
+	};
   const onInviteState = (ev: MessageEvent) => {
     try {
       const payload = JSON.parse(ev.data) as { conversationId: number; messageId: number; state: 'accepted' | 'declined' | 'cancelled' };

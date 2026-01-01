@@ -6,9 +6,11 @@ import {
   type UserConversationSummary,
 } from "../../db/wrappers/chat/chatConversations.js";
 import {
-  getConversationMember,
-  listConversationMembers,
-  type ChatConversationMember,
+	getConversationMember,
+	listConversationMembers,
+	addConversationMember,
+	setConversationMemberStatus,
+	type ChatConversationMember,
 } from "../../db/wrappers/chat/chatConversationMembers.js";
 import { addMessage, listMessages, updateInviteState, type ChatMessage } from "../../db/wrappers/chat/chatMessages.js";
 import { listBlockedUsers, isBlockedBy, type ChatUserBlock } from "../../db/wrappers/chat/chatUserBlocks.js";
@@ -105,15 +107,15 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 			const member = getConversationMember(conversationId, userId);
 			if (!member) return reply.status(403).send({ message: "Not a member of this conversation" });
 
-			// Check if sender is blocked by any other member
-			const members = listConversationMembers(conversationId)
-				.filter(m => m.status === "active" && m.user_id !== userId);
-			
-			for (const m of members) {
+			// Check if sender is blocked by any member (even those who left) and gather active recipients
+			const allMembers = listConversationMembers(conversationId);
+			for (const m of allMembers.filter(m => m.user_id !== userId)) {
 				if (isBlockedBy(userId, m.user_id)) {
 					return reply.status(403).send({ message: "You cannot send messages to this user" });
 				}
 			}
+
+			const members = allMembers.filter(m => m.status === "active" && m.user_id !== userId);
 
 			const body = request.body as { content?: string; messageType?: string; inviteState?: string | null };
 			const content = body?.content?.trim();
@@ -125,10 +127,33 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 			const message = addMessage(conversationId, userId, content, messageType, inviteState);
 			if (!message) return reply.status(500).send({ message: "Failed to create message" });
 
-			// Broadcast to sender and all active members (except blocks are handled client-side)
-			broadcastMessageToParticipants(userId, members.map(m => m.user_id), {
+			// Enrich message with sender profile so clients can add new conversations without reload
+			const senderProfile = getProfileByUserId(userId);
+			const messageWithSender = {
+				...message,
+				sender_username: senderProfile?.username ?? null,
+				sender_display_name: senderProfile?.display_name ?? null,
+				sender_profile_picture: senderProfile?.profile_picture ?? null,
+			};
+
+			// Ensure all participants (even previously left) are active so they receive the message
+			const recipients: string[] = [];
+			for (const m of allMembers) {
+				if (m.user_id === userId) continue;
+				const existing = getConversationMember(conversationId, m.user_id);
+				if (!existing) {
+					addConversationMember(conversationId, m.user_id, "member", "active");
+					recipients.push(m.user_id);
+				} else {
+					if (existing.status !== "active") setConversationMemberStatus(conversationId, m.user_id, "active");
+					recipients.push(m.user_id);
+				}
+			}
+
+			// Broadcast to sender and all recipients (blocks handled client-side)
+			broadcastMessageToParticipants(userId, recipients, {
 				conversationId,
-				message
+				message: messageWithSender,
 			});
 
 			return reply.status(201).send({ message });
@@ -165,6 +190,28 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 			const payload = { conversationId, messageId, state };
 			for (const memberId of members) broadcastTo(memberId, "inviteState", payload);
+
+			return reply.send({ success: true });
+		}
+	);
+
+	fastify.delete(
+		"/conversations/:id",
+		{ preHandler: requirePartialAuth },
+		async (request, reply) => {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ message: "Unauthorized" });
+
+			const conversationId = Number((request.params as any).id);
+			if (!Number.isFinite(conversationId)) return reply.status(400).send({ message: "Invalid conversation id" });
+
+			const member = getConversationMember(conversationId, userId);
+			if (!member) return reply.status(403).send({ message: "Not a member of this conversation" });
+
+			// Set user status to "left" to remove them from the conversation
+			const ok = setConversationMemberStatus(conversationId, userId, "left");
+			if (!ok) return reply.status(500).send({ message: "Failed to leave conversation" });
 
 			return reply.send({ success: true });
 		}

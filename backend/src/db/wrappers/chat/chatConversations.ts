@@ -87,7 +87,7 @@ export function listConversationsForUser(userId: string): UserConversationSummar
 		       ) AS last_message_at
 		FROM chat_conversations c
 		JOIN chat_conversation_members m ON m.conversation_id = c.conversation_id
-		WHERE m.user_id = ?
+		WHERE m.user_id = ? AND m.status = 'active'
 		ORDER BY COALESCE(last_message_at, c.updated_at) DESC
 	`);
 	return stmt.all(userId) as UserConversationSummary[];
