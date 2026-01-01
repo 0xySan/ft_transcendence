@@ -1,0 +1,44 @@
+<div id="twoFA-popup-container">
+	<div class="twoFA-header">
+		<h1 id="twoFA-title" data-translate-key="twofa.title.default">
+			Verify your identity
+		</h1>
+		<p id="twoFA-instructions" data-translate-key="twofa.instructions.default">
+			Enter the 6-digit verification code.
+		</p>
+	</div>
+
+	<div id="twoFA-form-container">
+		<div class="otp-container">
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+			<input type="text" maxlength="1" inputmode="numeric" class="otp-input" />
+		</div>
+
+		<button
+			id="resend-otp-btn"
+			type="button"
+			class="button button-fit-div-width hidden"
+			data-translate-key="twofa.resendButton"
+			aria-live="polite"
+		></button>
+
+		<div class="twoFA-method-select-container">
+			<label for="method-select" data-translate-key="twofa.otherMethodLabel">
+				Other authentication method
+			</label>
+			<select id="method-select"></select>
+		</div>
+	</div>
+
+	<div class="twoFA-footer">
+		<button id="twoFA-cancel-btn" class="button-secondary">
+			Cancel
+		</button>
+	</div>
+</div>
+
+<script type="module" src="/js/pages/twoFA_popup.js"></script>

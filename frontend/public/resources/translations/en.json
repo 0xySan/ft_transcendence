@@ -79,6 +79,55 @@
     "resetButton": "Reset Password",
     "title": "Reset Password"
   },
+  "settings": {
+    "section": {
+      "profile": "Profile",
+      "security": "Security",
+      "twofa": "Two-Factor",
+      "oauth": "OAuth"
+    },
+    "profileTitle": "Profile Settings",
+    "profile": {
+      "displayNameLabel": "Display Name:",
+      "bioLabel": "Bio:",
+      "avatarLabel": "Avatar:",
+      "avatarMode": {
+        "file": "File",
+        "url": "URL"
+      },
+      "currentAvatarLabel": "Current Avatar:",
+      "updateButton": "Update Profile"
+    },
+    "securityTitle": "Security Settings",
+    "security": {
+      "currentPasswordLabel": "Current Password:",
+      "newPasswordLabel": "New Password:",
+      "repeatPasswordLabel": "Repeat New Password:",
+      "updatePasswordButton": "Update Password"
+    },
+    "twofa": {
+      "title": "Two-Factor Authentication",
+      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",
+      "enableEmailOtpButton": "Enable Email OTP",
+      "enableTotpButton": "Enable TOTP (Authenticator)",
+      "generateBackupCodesButton": "Generate Backup Codes",
+      "disableEmailOtpButton": "Disable Email OTP",
+      "disableTotpButton": "Disable TOTP (Authenticator)",
+      "deleteBackupCodesButton": "Delete Backup Codes"
+    },
+    "oauth": {
+      "title": "OAuth Accounts",
+      "instructions": "Connect or disconnect OAuth providers for quick sign-in.",
+      "42link": "Link 42",
+      "42unlink": "Unlink 42",
+      "GitHublink": "Link GitHub",
+      "GitHubunlink": "Unlink GitHub",
+      "Discordlink": "Link Discord",
+      "Discordunlink": "Unlink Discord",
+      "Googlelink": "Link Google",
+      "Googleunlink": "Unlink Google"
+    }
+  },
   "twofa": {
     "title": {
       "totp": "Check your TOTP app",
@@ -95,5 +144,24 @@
     "otherMethodLabel": "Other method of Two Factor Authentication",
     "methodSelect": "",
     "resendButton": "Resend verification code"
+  },
+  "chat": {
+    "send": "Send",
+    "invite": {
+      "send": "Invite to play Pong",
+      "accept": "Accept",
+      "decline": "Decline",
+      "cancel": "Cancel",
+      "play": "Play",
+      "receivedmsg": "@$user invited you to play Pong.",
+      "sentmsg": "You invited @$user to play Pong."
+    },
+    "block": {
+      "blockbtn": "Block",
+      "unblockbtn": "Unblock",
+      "placeholder": "Type a message to @$user",
+      "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
+      "loadHint": "Scroll up to load previous messages"
+    }
   }
 }
