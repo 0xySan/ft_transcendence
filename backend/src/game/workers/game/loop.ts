@@ -18,7 +18,8 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const games: Map<string, Game> = new Map();
-const gameStates: Map<string, "playing" | "paused" | "stopped"> = new Map();
+const gameStates: Map<string, "starting" | "playing" | "paused" | "stopped"> = new Map();
+const gameStartTimes: Map<string, number> = new Map();
 const accumulators: Map<string, number> = new Map();
 
 const FIXED_DT = 1 / 60;
@@ -39,8 +40,23 @@ function gameLoop(): void {
 		deltaTime = MAX_DELTA;
 
 	games.forEach((game, gameId) => {
-		if (gameStates.get(gameId) !== "playing")
+		const state = gameStates.get(gameId);
+
+	if (state === "starting") {
+		const startTime = gameStartTimes.get(gameId);
+		if (startTime && Date.now() >= startTime) {
+			game.currentFrameId = 0;
+			accumulators.set(gameId, 0);
+			gameStates.set(gameId, "playing");
+		}
+		else {
 			return;
+		}
+	}
+
+	if (state !== "playing")
+		return;
+
 
 		let accumulator = accumulators.get(gameId) ?? 0;
 		accumulator += deltaTime;
@@ -258,15 +274,18 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 				return;
 
 			if (payload.action === "start") {
-				if (game.players.length < 2)
-					return;
-				gameStates.set(payload.gameId, "playing");
+				const startTime = Date.now() + 3000;
+
+				gameStates.set(payload.gameId, "starting");
+				gameStartTimes.set(payload.gameId, startTime);
 				accumulators.set(payload.gameId, 0);
+
 				game.broadcast("game", {
 					action: "start",
 					playerSides: game.getPlayerSidesMap(),
-					startTime: Date.now() + 3000
+					startTime
 				} as msg.gameStartAckPayload);
+
 				return;
 			}
 			else if (payload.action === "pause")

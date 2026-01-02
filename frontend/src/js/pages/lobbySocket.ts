@@ -6,6 +6,7 @@ declare global {
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		localPlayerId?: string;
 		pendingGameStart?: gameStartAckPayload;
+		currentUserPromise: any;
 	}
 }
 
@@ -38,6 +39,14 @@ let gameId: string | null = null;
 let authToken: string | null = null;
 let myPlayerId: string | null = null;
 let ownerId: string | null = null;
+
+const interval = setInterval(() => {
+	if (window.currentUserPromise?.user?.id) {
+		myPlayerId = window.currentUserPromise.user.id;
+		window.localPlayerId = myPlayerId!;
+		clearInterval(interval);
+	}
+}, 50);
 
 /* -------------------------------------------------------------------------- */
 /* Elements                                                                   */
@@ -118,7 +127,8 @@ export interface gameStartAckPayload {
 /* WebSocket                                                                  */
 /* -------------------------------------------------------------------------- */
 function connectWebSocket(token: string): void {
-	if (window.socket) return;
+	if (window.socket)
+		window.socket.close();
 
 	const protocol = location.protocol === "https:" ? "wss" : "ws";
 	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
@@ -151,7 +161,6 @@ function connectWebSocket(token: string): void {
 				break;
 
 			case "game":
-				console.log("Game message received:", msg.payload);
 				if ((msg.payload as GamePayload).action === "start") {
 					notify('The game is starting!', { type: 'success' });
 					window.pendingGameStart = msg.payload as gameStartAckPayload;
@@ -193,9 +202,8 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 		);
 	});
 
-	if (myPlayerId !== null) {
+	if (myPlayerId !== null)
 		window.localPlayerId = myPlayerId;
-	}
 
 	updateCounts(payload.players.length);
 	updateLaunchVisibility("");

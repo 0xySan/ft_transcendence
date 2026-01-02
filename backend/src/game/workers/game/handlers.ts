@@ -25,7 +25,7 @@ export function createHandler(msg: msg.message<msg.createPayload>, games: Map<st
  * @param msg - The message containing the player payload.
  * @param games - The map of active games.
  */
-export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<string, Game>, gameStates: Map<string, "playing" | "paused" | "stopped">) {
+export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<string, Game>, gameStates: Map<string, "starting" | "playing" | "paused" | "stopped">) {
 	const payload = msg.payload as msg.workerPlayerPayload;
 	const game = games.get(payload.gameId);
 	if (!game) {
@@ -73,8 +73,13 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 		}
 		if (game.players.length < 2)
 			gameStates.set(payload.gameId, "paused");
-		if (game.ownerId === payload.playerId) // Transfer ownership if the owner leaves
+		if (game.ownerId === payload.playerId) { // Transfer ownership if the owner leaves
 			game.ownerId = game.players.length > 0 ? game.players[0].id : (game.spectators.length > 0 ? game.spectators[0].id : "");
+			// Notify all players about the new owner
+			/**
+			 * TODO: Implement owner change notification if needed
+			 */
+		}
 	}
 	const messagePayload: msg.playerPayload = {
 			playerId: payload.playerId,
@@ -169,7 +174,8 @@ export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: M
 			userIds: [player.id]
 		};
 		parentPort!.postMessage(ackMsg);
-	}
+	} else
+		console.warn(`No valid input frames from player ${payload.userId} were accepted.`);
 
 	// broadcast validated inputs to other players (serverFrame numbers)
 	if (acceptedFrames.length > 0) {
