@@ -41,6 +41,7 @@ function gameKey(g: RawGame): string {
 
 function createEntryElement(g: RawGame, idx: number): HTMLDivElement {
     const { current, max } = playersCount(g);
+    console.log('Creating entry element for game', g, 'with players', current, max);
     const entry = document.createElement('div');
     entry.className = 'public-lobby-entry';
     entry.dataset.key = gameKey(g);
@@ -126,7 +127,7 @@ function updateSelectionVisual(): void {
     });
 }
 
-function renderSummary(): void {
+async function loadAndRenderSummary(): Promise<void> {
     summaryContent.innerHTML = '';
     if (selectedIndex < 0 || selectedIndex >= games.length) {
         const p = document.createElement('p');
@@ -136,7 +137,25 @@ function renderSummary(): void {
     }
 
     const g = games[selectedIndex];
-    const { current, max } = playersCount(g);
+    const { current } = playersCount(g);
+
+    // try to fetch authoritative settings for the selected lobby
+    let max: number | undefined;
+    try {
+        const candidate = String(g.code ?? g.id ?? '');
+        const query = (/^[A-Z0-9]{4}$/.test(candidate.toUpperCase())) ? `code=${encodeURIComponent(candidate.toUpperCase())}` : `gameId=${encodeURIComponent(candidate)}`;
+        const res = await fetch(`/api/game/settings?${query}`);
+        if (res.ok) {
+            const data = await res.json();
+            const settings = data?.settings;
+            if (settings && settings.game && typeof settings.game.maxPlayers === 'number') {
+                max = settings.game.maxPlayers;
+            }
+        }
+    } catch (e) {
+        // ignore fetch errors; we'll fallback to local info
+        console.error('Failed to fetch lobby settings', e);
+    }
 
     const infoList = document.createElement('div');
     infoList.className = 'public-lobby-info-list';
@@ -145,7 +164,7 @@ function renderSummary(): void {
     codeRow.textContent = `Code: ${g.code ? String(g.code).toUpperCase() : '—'}`;
     infoList.appendChild(codeRow);
     const playersRow = document.createElement('div');
-    playersRow.textContent = max ? `Players: ${current} / ${max}` : `Players: ${current}`;
+    playersRow.textContent = (typeof max === 'number') ? `Players: ${current} / ${max}` : `Players: ${current}`;
     infoList.appendChild(playersRow);
 
     const joinBtn = document.createElement('button');
@@ -180,7 +199,7 @@ async function fetchGames(): Promise<void> {
                 }
 
                 updateSelectionVisual();
-                renderSummary();
+                loadAndRenderSummary();
     } catch (err: any) {
         console.error('Failed to fetch public games', err);
         notify?.(`Failed to fetch public lobbies: ${err.message ?? err}`, { type: 'error' });
@@ -191,7 +210,7 @@ function selectLobby(idx: number): void {
     if (idx < 0 || idx >= games.length) return;
     selectedIndex = idx;
     updateSelectionVisual();
-    renderSummary();
+    loadAndRenderSummary();
 }
 
 async function joinLobby(g: RawGame): Promise<void> {

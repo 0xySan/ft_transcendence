@@ -22,6 +22,8 @@ import { workerMessage } from "./worker.types.js";
 
 const NUM_WORKERS = os.cpus().length;
 
+const workerSettings = new Map<Worker, msg.settingsPayload>();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -78,6 +80,9 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 					}
 				}
 			}
+		}
+		if (msg.type === "settings") {
+			workerSettings.set(worker, msg.payload as msg.settingsPayload);
 		}
 	});
 
@@ -198,4 +203,35 @@ export function gameUpdateSettings(uuid: string, newSettings: Partial<game.confi
 			newSettings: newSettings
 		} as msg.settingsPayload
 	} as msg.message<msg.settingsPayload>);
+}
+
+export function gameGetSettings(uuid: string): game.config | null {
+	const gameId = getGameIdByUser(uuid);
+	if (!gameId) return null;
+	// Find the worker responsible for this game
+	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
+	if (!workerEntry) return null;
+
+	const settings = workerSettings.get(workerEntry.worker);
+	if (!settings) return null;
+
+	return settings.newSettings as game.config;
+}
+
+/**
+ * Get game settings by game ID (allows callers who are not in the game).
+ * @param gameId - game id to lookup
+ */
+export function gameGetSettingsByGameId(gameId: string): game.config | null {
+	if (!gameId) return null;
+	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
+	if (!workerEntry) return null;
+
+	const settings = workerSettings.get(workerEntry.worker);
+	if (!settings) return null;
+
+	// Ensure the payload matches the requested gameId when available
+	if (settings.gameId && settings.gameId !== gameId) return null;
+
+	return settings.newSettings as game.config;
 }

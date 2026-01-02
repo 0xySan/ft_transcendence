@@ -6,6 +6,7 @@
 import { activeGames } from "../../globals.js";
 import * as game from "../../game/workers/game/game.types.js";
 import * as worker from '../../game/workers/worker.types.js';
+import { gameGetSettingsByGameId } from '../../game/workers/init.js';
 
 /**
  * Checks if a user is already in an active game.
@@ -56,13 +57,26 @@ export function getGameByCode(code: string) {
  * Retrieves a public game.
  * @returns list of game is public.
  */
-export function getPublicGame(): worker.activeGame[] {
-	const games: worker.activeGame[] = [];
+export function getPublicGame(): any[] {
+	const games: any[] = [];
 	for (const [id, g] of activeGames.entries()) {
-		if (g.visibility === true)
-			games.push(g);
+		if (g.visibility === true) {
+			// attempt to fetch authoritative settings (may be undefined)
+			const settings = gameGetSettingsByGameId(id);
+			const maxPlayers = settings?.game?.maxPlayers;
+			games.push({
+				id,
+				code: g.code,
+				ownerId: g.ownerId,
+				visibility: g.visibility,
+				// serialize players map to array of player ids
+				players: Array.from(g.players.keys()),
+				// include maxPlayers when available to avoid extra client fetch
+				maxPlayers: typeof maxPlayers === 'number' ? maxPlayers : undefined
+			});
+		}
 	}
-	return (games);
+	return games;
 }
 
 /* ----------------------------- Type Guards ----------------------------- */
