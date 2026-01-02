@@ -204,9 +204,14 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 
 	if (myPlayerId !== null)
 		window.localPlayerId = myPlayerId;
-
+	if (window.localPlayerId === ownerId)
+	{
+		const div = document.querySelector(".lobby-setting-box");
+		div?.classList.remove("grayed");
+		// launchBtn.classList.add("removed");
+	}
 	updateCounts(payload.players.length);
-	updateLaunchVisibility("");
+	updateLaunchVisibility("lobby-online");
 }
 
 function handlePlayer(payload: PlayerPayload): void {
@@ -250,7 +255,6 @@ function addPlayer(
 		badge.textContent = " (owner)";
 		el.appendChild(badge);
 	}
-
 	playerListEl.appendChild(el);
 	updateCounts(playerListEl.children.length);
 }

@@ -127,6 +127,11 @@ const ui = {
 		reset: getEl<HTMLButtonElement>("lobby-reset-settings-button"),
 		save: getEl<HTMLButtonElement>("lobby-save-settings-button"),
 	},
+	lobby: {
+	numPlayersSelect: document.getElementById("lobby-num-players") as HTMLSelectElement,
+	maxPlayersSpan: document.getElementById("player-max-count") as HTMLSpanElement
+	},
+
 } as const;
 
 /* ---------------------------
@@ -240,7 +245,6 @@ function wire(): void {
 		currentSettings.ball.initialAngleRange = v;
 		setSpan(ui.ball.initialAngleRangeSpan, v);
 	});
-
 	addListener(ui.ball.maxBounceAngle, "input", () => {
 		let v = readNumber(ui.ball.maxBounceAngle, defaultSettings.ball.maxBounceAngle);
 		if (v < 0) v = 0;
@@ -354,7 +358,7 @@ function setupModeHandlers(): void {
 			lobbyJoin.classList.add("unclickable");
 		});
 
-	["lobby-online", "lobby-offline"].forEach((selected) => {
+	["lobby-online", "lobby-offline", "lobby-btn-join"].forEach((selected) => {
 		const selectMode = getEl<HTMLButtonElement>(selected);
 		addListener(selectMode, "click", () => {
 			readyCheck = true;
@@ -365,7 +369,9 @@ function setupModeHandlers(): void {
 				leaveBtn.classList.add("unloaded");
 				launchBtn.classList.remove("unloaded");
 				lobbyJoin.classList.add("unloaded");
-			} else if (selected === "lobby-online") {
+				const div = document.querySelector(".lobby-setting-box");
+				div?.classList.remove("grayed");
+			} else if (selected === "lobby-online" || selected === "lobby-btn-join") {
 				joinBtn.classList.remove("unloaded");
 				leaveBtn.classList.remove("unloaded");
 				launchBtn.classList.add("unloaded");
@@ -441,6 +447,7 @@ function setupSubTabs(): void {
 		});
 	});
 }
+
 
 setupModeHandlers();
 setupSubTabs();

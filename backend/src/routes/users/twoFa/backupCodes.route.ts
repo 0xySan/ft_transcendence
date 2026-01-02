@@ -23,7 +23,7 @@ interface GetBackupCodeRequestBody {
 // ---------- Rate limiting ----------
 const ipRequestCount: Record<string, { count: number; lastReset: number }> = {};
 const userRequestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5;
+const RATE_LIMIT = 50;
 const IP_RATE_WINDOW = 60_000;
 const USER_RATE_WINDOW = 300_000;
 
