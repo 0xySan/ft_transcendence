@@ -131,11 +131,16 @@ function connectWebSocket(token: string): void {
 			payload: { token },
 		};
 		socket.send(JSON.stringify(msg));
+
+		// start client keepalive: send a small "send" message every 20s
+		(window as any).socketPingInterval = window.setInterval(() => {
+			if (socket.readyState === WebSocket.OPEN)
+				socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
+		}, 20_000);
 	});
 
 	addListener(socket, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data) as SocketMessage<any>;
-console.log(msg.type);
 		switch (msg.type) {
 			case "playerSync":
 				handlePlayerSync(msg.payload as PlayerSyncPayload);
@@ -163,7 +168,11 @@ console.log(msg.type);
 		}
 	});
 
-	addListener(socket, "close", () => {
+	addListener(socket, "close", (event: CloseEvent) => {
+		if ((window as any).socketPingInterval) {
+			clearInterval((window as any).socketPingInterval);
+			(window as any).socketPingInterval = undefined;
+		}
 		notify('Disconnected from the game lobby.', { type: 'warning' });
 		window.socket = undefined;
 		resetLobbyState();
