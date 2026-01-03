@@ -10,12 +10,15 @@ import * as game from '../workers/game/game.types.js';
  * Extended WebSocket interface with additional properties.
  * - **id**: Unique identifier for the connected user.
  * - **gameId**: Current game ID the user is connected to.
+ * - **displayName**: Optional display name of the connected user.
  */
 export interface gameSocket extends WebSocket {
 	/** Unique identifier for the connected user */
 	id:		string;
 	/** Current game ID the user is connected to */
 	gameId:	string;
+	/** Optional display name of the connected user */
+	displayName?: string;
 }
 
 // ===================================

@@ -98,6 +98,7 @@ export function handleConnectMessage(
 			userProfile.display_name : 
 			userProfile.username 
 		: "Guest";
+	ws.displayName = username;
 	const result = addOrRemovePlayerGameWorker(pending.userId, username, "join");
 
 	if (!result) {

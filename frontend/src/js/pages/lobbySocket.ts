@@ -1,4 +1,4 @@
-import type { Settings } from "../global";
+import type { Settings, UserData } from "../global";
 
 declare global {
 	interface Window {
@@ -6,7 +6,12 @@ declare global {
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		localPlayerId?: string;
 		pendingGameStart?: gameStartAckPayload;
-		currentUserPromise: any;
+		currentUser: UserData | null;
+		currentUserReady: Promise<void>;
+		__resolveCurrentUser: (user?: any) => void;
+		joinLobby: () => Promise<void>;
+		lobbySettings?: Settings;
+		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
 	}
 }
 
@@ -40,14 +45,6 @@ let authToken: string | null = null;
 let myPlayerId: string | null = null;
 let ownerId: string | null = null;
 
-const interval = setInterval(() => {
-	if (window.currentUserPromise?.user?.id) {
-		myPlayerId = window.currentUserPromise.user.id;
-		window.localPlayerId = myPlayerId!;
-		clearInterval(interval);
-	}
-}, 50);
-
 /* -------------------------------------------------------------------------- */
 /* Elements                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -61,6 +58,15 @@ const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
 const playerListEl = getEl<HTMLDivElement>("lobby-player-list");
 const playerCurrentCountEl = getEl<HTMLSpanElement>("player-current-count");
 const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
+
+const htmlSettings = {
+	basic: {
+		div: getEl<HTMLDivElement>("lobby-custom-game-basic-settings"),
+	},
+	advanced: {
+		div: getEl<HTMLDivElement>("lobby-custom-game-advanced-settings"),
+	}
+}
 
 /* -------------------------------------------------------------------------- */
 /* WebSocket types                                                            */
@@ -150,9 +156,10 @@ function connectWebSocket(token: string): void {
 	});
 
 	addListener(socket, "message", (event: MessageEvent) => {
-		const msg = JSON.parse(event.data) as SocketMessage<any>;
+		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
 		switch (msg.type) {
 			case "playerSync":
+				console.log("Received playerSync:", msg.payload);
 				handlePlayerSync(msg.payload as PlayerSyncPayload);
 				break;
 
@@ -186,6 +193,9 @@ function connectWebSocket(token: string): void {
 		window.socket = undefined;
 		resetLobbyState();
 	});
+
+	leaveBtn.style.opacity = "1";
+	leaveBtn.classList.remove("unloaded");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -204,14 +214,17 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 
 	if (myPlayerId !== null)
 		window.localPlayerId = myPlayerId;
-	if (window.localPlayerId === ownerId)
+
+	if (myPlayerId === ownerId)
 	{
-		const div = document.querySelector(".lobby-setting-box");
-		div?.classList.remove("grayed");
-		// launchBtn.classList.add("removed");
+		htmlSettings.basic.div.classList.remove("grayed");
+		htmlSettings.advanced.div.classList.remove("grayed");
+	} else {
+		htmlSettings.basic.div.classList.add("grayed");
+		htmlSettings.advanced.div.classList.add("grayed");
 	}
 	updateCounts(payload.players.length);
-	updateLaunchVisibility("lobby-online");
+	updateLaunchVisibility("lobby-online", Math.max(payload.players.length, playerListEl.children.length));
 }
 
 function handlePlayer(payload: PlayerPayload): void {
@@ -222,14 +235,14 @@ function handlePlayer(payload: PlayerPayload): void {
 			payload.playerId === ownerId
 		);
 		notify(`${payload.displayName} has joined the lobby.`, { type: 'info' });
+		updateLaunchVisibility("lobby-online", playerListEl.children.length);
 	}
 
 	if (payload.action === "leave") {
 		removePlayer(payload.playerId);
 		notify(`${payload.displayName} has left the lobby.`, { type: 'info' });
+		updateLaunchVisibility("", playerListEl.children.length);
 	}
-
-	updateLaunchVisibility("");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -267,17 +280,17 @@ function removePlayer(id: string): void {
 	updateCounts(playerListEl.children.length);
 }
 
-function updateCounts(current: number, max?: number): void {
+function updateCounts(current: number): void {
 	playerCurrentCountEl.textContent = String(current);
-	if (max !== undefined) {
-		playerMaxCountEl.textContent = String(max);
+	if (window.lobbySettings && window.lobbySettings.game) {
+		playerMaxCountEl.textContent = String(window.lobbySettings.game.playerCount) || '?';
 	}
 }
 
 /* -------------------------------------------------------------------------- */
 /* Owner / Launch logic                                                       */
 /* -------------------------------------------------------------------------- */
-export function updateLaunchVisibility(mode:string): void {
+export function updateLaunchVisibility(mode:string, playerCount:number): void {
 
 	const isOwner =
 		myPlayerId !== null &&
@@ -285,19 +298,19 @@ export function updateLaunchVisibility(mode:string): void {
 		myPlayerId === ownerId &&
 		gameId !== null;
 
+	launchBtn.classList.remove("unloaded");
 	if (mode === "lobby-online")
 	{
-		launchBtn.classList.toggle("unloaded", !isOwner);
-		if (isOwner)
+		if (!isOwner)
+			launchBtn.classList.add("unloaded");
+		else if (playerCount === (window.lobbySettings?.game?.playerCount || 2))
 		{
 			launchBtn.classList.remove("unclickable");
 			launchBtn.style.opacity = "1";
 		}
-		else
+		else if (isOwner)
 			launchBtn.style.opacity = "0.4";
 	}
-	else
-		launchBtn.classList.remove("unloaded");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -315,12 +328,17 @@ async function joinGame(code: string): Promise<void> {
 	});
 
 	const data = await res.json();
-	if (!res.ok) throw new Error(data.error);
+	if (!res.ok)
+		return notify(`Failed to join game: ${data.error || 'Unknown error'}`, { type: 'error' });
+
+	if (res.status !== 200)
+		return notify(`Failed to join game: ${res.status} - ${data.error || 'Unknown error'}`, { type: 'error' });
 
 	gameId = data.gameId;
 	authToken = data.authToken;
 
 	if (!authToken) throw new Error("Missing auth token");
+	window.selectLobbyMode("join");
 	connectWebSocket(authToken);
 }
 
@@ -353,16 +371,11 @@ async function createGame(): Promise<void> {
 /* -------------------------------------------------------------------------- */
 addListener(joinBtn, "click", () => joinGame(joinInput.value));
 
-addListener(createBtn, "click", () => {
-	
-	createGame();
-	const leaveButton = document.getElementById("lobby-btn-leave") as HTMLButtonElement | null;
-	if (leaveButton)
-  		leaveButton.style.opacity = "1";
-});
+addListener(createBtn, "click", () => createGame());
 
 addListener(leaveBtn, "click", () => {
 	window.socket?.close();
+	resetLobbyState();
 });
 
 addListener(launchBtn, "click", () => {
@@ -383,24 +396,40 @@ const lobbyOnline: any = document.getElementById("lobby-select-mode");
 
 addListener(lobbyOnline, 'click', () => {
   const mode = lobbyOnline.value === "lobby-online" ? "lobby-online" : "lobby-offline";
-  updateLaunchVisibility(mode);
+  updateLaunchVisibility(mode, 1);
 });
 
 /* -------------------------------------------------------------------------- */
 /* Reset                                                                      */
 /* -------------------------------------------------------------------------- */
 function resetLobbyState(): void {
+	if ((window as any).socketPingInterval) {
+		clearInterval((window as any).socketPingInterval);
+		(window as any).socketPingInterval = undefined;
+	}
+	if (window.socket)
+		window.socket.close();
 	playerListEl.innerHTML = "";
-	updateCounts(0, 0);
+	updateCounts(0);
 	gameId = null;
 	authToken = null;
 	myPlayerId = null;
 	ownerId = null;
 
 	launchBtn.classList.add("unloaded");
+	updateLaunchVisibility("lobby-offline", 0);
+	window.selectLobbyMode("reset");
 }
 
 /* -------------------------------------------------------------------------- */
 /* Init                                                                       */
 /* -------------------------------------------------------------------------- */
+
 launchBtn.classList.add("unloaded");
+leaveBtn.classList.add("unloaded");
+
+myPlayerId = await window.currentUserReady.then(() => {
+	window.localPlayerId = window.currentUser ? String(window.currentUser.id) : undefined;
+	return window.localPlayerId || null;
+});
+console.log("LobbbySocket Current user ID:", myPlayerId);

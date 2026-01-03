@@ -75,10 +75,27 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 			gameStates.set(payload.gameId, "paused");
 		if (game.ownerId === payload.playerId) { // Transfer ownership if the owner leaves
 			game.ownerId = game.players.length > 0 ? game.players[0].id : (game.spectators.length > 0 ? game.spectators[0].id : "");
+			const message : msg.playerSyncPayload = {
+				ownerId: game.ownerId,
+				players: Array.from(game.players.values()).map(p => ({
+					playerId: p.id,
+					displayName: p.name,
+					status: "player" as msg.playerStatus
+				})).concat(
+					Array.from(game.spectators.values()).map(s => ({
+						playerId: s.id,
+						displayName: s.name,
+						status: "spectator" as msg.playerStatus
+					}))
+				)
+			};
 			// Notify all players about the new owner
-			/**
-			 * TODO: Implement owner change notification if needed
-			 */
+			const ownerMessage = {
+				type: "playerSync",
+				payload: message,
+				userIds: Array.from(game.players.values()).map(p => p.id).concat(Array.from(game.spectators.values()).map(s => s.id))
+			};
+			parentPort!.postMessage(ownerMessage);
 		}
 	}
 	const messagePayload: msg.playerPayload = {

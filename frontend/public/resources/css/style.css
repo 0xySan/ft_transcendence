@@ -1416,7 +1416,10 @@ button:active {
 .grayed {
     filter: grayscale(100%);
     opacity: 0.6;
-    pointer-events: none;
+}
+
+.grayed > * {
+	pointer-events: none;
 }
 
 /* ==========================================================================

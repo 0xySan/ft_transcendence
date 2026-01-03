@@ -1,4 +1,8 @@
-import type { Settings } from "../global";
+import type { Settings, UserData } from "../global";
+
+/* -------------------------------------------------------------------------- */
+/*                                External helpers                             */
+/* -------------------------------------------------------------------------- */
 
 declare function addListener(
 	target: EventTarget | null,
@@ -10,45 +14,82 @@ declare global {
 	interface Window {
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		lobbySettings?: Settings;
+		currentUser: UserData | null;
+		currentUserReady: Promise<void>;
+		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
 	}
 }
 
-/* ---------------------------
-   Utils
-   --------------------------- */
+
+/* -------------------------------------------------------------------------- */
+/*                                    Utils                                    */
+/* -------------------------------------------------------------------------- */
+
+/** ### getEl
+ * - get element by ID + typed
+ * @param id - element ID
+ * @returns - typed HTMLElement
+ * @throws - if element not found
+ */
 function getEl<T extends HTMLElement>(id: string): T {
 	const el = document.getElementById(id);
 	if (!el) throw new Error(`Missing element #${id}`);
 	return el as T;
 }
 
+/** ### getElQS
+ * - get element by query selector + typed
+ * @param selector - CSS selector
+ * @returns - typed Element
+ * @throws - if element not found
+ */
+function getElQS<T extends Element>(selector: string): T {
+	const el = document.querySelector(selector);
+	if (!el) throw new Error(`Missing element ${selector}`);
+	return el as T;
+}
+
+/** ### readNumber
+ * - read number from input, with fallback
+ * @param input - HTML input element
+ * @param fallback - fallback value if input is not a valid number
+ * @returns - number value from input or fallback
+ */
 function readNumber(input: HTMLInputElement, fallback = 0): number {
 	const n = Number(input.value);
 	return Number.isFinite(n) ? n : fallback;
 }
 
+/** ### setInput
+ * - set input value or checked state based on type
+ * @param input - HTML input element
+ * @param value - number or boolean value to set
+ */
 function setInput(input: HTMLInputElement, value: number | boolean): void {
 	if (input.type === "checkbox") input.checked = Boolean(value);
 	else input.value = String(value);
 }
 
+/** ### setSpan
+ * - set span text content
+ * @param span - HTML span element
+ * @param v - value to set
+ */
 function setSpan(span: HTMLSpanElement | undefined | null, v: string | number): void {
 	if (!span) return;
 	span.textContent = String(v);
 }
 
-function getElQS<T extends Element>(selector: string): T {
-  const el = document.querySelector(selector);
-  if (!el) throw new Error(`Missing element ${selector}`);
-  return el as T;
-}
-/* ---------------------------
-   Defaults / State
-   --------------------------- */
+
+/* -------------------------------------------------------------------------- */
+/*                                Default settings                             */
+/* -------------------------------------------------------------------------- */
+
 const defaultSettings: Settings = {
 	game: {
 		mode: "online",
 		spectatorsAllowed: true,
+		playerCount: 2,
 	},
 	scoring: {
 		firstTo: 5,
@@ -79,14 +120,15 @@ const defaultSettings: Settings = {
 	world: {
 		width: 800,
 		height: 600,
-	}
+	},
 };
 
 let currentSettings: Settings = structuredClone(defaultSettings);
 
-/* ---------------------------
-   UI registry (grouped)
-   --------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                                   UI registry                               */
+/* -------------------------------------------------------------------------- */
+
 const ui = {
 	base: {
 		firstToInput: getEl<HTMLInputElement>("lobby-first-to"),
@@ -128,15 +170,22 @@ const ui = {
 		save: getEl<HTMLButtonElement>("lobby-save-settings-button"),
 	},
 	lobby: {
-	numPlayersSelect: document.getElementById("lobby-num-players") as HTMLSelectElement,
-	maxPlayersSpan: document.getElementById("player-max-count") as HTMLSpanElement
+		numPlayersSelect: document.getElementById("lobby-num-players") as HTMLSelectElement,
+		maxPlayersSpan: document.getElementById("player-max-count") as HTMLSpanElement,
 	},
-
+	actionButtons: {
+		joinBtn: getEl<HTMLButtonElement>("lobby-btn-join"),
+		leaveBtn: getEl<HTMLButtonElement>("lobby-btn-leave"),
+	},
 } as const;
 
-/* ---------------------------
-   Populate UI from state
-   --------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                              UI population helpers                          */
+/* -------------------------------------------------------------------------- */
+
+/** ### populateUi
+ * - populate the UI inputs with current settings
+ */
 function populateUi(): void {
 	const s = currentSettings;
 
@@ -146,6 +195,9 @@ function populateUi(): void {
 	ui.base.winByInput.value = String(s.scoring.winBy);
 	setSpan(ui.base.winBySpan, s.scoring.winBy);
 	ui.base.allowSpectators.checked = s.game.spectatorsAllowed;
+	// lobby player count
+	ui.lobby.numPlayersSelect.value = String(s.game.playerCount);
+	setSpan(ui.lobby.maxPlayersSpan, s.game.playerCount);
 
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
@@ -168,15 +220,20 @@ function populateUi(): void {
 	setInput(ui.paddles.acceleration, s.paddles.acceleration);
 	setInput(ui.paddles.friction, s.paddles.friction);
 
-	// field/world
+	// field / world
 	setInput(ui.field.wallThickness, s.field.wallThickness);
 	setInput(ui.world.width, s.world.width);
 	setInput(ui.world.height, s.world.height);
 }
 
-/* ---------------------------
-   Apply partial settings to inputs (public helper)
-   --------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                           Public partial setter                             */
+/* -------------------------------------------------------------------------- */
+
+/** ### setPartialLobbyConfig
+ * - set partial settings and update UI accordingly
+ * @param partial - partial settings to merge
+ */
 export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 	currentSettings = {
 		...currentSettings,
@@ -186,6 +243,9 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 			spectatorsAllowed:
 				partial.game?.spectatorsAllowed ??
 				currentSettings.game.spectatorsAllowed,
+			playerCount:
+				partial.game?.playerCount ??
+				currentSettings.game.playerCount,
 		},
 		scoring: {
 			firstTo:
@@ -205,19 +265,35 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 	window.lobbySettings = structuredClone(currentSettings);
 }
 
-/* ---------------------------
-   Bind helpers
-   --------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                                  Bind helpers                               */
+/* -------------------------------------------------------------------------- */
+
+/** ### bindNumber
+ * - bind input number changes to onChange callback
+ * @param input - HTML input element
+ * @param onChange - callback to invoke on change
+ */
 function bindNumber(input: HTMLInputElement, onChange: (v: number) => void): void {
 	addListener(input, "input", () => onChange(readNumber(input)));
 }
+
+/** ### bindCheckbox
+ * - bind checkbox changes to onChange callback
+ * @param input - HTML input element
+ * @param onChange - callback to invoke on change
+ */
 function bindCheckbox(input: HTMLInputElement, onChange: (v: boolean) => void): void {
 	addListener(input, "change", () => onChange(input.checked));
 }
 
-/* ---------------------------
-   Wire listeners (logic preserved)
-   --------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                                   Wire UI                                   */
+/* -------------------------------------------------------------------------- */
+
+/** ### wire
+ * - wire up UI inputs to currentSettings
+ */
 function wire(): void {
 	// base / scoring
 	addListener(ui.base.firstToInput, "input", () => {
@@ -231,6 +307,14 @@ function wire(): void {
 		setSpan(ui.base.winBySpan, v);
 	});
 	bindCheckbox(ui.base.allowSpectators, (v) => (currentSettings.game.spectatorsAllowed = v));
+
+	// lobby player count
+	addListener(ui.lobby.numPlayersSelect, "change", () => {
+		const v = parseInt(ui.lobby.numPlayersSelect.value, 10) || defaultSettings.game.playerCount;
+		if (v !== 2 && v !== 4) return; // invalid value
+		currentSettings.game.playerCount = v;
+		setSpan(ui.lobby.maxPlayersSpan, v);
+	});
 
 	// ball
 	bindNumber(ui.ball.radius, (v) => (currentSettings.ball.radius = v));
@@ -296,7 +380,15 @@ function wire(): void {
 	});
 }
 
-function initLobbySettings(initial?: Partial<Settings>): void {
+/* -------------------------------------------------------------------------- */
+/*                                  Initialization                             */
+/* -------------------------------------------------------------------------- */
+
+/** ### initLobbySettings
+ * - initialize lobby settings with optional initial partial settings
+ * @param initial - optional initial partial settings
+ */
+export function initLobbySettings(initial?: Partial<Settings>): void {
 	currentSettings = structuredClone(defaultSettings);
 	if (initial) setPartialLobbyConfig(initial);
 	populateUi();
@@ -304,20 +396,28 @@ function initLobbySettings(initial?: Partial<Settings>): void {
 	wire();
 }
 
-/* ---------------------------
-   Auto-init
-   --------------------------- */
+/* auto-init */
 initLobbySettings();
 
 
 /* -------------------------------------------------------------------------- */
-/* UI – Modes                                                                 */
+/*                                 UI – Modes                                  */
 /* -------------------------------------------------------------------------- */
+
+/** ### Mode
+ * - structure representing a lobby mode (button + tab)
+ * @property **button** - HTML button element for the mode
+ * @property **tab** - HTML div element for the mode's tab content
+ */
 type Mode = {
 	button: HTMLButtonElement;
 	tab: HTMLDivElement;
 };
 
+/** ### modes
+ * - record of available lobby modes
+ * - keys: 'multiplayer' | 'custom' | 'tournament'
+ */
 const modes: Record<string, Mode> = {
 	multiplayer: {
 		button: getEl("lobby-multiplayer-button"),
@@ -333,81 +433,139 @@ const modes: Record<string, Mode> = {
 	},
 };
 
-function setupModeHandlers(): void {
-	let readyCheck = false;
-	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
-	const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
-	const leaveBtn = getEl<HTMLButtonElement>("lobby-btn-leave");
-	const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
-	const userConnected = getElQS<HTMLDivElement>("#lobby-select-mode div:first-child");
-	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
+/* -------------------------------------------------------------------------- */
+/*                         Mode selection & Join handlers                      */
+/* -------------------------------------------------------------------------- */
 
-	fetch("/api/users/me")
-		.then(res => {
-			if (res.ok) {
-				lobbyActionButtons.classList.remove("unloaded");
-				userConnected.classList.remove("unclickable");
-				lobbyJoin.classList.remove("unclickable");
-			} else {
-				userConnected.classList.add("unclickable");
-				lobbyJoin.classList.add("unclickable");
-			}
-		})
-		.catch(() => {
-			userConnected.classList.add("unclickable");
-			lobbyJoin.classList.add("unclickable");
-		});
+/**
+ * ### activateCustomGameUI
+ * - show the custom-game UI and hide the select-mode panel
+ */
+function activateCustomGameUI(): void {
+	const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+	lobbySelectMode.classList.remove("current-mode");
+	lobbySelectMode.classList.add("unloaded");
 
-	["lobby-online", "lobby-offline", "lobby-btn-join"].forEach((selected) => {
-		const selectMode = getEl<HTMLButtonElement>(selected);
-		addListener(selectMode, "click", () => {
-			readyCheck = true;
+	getEl<HTMLButtonElement>("lobby-custom-game-button").classList.add("current-mode");
 
-			if (selected === "lobby-offline") {
-				lobbyActionButtons.classList.remove("unloaded");
-				joinBtn.classList.add("unloaded");
-				leaveBtn.classList.add("unloaded");
-				launchBtn.classList.remove("unloaded");
-				lobbyJoin.classList.add("unloaded");
-				const div = document.querySelector(".lobby-setting-box");
-				div?.classList.remove("grayed");
-			} else if (selected === "lobby-online" || selected === "lobby-btn-join") {
-				joinBtn.classList.remove("unloaded");
-				leaveBtn.classList.remove("unloaded");
-				launchBtn.classList.add("unloaded");
-			}
+	const lobbySettingBox = getElQS<HTMLDivElement>(".lobby-setting-box");
+	lobbySettingBox.classList.add("current-mode");
+	lobbySettingBox.classList.remove("unloaded");
+}
 
-			const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
-			lobbySelectMode.classList.remove("current-mode");
-			lobbySelectMode.classList.add("unloaded");
+/** ### deactivateCustomGameUI
+ * - hide the custom-game UI and show the select-mode panel
+ */
+function deactivateCustomGameUI(): void {
+	const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+	lobbySelectMode.classList.add("current-mode");
+	lobbySelectMode.classList.remove("unloaded");
 
-			const lobbyButton = getEl<HTMLButtonElement>("lobby-custom-game-button");
-			lobbyButton.classList.add("current-mode");
+	getEl<HTMLButtonElement>("lobby-custom-game-button").classList.remove("current-mode");
 
-			const lobbySettingBox = getElQS<HTMLDivElement>(".lobby-setting-box");
-			lobbySettingBox.classList.add("current-mode");
-			lobbySettingBox.classList.remove("unloaded");
+	const lobbySettingBox = getElQS<HTMLDivElement>(".lobby-setting-box");
+	lobbySettingBox.classList.remove("current-mode");
+	lobbySettingBox.classList.add("unloaded");
+}
 
-			if (readyCheck) {
-				Object.values(modes).forEach((mode) => {
-					addListener(mode.button, "click", () => {
-						Object.values(modes).forEach((m) => {
-							m.button.classList.toggle("current-mode", m === mode);
-							m.tab.classList.toggle("unloaded", m !== mode);
-						});
-					});
-				});
-			}
+/**
+ * ### setupModeSelection
+ * - add click listeners to the top-mode buttons (multiplayer/custom/tournament)
+ * - switching updates active tab + button
+ */
+function setupModeSelection(): void {
+	Object.values(modes).forEach(mode => {
+		addListener(mode.button, "click", () => {
+			Object.values(modes).forEach(m => {
+				m.button.classList.toggle("current-mode", m === mode);
+				m.tab.classList.toggle("unloaded", m !== mode);
+			});
 		});
 	});
 }
 
+/**
+ * ### selectLobbyMode
+ * - centralised behaviour when the user picks online/offline/join
+ * - updates the action buttons & custom UI accordingly
+ * @param modeKey - 'online' | 'offline' | 'join'
+ */
+function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void {
+	console.log(`Selected lobby mode: ${modeKey}`);
+	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
+	const joinBtn = ui.actionButtons.joinBtn;
+	const leaveBtn = ui.actionButtons.leaveBtn;
 
+	if (modeKey === "offline") {
+		lobbyActionButtons.classList.remove("unloaded");
+		joinBtn.classList.add("unloaded");
+		leaveBtn.classList.add("unloaded");
 
+		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
+	} else {
+		// online or join (online-like UI)
+		joinBtn.classList.remove("unloaded");
+		leaveBtn.classList.remove("unloaded");
+	}
+
+	if (modeKey !== "reset")
+		activateCustomGameUI();
+	else
+		deactivateCustomGameUI();
+}
+
+window.selectLobbyMode = selectLobbyMode;
+
+/** ### setupLobbyModeHandlers
+ * - attach listeners to offline/online/join UI elements
+ * - exported so other modules can call it after DOM changes if necessary
+ */
+async function setupLobbyModeHandlers(): Promise<void> {
+	let readyCheck = false;
+
+	const userConnected = getElQS<HTMLDivElement>("#lobby-select-mode div:first-child");
+	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
+
+	const isUserLogged = await window.currentUserReady.then(() => {
+		return window.currentUser !== null;
+	});
+
+	// enable/disable join area depending on login presence
+	if (isUserLogged) {
+		getElQS<HTMLDivElement>("#lobby-action-buttons").classList.remove("unloaded");
+		userConnected.classList.remove("unclickable");
+		lobbyJoin.classList.remove("unclickable");
+	} else {
+		userConnected.classList.add("unclickable");
+		lobbyJoin.classList.add("unclickable");
+	}
+
+	// offline button handler
+	const offlineBtn = getEl<HTMLButtonElement>("lobby-offline");
+	addListener(offlineBtn, "click", () => {
+		readyCheck = true;
+		selectLobbyMode("offline");
+	});
+
+	// online button handler
+	const onlineBtn = getEl<HTMLButtonElement>("lobby-online");
+	addListener(onlineBtn, "click", () => {
+		readyCheck = true;
+		selectLobbyMode("online");
+	});
+}
 
 /* -------------------------------------------------------------------------- */
-/* UI – Sub tabs                                                              */
+/*                                   Sub-tabs                                  */
 /* -------------------------------------------------------------------------- */
+
+/** ### SubTabs
+ * - structure representing sub-tabs within a mode (buttons + tabs)
+ * @property **basicBtn** - HTML button element for the basic settings tab
+ * @property **advBtn** - HTML button element for the advanced settings tab
+ * @property **basicTab** - HTML div element for the basic settings tab content
+ * @property **advTab** - HTML div element for the advanced settings tab content
+ */
 type SubTabs = {
 	basicBtn: HTMLButtonElement;
 	advBtn: HTMLButtonElement;
@@ -415,6 +573,9 @@ type SubTabs = {
 	advTab: HTMLDivElement;
 };
 
+/** ### subTabs
+ * - record of sub-tabs for custom and tournament modes
+ */
 const subTabs: Record<string, SubTabs> = {
 	custom: {
 		basicBtn: getEl("lobby-custom-game-basic-settings-button"),
@@ -448,8 +609,12 @@ function setupSubTabs(): void {
 	});
 }
 
-
-setupModeHandlers();
-setupSubTabs();
+/* -------------------------------------------------------------------------- */
+/*                                    Boot                                      */
+/* -------------------------------------------------------------------------- */
 
 window.setPartialLobbyConfig = setPartialLobbyConfig;
+
+setupModeSelection();
+setupSubTabs();
+await setupLobbyModeHandlers();

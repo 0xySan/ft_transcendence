@@ -109,6 +109,14 @@ export function addOrRemovePlayerGameWorker(uuid: string, displayName: string = 
 	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
 	if (!workerEntry) return false;
 
+	workerEntry.activePlayers += (action === "join") ? 1 : -1;
+	if (workerEntry.activePlayers < 1) {
+		activeGames.delete(gameId);
+		// Remove the game from the worker's active games list
+		workerEntry.activeGames = workerEntry.activeGames.filter(gid => gid !== gameId);
+	} else if (action === "leave")
+		activeGames.get(gameId)?.players.delete(uuid);
+
 	// Notify the worker to add the player
 	workerEntry.worker.postMessage({
 		type: "player",
@@ -121,12 +129,6 @@ export function addOrRemovePlayerGameWorker(uuid: string, displayName: string = 
 		} as msg.workerPlayerPayload
 	} as msg.message<msg.workerPlayerPayload>);
 
-	workerEntry.activePlayers += (action === "join") ? 1 : -1;
-	if (workerEntry.activePlayers < 1) {
-		activeGames.delete(gameId);
-		// Remove the game from the worker's active games list
-		workerEntry.activeGames = workerEntry.activeGames.filter(gid => gid !== gameId);
-	}
 	return true;
 }
 

@@ -41,7 +41,7 @@ export function setupWebSocketServer(wss: WebSocketServer) {
 
 		ws.on("close", () => {
 			clearTimeout(tokenTimeout); // clean up on close
-			addOrRemovePlayerGameWorker(ws.id, "", "leave");
+			addOrRemovePlayerGameWorker(ws.id, ws.displayName, "leave");
 		});
 	});
 }

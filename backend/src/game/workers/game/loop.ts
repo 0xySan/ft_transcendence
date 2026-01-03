@@ -79,6 +79,11 @@ gameLoop();
 /* -------------------------------------------------------------------------- */
 
 function stepGame(game: Game, dt: number): void {
+	if (game.players.length < 2) {
+		game.state = "waiting";
+		return;
+	}
+
 	game.currentFrameId += 1;
 	const frameId = game.currentFrameId;
 
@@ -274,6 +279,9 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 				return;
 
 			if (payload.action === "start") {
+				if (game.players.length < 2)
+					return;
+
 				const startTime = Date.now() + 3000;
 
 				gameStates.set(payload.gameId, "starting");
