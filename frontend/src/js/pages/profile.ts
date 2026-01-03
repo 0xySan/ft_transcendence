@@ -3,6 +3,19 @@ export {};
 const params = new URLSearchParams(window.location.search);
 const user: string | null = params.get("user");
 
+interface ProfileData {
+	user: {
+		createdAt: string;
+		profile: {
+			bio?: string;
+			profilePicture?: string;
+			countryCode?: string;
+			displayName?: string;
+			username: string;
+		};
+	};
+}
+
 async function ensureAuthenticated(): Promise<void> {
   try {
 	const res = await fetch('/api/users/me', {
@@ -27,6 +40,64 @@ async function ensureAuthenticated(): Promise<void> {
   }
 }
 
+function updateProfileUI(profileData: ProfileData): void {
+	const profile = profileData.user?.profile;
+
+	if (!profile) {
+		console.error('No profile data available');
+		return;
+	}
+
+	// Update profile image
+	const profileImg = document.querySelector('.profile-info-img') as HTMLImageElement;
+	if (profileImg) {
+		console.log('Setting profile picture to:', profile.profilePicture);
+		if (profile.profilePicture) {
+			profileImg.src = `/api/users/data/imgs/${profile.profilePicture}`;
+			profileImg.onerror = () => {
+				console.error('Failed to load profile picture from:', profile.profilePicture);
+				profileImg.src = '/resources/imgs/default-avatar.svg'; // fallback
+			};
+			console.log('Profile picture set to:', profile.profilePicture);
+		} else {
+			profileImg.src = '/resources/imgs/default-avatar.svg'; // fallback
+		}
+	} else {
+		console.warn('Profile image element not found');
+	}
+
+	// Update display name
+	const displayName = document.querySelector('.profile-display-name');
+	if (displayName) {
+		displayName.textContent = profile.displayName || profile.username;
+	}
+
+	// Update username
+	const username = document.querySelector('.profile-info-username');
+	if (username) {
+		username.textContent = `@${profile.username}`;
+	}
+
+	// Update flag
+	const flag = document.querySelector('.profile-info-flag') as HTMLImageElement;
+	if (flag && profile.countryCode) {
+		flag.src = `/resources/imgs/svg/flags/${profile.countryCode.toLowerCase()}.svg`;
+		flag.alt = profile.countryCode;
+	} else if (flag) {
+		flag.style.display = 'none';
+	}
+
+	// Update bio
+	const bioText = document.querySelector('.profile-info-bio p');
+	if (bioText) {
+		if (profile.bio) {
+			bioText.innerHTML = `<span class="profile-info-bio-label">Bio :</span><br>${profile.bio}`;
+		} else {
+			bioText.innerHTML = '<span class="profile-info-bio-label">Bio :</span><br>No bio available.';
+		}
+	}
+}
+
 async function fetchProfileData(username: string): Promise<void> {
 	try {
 		const res = await fetch(`/api/users/username?username=${encodeURIComponent(username)}`, {
@@ -35,8 +106,11 @@ async function fetchProfileData(username: string): Promise<void> {
 		});
 		if (!res.ok)
 			throw new Error('Failed to fetch profile data');
-		const profileData = await res.json();
+		const profileData: ProfileData = await res.json();
 		console.log('Profile Data:', profileData);
+		
+		// Update the UI with the fetched data
+		updateProfileUI(profileData);
 	}
 	catch (err) {
 		console.error(err);
@@ -52,14 +126,4 @@ function initializeProfilePage(): void {
 		fetchProfileData(user);
 }
 
-function handleEditProfile(): void {
-	// Placeholder for future edit profile functionality
-	console.log('Edit Profile button clicked');
-}
-
-const editProfileButton = document.getElementById('edit-profile-button');
-if (editProfileButton) {
-	editProfileButton.addEventListener('click', handleEditProfile);
-}
-
-//initializeProfilePage();
+initializeProfilePage();
