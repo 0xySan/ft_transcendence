@@ -486,8 +486,29 @@ class Ball {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                     BOARD                                   */
+/*                                     BOARD                                  */
 /* -------------------------------------------------------------------------- */
+
+interface PaddleUpdate {
+	playerId: string;
+	position: { x: number; y: number };
+	width: number;
+	height: number;
+}
+
+interface BallUpdate {
+	position: { x: number; y: number };
+	velocity: { x: number; y: number };
+	radius: number;
+}
+
+interface GameStateUpdate {
+	frameId: number;
+	ball: BallUpdate;
+	paddles: PaddleUpdate[];
+	scores?: { playerId: string; score: number }[];
+	state?: string;
+}
 
 /**
  * ### PongBoard
@@ -502,6 +523,8 @@ class PongBoard {
 	public playerPaddle: Paddle;
 	/** Map of player IDs to their corresponding Paddle instances. */
 	private paddleByPlayerId = new Map<string, Paddle>();
+	/** The Ball instance representing the pong ball. */
+	private ball: Ball;
 
 	/** ### constructor of PongBoard
 	 * @param container - The HTMLDivElement to contain the pong board.
@@ -530,6 +553,7 @@ class PongBoard {
 		}
 
 		this.playerPaddle = this.paddleByPlayerId.get(window.localPlayerId!)!;
+		this.ball = new Ball(context, window.lobbySettings!.ball);
 	}
 
 	/** ### getPaddleByPlayerId
@@ -556,7 +580,33 @@ class PongBoard {
 		const ctx = (this.canvas as any).context as CanvasRenderingContext2D;
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, (this.canvas as any).canvas.width, (this.canvas as any).canvas.height);
+		this.ball.draw();
 		for (const p of this.paddles) p.draw();
+	}
+
+	/** ### applyUpdate
+	 * - Applies a server authoritative game state to the board
+	 * @param update - GameStateUpdate payload from server
+	 */
+	public applyUpdate(update: GameStateUpdate) {
+		// update ball
+		this.ball.x = update.ball.position.x;
+		this.ball.y = update.ball.position.y;
+		this.ball.vx = update.ball.velocity.x;
+		this.ball.vy = update.ball.velocity.y;
+
+		// update paddles
+		for (const pUpdate of update.paddles) {
+			const paddle = this.getPaddleByPlayerId(pUpdate.playerId);
+			if (!paddle) continue;
+			paddle.setHoldState(false, false); // reset local input prediction if needed
+			// directly set position
+			(paddle as any).x = pUpdate.position.x;
+			(paddle as any).y = pUpdate.position.y;
+			// optional: update width/height in case server changed config
+			(paddle as any).width = pUpdate.width;
+			(paddle as any).height = pUpdate.height;
+		}
 	}
 }
 
@@ -566,18 +616,21 @@ class PongBoard {
 
 addListener(window.socket!, "message", (event: MessageEvent) => {
 	const msg = JSON.parse(event.data);
-	if (msg.type !== "input") return;
+	if (msg.type === "input") {
+		const payload = msg.payload as ClientInputPayload;
+		const paddle = pongBoard.getPaddleByPlayerId(payload.userId);
+		if (!paddle) return;
 
-	const payload = msg.payload as ClientInputPayload;
-	const paddle = pongBoard.getPaddleByPlayerId(payload.userId);
-	if (!paddle) return;
+		// store authoritative frames
+		paddle.buffer.pushRemoteFrames(payload.inputs);
 
-	// store authoritative frames
-	paddle.buffer.pushRemoteFrames(payload.inputs);
-
-	// apply the last snapshot immediately for visual responsiveness
-	const last = payload.inputs[payload.inputs.length - 1];
-	if (last) paddle.applyInputs(last.inputs);
+		// apply the last snapshot immediately for visual responsiveness
+		const last = payload.inputs[payload.inputs.length - 1];
+		if (last) paddle.applyInputs(last.inputs);
+	} else if (msg.type === "game") {
+		const payload = msg.payload as GameStateUpdate;
+		pongBoard.applyUpdate(payload);
+	};
 });
 
 addListener(window.socket!, "close", () => {

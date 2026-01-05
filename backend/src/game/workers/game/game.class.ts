@@ -124,19 +124,27 @@ export class Game {
 	}
 
 	/**
-	 * Adds a player to the game.
+	 * Adds a player to the game and initializes their side and position.
 	 * @param player - The Player object representing the player.
 	 * @returns True if added successfully, false otherwise.
 	 */
 	addPlayer(player: Player) {
 		if (this.players.length >= this.config.game.maxPlayers) return false;
 		this.players.push(player);
+
+		// assign sides and initial coordinates like the front
+		this.assignSidesAndPositions();
+
+		// notify player of the current player list
 		const message: worker.workerMessage = {
 			type: "playerSync",
 			payload: {
 				players: this.players.map(p => ({
 					playerId: p.id,
-					displayName: p.name
+					displayName: p.name,
+					side: (p as any).side,
+					x: (p as any).x,
+					y: (p as any).y
 				}))
 			},
 			userIds: player.id ? [player.id] : []
@@ -154,6 +162,38 @@ export class Game {
 		if (!this.config.game.spectatorsAllowed) return false;
 		this.spectators.push(spectator);
 		return true;
+	}
+
+	/**
+	 * Assigns sides and initial coordinates for all players
+	 * like the front: left/right for 2 players, corners for 4 players.
+	 */
+	private assignSidesAndPositions() {
+		const padCfg = this.config.paddles;
+		const world = this.config.world;
+		const field = this.config.field;
+
+		const numPlayers = this.players.length;
+		const sides: string[] = [];
+
+		if (numPlayers === 2) sides.push("left", "right");
+		else if (numPlayers === 4) sides.push("top-left", "bottom-left", "top-right", "bottom-right");
+		else for (let i = 0; i < numPlayers; i++) sides.push("left"); // fallback
+
+		this.players.forEach((player, index) => {
+			const p = player as any;
+			const side = sides[index];
+			p.side = side;
+
+			if (side === "left" || side === "top-left" || side === "bottom-left") p.x = field.wallThickness + padCfg.margin;
+			else p.x = world.width - field.wallThickness - padCfg.margin - padCfg.width;
+
+			if (side === "top-left" || side === "top-right") p.y = field.wallThickness + padCfg.margin;
+			else if (side === "bottom-left" || side === "bottom-right") p.y = world.height - field.wallThickness - padCfg.margin - padCfg.height;
+			else p.y = (world.height - padCfg.height) / 2;
+
+			p.vy = 0;
+		});
 	}
 
 	/**
@@ -175,38 +215,14 @@ export class Game {
 			return;
 		}
 		this.config = {
-			game: {
-				...this.config.game,
-				...(newSettings.game ?? {})
-			},
-			world: {
-				...this.config.world,
-				...(newSettings.world ?? {})
-			},
-			field: {
-				...this.config.field,
-				...(newSettings.field ?? {})
-			},
-			ball: {
-				...this.config.ball,
-				...(newSettings.ball ?? {})
-			},
-			paddles: {
-				...this.config.paddles,
-				...(newSettings.paddles ?? {})
-			},
-			scoring: {
-				...this.config.scoring,
-				...(newSettings.scoring ?? {})
-			},
-			timing: {
-				...this.config.timing,
-				...(newSettings.timing ?? {})
-			},
-			network: {
-				...this.config.network,
-				...(newSettings.network ?? {})
-			}
+			game: { ...this.config.game, ...(newSettings.game ?? {}) },
+			world: { ...this.config.world, ...(newSettings.world ?? {}) },
+			field: { ...this.config.field, ...(newSettings.field ?? {}) },
+			ball: { ...this.config.ball, ...(newSettings.ball ?? {}) },
+			paddles: { ...this.config.paddles, ...(newSettings.paddles ?? {}) },
+			scoring: { ...this.config.scoring, ...(newSettings.scoring ?? {}) },
+			timing: { ...this.config.timing, ...(newSettings.timing ?? {}) },
+			network: { ...this.config.network, ...(newSettings.network ?? {}) }
 		};
 	}
 
@@ -216,7 +232,6 @@ export class Game {
 	 * @param payload - message payload
 	 */
 	broadcast(type: socket.msgType, payload: socket.payload) {
-		console.log(`Broadcasting message of type ${type} to players in game ${this.id}`);
 		const message: worker.workerMessage = {
 			type: type,
 			payload: payload,
@@ -246,11 +261,14 @@ export class Game {
 		return this.ownerId === userId;
 	}
 
+	/**
+	 * Returns a map of playerId -> side for the front.
+	 */
 	getPlayerSidesMap(): socket.PlayerSideMap {
-	 const map: socket.PlayerSideMap = {};
-		this.players.forEach((player, index) => {
-			map[player.id] = index === 0 ? "left" : "right";
+		const map: socket.PlayerSideMap = {};
+		this.players.forEach(p => {
+			map[p.id] = (p as any).side;
 		});
-	 return map;
+		return map;
 	}
 }
