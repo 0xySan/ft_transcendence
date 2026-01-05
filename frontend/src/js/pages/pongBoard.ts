@@ -1,5 +1,5 @@
 // reorganized-pong.ts
-import type { Settings } from "../global";
+import type { BallSettings, Settings } from "../global";
 import type { gameStartAckPayload } from "./lobbySocket";
 
 /* -------------------------------------------------------------------------- */
@@ -376,6 +376,112 @@ class Paddle {
 	draw() {
 		this.context.fillStyle = this.color;
 		this.context.fillRect(this.x, this.y, this.width, this.height);
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+/* 		    						      BALL                                */
+/* -------------------------------------------------------------------------- */
+
+/** ### Ball
+ * - represents the pong ball
+ * - handles movement, collision with walls and paddles
+ */
+class Ball {
+	public x: number = 0;
+	public y: number = 0;
+	public vx: number = 0;
+	public vy: number = 0;
+	public radius: number;
+	private context: CanvasRenderingContext2D;
+	private settings: BallSettings;
+
+	/** ### constructor
+	 * @param context - CanvasRenderingContext2D to draw the ball
+	 * @param settings - BallSettings object from lobbySettings
+	 */
+	constructor(context: CanvasRenderingContext2D, settings: BallSettings) {
+		this.context = context;
+		this.settings = settings;
+
+		this.radius = settings.radius;
+		this.reset();
+	}
+
+	/** ### reset
+	 * - reset ball to center with random initial direction
+	 */
+	reset() {
+		const world = window.lobbySettings!.world;
+		this.x = world.width / 2;
+		this.y = world.height / 2;
+
+		const dir = Math.random() < 0.5 ? -1 : 1;
+		const angle = (Math.random() - 0.5) * this.settings.initialAngleRange;
+		this.vx = this.settings.initialSpeed * dir * Math.cos(angle);
+		this.vy = this.settings.initialSpeed * Math.sin(angle);
+	}
+
+	/** ### update
+	 * - move ball and handle collision with top/bottom walls
+	 * @param dt - delta time
+	 */
+	update(dt: number) {
+		this.x += this.vx * dt;
+		this.y += this.vy * dt;
+
+		const field = window.lobbySettings!.field;
+		const world = window.lobbySettings!.world;
+
+		// bounce off top
+		if (this.y - this.radius <= field.wallThickness) {
+			this.y = field.wallThickness + this.radius;
+			this.vy = Math.abs(this.vy);
+		}
+
+		// bounce off bottom
+		if (this.y + this.radius >= world.height - field.wallThickness) {
+			this.y = world.height - field.wallThickness - this.radius;
+			this.vy = -Math.abs(this.vy);
+		}
+	}
+
+	/** ### checkPaddleCollision
+	 * - check collision with a paddle and adjust velocity
+	 * @param paddle - Paddle instance
+	 */
+	checkPaddleCollision(paddle: Paddle) {
+		const padCfg = window.lobbySettings!.paddles;
+
+		if (
+			this.x + this.radius >= paddle["x"] &&
+			this.x - this.radius <= paddle["x"] + paddle["width"] &&
+			this.y >= paddle["y"] &&
+			this.y <= paddle["y"] + paddle["height"]
+		) {
+			this.vx = -this.vx;
+
+			const rel = (this.y - paddle["y"]) / paddle["height"] - 0.5;
+			this.vy += rel * this.settings.speedIncrement;
+
+			// clamp speed
+			const speed = Math.hypot(this.vx, this.vy);
+			if (speed > this.settings.maxSpeed) {
+				const factor = this.settings.maxSpeed / speed;
+				this.vx *= factor;
+				this.vy *= factor;
+			}
+		}
+	}
+
+	/** ### draw
+	 * - render the ball on the canvas
+	 */
+	draw() {
+		this.context.fillStyle = "white";
+		this.context.beginPath();
+		this.context.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+		this.context.fill();
 	}
 }
 

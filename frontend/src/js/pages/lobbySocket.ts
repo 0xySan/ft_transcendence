@@ -212,9 +212,6 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 		);
 	});
 
-	if (myPlayerId !== null)
-		window.localPlayerId = myPlayerId;
-
 	if (myPlayerId === ownerId)
 	{
 		htmlSettings.basic.div.classList.remove("grayed");
@@ -254,8 +251,6 @@ function addPlayer(
 	isOwner: boolean
 ): void {
 	if (playerListEl.querySelector(`#player-${id}`)) return;
-
-	if (!myPlayerId) myPlayerId = id;
 
 	const el = document.createElement("div");
 	el.classList.add("lobby-player-entry");
@@ -413,7 +408,6 @@ function resetLobbyState(): void {
 	updateCounts(0);
 	gameId = null;
 	authToken = null;
-	myPlayerId = null;
 	ownerId = null;
 
 	launchBtn.classList.add("unloaded");
