@@ -6,11 +6,15 @@
 		</div>
 
 		<div class="center-info">
-			<span id="match-timer">00:00</span>
-			<div class="score">
-				<span id="score-left">0</span>
-				<span>:</span>
-				<span id="score-right">0</span>
+			<div id="match-timer">
+				<svg id="display" viewBox="0 0 14 4" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+					<g id="digits"></g>
+					<g id="colon" transform="translate(7 1)">
+						<!-- we'll place two squares centered at y=0 and y=1.4 -->
+						<rect class="colon-dot" x="-0.12" y="-0.12" width="0.24" height="0.24" rx="0.03"></rect>
+						<rect class="colon-dot" x="-0.12" y="1.28" width="0.24" height="0.24" rx="0.03"></rect>
+					</g>
+				</svg>
 			</div>
 		</div>
 

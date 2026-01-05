@@ -178,3 +178,19 @@ export interface UserData {
 	createdAt: string; // ISO date string
 	profile: UserProfile | null;
 }
+
+
+/** ### Player Payload
+ * - type for player join/leave events
+ * - Contains:
+ * 		- **playerId**: string - player ID
+ * 		- **displayName**: string - player display name
+ * 		- **status**: "player" | "spectator" - player status
+ * 		- **action**: "join" | "leave" - action performed
+ */
+export type PlayerPayload = {
+	playerId: string;
+	displayName: string;
+	status: "player" | "spectator";
+	action: "join" | "leave";
+};

@@ -1,4 +1,4 @@
-import type { Settings, UserData } from "../global";
+import type { PlayerPayload, Settings, UserData } from "../global";
 
 declare global {
 	interface Window {
@@ -80,13 +80,6 @@ type SocketMessage<T> = {
 
 type ConnectPayload = {
 	token: string;
-};
-
-type PlayerPayload = {
-	playerId: string;
-	displayName: string;
-	status: "player" | "spectator";
-	action: "join" | "leave";
 };
 
 type PlayerSyncPayload = {
