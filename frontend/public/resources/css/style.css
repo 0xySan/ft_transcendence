@@ -1415,6 +1415,33 @@ button:active {
 	overflow: hidden;
 }
 
+/* Countdown overlay */
+.countdown-overlay {
+	position: absolute;
+	top: 5rem;
+	left: 0;
+	width: 100vw;
+	height: calc(100vh - 5rem);
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	background: rgb(var(--crust), 0.75);
+
+	pointer-events: none;
+	z-index: 10;
+}
+
+.countdown-value {
+	font-size: 10rem;
+	font-family: monospace;
+	color: rgb(var(--text));
+	line-height: 1;
+	user-select: none;
+}
+
+
 .grayed {
 	filter: grayscale(100%);
 	opacity: 0.6;

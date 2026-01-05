@@ -85,7 +85,7 @@ interface ClientInputPayload {
  */
 function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement | null, message?: string): T {
 	if (!element) {
-		notify(message || "Element not found", { type: "error" });
+		window.notify(message || "Element not found", { type: "error" });
 		throw new Error(message || "Element not found");
 	}
 	return (element as T);
@@ -96,6 +96,11 @@ function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement 
  */
 const board = assertElement<HTMLDivElement>(document.getElementById("pong-board"), "Pong board not found");
 
+/**
+ * The countdown overlay element.
+ */
+const countdownDiv = assertElement<HTMLDivElement>(document.querySelector(".countdown-overlay"), "Countdown overlay not found");
+
 /** ### cancelLoading
  * - display error message on board and notify user
  * @param message - The error message to display.
@@ -103,7 +108,7 @@ const board = assertElement<HTMLDivElement>(document.getElementById("pong-board"
  */
 function cancelLoading(message: string): void {
 	board.innerHTML = `<div class="loading-error">${message}</div>`;
-	notify(message, { type: "error" });
+	window.notify(message, { type: "error" });
 	throw new Error(message);
 }
 
@@ -1074,19 +1079,7 @@ const pongGame = new PongGame(pongBoard);
 
 createDigits();
 updateDisplayFromSeconds(seconds);
-
-const countdownDiv = document.createElement("div");
-countdownDiv.style.position = "absolute";
-countdownDiv.style.inset = "0";
-countdownDiv.style.display = "flex";
-countdownDiv.style.alignItems = "center";
-countdownDiv.style.justifyContent = "center";
-countdownDiv.style.fontSize = "96px";
-countdownDiv.style.color = "white";
-countdownDiv.style.fontFamily = "monospace";
-countdownDiv.style.background = "rgba(0,0,0,0.4)";
-countdownDiv.style.pointerEvents = "none";
-board.appendChild(countdownDiv);
+countdownDiv.style.fontSize = "12vh";
 
 // start the game using the server-provided startTime
 pongGame.startAt(window.pendingGameStart!.startTime);
