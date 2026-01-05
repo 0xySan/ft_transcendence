@@ -176,6 +176,7 @@ const ui = {
 	actionButtons: {
 		joinBtn: getEl<HTMLButtonElement>("lobby-btn-join"),
 		leaveBtn: getEl<HTMLButtonElement>("lobby-btn-leave"),
+		launchBtn: getEl<HTMLButtonElement>("lobby-btn-launch"),
 	},
 } as const;
 
@@ -495,13 +496,16 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
 	const joinBtn = ui.actionButtons.joinBtn;
 	const leaveBtn = ui.actionButtons.leaveBtn;
-
+	let tabMode = document.querySelector("#lobby-mode-buttons");
+	tabMode?.classList.remove("grayed");
 	if (modeKey === "offline") {
 		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.add("unloaded");
-		leaveBtn.classList.add("unloaded");
+		leaveBtn.classList.remove("unloaded");
 
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
+		let tabMode = document.querySelector("#lobby-mode-buttons");
+		tabMode?.classList.add("grayed");
 	} else {
 		// online or join (online-like UI)
 		joinBtn.classList.remove("unloaded");
@@ -545,6 +549,8 @@ async function setupLobbyModeHandlers(): Promise<void> {
 	addListener(offlineBtn, "click", () => {
 		readyCheck = true;
 		selectLobbyMode("offline");
+		ui.actionButtons.launchBtn.classList.remove("unloaded");
+
 	});
 
 	// online button handler

@@ -216,7 +216,7 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 	{
 		htmlSettings.basic.div.classList.remove("grayed");
 		htmlSettings.advanced.div.classList.remove("grayed");
-	} else {
+	} else if (window.socket) {
 		htmlSettings.basic.div.classList.add("grayed");
 		htmlSettings.advanced.div.classList.add("grayed");
 	}
@@ -305,7 +305,7 @@ export function updateLaunchVisibility(mode:string, playerCount:number): void {
 		}
 		else if (isOwner)
 			launchBtn.style.opacity = "0.4";
-	}
+	} else if (mode === "lobby-offline" && playerCount == 0) launchBtn.classList.add("unloaded");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -389,11 +389,6 @@ addListener(launchBtn, "click", () => {
 
 const lobbyOnline: any = document.getElementById("lobby-select-mode");
 
-addListener(lobbyOnline, 'click', () => {
-  const mode = lobbyOnline.value === "lobby-online" ? "lobby-online" : "lobby-offline";
-  updateLaunchVisibility(mode, 1);
-});
-
 /* -------------------------------------------------------------------------- */
 /* Reset                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -409,10 +404,12 @@ function resetLobbyState(): void {
 	gameId = null;
 	authToken = null;
 	ownerId = null;
-
 	launchBtn.classList.add("unloaded");
 	updateLaunchVisibility("lobby-offline", 0);
 	window.selectLobbyMode("reset");
+	leaveBtn.classList.add("unloaded");
+	let tabMode = document.querySelector("#lobby-mode-buttons");
+	tabMode?.classList.add("grayed");
 }
 
 /* -------------------------------------------------------------------------- */
