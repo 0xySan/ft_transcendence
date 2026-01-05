@@ -1,8 +1,13 @@
+/**
+ * @file changePassword.route.ts
+ * @brief Route to change the password of the current user logged in
+ */
+
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requireAuth } from '../../../middleware/auth.middleware.js';
-import { getUser2FaMethodsByUserId, getUser2FaMethodsById } from '../../../db/index.js';
+import { getUser2FaMethodsByUserId } from '../../../db/index.js';
 import { getPasswordHashByUserId, updateUser } from '../../../db/wrappers/main/users/users.js';
-import { hashString, verifyHashedString, decryptSecret, verifyToken } from '../../../utils/crypto.js';
+import { hashString, verifyHashedString, verifyToken } from '../../../utils/crypto.js';
 import { passwordChangeSchema } from '../../../plugins/swagger/schemas/passwordChange.schema.js';
 
 interface ChangePasswordBody {
@@ -14,6 +19,11 @@ interface ChangePasswordBody {
 
 const passwordRegex = /^.{8,64}$/;
 
+/**
+ * @function changePasswordRoutes
+ * @description Route to change the password of the current user logged in
+ * @param {FastifyInstance} fastify - The Fastify instance
+ */
 export async function changePasswordRoutes(fastify: FastifyInstance) {
     fastify.post(
         '/accounts/change-password',
@@ -35,14 +45,12 @@ export async function changePasswordRoutes(fastify: FastifyInstance) {
                 if (!passwordRegex.test(body.new_password))
                     return reply.status(400).send({ message: 'New password invalid' });
 
-                // --- Check old password ---
                 const storedHash = getPasswordHashByUserId(userId);
                 if (!storedHash) return reply.status(401).send({ message: 'Unauthorized' });
 
                 const ok = await verifyHashedString(body.old_password, storedHash);
                 if (!ok) return reply.status(401).send({ message: 'Old password incorrect' });
 
-                // --- If user has any verified 2FA methods, require and validate a previously-issued 2FA token ---
                 const userMethods = getUser2FaMethodsByUserId(userId).filter(m => m.is_verified);
                 if (userMethods.length > 0) {
                     if (!body.twoFaToken)
@@ -52,7 +60,6 @@ export async function changePasswordRoutes(fastify: FastifyInstance) {
                     if (!payload) return reply.status(401).send({ message: 'Invalid or expired 2FA token' });
                 }
 
-                // --- Update password ---
                 const newHash = await hashString(body.new_password);
                 const res = updateUser(userId, { password_hash: newHash });
                 if (!res) return reply.status(500).send({ message: 'Failed to update password' });

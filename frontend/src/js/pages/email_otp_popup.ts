@@ -1,4 +1,8 @@
-// Email OTP Popup Logic
+// frontend/src/js/pages/email_otp_popup.ts
+/**
+ * @file email_otp_popup.ts
+ * @description Script for the email OTP popup page.
+ */
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);

@@ -1,5 +1,8 @@
-// Backup Codes Popup Logic
-// Expects: ?codes=... (array of codes)
+// frontend/src/js/pages/backup_codes_popup.ts
+/**
+ * @file backup_codes_popup.ts
+ * @description Script for the backup codes popup page.
+ */
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);

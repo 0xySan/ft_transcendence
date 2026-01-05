@@ -1,5 +1,8 @@
-// TOTP QR Popup Logic
-// Expects: ?uuid=... (method id)
+// frontend/src/js/pages/totp_qr_popup.ts
+/**
+ * @file totp_qr_popup.ts
+ * @description Script for the TOTP QR code popup page.
+ */
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);

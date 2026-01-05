@@ -8,6 +8,11 @@ import { oauthUnlinkSchema } from "../../plugins/swagger/schemas/unlinkOauth.sch
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { db, getOauthAccountByProviderAndProviderUserId } from "../../db/index.js";
 
+/**
+ * @function oauthUnlinkRoute
+ * @description Route to unlink an oauth provider from the current user logged in
+ * @param {FastifyInstance} fastify - The Fastify instance
+ */
 export function oauthUnlinkRoute(fastify: FastifyInstance) {
 	fastify.get('/:provider/unlink',
 		{

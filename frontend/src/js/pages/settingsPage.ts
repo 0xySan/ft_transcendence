@@ -60,8 +60,7 @@ menuItems.forEach((item) => {
 	});
 });
 
-// When we arrive at the settings page, we have to update the display name and the bio fields to match current values
-// This is because the user might have changed them elsewhere, and we want to show the latest values
+// On page load, fetch user profile data and populate form fields
 fetch('/api/users/me', {
 	method: 'GET',
 	credentials: 'include',
@@ -98,7 +97,6 @@ fetch('/api/users/me', {
 			currentAvatarContainer.style.display = 'none';
 		}
 	}
-	// 2FA BUTTON LOGIC
 	updateTwoFaButtons();
 })
 .catch((err) => {
@@ -106,7 +104,9 @@ fetch('/api/users/me', {
 	loadPage('/home');
 });
 
-// --- 2FA BUTTON LOGIC ---
+/** Update the 2FA buttons based on current user 2FA methods
+ * Fetches the current 2FA methods and updates the button states accordingly.
+ */
 function updateTwoFaButtons() {
 	fetch('/api/users/twofa/', {
 		method: 'GET',
@@ -165,9 +165,8 @@ function updateTwoFaButtons() {
 	});
 }
 
-// --- 2FA BUTTON EVENT LOGIC ---
-// --- Minimal QR matrix store and postMessage handler for TOTP popup (414 fix) ---
-// Store the last generated QR matrix for TOTP
+/** Minimal QR matrix store and postMessage handler for TOTP popup (414 fix) */
+/** Store the last generated QR matrix for TOTP */
 let lastTotpQrMatrix: any = null;
 addListener(window, 'message', (event: MessageEvent) => {
 	if (event.data && event.data.type === 'request-totp-qr-matrix' && lastTotpQrMatrix) {

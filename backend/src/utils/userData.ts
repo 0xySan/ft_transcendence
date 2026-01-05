@@ -19,8 +19,11 @@ function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
 	return updateProfile(profile.profile_id, { profile_picture: avatarUrl });
 }
 
-
-// Check if buffer is a valid PNG, JPG, or WEBP image by magic number
+/**
+ * Check if the buffer is a valid image (PNG, JPG, WEBP, GIF)
+ * @param buffer - The buffer to check
+ * @returns boolean - True if the buffer is a valid image, false otherwise
+ */
 function isAllowedImage(buffer: Buffer): boolean {
 	// PNG: 89 50 4E 47 0D 0A 1A 0A
 	if (buffer.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A]))) return true;
@@ -28,6 +31,9 @@ function isAllowedImage(buffer: Buffer): boolean {
 	if (buffer.subarray(0, 3).equals(Buffer.from([0xFF,0xD8,0xFF]))) return true;
 	// WEBP: RIFF....WEBP
 	if (buffer.subarray(0, 4).toString() === 'RIFF' && buffer.subarray(8, 12).toString() === 'WEBP') return true;
+	// GIF: GIF87a or GIF89a
+	const gifHeader = buffer.subarray(0, 6);
+	if (gifHeader.equals(Buffer.from('GIF87a')) || gifHeader.equals(Buffer.from('GIF89a'))) return true;
 	return false;
 }
 
@@ -71,7 +77,7 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 	}
 
 	if (!isAllowedImage(buffer)) {
-		throw new Error('Downloaded file is not a valid PNG/JPG/WEBP image');
+		throw new Error('Downloaded file is not a valid PNG/JPG/WEBP/GIF image');
 	}
 
 	await fs.promises.writeFile(filePath, buffer);
@@ -93,7 +99,7 @@ export async function saveAvatarFromFile(userId: string, file: any) {
 
 	const buffer = await file.toBuffer();
 	if (!isAllowedImage(buffer)) {
-		throw new Error('Uploaded file is not a valid PNG/JPG/WEBP image');
+		throw new Error('Uploaded file is not a valid PNG/JPG/WEBP/GIF image');
 	}
 
 	await fs.promises.writeFile(filePath, buffer);
