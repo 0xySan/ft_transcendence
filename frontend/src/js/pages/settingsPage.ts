@@ -471,7 +471,7 @@ addListener(
 			}
 			
 			const data = await res.json().catch(() => ({}));
-			if (data.error === 'invalid_display_name' || data.message === 'Invalid displayName (must be string, ≤50 chars)') {
+			if (data.message === 'Invalid displayName (must be string, ≤50 chars)') {
 				alert('Display name is invalid.');
 				return;
 			}
@@ -539,19 +539,18 @@ addListener(
 			body: JSON.stringify(body)
 		})
 		.then(async (res) => {
-			console.log('Password change response:', res);
 			if (res.ok) {
 				alert('Password updated successfully.');
 				return;
 			}
 			
 			const data = await res.json();
-			if (data.error === 'invalid_old_password') {
+			if (data.message === 'Old password incorrect') {
 				alert('Current password is incorrect.');
 				return;
 			}
 			
-			if (data.error === 'invalid_new_password') {
+			if (data.message === 'New password invalid') {
 				alert('New password is invalid.');
 				return;
 			}
@@ -730,7 +729,7 @@ fetch('/api/oauth/', {
 				}
 				button.dataset.state = 'unlinked';
 			}
-			translateElement(getUserLang(), textSpan)
+			translateElement(getUserLang(), textSpan);
 		});
 	} else
 		throw new Error(data.message || `HTTP ${res.status}`);
@@ -741,7 +740,7 @@ fetch('/api/oauth/', {
 
 addListener(window, "message", (e) => {
 	if (e.origin !== window.location.origin) return;
-	if (!e.data || !e.data.requestId) return
+	if (!e.data || !e.data.requestId) return;
 	
 	const popup = oauthPopups.get(e.data.requestId);
 	const button = oauthButtonsPressed.get(e.data.requestId);

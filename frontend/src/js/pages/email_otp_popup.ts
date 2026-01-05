@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function updateSendBtnText(remaining: number) {
+            // TODO: change this to use localization strings when function to get direct string is available
             sendBtn.textContent = (firstSend ? 'Send Email' : 'Resend') + ` (${remaining}s)`;
         }
 
@@ -136,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('paste', (e) => {
                 e.preventDefault();
                 const paste = (e as ClipboardEvent).clipboardData?.getData('text') ?? '';
-                const chars = paste.replace(/[^0-9A-Za-z]/g, '').slice(0, otpInputs.length).split('');
+                const chars = paste.replace(/[^0-9A-Z]/g, '').slice(0, otpInputs.length).split('');
                 chars.forEach((ch, i) => { if (otpInputs[i]) otpInputs[i].value = ch; });
                 const next = Math.min(chars.length, otpInputs.length - 1);
                 if (otpInputs[next]) otpInputs[next].focus();

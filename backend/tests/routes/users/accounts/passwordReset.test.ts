@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify from "fastify";
 
-const RATE_LIMIT = 25;
+const RATE_LIMIT = 5;
 
 describe("GET & POST /accounts/reset-password", () => {
 	let fastify: ReturnType<typeof Fastify>;

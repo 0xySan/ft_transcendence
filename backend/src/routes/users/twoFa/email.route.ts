@@ -13,7 +13,6 @@ import { generateRandomToken, hashString, signToken, verifyHashedString } from '
 
 import { sendMail } from "../../../utils/mail/mail.js";
 import { checkRateLimit } from '../../../utils/security.js';
-import { generateBackupCodes } from './twoFa.route.js';
 
 interface twoFaEmailBody {
 	uuid: string;
@@ -62,7 +61,7 @@ async function checkEmailOtpRequest(
 
 			// --- Verify code ---
 			try {
-				const correct = verifyHashedString(body.code, emailMethod.last_sent_code_hash!);
+				const correct = await verifyHashedString(body.code, emailMethod.last_sent_code_hash!);
 				if (!correct) {
 					updateUser2faEmailOtp(emailMethod.email_otp_id, {
 						attempts: (emailMethod.attempts ?? 0) + 1,
@@ -111,7 +110,7 @@ export default async function emailSendRoutes(fastify: FastifyInstance) {
 				if (!emailMethod)
 					return reply.status(400).send({ message: '2fa not found' });
 
-				const otp_code = generateBackupCodes(1, 6)[0];
+				const otp_code = generateRandomToken(6);
 				const hashed_otp = await hashString(otp_code);
 
 				const update = updateUser2faEmailOtp(emailMethod.email_otp_id, {
