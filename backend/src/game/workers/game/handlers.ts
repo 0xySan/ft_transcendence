@@ -128,6 +128,7 @@ export function settingsHandler(msg: msg.message<msg.settingsPayload>, games: Ma
 	const message = {
 		type: "settings",
 		payload: payload.newSettings,
+		gameId: payload.gameId,
 		userIds: Array.from(game.players.values()).map(p => p.id)
 	};
 	parentPort!.postMessage(message);
