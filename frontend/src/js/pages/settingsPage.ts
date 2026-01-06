@@ -60,49 +60,61 @@ menuItems.forEach((item) => {
 	});
 });
 
-// On page load, fetch user profile data and populate form fields
-fetch('/api/users/me', {
-	method: 'GET',
-	credentials: 'include',
-	headers: {
-		'accept-language': getUserLang()
-	}
-})
-.then(async (res) => {
-	if (res.status === 401 || res.status === 403 || res.status === 404) {
-		loadPage('/home');
-		return;
-	}
-	if (!res.ok) {
-		return;
-	}
-	const data = await res.json();
-	if (!data.user || !data.user.profile) {
-		loadPage('/home');
-		return;
-	}
-	const profile = data.user.profile;
-	const displayNameInput = document.querySelector<HTMLInputElement>('#profile-form input[name="display-name"]');
-	const bioInput = document.querySelector<HTMLTextAreaElement>('#profile-form textarea[name="bio"]');
-	const currentAvatarContainer = document.getElementById('current-avatar-container');
-	const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
-
-	if (displayNameInput) displayNameInput.value = profile.displayName || '';
-	if (bioInput) bioInput.value = profile.bio || '';
-	if (currentAvatarContainer && currentAvatarImage) {
-		if (profile.profilePicture) {
-			currentAvatarImage.src = `/api/users/data/imgs/${profile.profilePicture}`;
-			currentAvatarContainer.style.display = '';
+// On page load, fetch user profile data and populate form fields.
+// Prefer using `window.currentUserPromise` if present (avoids duplicate fetch).
+(async () => {
+	try {
+		let data: any;
+		const cur = (window as any).currentUserPromise;
+		if (cur) {
+			// Use the existing promise (may already contain parsed JSON or response object).
+			data = cur;
 		} else {
-			currentAvatarContainer.style.display = 'none';
+			const res = await fetch('/api/users/me', {
+				method: 'GET',
+				credentials: 'include',
+				headers: {
+					'accept-language': getUserLang()
+				}
+			});
+
+			if (res.status === 401 || res.status === 403 || res.status === 404) {
+				loadPage('/home');
+				return;
+			}
+			if (!res.ok) {
+				return;
+			}
+			data = await res.json();
 		}
+
+		if (!data || !data.user || !data.user.profile) {
+			loadPage('/home');
+			return;
+		}
+
+		const profile = data.user.profile;
+		const displayNameInput = document.querySelector<HTMLInputElement>('#profile-form input[name="display-name"]');
+		const bioInput = document.querySelector<HTMLTextAreaElement>('#profile-form textarea[name="bio"]');
+		const currentAvatarContainer = document.getElementById('current-avatar-container');
+		const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
+
+		if (displayNameInput) displayNameInput.value = profile.displayName || '';
+		if (bioInput) bioInput.value = profile.bio || '';
+		if (currentAvatarContainer && currentAvatarImage) {
+			if (profile.profilePicture) {
+				currentAvatarImage.src = `/api/users/data/imgs/${profile.profilePicture}`;
+				currentAvatarContainer.style.display = '';
+			} else {
+				currentAvatarContainer.style.display = 'none';
+			}
+		}
+		updateTwoFaButtons();
+	} catch (err) {
+		console.error('Error fetching profile data:', err);
+		loadPage('/home');
 	}
-	updateTwoFaButtons();
-})
-.catch((err) => {
-	console.error('Error fetching profile data:', err);
-	loadPage('/home');
-});
+})();
 
 /** Update the 2FA buttons based on current user 2FA methods
  * Fetches the current 2FA methods and updates the button states accordingly.
