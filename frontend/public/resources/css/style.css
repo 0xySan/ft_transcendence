@@ -568,6 +568,9 @@ button:active {
 	max-width: 6rem;
 
 	font-size: 0.95rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
 }
 
 .name-profile-remove {

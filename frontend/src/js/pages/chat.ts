@@ -1034,11 +1034,7 @@ function renderUserList(onSelectUser: () => void): void {
 		}
 		const pElement = fragment.querySelector<HTMLParagraphElement>('.name_profile');
 		if (pElement) {
-			let displayName = name;
-			if (displayName.length > 8) {
-				displayName = displayName.substring(0, 8) + '...';
-			}
-			pElement.textContent = displayName;
+			pElement.textContent = name;
 		}
 
 		divElement.addEventListener('click', () => {
