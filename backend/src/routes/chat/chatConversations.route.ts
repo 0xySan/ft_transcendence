@@ -64,6 +64,39 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 	);
 
 	fastify.get(
+		"/conversations/:id",
+		{ preHandler: requirePartialAuth },
+		async (request, reply) => {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ message: "Unauthorized" });
+
+			const conversationId = Number((request.params as any).id);
+			if (!Number.isFinite(conversationId)) return reply.status(400).send({ message: "Invalid conversation id" });
+
+			const member = getConversationMember(conversationId, userId);
+			if (!member) return reply.status(403).send({ message: "Not a member of this conversation" });
+
+			const conversations: UserConversationSummary[] = listConversationsForUser(userId);
+			const conv = conversations.find((c: UserConversationSummary) => c.conversation_id === conversationId);
+			if (!conv) return reply.status(404).send({ message: "Conversation not found" });
+
+			const members = listConversationMembers(conv.conversation_id).map((m: ChatConversationMember) => mapMember(m.user_id));
+			const payload = {
+				id: conv.conversation_id,
+				type: conv.conversation_type,
+				title: conv.title,
+				createdBy: conv.created_by,
+				updatedAt: conv.updated_at,
+				members,
+				lastMessageAt: conv.last_message_at,
+			};
+
+			return reply.send({ conversation: payload, currentUserId: userId });
+		}
+	);
+
+	fastify.get(
 		"/conversations/:id/messages",
 		{ preHandler: requirePartialAuth },
 		async (request, reply) => {
@@ -115,11 +148,15 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 				}
 			}
 
-			const members = allMembers.filter(m => m.status === "active" && m.user_id !== userId);
-
 			const body = request.body as { content?: string; messageType?: string; inviteState?: string | null };
 			const content = body?.content?.trim();
 			if (!content) return reply.status(400).send({ message: "Content is required" });
+			
+			if (content.length > 4000) {
+				return reply.status(400).send({ 
+					message: "Message must be 4000 characters or less" 
+				});
+			}
 
 			const messageType = (body.messageType || "text") as "text" | "invite" | "system";
 			const inviteState = (body.inviteState ?? null) as "pending" | "accepted" | "declined" | "cancelled" | null;
@@ -136,10 +173,14 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 				sender_profile_picture: senderProfile?.profile_picture ?? null,
 			};
 
-			// Ensure all participants (even previously left) are active so they receive the message
+			// Reactivate participants who haven't blocked the sender
 			const recipients: string[] = [];
 			for (const m of allMembers) {
 				if (m.user_id === userId) continue;
+				
+				// Don't reactivate users who have blocked the sender
+				if (isBlockedBy(userId, m.user_id)) continue;
+				
 				const existing = getConversationMember(conversationId, m.user_id);
 				if (!existing) {
 					addConversationMember(conversationId, m.user_id, "member", "active");

@@ -668,6 +668,7 @@ button:active {
 	white-space: pre-line;
 
 	word-wrap: break-word;
+	overflow-wrap: anywhere;
 }
 
 .chat-header-btn {

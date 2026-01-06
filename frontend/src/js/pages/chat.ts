@@ -54,6 +54,19 @@ const conversations: Conversation = {};
 let activeUser: string | null = null;
 const blockedUsers: Set<string> = new Set();
 const activeUsers: Set<string> = new Set();
+let currentEventSource: EventSource | null = null;
+let isReconnecting = false;
+
+// Rate limiting
+let lastMessageTime = 0;
+const MESSAGE_COOLDOWN = 1000; // 1 second between messages
+
+// Loading states
+const loadingStates = {
+	sendingMessage: false,
+	blockingUser: false,
+	fetchingConversation: false,
+};
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const headers: HeadersInit = { ...(options.headers || {}) };
@@ -357,25 +370,47 @@ async function loadChatData(): Promise<void> {
 }
 
 async function blockUserApi(user: string): Promise<boolean> {
+	if (loadingStates.blockingUser) return false;
 	const targetId = conversationMeta[user]?.userId || userNameToUserId[user];
 	if (!targetId) return false;
-	await apiFetch(`${API_BASE}/blocks/${encodeURIComponent(targetId)}`, { 
-		method: 'POST',
-		body: JSON.stringify({})
-	});
-	blockedUsers.add(user);
-	return true;
+	
+	loadingStates.blockingUser = true;
+	try {
+		await apiFetch(`${API_BASE}/blocks/${encodeURIComponent(targetId)}`, { 
+			method: 'POST',
+			body: JSON.stringify({})
+		});
+		blockedUsers.add(user);
+		return true;
+	} catch (err) {
+		showWarning(`Failed to block ${user}`);
+		console.error('Block user error:', err);
+		return false;
+	} finally {
+		loadingStates.blockingUser = false;
+	}
 }
 
 async function unblockUserApi(user: string): Promise<boolean> {
+	if (loadingStates.blockingUser) return false;
 	const targetId = conversationMeta[user]?.userId || userNameToUserId[user];
 	if (!targetId) return false;
-	await apiFetch(`${API_BASE}/blocks/${encodeURIComponent(targetId)}`, { 
-		method: 'DELETE',
-		body: JSON.stringify({})
-	});
-	blockedUsers.delete(user);
-	return true;
+	
+	loadingStates.blockingUser = true;
+	try {
+		await apiFetch(`${API_BASE}/blocks/${encodeURIComponent(targetId)}`, { 
+			method: 'DELETE',
+			body: JSON.stringify({})
+		});
+		blockedUsers.delete(user);
+		return true;
+	} catch (err) {
+		showWarning(`Failed to unblock ${user}`);
+		console.error('Unblock user error:', err);
+		return false;
+	} finally {
+		loadingStates.blockingUser = false;
+	}
 }
 
 // ============================================================================
@@ -721,8 +756,30 @@ async function submitMessage(
 	const text = input.textContent?.trim() || '';
 	if (!text) return;
 
+	// Rate limiting
+	const now = Date.now();
+	if (now - lastMessageTime < MESSAGE_COOLDOWN) {
+		showWarning('Please slow down - wait a moment between messages');
+		return;
+	}
+
+	// Content length validation
+	if (text.length > 4000) {
+		showWarning('Message must be 4000 characters or less');
+		return;
+	}
+
 	const meta = conversationMeta[activeUser];
 	if (!meta) return;
+
+	// Prevent duplicate sends
+	if (loadingStates.sendingMessage) return;
+	loadingStates.sendingMessage = true;
+	sendBtn.disabled = true;
+	sendBtn.dataset.translateKey = 'sending';
+	getTranslatedElementText(LANG, sendBtn).then((translated) => {
+		if (translated) sendBtn.textContent = translated;
+	});
 
 	try {
 		const res = await apiFetch<{ message: any }>(`${API_BASE}/conversations/${meta.conversationId}/messages`, {
@@ -730,6 +787,7 @@ async function submitMessage(
 			body: JSON.stringify({ content: text, messageType: 'text' }),
 		});
 
+		lastMessageTime = now;
 		const newMsg = mapApiMessage(res.message, meta.membersById);
 
 		if (!conversations[activeUser]) conversations[activeUser] = [];
@@ -755,13 +813,24 @@ async function submitMessage(
 		appendMessageToDOM(newMsg, msgIndex);
 		reorderUserList(activeUser);
 	} catch (err) {
-		if (err instanceof Error && err.message.includes('403')) {
-			showWarning('You cannot send messages to this user');
-			input.textContent = '';
-			clearDraft(activeUser);
-			input.classList.add('empty');
-			sendBtn.hidden = true;
+		if (err instanceof Error) {
+			if (err.message.includes('403')) {
+				showWarning('You cannot send messages to this user');
+				input.textContent = '';
+				clearDraft(activeUser);
+				input.classList.add('empty');
+				sendBtn.hidden = true;
+			} else if (err.message.includes('400')) {
+				showWarning('Invalid message - please check your input');
+			} else {
+				showWarning('Failed to send message - please try again');
+				console.error('Send message error:', err);
+			}
 		}
+	} finally {
+		loadingStates.sendingMessage = false;
+		sendBtn.disabled = false;
+		// Button will be hidden by the sendBtn.hidden = true above, no need to clear text
 	}
 }
 
@@ -787,11 +856,16 @@ async function sendInvite(user: string): Promise<void> {
 			if (window.loadPage)
 				window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
 			else
-				return ; // error popup should happen here
+				showWarning('Failed to navigate to lobby');
 		}, NAVIGATION_DELAY);
 	} catch (err) {
-		if (err instanceof Error && err.message.includes('403')) {
-			showWarning('You cannot send invites to this user');
+		if (err instanceof Error) {
+			if (err.message.includes('403')) {
+				showWarning('You cannot send invites to this user');
+			} else {
+				showWarning('Failed to send invite - please try again');
+				console.error('Send invite error:', err);
+			}
 		}
 	}
 }
@@ -828,6 +902,75 @@ function reorderUserList(movedUser: string): void {
 		}
 	}
 	if (!inserted) userListDiv.appendChild(item);
+}
+
+async function fetchSingleConversation(conversationId: number): Promise<string | null> {
+	if (loadingStates.fetchingConversation) return null;
+	
+	loadingStates.fetchingConversation = true;
+	try {
+		const res = await apiFetch<{
+			conversation: {
+				id: number;
+				type: 'direct' | 'group';
+				title: string | null;
+				members: Array<{
+					userId: string;
+					username: string | null;
+					displayName: string | null;
+					profilePicture: string | null;
+				}>;
+			};
+			currentUserId: string;
+		}>(`${API_BASE}/conversations/${conversationId}`);
+
+		const conv = res.conversation;
+		const membersById: Record<string, string> = {};
+		
+		conv.members.forEach((m) => {
+			const name = m.displayName || m.username || m.userId;
+			membersById[m.userId] = name;
+			userIdToName[m.userId] = name;
+			userNameToUserId[name] = m.userId;
+			if (m.profilePicture) userIdToAvatar[m.userId] = `/api/users/data/imgs/${m.profilePicture}`;
+			else userIdToAvatar[m.userId] = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+			if (m.username) userIdToUsername[m.userId] = m.username;
+		});
+
+		const peer = conv.members.find((m) => m.userId !== res.currentUserId);
+		if (!peer) return null;
+		
+		const peerName = peer.displayName || peer.username || peer.userId;
+
+		conversationMeta[peerName] = {
+			conversationId: conv.id,
+			userId: peer.userId,
+			membersById,
+		};
+
+		if (!users.includes(peerName)) {
+			users.push(peerName);
+			profilepics.push(peer.profilePicture ? `/api/users/data/imgs/${peer.profilePicture}` : (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
+		}
+
+		if (!conversations[peerName]) {
+			conversations[peerName] = [];
+			visibleStart[peerName] = 0;
+			allMessagesLoaded[peerName] = true; // No messages loaded yet
+		}
+
+		// Re-render user list to show the new conversation
+		userListDiv.innerHTML = '';
+		renderUserList(renderChat);
+
+		return peerName;
+	} catch (err) {
+		showWarning('Failed to load conversation');
+		console.error('Failed to fetch conversation:', err);
+		return null;
+	} finally {
+		loadingStates.fetchingConversation = false;
+	}
 }
 
 function addNewUserToConversation(conversationId: number, senderId: string, senderInfo: { displayName?: string; username?: string; profilePicture?: string; userId?: string }): string | null {
@@ -1215,9 +1358,8 @@ function renderChat(): void {
 		else div.classList.add('hidden');
 	});
 
-	const newBlockBtn = headerBlockBtn.cloneNode(true) as HTMLButtonElement;
-	headerBlockBtn.replaceWith(newBlockBtn);
-	newBlockBtn.addEventListener('click', (e) => {
+	// Update block button in place - only replace handler, not the element
+	const blockBtnHandler = (e: Event) => {
 		e.preventDefault();
 		e.stopPropagation();
 		const user = activeUser as string;
@@ -1232,7 +1374,12 @@ function renderChat(): void {
 				updateBlockedState(user);
 			});
 		}
-	});
+	};
+	
+	// Clone only to replace event handlers (no way to remove old listeners without reference)
+	const newBlockBtn = headerBlockBtn.cloneNode(true) as HTMLButtonElement;
+	headerBlockBtn.replaceWith(newBlockBtn);
+	newBlockBtn.addEventListener('click', blockBtnHandler);
 
 	const msgs = conversations[activeUser] || [];
 	if (visibleStart[activeUser] === undefined)
@@ -1256,6 +1403,7 @@ function renderChat(): void {
 		messagesDiv.insertBefore(topHint, messagesDiv.firstChild);
 	}
 
+	// Update form elements in place instead of cloning
 	const newForm = form.cloneNode(true) as HTMLFormElement;
 	form.replaceWith(newForm);
 	const newInput = newForm.querySelector<HTMLDivElement>('.chat-input')!;
@@ -1263,10 +1411,9 @@ function renderChat(): void {
 	const newInviteWrapper = newForm.querySelector<HTMLDivElement>('.invite-wrapper')!;
 	const newInviteBtn = newInviteWrapper.querySelector<HTMLButtonElement>('.chat-invite-btn')!;
 	const newInviteMenu = newInviteWrapper.querySelector<HTMLDivElement>('.invite-menu')!;
-	const newInviteMenuBtns = newInviteMenu.querySelectorAll<HTMLButtonElement>(
-		'.invite-menu-btn'
-	);
+	const newInviteMenuBtns = newInviteMenu.querySelectorAll<HTMLButtonElement>('.invite-menu-btn');
 	const newBtnPong = newInviteMenuBtns[0];
+	
 	newInviteMenu.classList.add('hidden');
 	newInviteWrapper.classList.remove('hidden');
 	newInput.classList.remove('hidden');
@@ -1329,7 +1476,7 @@ function renderChat(): void {
 		newInviteMenu.classList.toggle('hidden');
 	});
 
-	const newMessagesDiv = messagesDiv.cloneNode(true) as HTMLDivElement;
+	const newMessagesDiv = chatBlock.querySelector<HTMLDivElement>(currentSelector)!;
 	messagesDiv.replaceWith(newMessagesDiv);
 
 	newForm.addEventListener('submit', (e) => {
@@ -1531,7 +1678,13 @@ function renderChat(): void {
 export {};
 
 function startChatStream() {
-  let es = new EventSource("/api/chat/stream", { withCredentials: true });
+	// Close existing connection if any (closing automatically removes all listeners)
+	if (currentEventSource) {
+		currentEventSource.close();
+		currentEventSource = null;
+	}
+
+	currentEventSource = new EventSource("/api/chat/stream", { withCredentials: true });
 
 	const onMessage = async (ev: MessageEvent) => {
 		try {
@@ -1544,15 +1697,20 @@ function startChatStream() {
 
 			// Find username by conversationId
 			let entry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
-      
+	  
 			// If this is a new conversation not in our list, reload conversations to add the new user
 			if (!entry) {
 				if (msg?.sender_id && msg.sender_id !== currentUserId) {
 					const prevActive = activeUser;
+					
 					try {
-						await loadChatData();
+						// Fetch only the new conversation instead of reloading everything
+						const peerName = await fetchSingleConversation(conversationId);
+						if (peerName) {
+							entry = [peerName, conversationMeta[peerName]] as [string, { conversationId: number; userId: string; membersById: Record<string, string> }];
+						}
 					} catch (err) {
-						console.error('Failed to reload chat data:', err);
+						console.error('Failed to fetch conversation:', err);
 					}
 
 					// Restore previous active user if still present
@@ -1561,9 +1719,6 @@ function startChatStream() {
 						reorderUserList(prevActive);
 						renderChat();
 					}
-
-					// Now try again to find the entry
-					entry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
 
 					// Fallback: if still missing, create a minimal entry using sender info
 					if (!entry && msg?.sender_id) {
@@ -1586,60 +1741,156 @@ function startChatStream() {
 			const mapped = mapApiMessage(msg, membersById);
 
 			const arr = conversations[username] || (conversations[username] = []);
-      
+	  
 			// Deduplicate by message id for new messages
 			if (mapped.id && arr.some((m) => m.id === mapped.id)) return;
 
-			arr.push(mapped);
+			// Optimize for common case: message arrives in order at the end
+			let insertIndex: number;
+			if (arr.length === 0 || mapped.timestamp.getTime() >= arr[arr.length - 1].timestamp.getTime()) {
+				arr.push(mapped);
+				insertIndex = arr.length - 1;
+			} else {
+				// Message arrived out of order - use binary search to find correct position (O(log n))
+				let left = 0;
+				let right = arr.length;
+				
+				while (left < right) {
+					const mid = Math.floor((left + right) / 2);
+					if (arr[mid].timestamp.getTime() <= mapped.timestamp.getTime())
+						left = mid + 1;
+					else
+						right = mid;
+				}
+				
+				insertIndex = left;
+				arr.splice(insertIndex, 0, mapped);
+			}
 
 			if (activeUser === username) {
 				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(
 					`.chat-messages[user="${CSS.escape(username)}"]`
 				);
-				if (messagesDiv) appendMessageToDOM(mapped, arr.length - 1);
+				if (messagesDiv) {
+					// If message was inserted at the end (most common case), use optimized append
+					if (insertIndex === arr.length - 1) {
+						appendMessageToDOM(mapped, insertIndex);
+					} else {
+						// Message arrived out of order - re-render the visible portion
+						const wasNearBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < SCROLL_THRESHOLD;
+						const prevScrollHeight = messagesDiv.scrollHeight;
+						const prevScrollTop = messagesDiv.scrollTop;
+						
+						const startIdx = visibleStart[username] || 0;
+						
+						// Only re-render if the out-of-order message affects visible range
+						if (insertIndex >= startIdx - 1) {
+							// Clear all messages and re-render to ensure correct grouping
+							const loadHint = messagesDiv.querySelector('.load-older-hint');
+							messagesDiv.innerHTML = '';
+							
+							// Include one message before startIdx to provide context for grouping
+							// This ensures the first visible message knows whether to continue a group
+							const renderStart = Math.max(0, startIdx > 0 && insertIndex < startIdx ? startIdx - 1 : startIdx);
+							const slice = arr.slice(renderStart);
+							const fragment = loadMessages(renderStart, slice, renderStart);
+							
+							// Restore load hint if needed
+							if (startIdx > 0 && renderStart > 0) {
+								const topHint = document.createElement('div');
+								topHint.className = 'load-older-hint';
+								topHint.dataset.translateKey = "chat.block.loadHint";
+								topHint.textContent = 'Scroll up to load earlier messages';
+								translateElement(LANG, topHint);
+								messagesDiv.appendChild(topHint);
+							}
+							
+							messagesDiv.appendChild(fragment);
+							messagesDiv.dataset.messageCount = String(arr.length);
+							
+							// Restore scroll position based on where the message was inserted
+							requestAnimationFrame(() => {
+								if (wasNearBottom) {
+									messagesDiv.scrollTop = messagesDiv.scrollHeight;
+								} else {
+									const newScrollHeight = messagesDiv.scrollHeight;
+									const heightChange = newScrollHeight - prevScrollHeight;
+									
+									// If message inserted before or at the visible area, adjust scroll to maintain position
+									// If inserted within/after visible area, maintain relative position
+									if (insertIndex < startIdx) {
+										// Message inserted above visible area - adjust scroll to compensate
+										messagesDiv.scrollTop = prevScrollTop + heightChange;
+									} else {
+										// Message inserted within visible area - maintain visual position
+										messagesDiv.scrollTop = prevScrollTop + (renderStart < startIdx ? heightChange : 0);
+									}
+								}
+							});
+						}
+						// If insertion is before visible range, just update the count and adjust scroll
+						else {
+							messagesDiv.dataset.messageCount = String(arr.length);
+							// Message inserted way above - will be loaded when user scrolls up
+						}
+					}
+				}
 			}
 			reorderUserList(username);
 		} catch (e) {
 			console.error('Error in chat stream onMessage:', e);
 		}
 	};
-  const onInviteState = (ev: MessageEvent) => {
-    try {
-      const payload = JSON.parse(ev.data) as { conversationId: number; messageId: number; state: 'accepted' | 'declined' | 'cancelled' };
-      const entry = Object.entries(conversationMeta).find(([, meta]) => meta.conversationId === payload.conversationId);
-      if (!entry) return;
-      const username = entry[0];
-      const msgs = conversations[username] || [];
-      const idx = msgs.findIndex((m) => m.id === payload.messageId);
-      if (idx === -1) return;
-      const msg = msgs[idx];
-      msg.inviteState = payload.state;
+	
+	const onInviteState = (ev: MessageEvent) => {
+		try {
+			const payload = JSON.parse(ev.data) as { conversationId: number; messageId: number; state: 'accepted' | 'declined' | 'cancelled' };
+			const entry = Object.entries(conversationMeta).find(([, meta]) => meta.conversationId === payload.conversationId);
+			if (!entry) return;
+			const username = entry[0];
+			const msgs = conversations[username] || [];
+			const idx = msgs.findIndex((m) => m.id === payload.messageId);
+			if (idx === -1) return;
+			const msg = msgs[idx];
+			msg.inviteState = payload.state;
 
-      if (activeUser === username) {
-        const messagesDiv = chatBlock.querySelector<HTMLDivElement>(`.chat-messages[user="${CSS.escape(username)}"]`);
-        const container = messagesDiv?.querySelector<HTMLElement>(`.chat-message[data-message-id="${payload.messageId}"]`);
-        if (container) updateInviteState(container, msg, payload.state, idx, true);
-      }
-    } catch (e) {
-      console.error('Error in inviteState handler:', e);
-    }
-  };
-  const onPing = () => {};
-  const onError = () => {
-    es.close();
-    setTimeout(() => {
-      es = new EventSource("/api/chat/stream", { withCredentials: true });
-      es.addEventListener("message", onMessage);
-      es.addEventListener("inviteState", onInviteState);
-      es.addEventListener("ping", onPing);
-      es.onerror = onError;
-    }, 2000);
-  };
+			if (activeUser === username) {
+				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(`.chat-messages[user="${CSS.escape(username)}"]`);
+				const container = messagesDiv?.querySelector<HTMLElement>(`.chat-message[data-message-id="${payload.messageId}"]`);
+				if (container) updateInviteState(container, msg, payload.state, idx, true);
+			}
+		} catch (e) {
+			console.error('Error in inviteState handler:', e);
+		}
+	};
+	
+	const onPing = () => {};
+	
+	const onError = () => {
+		// Prevent multiple simultaneous reconnection attempts
+		if (isReconnecting) return;
+		isReconnecting = true;
+		
+		// Properly clean up the current connection
+		if (currentEventSource) {
+			currentEventSource.removeEventListener("message", onMessage);
+			currentEventSource.removeEventListener("inviteState", onInviteState);
+			currentEventSource.removeEventListener("ping", onPing);
+			currentEventSource.onerror = null;
+			currentEventSource.close();
+			currentEventSource = null;
+		}
+		
+		setTimeout(() => {
+			isReconnecting = false;
+			startChatStream();
+		}, 2000);
+	};
 
-  es.addEventListener("message", onMessage);
-  es.addEventListener("inviteState", onInviteState);
-  es.addEventListener("ping", onPing);
-  es.onerror = onError;
+	currentEventSource.addEventListener("message", onMessage);
+	currentEventSource.addEventListener("inviteState", onInviteState);
+	currentEventSource.addEventListener("ping", onPing);
+	currentEventSource.onerror = onError;
 }
 
 async function fetchOlderMessages(user: string): Promise<Message[]> {

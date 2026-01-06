@@ -38,7 +38,8 @@ export function listMessages(
 	const limit = options?.limit ?? 50;
 	const offset = options?.offset ?? 0;
 	const ascending = options?.ascending ?? false;
-	const orderDirection = ascending ? "ASC" : "DESC";
+	// Whitelist order direction to prevent any potential SQL injection
+	const orderDirection = ascending === true ? "ASC" : "DESC";
 
 	const stmt = db.prepare(
 		`SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ${orderDirection} LIMIT ? OFFSET ?`

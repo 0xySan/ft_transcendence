@@ -60,20 +60,31 @@ export function ensureDirectConversation(
 	const existing = getDirectConversation(userA, userB);
 	if (existing) return existing;
 
-	const conversation = createConversation("direct", { createdBy });
-	if (!conversation) return undefined;
-
 	const [a, b] = [userA, userB].sort();
 
-	try {
+	// Wrap in transaction to prevent orphaned conversation records
+	const createTransaction = db.transaction(() => {
+		const conversation = createConversation("direct", { createdBy });
+		if (!conversation) throw new Error("Failed to create conversation");
+
 		const info = db.prepare(
 			`INSERT OR IGNORE INTO chat_direct_conversations (conversation_id, user_a, user_b) VALUES (?, ?, ?)`
 		).run(conversation.conversation_id, a, b);
-		if (info.changes > 0) return conversation;
-		return getDirectConversation(userA, userB);
+		
+		if (info.changes === 0) {
+			// Another transaction created it concurrently
+			const concurrent = getDirectConversation(userA, userB);
+			if (concurrent) return concurrent;
+		}
+		
+		return conversation;
+	});
+
+	try {
+		return createTransaction();
 	} catch (err) {
 		console.error("Failed to create direct conversation:", (err as Error).message);
-		return undefined;
+		return getDirectConversation(userA, userB);
 	}
 }
 

@@ -55,6 +55,7 @@
   },
   "chat": {
     "send": "Enviar",
+    "sending": "Enviando...",
     "invite": {
       "send": "Invitar a jugar a Pong",
       "accept": "Aceptar",

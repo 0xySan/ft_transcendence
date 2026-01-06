@@ -147,6 +147,7 @@
   },
   "chat": {
     "send": "Envoyer",
+    "sending": "Envoi...",
     "invite": {
       "send": "Inviter à jouer à Pong",
       "accept": "Accepter",
