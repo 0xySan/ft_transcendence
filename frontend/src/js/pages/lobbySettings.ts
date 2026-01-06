@@ -549,6 +549,7 @@ async function setupLobbyModeHandlers(): Promise<void> {
 	addListener(offlineBtn, "click", () => {
 		readyCheck = true;
 		selectLobbyMode("offline");
+		subTabs.custom.basicTab.classList.remove("grayed");
 		ui.actionButtons.launchBtn.classList.remove("unloaded");
 
 	});
