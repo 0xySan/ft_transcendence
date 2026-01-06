@@ -1,14 +1,49 @@
 import { FastifyReply } from "fastify";
+import { getConversationMember } from "../db/wrappers/chat/chatConversationMembers.js";
+import { isBlockedBy } from "../db/wrappers/chat/chatUserBlocks.js";
 
-type Client = { userId: string; reply: FastifyReply; heartbeat: NodeJS.Timeout };
+export type Session = { userId: string; user_id: string; [key: string]: any };
+
+const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CONNECTIONS_PER_USER = 5;
+const MAX_TOTAL_CONNECTIONS = 10000;
+
+type Client = { userId: string; reply: FastifyReply; heartbeat: NodeJS.Timeout; timeout: NodeJS.Timeout };
 const clients = new Map<string, Set<Client>>();
 
-function safeWrite(reply: FastifyReply, chunk: string) {
-	try { reply.raw.write(chunk); } catch {}
+function getTotalConnections(): number {
+	let total = 0;
+	for (const set of clients.values()) {
+		total += set.size;
+	}
+	return total;
 }
 
-export function addClient(userId: string, reply: FastifyReply): Client {
+function safeWrite(reply: FastifyReply, chunk: string): boolean {
+	try {
+		return reply.raw.write(chunk);
+	} catch (err) {
+		console.error('Write failed:', err);
+		return false;
+	}
+}
+
+export function addClient(userId: string, reply: FastifyReply, session: Session): Client {
+	// Verify the request is from the actual user
+	if (session.userId !== userId && session.user_id !== userId) {
+		throw new Error('Unauthorized');
+	}
+
 	const set = clients.get(userId) || new Set<Client>();
+	
+	// Check connection limits to prevent DoS
+	if (set.size >= MAX_CONNECTIONS_PER_USER) {
+		throw new Error('Too many connections from this user');
+	}
+	if (getTotalConnections() >= MAX_TOTAL_CONNECTIONS) {
+		throw new Error('Server at connection capacity');
+	}
+	
 	clients.set(userId, set);
 
 	reply.raw.writeHead(200, {
@@ -22,16 +57,38 @@ export function addClient(userId: string, reply: FastifyReply): Client {
 		userId,
 		reply,
 		heartbeat: setInterval(() => safeWrite(reply, `event: ping\ndata: {}\n\n`), 25000),
+		timeout: setTimeout(() => {
+			clearInterval(client.heartbeat);
+			set.delete(client);
+			if (set.size === 0) clients.delete(userId);
+			reply.raw.end();
+		}, TIMEOUT_MS),
 	};
 	set.add(client);
 
 	reply.raw.on("close", () => {
+		clearTimeout(client.timeout);
 		clearInterval(client.heartbeat);
 		set.delete(client);
 		if (set.size === 0) clients.delete(userId);
 	});
 
 	return client;
+}
+
+export function closeAll() {
+	for (const [userId, set] of clients) {
+		for (const client of set) {
+			clearInterval(client.heartbeat);
+			clearTimeout(client.timeout);
+			try {
+				client.reply.raw.end();
+			} catch (err) {
+				console.error('Error closing client:', err);
+			}
+		}
+	}
+	clients.clear();
 }
 
 export function broadcastTo(userId: string, event: string, payload: any) {
@@ -46,6 +103,23 @@ export function broadcastMessageToParticipants(
   	recipients: string[],
   	payload: { conversationId: number; message: any })
 {
-  	broadcastTo(senderId, "message", payload);
-  	for (const r of recipients) broadcastTo(r, "message", payload);
+	// Verify sender is a member of the conversation
+	const senderMember = getConversationMember(payload.conversationId, senderId);
+	if (!senderMember) {
+		throw new Error('Unauthorized: Sender is not a member of this conversation');
+	}
+
+	// Verify each recipient is a member of the conversation and hasn't blocked the sender
+	for (const recipientId of recipients) {
+		const recipientMember = getConversationMember(payload.conversationId, recipientId);
+		if (!recipientMember) {
+			throw new Error(`Unauthorized: Recipient ${recipientId} is not a member of this conversation`);
+		}
+		if (isBlockedBy(senderId, recipientId)) {
+			throw new Error(`Unauthorized: Sender is blocked by recipient ${recipientId}`);
+		}
+	}
+
+	broadcastTo(senderId, "message", payload);
+	for (const r of recipients) broadcastTo(r, "message", payload);
 }

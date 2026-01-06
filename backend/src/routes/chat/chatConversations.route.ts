@@ -191,11 +191,15 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 				}
 			}
 
-			// Broadcast to sender and all recipients (blocks handled client-side)
-			broadcastMessageToParticipants(userId, recipients, {
-				conversationId,
-				message: messageWithSender,
-			});
+			try {
+				broadcastMessageToParticipants(userId, recipients, {
+					conversationId,
+					message: messageWithSender,
+				});
+			} catch (error) {
+				console.error('Failed to broadcast message:', error);
+				return reply.status(500).send({ message: "Failed to broadcast message" });
+			}
 
 			return reply.status(201).send({ message });
 		}
