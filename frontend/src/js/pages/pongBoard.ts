@@ -12,6 +12,7 @@ declare global {
 		localPlayerId?: string;
 		pendingGameStart?: gameStartAckPayload;
 		lobbySettings?: Settings;
+		playerNames?: Record<string, string>;
 	}
 }
 
@@ -95,7 +96,6 @@ function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement 
  * The main pong board container.
  */
 const board = assertElement<HTMLDivElement>(document.getElementById("pong-board"), "Pong board not found");
-
 /**
  * The countdown overlay element.
  */
@@ -875,12 +875,60 @@ class PongBoard {
 			(paddle as any).width = pUpdate.width;
 			(paddle as any).height = pUpdate.height;
 		}
+
+		// update scores
+		if (update.scores) {
+			updateScores(update.scores);
+		}
 	}
 }
 
 /* -------------------------------------------------------------------------- */
 /*                                 SOCKET / MESSAGES                          */
 /* -------------------------------------------------------------------------- */
+
+/** ### updateScores
+ * - updates the score display on the UI
+ * @param scores - Array of score data from server
+ */
+function updateScores(scores: { playerId: string; score: number }[]) {
+	if (!scores || scores.length < 2) return;
+
+	const playerSides = window.pendingGameStart!.playerSides;
+	const scoreLeftEl = document.getElementById("score-left");
+	const scoreRightEl = document.getElementById("score-right");
+
+	if (!scoreLeftEl || !scoreRightEl) return;
+
+	// Find which player is on which side
+	for (const scoreData of scores) {
+		const side = playerSides[scoreData.playerId];
+		if (!side) continue;
+
+		if (side === "left" || side === "top-left" || side === "bottom-left") {
+			scoreLeftEl.textContent = String(scoreData.score);
+		} else if (side === "right" || side === "top-right" || side === "bottom-right") {
+			scoreRightEl.textContent = String(scoreData.score);
+		}
+	}
+}
+
+function updatePlayerNames() {
+    const playerSides = window.pendingGameStart!.playerSides;
+    const leftEl = document.getElementById("player-left");
+    const leftBottomEl = document.getElementById("player-bottom-left");
+    const rightBottomEl = document.getElementById("player-bottom-right");
+    const rightEl = document.getElementById("player-right");
+    if (!leftEl || !rightEl || !window.playerNames) return;
+
+    for (const [playerId, side] of Object.entries(playerSides)) {
+        const name = window.playerNames[playerId] || playerId;
+        if (side.includes("left")) leftEl.textContent = name;
+        else if (side.includes("right")) rightEl.textContent = name;
+		else if (side === "bottom-left" && leftBottomEl) leftBottomEl.textContent = name;
+		else if (side === "bottom-right" && rightBottomEl) rightBottomEl.textContent = name;
+    }
+}
 
 function handlePlayer(payload: PlayerPayload) {
 	if (payload.action === "join")
@@ -911,7 +959,13 @@ addListener(window.socket!, "message", (event: MessageEvent) => {
 			pongBoard.applyUpdate(payload);
 		}
 	} else if (msg.type === "player") {
-		handlePlayer(msg.payload as PlayerPayload);
+		{
+			const payload = msg.payload as PlayerPayload;
+			if (payload.displayName)
+				window.playerNames![payload.playerId] = payload.displayName;
+			handlePlayer(payload);
+			updatePlayerNames();
+		}
 	}
 });
 
@@ -1082,6 +1136,8 @@ class PongGame {
 
 const pongBoard = new PongBoard(board);
 const pongGame = new PongGame(pongBoard);
+
+updatePlayerNames();
 
 createDigits();
 updateDisplayFromSeconds(seconds);

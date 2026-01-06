@@ -1,25 +1,31 @@
 <div id="pong-page">
 	<!-- Top bar -->
 	<header class="pong-bar">
-		<div class="player left">
-			<span id="player-left">PLAYER 1</span>
-		</div>
-
-		<div class="center-info">
-			<div id="match-timer">
-				<svg id="display" viewBox="0 0 14 4" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-					<g id="digits"></g>
-					<g id="colon" transform="translate(7 1)">
-						<!-- we'll place two squares centered at y=0 and y=1.4 -->
-						<rect class="colon-dot" x="-0.12" y="-0.12" width="0.24" height="0.24" rx="0.03"></rect>
-						<rect class="colon-dot" x="-0.12" y="1.28" width="0.24" height="0.24" rx="0.03"></rect>
-					</g>
-				</svg>
+		<div class="match-container">
+			<div class="player left">
+				<span id="player-left">PLAYER 1</span>
 			</div>
-		</div>
-
-		<div class="player right">
-			<span id="player-right">PLAYER 2</span>
+			<div>
+				<span id="score-left" class="score-left">0</span>
+			</div>
+			<div class="center-info">
+				<div id="match-timer">
+					<svg id="display" viewBox="0 0 14 4" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+						<g id="digits"></g>
+						<g id="colon" transform="translate(7 1)">
+							<!-- we'll place two squares centered at y=0 and y=1.4 -->
+							<rect class="colon-dot" x="-0.12" y="-0.12" width="0.24" height="0.24" rx="0.03"></rect>
+							<rect class="colon-dot" x="-0.12" y="1.28" width="0.24" height="0.24" rx="0.03"></rect>
+						</g>
+					</svg>
+				</div>
+			</div>
+			<div>
+				<span id="score-right" class="score-right">0</span>
+			</div>
+			<div class="player right">
+				<span id="player-right">PLAYER 2</span>
+			</div>
 		</div>
 	</header>
 

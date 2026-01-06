@@ -25,7 +25,7 @@ export function createHandler(msg: msg.message<msg.createPayload>, games: Map<st
  * @param msg - The message containing the player payload.
  * @param games - The map of active games.
  */
-export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<string, Game>, gameStates: Map<string, "starting" | "playing" | "paused" | "stopped">) {
+export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<string, Game>, gameStates: Map<string, "starting" | "playing" | "paused" | "stopped" | "ended">) {
 	const payload = msg.payload as msg.workerPlayerPayload;
 	const game = games.get(payload.gameId);
 	if (!game) {

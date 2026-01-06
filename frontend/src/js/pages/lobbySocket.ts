@@ -26,6 +26,12 @@ declare function addListener(
 	handler: any,
 ): void;
 
+declare global {
+    interface Window {
+        playerNames?: Record<string, string>;
+    }
+}
+window.playerNames = {};
 /* -------------------------------------------------------------------------- */
 /* Utils                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -210,6 +216,7 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 			player.displayName,
 			player.playerId === ownerId
 		);
+		window.playerNames![player.playerId] = player.displayName;
 	});
 
 	if (myPlayerId === ownerId)
@@ -236,6 +243,7 @@ function handlePlayer(payload: PlayerPayload): void {
 			payload.displayName,
 			payload.playerId === ownerId
 		);
+		window.playerNames![payload.playerId] = payload.displayName;
 		notify(`${payload.displayName} has joined the lobby.`, { type: 'info' });
 		updateLaunchVisibility("lobby-online", playerListEl.children.length);
 	}
@@ -243,6 +251,7 @@ function handlePlayer(payload: PlayerPayload): void {
 	if (payload.action === "leave") {
 		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
 		window.playerSyncData.players.splice(index, 1);
+		delete window.playerNames![payload.playerId];
 		removePlayer(payload.playerId);
 		notify(`${payload.displayName} has left the lobby.`, { type: 'info' });
 		updateLaunchVisibility("", playerListEl.children.length);

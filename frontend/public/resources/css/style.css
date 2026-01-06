@@ -1326,7 +1326,7 @@ button:active {
 
 /* Bars (top & bottom) */
 .pong-bar {
-	width: 100%;
+	/*! width: 100vw !important; */
 	max-width: 1100px;
 
 	margin: 0 auto;
@@ -1365,7 +1365,7 @@ button:active {
 /* Center info (timer + score) */
 .center-info {
 
-	width: 100%;
+	width: 50%;
 	height: 25%;
 	gap: 4px;
 
@@ -1377,7 +1377,6 @@ button:active {
 #match-timer svg {
 
 	height: 5rem;
-	margin-bottom: 2.5rem;
 }
 
 #digits path {
@@ -1398,12 +1397,27 @@ button:active {
 	opacity: 1;
 }
 
-.score {
+.match-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5rem;
+
+}
+
+.score-left {
 	gap: 12px;
-
-	display: flex;
+  color: rgb(var(--red));
 	align-items: center;
-
+ 
+	font-size: 32px;
+	font-weight: bold;
+}
+.score-right {
+	gap: 12px;
+  color: rgb(var(--blue));
+	align-items: center;
+ 
 	font-size: 32px;
 	font-weight: bold;
 }

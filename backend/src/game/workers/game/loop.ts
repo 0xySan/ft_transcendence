@@ -42,21 +42,20 @@ function gameLoop(): void {
 	games.forEach((game, gameId) => {
 		const state = gameStates.get(gameId);
 
-	if (state === "starting") {
-		const startTime = gameStartTimes.get(gameId);
-		if (startTime && Date.now() >= startTime) {
-			game.currentFrameId = 0;
-			accumulators.set(gameId, 0);
-			gameStates.set(gameId, "playing");
+		if (state === "starting") {
+			const startTime = gameStartTimes.get(gameId);
+			if (startTime && Date.now() >= startTime) {
+				game.currentFrameId = 0;
+				accumulators.set(gameId, 0);
+				gameStates.set(gameId, "playing");
+			}
+			else {
+				return;
+			}
 		}
-		else {
+
+		if (state !== "playing")
 			return;
-		}
-	}
-
-	if (state !== "playing")
-		return;
-
 		let accumulator = accumulators.get(gameId) ?? 0;
 		accumulator += deltaTime;
 
