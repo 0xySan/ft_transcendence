@@ -5,29 +5,49 @@ const user: string | null = params.get("user");
 
 interface ProfileData {
 	user: {
+		id: string;
+		email: string;
 		createdAt: string;
 		profile: {
-			bio?: string;
-			profilePicture?: string;
-			countryCode?: string;
-			displayName?: string;
 			username: string;
-		};
-	};
+			displayName: string | null;
+			profilePicture: string | null;
+			bio: string | null;
+			country: {
+				id: string;
+				name: string;
+				code: string;
+				flag: string;
+			} | null
+		}
+	}
+}
+
+let currentUserId: string | null = null;
+let viewedUserId: string | null = null;
+
+async function getCurrentUser(): Promise<ProfileData | null> {
+	try {
+		const res = await fetch('/api/users/me', {
+			method: 'GET',
+			credentials: 'include'
+		});
+		if (!res.ok) {
+			throw new Error('Not authenticated');
+		}
+		const data = await res.json();
+		currentUserId = data.user?.id || null;
+		return data;
+	} catch (err) {
+		console.error(err);
+		return null;
+	}
 }
 
 async function ensureAuthenticated(): Promise<void> {
   try {
-	const res = await fetch('/api/users/me', {
-		method: 'GET',
-		credentials: 'include'
-	});
-	if (!res.ok) {
-		throw new Error('Not authenticated');
-	}
-	
-	const data = await res.json();
-	const username = data.user?.profile?.username;
+	const data = await getCurrentUser();
+	const username = data?.user?.profile?.username;
 
 	if (username)
 		window.loadPage(`/profile?user=${encodeURIComponent(username)}`);
@@ -42,6 +62,14 @@ async function ensureAuthenticated(): Promise<void> {
 
 function updateProfileUI(profileData: ProfileData): void {
 	const profile = profileData.user?.profile;
+
+	const profileInfoDiv = document.querySelector('.profile-info');
+	if (!profileInfoDiv) {
+		console.error('Profile info div not found');
+		return;
+	}
+
+	profileInfoDiv.classList.remove('hidden');
 
 	if (!profile) {
 		console.error('No profile data available');
@@ -80,9 +108,9 @@ function updateProfileUI(profileData: ProfileData): void {
 
 	// Update flag
 	const flag = document.querySelector('.profile-info-flag') as HTMLImageElement;
-	if (flag && profile.countryCode) {
-		flag.src = `/resources/imgs/svg/flags/${profile.countryCode.toLowerCase()}.svg`;
-		flag.alt = profile.countryCode;
+	if (flag && profile.country?.code ) {
+		flag.src = `/resources/imgs/svg/flags/${profile.country.code.toLowerCase()}.svg`;
+		flag.alt = profile.country.code;
 	} else if (flag) {
 		flag.style.display = 'none';
 	}
@@ -94,6 +122,46 @@ function updateProfileUI(profileData: ProfileData): void {
 			bioText.innerHTML = `<span class="profile-info-bio-label">Bio :</span><br>${profile.bio}`;
 		} else {
 			bioText.innerHTML = '<span class="profile-info-bio-label">Bio :</span><br>No bio available.';
+		}
+	}
+
+	// Update "Add to chat" button visibility
+	const chatButton = document.querySelector('.profile-chat-button') as HTMLButtonElement;
+	if (chatButton) {
+		// Show button only if viewing someone else's profile
+		if (currentUserId && viewedUserId && currentUserId !== viewedUserId) {
+			chatButton.classList.remove('nondisplayable');
+			
+			// Remove any existing event listeners by cloning
+			const newButton = chatButton.cloneNode(true) as HTMLButtonElement;
+			chatButton.parentNode?.replaceChild(newButton, chatButton);
+			
+			// Add click handler to create direct conversation
+			newButton.addEventListener('click', async () => {
+				try {
+					const res = await fetch('/api/chat/direct', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						credentials: 'include',
+						body: JSON.stringify({ targetUserId: viewedUserId })
+					});
+
+					if (!res.ok) {
+						throw new Error('Failed to create conversation');
+					}
+
+					const data = await res.json();
+					// Navigate to chat page with the conversation ID
+					window.loadPage('/chat');
+				} catch (err) {
+					console.error('Error creating chat:', err);
+					alert('Failed to create chat. Please try again.');
+				}
+			});
+		} else {
+			chatButton.classList.add('hidden');
 		}
 	}
 }
@@ -109,6 +177,9 @@ async function fetchProfileData(username: string): Promise<void> {
 		const profileData: ProfileData = await res.json();
 		console.log('Profile Data:', profileData);
 		
+		// Store the viewed user's ID
+		viewedUserId = profileData.user?.id || null;
+		
 		// Update the UI with the fetched data
 		updateProfileUI(profileData);
 	}
@@ -119,11 +190,14 @@ async function fetchProfileData(username: string): Promise<void> {
 	}
 }
 
-function initializeProfilePage(): void {
+async function initializeProfilePage(): Promise<void> {
+	// Always fetch current user data first
+	await getCurrentUser();
+	
 	if (!user) 
-		ensureAuthenticated();
+		await ensureAuthenticated();
 	else
-		fetchProfileData(user);
+		await fetchProfileData(user);
 }
 
 initializeProfilePage();

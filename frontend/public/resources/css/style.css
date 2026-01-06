@@ -1509,6 +1509,10 @@ button:active {
 							PROFILE PAGE STYLES 
    ========================================================================== */
 
+.nondisplayable {
+	display: none !important;
+}
+
 #profile-div {
 	background-image: url("/resources/imgs/background.gif");
 	background-size: cover;
@@ -1563,6 +1567,7 @@ button:active {
 	align-items: center;
 	gap: 0.5rem;
 	margin-bottom: 0.5rem;
+    width: 100%;
 }
 
 .profile-info-username {
@@ -1572,6 +1577,9 @@ button:active {
 	color: rgb(var(--subtext0));
 	margin-top: -0.8rem;
 	margin-left: 7.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .profile-info-flag {
@@ -1587,6 +1595,27 @@ button:active {
 	color: rgb(var(--text));
 	margin-left: 7rem;
 	margin-top: -1.5rem;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.profile-chat-button {
+	margin-left: auto;
+	padding: 0.6rem 1.5rem;
+
+	background: rgba(var(--sapphire), 0.6);
+
+	border: none;
+	border-radius: 6px;
+
+	font-size: 1rem;
+	color: rgb(var(--text));
+
+	cursor: pointer;
+	margin-top: -1rem;
 }
 
 @media (max-width: 768px) {
@@ -1634,6 +1663,9 @@ button:active {
 		margin-top: 0.5rem;
 		height: 1.25rem;
 	}
+	.profile-chat-button {
+		margin-top: -2.25rem;
+	}
 }
 
 /* Mobile Landscape - prioritize horizontal space */
@@ -1672,9 +1704,10 @@ button:active {
 	}
 
 	.profile-display-name {
+		margin-left: 0;
+		margin-top: 0;
 		font-size: 1.1rem;
-		align-items: center;
-		justify-content: left;
+		text-align: left;
 	}
 
 	.profile-info-username {
@@ -1689,6 +1722,11 @@ button:active {
 	.profile-info-flag {
 		height: 1rem;
 		margin-left: 0.5rem;
+	}
+
+	.profile-chat-button {
+		margin-left: auto;
+		margin-top: 0;
 	}
 }
 
@@ -1713,6 +1751,7 @@ button:active {
 
 	.profile-display-name {
 		font-size: 1.1rem;
+		text-align: left;
 	}
 
 	.profile-info-username {
@@ -1721,6 +1760,11 @@ button:active {
 
 	.profile-info-flag {
 		height: 1rem;
+	}
+
+	.profile-chat-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
 	}
 }
 
@@ -1746,6 +1790,7 @@ button:active {
 
 	.profile-display-name {
 		font-size: 1rem;
+		text-align: left;
 	}
 
 	.profile-info-username {
@@ -1754,6 +1799,11 @@ button:active {
 
 	.profile-info-flag {
 		height: 0.9rem;
+	}
+
+	.profile-chat-button {
+		padding: 0.4rem 0.8rem;
+		font-size: 0.8rem;
 	}
 }
 
