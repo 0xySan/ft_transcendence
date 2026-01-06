@@ -11,7 +11,6 @@ export interface ChatConversationMember {
 	joined_at: string;
 	last_read_message_id: number | null;
 	last_read_at: string | null;
-	notifications_muted: 0 | 1;
 }
 
 export function getConversationMember(
@@ -82,20 +81,6 @@ export function updateLastRead(
 		 WHERE conversation_id = ? AND user_id = ?`
 	);
 	const info = stmt.run(lastReadMessageId, conversationId, userId);
-	return info.changes > 0;
-}
-
-export function setNotificationsMuted(
-	conversationId: number,
-	userId: string,
-	muted: boolean
-): boolean {
-	const stmt = db.prepare(
-		`UPDATE chat_conversation_members
-		 SET notifications_muted = ?
-		 WHERE conversation_id = ? AND user_id = ?`
-	);
-	const info = stmt.run(muted ? 1 : 0, conversationId, userId);
 	return info.changes > 0;
 }
 

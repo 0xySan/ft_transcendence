@@ -20,7 +20,6 @@ export interface ChatDirectConversation {
 export interface UserConversationSummary extends ChatConversation {
 	role: "member" | "admin";
 	status: "active" | "left" | "banned";
-	notifications_muted: 0 | 1;
 	last_read_message_id: number | null;
 	last_read_at: string | null;
 	last_message_at: string | null;
@@ -73,8 +72,17 @@ export function ensureDirectConversation(
 		
 		if (info.changes === 0) {
 			// Another transaction created it concurrently
-			const concurrent = getDirectConversation(userA, userB);
-			if (concurrent) return concurrent;
+			const concurrentStmt = db.prepare(
+				`SELECT c.*
+				 FROM chat_direct_conversations dc
+				 JOIN chat_conversations c ON c.conversation_id = dc.conversation_id
+				 WHERE dc.user_a = ? AND dc.user_b = ?`
+			);
+			const concurrent = concurrentStmt.get(a, b) as ChatConversation | undefined;
+			if (concurrent) {
+				return concurrent;
+			}
+			throw new Error("Failed to resolve concurrently created direct conversation");
 		}
 		
 		return conversation;
@@ -90,7 +98,7 @@ export function ensureDirectConversation(
 
 export function listConversationsForUser(userId: string): UserConversationSummary[] {
 	const stmt = db.prepare(`
-		SELECT c.*, m.role, m.status, m.notifications_muted, m.last_read_message_id, m.last_read_at,
+		SELECT c.*, m.role, m.status, m.last_read_message_id, m.last_read_at,
 		       (
 		           SELECT MAX(created_at)
 		           FROM chat_messages

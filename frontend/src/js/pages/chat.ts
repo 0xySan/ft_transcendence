@@ -46,8 +46,17 @@ const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes for grouping messages
 const DRAFTS_KEY = 'chat_drafts';
 const LAST_ACTIVE_USER_KEY = 'chat_last_active_user';
 const API_BASE = '/api/chat';
-const DEFAULT_AVATAR = document.querySelector<HTMLTemplateElement>('.default-pfp-temp')!.content.cloneNode(true) as DocumentFragment;
+const DEFAULT_AVATAR = (() => {
+	const template = document.querySelector<HTMLTemplateElement>('.default-pfp-temp');
+	return template
+		? (template.content.cloneNode(true) as DocumentFragment)
+		: document.createDocumentFragment();
+})();
 const LANG = getUserLang() || 'en';
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY = 1000; // Start with 1 second
+const MAX_RECONNECT_DELAY = 30000; // Cap at 30 seconds
 
 // Chat State
 const conversations: Conversation = {};
@@ -776,10 +785,13 @@ async function submitMessage(
 	if (loadingStates.sendingMessage) return;
 	loadingStates.sendingMessage = true;
 	sendBtn.disabled = true;
-	sendBtn.dataset.translateKey = 'sending';
-	getTranslatedElementText(LANG, sendBtn).then((translated) => {
+	sendBtn.dataset.translateKey = 'chat.sending';
+	try {
+		const translated = await getTranslatedElementText(LANG, sendBtn);
 		if (translated) sendBtn.textContent = translated;
-	});
+	} catch (e) {
+		sendBtn.textContent = 'Sending...';
+	}
 
 	try {
 		const res = await apiFetch<{ message: any }>(`${API_BASE}/conversations/${meta.conversationId}/messages`, {
@@ -797,14 +809,13 @@ async function submitMessage(
 		const len = conversations[activeUser].length;
 		const currentStart = visibleStart[activeUser];
 
-		if (currentStart === undefined) {
+		if (currentStart === undefined)
 			visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-		} else if (
+		else if (
 			currentStart >= len - 1 - MESSAGES_PAGE ||
 			messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 100
-		) {
+		)
 			visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-		}
 
 		input.textContent = '';
 		clearDraft(activeUser);
@@ -814,23 +825,19 @@ async function submitMessage(
 		reorderUserList(activeUser);
 	} catch (err) {
 		if (err instanceof Error) {
-			if (err.message.includes('403')) {
+			if (err.message.includes('403'))
 				showWarning('You cannot send messages to this user');
-				input.textContent = '';
-				clearDraft(activeUser);
-				input.classList.add('empty');
-				sendBtn.hidden = true;
-			} else if (err.message.includes('400')) {
+			else if (err.message.includes('400'))
 				showWarning('Invalid message - please check your input');
-			} else {
+			else {
 				showWarning('Failed to send message - please try again');
 				console.error('Send message error:', err);
 			}
 		}
 	} finally {
 		loadingStates.sendingMessage = false;
-		sendBtn.disabled = false;
-		// Button will be hidden by the sendBtn.hidden = true above, no need to clear text
+		if (!sendBtn.hidden)
+			sendBtn.disabled = false;
 	}
 }
 
@@ -959,8 +966,6 @@ async function fetchSingleConversation(conversationId: number): Promise<string |
 			allMessagesLoaded[peerName] = true; // No messages loaded yet
 		}
 
-		// Re-render user list to show the new conversation
-		userListDiv.innerHTML = '';
 		renderUserList(renderChat);
 
 		return peerName;
@@ -998,10 +1003,9 @@ function addNewUserToConversation(conversationId: number, senderId: string, send
 	conversations[peerName] = [];
 	activeUsers.add(peerName);
 	visibleStart[peerName] = 0;
-	allMessagesLoaded[peerName] = false;
+	allMessagesLoaded[peerName] = true;
 
-	// Re-render the user list to show the new user
-	userListDiv.innerHTML = '';
+	userListDiv.innerHTML = ''; // Clear existing list
 	renderUserList(renderChat);
 
 	return peerName;
@@ -1091,7 +1095,6 @@ function renderUserList(onSelectUser: () => void): void {
 			removeBtn.addEventListener('click', async (e) => {
 				e.stopPropagation(); // Prevent triggering the user selection
 
-				// Call API to leave the conversation
 				const conversationId = conversationMeta[name]?.conversationId;
 				if (conversationId) {
 					try {
@@ -1117,14 +1120,19 @@ function renderUserList(onSelectUser: () => void): void {
 					}
 				}
 
-				// Remove all chat elements for this user
 				const messagesSelector = `.chat-messages[user="${CSS.escape(name)}"]`;
 				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(messagesSelector);
-				if (messagesDiv) {
+				if (messagesDiv)
 					messagesDiv.remove();
+
+				const userId = userNameToUserId[name];
+				if (userId !== undefined) {
+					delete userIdToName[userId];
+					delete userIdToAvatar[userId];
+					delete userIdToUsername[userId];
+					delete userNameToUserId[name];
 				}
 
-				// Remove from conversations and related tracking
 				delete conversations[name];
 				delete conversationMeta[name];
 				delete visibleStart[name];
@@ -1133,14 +1141,11 @@ function renderUserList(onSelectUser: () => void): void {
 				delete allMessagesLoaded[name];
 				activeUsers.delete(name);
 
-				// Remove the user item from the DOM
 				divElement.remove();
 
-				// If we switched to a different user, render the chat for that user
-				if (activeUser) {
+				if (activeUser)
 					renderChat();
-				} else {
-					// Clear the entire chat-block if no users left
+				else {
 					const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
 					const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
 					const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
@@ -1272,11 +1277,14 @@ function updateBlockedState(user: string): void {
 		const msgs = conversations[user] || [];
 		messagesDiv.innerHTML = '';
 		const startIndex = visibleStart[user] || 0;
+		const shouldShowTopHint = msgs.length > 0 && (startIndex > 0 || allMessagesLoaded[user] === false);
 
-		if (startIndex > 0) {
+		if (shouldShowTopHint) {
 			const topHint = document.createElement('div');
 			topHint.className = 'load-older-hint';
-			topHint.textContent = 'Scroll up to load earlier messages';
+			topHint.dataset.translateKey = "chat.block.loadHint";
+			topHint.textContent = 'Scroll up to load previous messages';
+			translateElement(LANG, topHint);
 			messagesDiv.appendChild(topHint);
 		}
 
@@ -1394,11 +1402,13 @@ function renderChat(): void {
 	messagesDiv.appendChild(fragment);
 	messagesDiv.dataset.messageCount = String(msgs.length);
 
-	if (startIndex > 0) {
+	const shouldShowTopHint = msgs.length > 0 && (startIndex > 0 || allMessagesLoaded[activeUser] === false);
+	if (shouldShowTopHint) {
+		messagesDiv.querySelector('.load-older-hint')?.remove();
 		const topHint = document.createElement('div');
 		topHint.className = 'load-older-hint';
 		topHint.dataset.translateKey = "chat.block.loadHint";
-		topHint.textContent = 'Scroll up to load earlier messages';
+		topHint.textContent = 'Scroll up to load previous messages';
 		translateElement(LANG, topHint);
 		messagesDiv.insertBefore(topHint, messagesDiv.firstChild);
 	}
@@ -1476,19 +1486,16 @@ function renderChat(): void {
 		newInviteMenu.classList.toggle('hidden');
 	});
 
-	const newMessagesDiv = chatBlock.querySelector<HTMLDivElement>(currentSelector)!;
-	messagesDiv.replaceWith(newMessagesDiv);
-
 	newForm.addEventListener('submit', (e) => {
 		e.preventDefault();
-		submitMessage(newInput, newSendBtn, newMessagesDiv);
+		submitMessage(newInput, newSendBtn, messagesDiv);
 	});
 
 	newInput.addEventListener('keydown', (e: KeyboardEvent) => {
 		if (e.isComposing) return;
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
-			submitMessage(newInput, newSendBtn, newMessagesDiv);
+			submitMessage(newInput, newSendBtn, messagesDiv);
 		}
 	});
 
@@ -1506,18 +1513,18 @@ function renderChat(): void {
 	});
 
 	requestAnimationFrame(() => {
-		if (wasNearBottom) newMessagesDiv.scrollTop = newMessagesDiv.scrollHeight;
+		if (wasNearBottom) messagesDiv.scrollTop = messagesDiv.scrollHeight;
 		else if (prevScrollHeight > 0) {
-			newMessagesDiv.scrollTop = newMessagesDiv.scrollHeight - prevScrollHeight + prevScrollTop;
-			if (newMessagesDiv.scrollTop < 0) newMessagesDiv.scrollTop = 0;
+			messagesDiv.scrollTop = messagesDiv.scrollHeight - prevScrollHeight + prevScrollTop;
+			if (messagesDiv.scrollTop < 0) messagesDiv.scrollTop = 0;
 		} else if (scrollPositions[activeUser!] !== undefined) {
-			newMessagesDiv.scrollTop = scrollPositions[activeUser!];
+			messagesDiv.scrollTop = scrollPositions[activeUser!];
 		} else {
-			newMessagesDiv.scrollTop = prevScrollTop;
+			messagesDiv.scrollTop = prevScrollTop;
 		}
 	});
 
-	newMessagesDiv.addEventListener('click', (e) => {
+	messagesDiv.addEventListener('click', (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
 		if (target.classList.contains('show-blocked-btn')) {
@@ -1614,7 +1621,7 @@ function renderChat(): void {
 						const topHint = document.createElement('div');
 						topHint.className = 'load-older-hint';
 						topHint.dataset.translateKey = "chat.block.loadHint";
-						topHint.textContent = 'Scroll up to load earlier messages';
+						topHint.textContent = 'Scroll up to load previous messages';
 						translateElement(LANG, topHint);
 						activeMsgDiv.insertBefore(topHint, activeMsgDiv.firstChild);
 					}
@@ -1653,7 +1660,7 @@ function renderChat(): void {
 					const topHint = document.createElement('div');
 					topHint.className = 'load-older-hint';
 					topHint.dataset.translateKey = "chat.block.loadHint";
-					topHint.textContent = 'Scroll up to load earlier messages';
+					topHint.textContent = 'Scroll up to load previous messages';
 					translateElement(LANG, topHint);
 					activeMsgDiv.insertBefore(topHint, activeMsgDiv.firstChild);
 				}
@@ -1668,7 +1675,7 @@ function renderChat(): void {
 		}
 	};
 
-	newMessagesDiv.addEventListener('scroll', handleScroll);
+	messagesDiv.addEventListener('scroll', handleScroll);
 }
 
 // ============================================================================
@@ -1685,6 +1692,11 @@ function startChatStream() {
 	}
 
 	currentEventSource = new EventSource("/api/chat/stream", { withCredentials: true });
+
+	const onOpen = () => {
+		reconnectAttempts = 0; // Reset on successful connection
+		console.log('Chat stream connected successfully');
+	};
 
 	const onMessage = async (ev: MessageEvent) => {
 		try {
@@ -1772,43 +1784,33 @@ function startChatStream() {
 					`.chat-messages[user="${CSS.escape(username)}"]`
 				);
 				if (messagesDiv) {
-					// If message was inserted at the end (most common case), use optimized append
-					if (insertIndex === arr.length - 1) {
+					if (insertIndex === arr.length - 1)
 						appendMessageToDOM(mapped, insertIndex);
-					} else {
-						// Message arrived out of order - re-render the visible portion
+					else {
 						const wasNearBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < SCROLL_THRESHOLD;
 						const prevScrollHeight = messagesDiv.scrollHeight;
 						const prevScrollTop = messagesDiv.scrollTop;
 						
 						const startIdx = visibleStart[username] || 0;
-						
-						// Only re-render if the out-of-order message affects visible range
+
 						if (insertIndex >= startIdx - 1) {
-							// Clear all messages and re-render to ensure correct grouping
-							const loadHint = messagesDiv.querySelector('.load-older-hint');
-							messagesDiv.innerHTML = '';
-							
-							// Include one message before startIdx to provide context for grouping
-							// This ensures the first visible message knows whether to continue a group
 							const renderStart = Math.max(0, startIdx > 0 && insertIndex < startIdx ? startIdx - 1 : startIdx);
 							const slice = arr.slice(renderStart);
 							const fragment = loadMessages(renderStart, slice, renderStart);
-							
-							// Restore load hint if needed
-							if (startIdx > 0 && renderStart > 0) {
+
+							const shouldShowTopHint = arr.length > 0 && (startIdx > 0 || allMessagesLoaded[username] === false);
+							if (shouldShowTopHint) {
 								const topHint = document.createElement('div');
 								topHint.className = 'load-older-hint';
 								topHint.dataset.translateKey = "chat.block.loadHint";
-								topHint.textContent = 'Scroll up to load earlier messages';
+								topHint.textContent = 'Scroll up to load previous messages';
 								translateElement(LANG, topHint);
 								messagesDiv.appendChild(topHint);
 							}
-							
+
 							messagesDiv.appendChild(fragment);
 							messagesDiv.dataset.messageCount = String(arr.length);
-							
-							// Restore scroll position based on where the message was inserted
+
 							requestAnimationFrame(() => {
 								if (wasNearBottom) {
 									messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -1816,23 +1818,15 @@ function startChatStream() {
 									const newScrollHeight = messagesDiv.scrollHeight;
 									const heightChange = newScrollHeight - prevScrollHeight;
 									
-									// If message inserted before or at the visible area, adjust scroll to maintain position
-									// If inserted within/after visible area, maintain relative position
-									if (insertIndex < startIdx) {
-										// Message inserted above visible area - adjust scroll to compensate
+									if (insertIndex < startIdx) 
 										messagesDiv.scrollTop = prevScrollTop + heightChange;
-									} else {
-										// Message inserted within visible area - maintain visual position
+									else 
 										messagesDiv.scrollTop = prevScrollTop + (renderStart < startIdx ? heightChange : 0);
-									}
 								}
 							});
 						}
-						// If insertion is before visible range, just update the count and adjust scroll
-						else {
+						else
 							messagesDiv.dataset.messageCount = String(arr.length);
-							// Message inserted way above - will be loaded when user scrolls up
-						}
 					}
 				}
 			}
@@ -1866,27 +1860,65 @@ function startChatStream() {
 	
 	const onPing = () => {};
 	
-	const onError = () => {
+	const onError = async (event: Event) => {
 		// Prevent multiple simultaneous reconnection attempts
 		if (isReconnecting) return;
 		isReconnecting = true;
+		
+		// Check if this is an authentication error
+		try {
+			const response = await fetch('/api/users/me', {
+				method: 'GET',
+				credentials: 'include'
+			});
+			
+			if (response.status === 401) {
+				console.error('Authentication failed. Redirecting to login...');
+				// Stop reconnecting and redirect
+				if (currentEventSource) {
+					currentEventSource.close();
+					currentEventSource = null;
+				}
+				window.loadPage('/');
+				return;
+			}
+		} catch (checkError) {
+			console.warn('Auth check failed:', checkError);
+		}
+		
+		// Check if we've hit max attempts
+		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+			console.error('Max reconnection attempts reached. Please refresh the page.');
+			isReconnecting = false;
+			showWarning('Connection lost. Please refresh the page.');
+			return;
+		}
 		
 		// Properly clean up the current connection
 		if (currentEventSource) {
 			currentEventSource.removeEventListener("message", onMessage);
 			currentEventSource.removeEventListener("inviteState", onInviteState);
 			currentEventSource.removeEventListener("ping", onPing);
+			currentEventSource.removeEventListener("open", onOpen);
 			currentEventSource.onerror = null;
 			currentEventSource.close();
 			currentEventSource = null;
 		}
 		
+		// Calculate delay with exponential backoff
+		reconnectAttempts++;
+		const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+		
+		console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+		
 		setTimeout(() => {
 			isReconnecting = false;
 			startChatStream();
-		}, 2000);
+		}, delay);
 	};
 
+	// ADD THIS NEW EVENT LISTENER
+	currentEventSource.addEventListener("open", onOpen);
 	currentEventSource.addEventListener("message", onMessage);
 	currentEventSource.addEventListener("inviteState", onInviteState);
 	currentEventSource.addEventListener("ping", onPing);

@@ -53,31 +53,39 @@ export function addClient(userId: string, reply: FastifyReply, session: Session)
 	});
 	reply.raw.write("\n");
 
+	let cleaned = false;
 	const client: Client = {
 		userId,
 		reply,
 		heartbeat: setInterval(() => safeWrite(reply, `event: ping\ndata: {}\n\n`), 25000),
-		timeout: setTimeout(() => {
-			clearInterval(client.heartbeat);
-			set.delete(client);
-			if (set.size === 0) clients.delete(userId);
-			reply.raw.end();
-		}, TIMEOUT_MS),
+		timeout: null as unknown as NodeJS.Timeout,
 	};
-	set.add(client);
 
-	reply.raw.on("close", () => {
-		clearTimeout(client.timeout);
+	const cleanup = () => {
+		if (cleaned) return;
+		cleaned = true;
 		clearInterval(client.heartbeat);
+		clearTimeout(client.timeout);
 		set.delete(client);
 		if (set.size === 0) clients.delete(userId);
-	});
+	};
+
+	client.timeout = setTimeout(() => {
+		cleanup();
+		if (!reply.raw.closed) {
+			reply.raw.end();
+		}
+	}, TIMEOUT_MS);
+	
+	set.add(client);
+
+	reply.raw.on("close", cleanup);
 
 	return client;
 }
 
 export function closeAll() {
-	for (const [userId, set] of clients) {
+	for (const set of clients.values()) {
 		for (const client of set) {
 			clearInterval(client.heartbeat);
 			clearTimeout(client.timeout);
@@ -99,27 +107,28 @@ export function broadcastTo(userId: string, event: string, payload: any) {
 }
 
 export function broadcastMessageToParticipants(
-  	senderId: string,
-  	recipients: string[],
-  	payload: { conversationId: number; message: any })
+	senderId: string,
+	recipients: string[],
+	payload: { conversationId: number; message: any })
 {
-	// Verify sender is a member of the conversation
-	const senderMember = getConversationMember(payload.conversationId, senderId);
-	if (!senderMember) {
-		throw new Error('Unauthorized: Sender is not a member of this conversation');
-	}
+	try {
+		const senderMember = getConversationMember(payload.conversationId, senderId);
+		if (!senderMember)
+			throw new Error('Unauthorized: Sender is not a member of this conversation');
 
-	// Verify each recipient is a member of the conversation and hasn't blocked the sender
-	for (const recipientId of recipients) {
-		const recipientMember = getConversationMember(payload.conversationId, recipientId);
-		if (!recipientMember) {
-			throw new Error(`Unauthorized: Recipient ${recipientId} is not a member of this conversation`);
+		for (const recipientId of recipients) {
+			const recipientMember = getConversationMember(payload.conversationId, recipientId);
+			if (!recipientMember)
+				throw new Error(`Unauthorized: Recipient ${recipientId} is not a member of this conversation`);
+			if (isBlockedBy(senderId, recipientId))
+				throw new Error(`Unauthorized: Sender is blocked by recipient ${recipientId}`);
 		}
-		if (isBlockedBy(senderId, recipientId)) {
-			throw new Error(`Unauthorized: Sender is blocked by recipient ${recipientId}`);
-		}
+		
+		broadcastTo(senderId, "message", payload);
+		for (const r of recipients) broadcastTo(r, "message", payload);
+	} catch (err) {
+		if (err instanceof Error)
+			throw err;
+		throw new Error('Unauthorized: Membership or block verification failed');
 	}
-
-	broadcastTo(senderId, "message", payload);
-	for (const r of recipients) broadcastTo(r, "message", payload);
 }

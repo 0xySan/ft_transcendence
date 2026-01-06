@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS chat_conversation_members (
 	user_id TEXT NOT NULL,
 	last_read_message_id INTEGER,
 	last_read_at DATETIME,
+	status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','left','banned')),
+	role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('member','admin')),
 	PRIMARY KEY (conversation_id, user_id),
 	FOREIGN KEY (conversation_id) REFERENCES chat_conversations(conversation_id) ON DELETE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
