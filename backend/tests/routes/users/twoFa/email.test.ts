@@ -27,6 +27,9 @@ vi.mock('../../../../src/db/index.js', () => ({
 vi.mock('../../../../src/utils/crypto.js', () => ({
 	generateRandomToken: vi.fn(() => 'ABC123'),
 	hashString: vi.fn((str: string) => `hashed_${str}`),
+	verifyHashedString: vi.fn(async (plain: string, hash: string) => {
+		return hash === `hashed_${plain}`;
+	}),
 	signToken: vi.fn((s: string) => `signed_${s}`),
 }));
 
@@ -43,14 +46,14 @@ import {
 	updateUser2faEmailOtp,
 	getProfileByUserId,
 } from '../../../../src/db/index.js';
-import { generateRandomToken, hashString } from '../../../../src/utils/crypto.js';
+import { generateRandomToken, hashString, verifyHashedString } from '../../../../src/utils/crypto.js';
 import { checkRateLimit } from '../../../../src/utils/security.js';
 
 describe('Email 2FA routes - full coverage', () => {
 	let app: ReturnType<typeof fastify>;
 
 	beforeEach(async () => {
-		vi.clearAllMocks();
+		vi.resetAllMocks();
 		app = fastify();
 		await emailSendRoutes(app);
 	});
@@ -317,6 +320,7 @@ describe('Email 2FA routes - full coverage', () => {
 			(hashString as any).mockImplementation(() => {
 				throw new Error('crypto fail');
 			});
+			(verifyHashedString as any).mockImplementation(() => { throw new Error('crypto fail'); });
 
 			const res = await app.inject({
 				method: 'POST',

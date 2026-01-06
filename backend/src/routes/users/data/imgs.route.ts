@@ -4,7 +4,9 @@
  */
 
 import { FastifyInstance } from 'fastify';
-import { userImgsSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
+import { requireAuth } from '../../../middleware/auth.middleware.js';
+import { userImgsSchema, uploadAvatarUrlSchema, uploadAvatarFileSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
+import { saveAvatarFromUrl, saveAvatarFromFile } from '../../../utils/userData.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -40,6 +42,7 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			if (ext === '.png') contentType = 'image/png';
 			else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
 			else if (ext === '.webp') contentType = 'image/webp';
+			else if (ext === '.gif') contentType = 'image/gif';
 
 			// Stream file
 			reply.type(contentType);
@@ -65,6 +68,49 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 		} catch (err) {
 			fastify.log.error({ err }, 'Unhandled error in /data/imgs/:fileName');
 			return reply.status(500).send({ error: 'Internal server error' });
+		}
+	});
+
+	// POST: upload avatar from URL
+	fastify.post('/data/imgs/avatar-url', {
+		schema: uploadAvatarUrlSchema,
+		validatorCompiler: ({ schema }) => { return () => true; },
+		preHandler: requireAuth
+	}, async (request, reply) => {
+		try {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+			const { url } = request.body as { url: string };
+			if (!url || typeof url !== 'string') return reply.status(400).send({ error: 'Missing or invalid url' });
+			const fileName = await saveAvatarFromUrl(userId, url);
+			return reply.status(200).send({ success: true, fileName });
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message || 'Failed to upload avatar from URL' });
+		}
+	});
+
+	// POST: upload avatar from file (multipart/form-data)
+	fastify.post('/data/imgs/avatar', {
+		schema: uploadAvatarFileSchema,
+		validatorCompiler: ({ schema }) => { return () => true; },
+		preHandler: requireAuth
+	}, async (request, reply) => {
+		try {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+			const file = await request.file();
+			if (!file) return reply.status(400).send({ error: 'No file uploaded' });
+			// Early quick check on MIME type to reject non-image uploads before buffering
+			const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+			if (!file.mimetype || !allowedMimes.includes(file.mimetype)) {
+				return reply.status(400).send({ error: 'Invalid file type' });
+			}
+			const fileName = await saveAvatarFromFile(userId, file);
+			return reply.status(200).send({ success: true, fileName });
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message || 'Failed to upload avatar' });
 		}
 	});
 }

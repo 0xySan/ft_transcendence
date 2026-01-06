@@ -17,14 +17,9 @@ import {
 	getRoleByName
 } from '../../../db/wrappers/main/index.js';
 
-import { 
-	getOauthAccountByProviderAndUserId,
-	createEmailVerification,
-	createOauthAccount
-} from '../../../db/wrappers/auth/index.js';
+import { createEmailVerification } from '../../../db/wrappers/auth/index.js';
 
 import { hashString, generateRandomToken } from '../../../utils/crypto.js';
-import { saveAvatarFromUrl } from '../../../utils/userData.js';
 import { sendMail } from "../../../utils/mail/mail.js";
 import { checkRateLimit, delayResponse } from "../../../utils/security.js";
 
@@ -32,7 +27,7 @@ dotenv.config({ quiet: true });
 
 // Simple in-memory rate limiter (can be replaced with Redis later)
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5; // max 5 registrations per 15 minutes per IP
+const RATE_LIMIT = 5;
 const RATE_WINDOW = 15 * 60 * 1000;
 const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 

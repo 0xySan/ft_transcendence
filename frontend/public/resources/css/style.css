@@ -2005,6 +2005,178 @@ button:active {
 }
 
 /* ==========================================================================
+                            SETTINGS PAGE STYLES
+   ========================================================================== */
+
+.settings-layout {
+  display: flex;
+  width: 100%;
+  gap: 1rem;
+}
+
+/* Sidebar */
+.settings-sidebar {
+  width: 220px;
+  background-color: rgb(var(--crust));
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.settings-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Sidebar items */
+.settings-item {
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+
+  font-size: 0.95rem;
+  color: rgb(var(--subtext1));
+
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.settings-item:hover {
+  background-color: rgb(var(--surface0));
+  color: rgb(var(--text));
+}
+
+.settings-item.active {
+  background-color: rgb(var(--surface1));
+  color: rgb(var(--text));
+  position: relative;
+}
+
+/* Discord-like left bar */
+.settings-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10%;
+  height: 80%;
+  width: 3px;
+  border-radius: 2px;
+  background-color: rgb(var(--blue));
+}
+
+/* Content panel */
+.settings-content {
+  flex: 1;
+  background-color: rgb(var(--mantle));
+  border: 4px solid rgb(var(--surface0));
+  border-radius: 8px;
+  padding: 1.5rem;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Sections */
+.settings-section {
+  width: 100%;
+  min-height: 420px; /* prevents layout jumping */
+  text-align: left;
+}
+
+/* Section headings */
+.settings-section h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+/* Forms */
+.settings-section form {
+  max-width: 520px;
+}
+
+/* Bio textarea */
+.bio-textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.4;
+}
+
+/* 2FA actions */
+.twofa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* OAuth */
+.oauth-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.oauth-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+
+  min-width: 140px; /* ensure consistent button size */
+  padding: 0.75rem;
+
+  border-radius: 8px;
+  text-decoration: none;
+  color: rgb(var(--text));
+  background-color: rgb(var(--surface0));
+
+  transition: background-color 0.15s ease;
+}
+
+.oauth-button:hover {
+  background-color: rgb(var(--surface1));
+}
+
+.oauth-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.oauth-text {
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .settings-layout {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+  }
+
+  .settings-menu {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+  }
+
+  .settings-item {
+    white-space: nowrap;
+    margin-bottom: 0;
+  }
+
+  .settings-item.active::before {
+    display: none;
+  }
+}
+
+/* ==========================================================================
 							  NAVBAR STYLES 
    ========================================================================== */
 
@@ -2388,3 +2560,82 @@ footer {
 #copyright-text {
 	color: rgb(var(--subtext0));
 }
+
+/* Avatar circle style for settings page */
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(var(--lavender), 0.7);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: block;
+  margin: 0.5em auto;
+}
+
+/* ==========================================================================
+					 Settings: input styles & stable layout
+	 ========================================================================== */
+
+.settings-input {
+	width: 100%;
+	padding: 0.6rem 0.9rem;
+	box-sizing: border-box;
+	background-color: rgb(var(--base));
+	border: 2px solid rgb(var(--surface1));
+	border-radius: 4px;
+	font-size: 1.1rem;
+	color: rgb(var(--text));
+}
+.settings-input:focus {
+	outline: none;
+	box-shadow: 0 0 0 4px rgba(var(--blue), 0.06);
+	border-color: rgba(var(--blue), 0.5);
+}
+
+.settings-textarea {
+	width: 100%;
+	min-height: 6rem;
+	padding: 0.6rem 0.9rem;
+	border-radius: 4px;
+	border: 2px solid rgb(var(--surface1));
+	background-color: rgb(var(--base));
+	color: rgb(var(--text));
+	box-sizing: border-box;
+	resize: vertical;
+}
+
+/* Reuse navbar button visuals for settings */
+.nav-button {
+	background-color: rgb(var(--surface0));
+	border: 2px solid rgb(var(--overlay0));
+	color: rgb(var(--lavender));
+}
+.nav-button:hover {
+	background-color: rgb(var(--lavender));
+	color: rgb(var(--surface0));
+}
+
+/* Keep settings layout stable when switching sections */
+@media (min-width: 760px) {
+	.settings-layout {
+		min-width: 760px;
+	}
+	.settings-menu {
+		min-width: 180px;
+	}
+	.settings-item {
+		min-height: 46px;
+		display: flex;
+		align-items: center;
+		padding: 0.65rem 0.9rem;
+	}
+	.settings-content {
+		min-height: 540px;
+	}
+	.settings-section {
+		min-height: 380px;
+		padding: 0; /* rely on .settings-content padding to control section spacing */
+	}
+}
+
