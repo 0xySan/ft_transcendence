@@ -385,12 +385,22 @@ function wire(): void {
 /*                                  Initialization                             */
 /* -------------------------------------------------------------------------- */
 
+// if (window.lobbySettings) {
+// 	selectLobbyMode("online");
+// 	setPartialLobbyConfig(window.lobbySettings);
+// }
+
 /** ### initLobbySettings
  * - initialize lobby settings with optional initial partial settings
  * @param initial - optional initial partial settings
  */
 export function initLobbySettings(initial?: Partial<Settings>): void {
-	currentSettings = structuredClone(defaultSettings);
+	currentSettings = window.lobbySettings ? window.lobbySettings : structuredClone(defaultSettings);
+	// TODO 
+	if (window.lobbySettings) {
+		selectLobbyMode("online");
+		setPartialLobbyConfig(window.lobbySettings);
+	}
 	if (initial) setPartialLobbyConfig(initial);
 	populateUi();
 	window.lobbySettings = structuredClone(currentSettings);

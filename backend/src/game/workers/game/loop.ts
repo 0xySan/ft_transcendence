@@ -57,7 +57,6 @@ function gameLoop(): void {
 	if (state !== "playing")
 		return;
 
-
 		let accumulator = accumulators.get(gameId) ?? 0;
 		accumulator += deltaTime;
 
@@ -211,6 +210,15 @@ function stepGame(game: Game, dt: number): void {
 		if (scorer)
 			scorer.score = (scorer.score ?? 0) + 1;
 
+		console.log("DEBUG: score = " + scorer.score + " | firstto = " + game.config.scoring.firstTo);
+		if (scorer.score >= game.config.scoring.firstTo) {
+			gameStates.set(game.id, "stopped");
+			const message: msg.gamePayload = {
+				action: "stopped"
+			};
+			game.broadcast("game", message);
+		}
+
 		ball.x = world.width / 2;
 		ball.y = world.height / 2;
 		ball.vx =
@@ -301,6 +309,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			else if (payload.action === "resume")
 				gameStates.set(payload.gameId, "playing");
 			else if (payload.action === "abort") {
+				console.log("DEBUG: end game = ", game.players);
 				gameStates.set(payload.gameId, "stopped");
 				accumulators.delete(payload.gameId);
 			}

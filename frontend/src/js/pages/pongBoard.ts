@@ -857,6 +857,7 @@ class PongBoard {
 	 */
 	public applyUpdate(update: GameStateUpdate) {
 		// update ball
+		if (!update || !update.ball) return;
 		this.ball.x = update.ball.position.x;
 		this.ball.y = update.ball.position.y;
 		this.ball.vx = update.ball.velocity.x;
@@ -903,10 +904,15 @@ addListener(window.socket!, "message", (event: MessageEvent) => {
 		const last = payload.inputs[payload.inputs.length - 1];
 		if (last) paddle.applyInputs(last.inputs);
 	} else if (msg.type === "game") {
-		const payload = msg.payload as GameStateUpdate;
-		pongBoard.applyUpdate(payload);
-	} else if (msg.type === "player")
+		if (msg.payload.action === "stopped") {
+			loadPage("/lobby");
+		} else {
+			const payload = msg.payload as GameStateUpdate;
+			pongBoard.applyUpdate(payload);
+		}
+	} else if (msg.type === "player") {
 		handlePlayer(msg.payload as PlayerPayload);
+	}
 });
 
 addListener(window.socket!, "close", () => {

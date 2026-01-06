@@ -106,7 +106,7 @@ export class Game {
 				...(configOverrides?.paddles ?? {}),
 			},
 			scoring: {
-				firstTo: 11,
+				firstTo: 5,
 				winBy: 2,
 				...(configOverrides?.scoring ?? {}),
 			},
@@ -270,5 +270,14 @@ export class Game {
 			map[p.id] = (p as any).side;
 		});
 		return map;
+	}
+
+	resetGame() {
+		this.ball = {
+			x: 0,
+			y: 0,
+			vx: 0,
+			vy: 0
+		};
 	}
 }

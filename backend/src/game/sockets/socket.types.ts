@@ -161,7 +161,7 @@ export interface settingsPayload {
  * - **resume**: Resume the game.
  * - **abort**: Abort the game.
  */
-export type gameAction = "start" | "pause" | "resume" | "abort";
+export type gameAction = "start" | "pause" | "resume" | "abort" | "stopped";
 
 /**
  * Payload structure for game control messages.

@@ -5,6 +5,8 @@ declare global {
 		socket?: WebSocket;
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		localPlayerId?: string;
+		lobbyGameId?: string;
+		playerSyncData: PlayerSyncPayload;
 		pendingGameStart?: gameStartAckPayload;
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
@@ -158,6 +160,7 @@ function connectWebSocket(token: string): void {
 			case "playerSync":
 				console.log("Received playerSync:", msg.payload);
 				handlePlayerSync(msg.payload as PlayerSyncPayload);
+				window.playerSyncData = msg.payload as PlayerSyncPayload;
 				break;
 
 			case "player":
@@ -223,6 +226,11 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 
 function handlePlayer(payload: PlayerPayload): void {
 	if (payload.action === "join") {
+		window.playerSyncData.players.push({
+			playerId: payload.playerId,
+			displayName: payload.displayName,
+			status: "player"
+		})
 		addPlayer(
 			payload.playerId,
 			payload.displayName,
@@ -233,6 +241,8 @@ function handlePlayer(payload: PlayerPayload): void {
 	}
 
 	if (payload.action === "leave") {
+		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
+		window.playerSyncData.players.splice(index, 1);
 		removePlayer(payload.playerId);
 		notify(`${payload.displayName} has left the lobby.`, { type: 'info' });
 		updateLaunchVisibility("", playerListEl.children.length);
@@ -326,7 +336,12 @@ async function joinGame(code: string): Promise<void> {
 	if (res.status !== 200)
 		return notify(`Failed to join game: ${res.status} - ${data.error || 'Unknown error'}`, { type: 'error' });
 
+	if (!data.gameId) {
+		notify("invalid game", { type: "error" });
+		return;
+	}
 	gameId = data.gameId;
+	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
 
 	if (!authToken) throw new Error("Missing auth token");
@@ -351,6 +366,7 @@ async function createGame(): Promise<void> {
 	const data = await res.json();
 
 	gameId = data.gameId;
+	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
 	joinInput.value = data.code;
 
@@ -374,6 +390,8 @@ addListener(leaveBtn, "click", () => {
 });
 
 addListener(launchBtn, "click", () => {
+	console.log("DEBUG: socker = ", window.socket + " | gameId = " + gameId + " | lobbyGameId = " + window.lobbyGameId);
+	if (window.lobbyGameId) gameId = window.lobbyGameId;
 	if (!window.socket || !gameId) return;
 
 	const msg: SocketMessage<GamePayload> = {
@@ -418,6 +436,15 @@ function resetLobbyState(): void {
 
 launchBtn.classList.add("unloaded");
 leaveBtn.classList.add("unloaded");
+
+if (window.playerSyncData) {
+	handlePlayerSync(window.playerSyncData);
+	if (window.localPlayerId == window.playerSyncData.ownerId) {
+		launchBtn.classList.remove("unloaded");
+		gameId = window.lobbyGameId || null;
+		htmlSettings.basic.div.classList.remove("grayed");
+	}
+}
 
 myPlayerId = await window.currentUserReady.then(() => {
 	window.localPlayerId = window.currentUser ? String(window.currentUser.id) : undefined;
