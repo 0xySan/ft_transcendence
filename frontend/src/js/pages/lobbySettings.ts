@@ -1,7 +1,7 @@
 import type { Settings, UserData } from "../global";
 
 /* -------------------------------------------------------------------------- */
-/*                                External helpers                             */
+/*                                External helpers                            */
 /* -------------------------------------------------------------------------- */
 
 declare function addListener(
@@ -496,12 +496,14 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
 	const joinBtn = ui.actionButtons.joinBtn;
 	const leaveBtn = ui.actionButtons.leaveBtn;
+
 	let tabMode = document.querySelector("#lobby-mode-buttons");
 	tabMode?.classList.remove("grayed");
 	if (modeKey === "offline") {
 		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.add("unloaded");
 		leaveBtn.classList.remove("unloaded");
+		console.log("DEBUG: find here");
 
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
 		let tabMode = document.querySelector("#lobby-mode-buttons");
@@ -530,8 +532,12 @@ async function setupLobbyModeHandlers(): Promise<void> {
 	const userConnected = getElQS<HTMLDivElement>("#lobby-select-mode div:first-child");
 	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
 
+	// offline button handler
+	const offlineBtn = getEl<HTMLButtonElement>("lobby-offline");
+	const onlineBtn = getEl<HTMLButtonElement>("lobby-online");
+
 	const isUserLogged = await window.currentUserReady.then(() => {
-		return window.currentUser !== null;
+		return (window.currentUser !== null);
 	});
 
 	// enable/disable join area depending on login presence
@@ -544,18 +550,14 @@ async function setupLobbyModeHandlers(): Promise<void> {
 		lobbyJoin.classList.add("unclickable");
 	}
 
-	// offline button handler
-	const offlineBtn = getEl<HTMLButtonElement>("lobby-offline");
 	addListener(offlineBtn, "click", () => {
 		readyCheck = true;
 		selectLobbyMode("offline");
 		subTabs.custom.basicTab.classList.remove("grayed");
 		ui.actionButtons.launchBtn.classList.remove("unloaded");
-
 	});
 
 	// online button handler
-	const onlineBtn = getEl<HTMLButtonElement>("lobby-online");
 	addListener(onlineBtn, "click", () => {
 		readyCheck = true;
 		selectLobbyMode("online");
