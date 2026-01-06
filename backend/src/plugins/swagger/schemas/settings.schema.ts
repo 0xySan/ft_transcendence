@@ -60,7 +60,7 @@ export const getSettingsSchema = {
  					properties: {
  						gameId: { type: "string" },
  						userId: { type: "string" },
- 						newSettings: { type: "object" }
+						newSettings: { type: "object", additionalProperties: true }
  					}
  				}
  			},
