@@ -34,7 +34,10 @@
 				window.currentUserReady = new Promise(resolve => resolveReady = resolve);
 
 				window.__setCurrentUser = function(userData) {
-					window.currentUser = userData.user ?? null;
+					if (userData && userData.user)
+						window.currentUser = userData.user;
+					else
+						window.currentUser = null;
 
 					if (!readyResolved) {
 						readyResolved = true;
@@ -49,30 +52,37 @@
 
 		<!-- UI Event Listeners -->
 		<script>
-			// Dropdown toggle
-			const pfpWrapper = document.getElementById("nav-pfp-wrapper");
-			const dropdown = document.getElementById("nav-profile-dropdown");
-			if (pfpWrapper) {
-				pfpWrapper.addEventListener("click", e => {
-					e.stopPropagation();
-					dropdown.classList.toggle("unloaded");
-				});
-				document.addEventListener("click", () => dropdown.classList.add("unloaded"));
-			}
+			// Dropdown toggle	
+			document.addEventListener("DOMContentLoaded", () => {
+					const pfpWrapper = document.getElementById("nav-pfp-wrapper");
+					const dropdown = document.getElementById("nav-profile-dropdown");
 
-			// Logout
-			const logoutBtn = document.getElementById("nav-logout-btn");
-			if (logoutBtn) {
-				logoutBtn.addEventListener("click", () => {
-					fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })
-						.then(res => {
-							if (res.ok) {
-								window.updateNavBar(null);
-								loadPage("/home");
-							}
+					if (!pfpWrapper || !dropdown) return;
+
+					pfpWrapper.addEventListener("click", e => {
+						e.stopPropagation();
+						dropdown.classList.toggle("unloaded");
+					});
+
+					document.addEventListener("click", () => {
+						dropdown.classList.add("unloaded");
+					});
+
+
+					// Logout
+					const logoutBtn = document.getElementById("nav-logout-btn");
+					if (logoutBtn) {
+						logoutBtn.addEventListener("click", () => {
+							fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })
+								.then(res => {
+									if (res.ok) {
+										window.updateNavBar(null);
+										loadPage("/home");
+									}
+								});
 						});
+					}
 				});
-			}
 		</script>
 
 		<!-- Update navbar function -->
