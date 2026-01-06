@@ -51,6 +51,8 @@ let ownerId: string | null = null;
 const joinInput = getEl<HTMLInputElement>("lobby-input");
 const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
 const createBtn = getEl<HTMLDivElement>("lobby-online");
+const lobbyTournamentBtn = getEl<HTMLDivElement>("lobby-tournament-button");
+const multiplayerBtn = getEl<HTMLDivElement>("lobby-multiplayer-button");
 
 const leaveBtn = getEl<HTMLButtonElement>("lobby-btn-leave");
 const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
@@ -58,6 +60,8 @@ const launchBtn = getEl<HTMLButtonElement>("lobby-btn-launch");
 const playerListEl = getEl<HTMLDivElement>("lobby-player-list");
 const playerCurrentCountEl = getEl<HTMLSpanElement>("player-current-count");
 const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
+
+const lobbyTournamentTab = getEl<HTMLSpanElement>("lobby-tournament-tab");
 
 const htmlSettings = {
 	basic: {
@@ -363,6 +367,9 @@ addListener(createBtn, "click", () => createGame());
 
 addListener(leaveBtn, "click", () => {
 	window.socket?.close();
+	lobbyTournamentTab.classList.add("unloaded");
+	lobbyTournamentBtn.classList.remove("current-mode");
+	multiplayerBtn.classList.remove("current-mode");
 	resetLobbyState();
 });
 
