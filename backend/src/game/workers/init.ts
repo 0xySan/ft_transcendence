@@ -22,7 +22,9 @@ import { workerMessage } from "./worker.types.js";
 
 const NUM_WORKERS = os.cpus().length;
 
-const workerSettings = new Map<Worker, msg.settingsPayload>();
+// Map gameId -> settings payload. Using gameId as key avoids using Worker instances
+// as map keys which are harder to query when looking up by game id.
+const gameSettings = new Map<string, msg.settingsPayload>();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,7 +84,19 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 			}
 		}
 		if (msg.type === "settings") {
-			workerSettings.set(worker, msg.payload as msg.settingsPayload);
+			// Worker sends settings messages with shape: { type: 'settings', payload: newSettings, gameId, userIds }
+			const newSettings = msg.payload as game.config;
+			const gid = (msg as any).gameId as string | undefined;
+			if (gid && typeof gid === 'string') {
+				const ownerId = activeGames.get(gid)?.ownerId ?? '';
+				const payload: msg.settingsPayload = {
+					gameId: gid,
+					userId: ownerId,
+					newSettings: newSettings || {}
+				} as msg.settingsPayload;
+				gameSettings.set(gid, payload);
+				console.log('gameSettings for', gid, ':', gameSettings.get(gid));
+			}
 		}
 	});
 
@@ -205,33 +219,28 @@ export function gameUpdateSettings(uuid: string, newSettings: Partial<game.confi
 	} as msg.message<msg.settingsPayload>);
 }
 
-export function gameGetSettings(uuid: string): game.config | null {
+export function gameGetSettings(uuid: string): msg.settingsPayload | null {
 	const gameId = getGameIdByUser(uuid);
 	if (!gameId) return null;
 	// Find the worker responsible for this game
 	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
 	if (!workerEntry) return null;
 
-	const settings = workerSettings.get(workerEntry.worker);
+	const settings = gameSettings.get(gameId);
 	if (!settings) return null;
 
-	return settings.newSettings as game.config;
+	return settings;
 }
 
 /**
  * Get game settings by game ID (allows callers who are not in the game).
  * @param gameId - game id to lookup
  */
-export function gameGetSettingsByGameId(gameId: string): game.config | null {
+export function gameGetSettingsByGameId(gameId: string): msg.settingsPayload | null {
 	if (!gameId) return null;
-	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
-	if (!workerEntry) return null;
 
-	const settings = workerSettings.get(workerEntry.worker);
+	const settings = gameSettings.get(gameId);
 	if (!settings) return null;
 
-	// Ensure the payload matches the requested gameId when available
-	if (settings.gameId && settings.gameId !== gameId) return null;
-
-	return settings.newSettings as game.config;
+	return settings;
 }

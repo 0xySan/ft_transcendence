@@ -89,7 +89,7 @@ const defaultSettings: Settings = {
 	game: {
 		mode: "online",
 		spectatorsAllowed: true,
-		playerCount: 2,
+		maxPlayers: 2,
 	},
 	scoring: {
 		firstTo: 5,
@@ -195,8 +195,8 @@ function populateUi(): void {
 	ui.base.winByInput.value = String(s.scoring.winBy);
 	setSpan(ui.base.winBySpan, s.scoring.winBy);
 	// lobby player count
-	ui.lobby.numPlayersSelect.value = String(s.game.playerCount);
-	setSpan(ui.lobby.maxPlayersSpan, s.game.playerCount);
+	ui.lobby.numPlayersSelect.value = String(s.game.maxPlayers);
+	setSpan(ui.lobby.maxPlayersSpan, s.game.maxPlayers);
 
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
@@ -242,9 +242,9 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 			spectatorsAllowed:
 				partial.game?.spectatorsAllowed ??
 				currentSettings.game.spectatorsAllowed,
-			playerCount:
-				partial.game?.playerCount ??
-				currentSettings.game.playerCount,
+			maxPlayers:
+				partial.game?.maxPlayers ??
+				currentSettings.game.maxPlayers,
 		},
 		scoring: {
 			firstTo:
@@ -308,9 +308,9 @@ function wire(): void {
 
 	// lobby player count
 	addListener(ui.lobby.numPlayersSelect, "change", () => {
-		const v = parseInt(ui.lobby.numPlayersSelect.value, 10) || defaultSettings.game.playerCount;
+		const v = parseInt(ui.lobby.numPlayersSelect.value, 10) || defaultSettings.game.maxPlayers;
 		if (v !== 2 && v !== 4) return; // invalid value
-		currentSettings.game.playerCount = v;
+		currentSettings.game.maxPlayers = v;
 		setSpan(ui.lobby.maxPlayersSpan, v);
 	});
 

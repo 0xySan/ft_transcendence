@@ -93,6 +93,7 @@
     "playText": "Jouer",
     "leaderboardText": "Classement",
     "profileText": "Profil",
+    "publicLobbies": "Liste des salles disponibles",
     "loginButton": "Connexion",
     "registerButton": "Inscription"
   },

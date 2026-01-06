@@ -8,6 +8,7 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 import { parseGameConfig } from "./utils.js";
 import { gameUpdateSettings, gameGetSettings, gameGetSettingsByGameId } from "../../game/workers/init.js";
 import type * as game from '../../game/workers/game/game.types.js';
+import type * as msg from "../../game/sockets/socket.types.js";
 import { postSettingsSchema, getSettingsSchema } from '../../plugins/swagger/schemas/settings.schema.js';
 import { activeGames } from "../../globals.js";
 
@@ -34,6 +35,11 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 			if (!body.settings)
 				return reply.status(400).send({ error: 'Settings data is required.' });
 
+			console.log('Received settings update request from user', userId, ':', body.settings);
+			// Print the type of the maxPlayers field if it exists
+			if (body.settings.game.maxPlayers !== undefined) {
+				console.log('maxPlayers type:', typeof body.settings.game.maxPlayers, 'value:', body.settings.game.maxPlayers);
+			}
 			const [valid, config] = parseGameConfig(body.settings);
 			if (!valid || typeof config === 'string' || !config.game)
 				return reply.status(400).send({ error: config });
@@ -54,28 +60,56 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 			const q = request.query as { gameId?: string; code?: string };
 			// If a gameId or code is provided allow fetching settings for that game
 			try {
-				let settings: game.config | null = null;
+				let settings: any = null;
+				let foundGameId: string | null = null;
 				if (q?.gameId) {
+					foundGameId = q.gameId;
 					settings = gameGetSettingsByGameId(q.gameId);
 				} else if (q?.code) {
 					// find game by code
-					let foundId: string | null = null;
 					for (const [gid, g] of activeGames.entries()) {
 						if (String(g.code).toUpperCase() === String(q.code).toUpperCase()) {
-							foundId = gid;
+							foundGameId = gid;
 							break;
 						}
 					}
-					if (foundId) settings = gameGetSettingsByGameId(foundId);
+					if (foundGameId) settings = gameGetSettingsByGameId(foundGameId);
 				} else {
 					// fallback: require user to be in a game and return their game's settings
 					if (!userId)
 						return reply.status(400).send({ error: 'User ID is required to get settings.' });
+					// determine user's gameId
+					for (const [gid, g] of activeGames.entries()) {
+						if (g.players.has(userId)) {
+							foundGameId = gid;
+							break;
+						}
+					}
 					settings = gameGetSettings(userId);
 				}
+
 				if (!settings)
 					return reply.status(404).send({ error: 'Settings not found for the game.' });
-				return reply.status(200).send({ settings });
+
+				// Normalize to msg.settingsPayload if we have a raw game.config
+				let payload: msg.settingsPayload;
+				if (settings && typeof settings === 'object' && settings.game !== undefined) {
+					const gid = foundGameId ?? '';
+					const ownerId = gid ? (activeGames.get(gid)?.ownerId ?? userId) : userId;
+					payload = {
+						gameId: gid,
+						userId: ownerId,
+						newSettings: settings
+					} as msg.settingsPayload;
+				} else {
+					payload = settings as msg.settingsPayload;
+				}
+
+				if (!payload)
+					return reply.status(404).send({ error: 'Settings not found for the game.' });
+
+				console.log('Returning settings for user', userId, ':', payload);
+				return reply.status(200).send({ settings: payload });
 			} catch (err) {
 				console.error('Error getting settings:', err);
 				return reply.status(500).send({ error: 'Internal server error.' });

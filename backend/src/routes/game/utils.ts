@@ -43,8 +43,6 @@ export function addUserToGame(userId: string, gameId: string, code?: string): vo
  * @returns The game ID if found, otherwise null.
  */
 export function getGameByCode(code: string) {
-	console.log("Looking for game with code:", code);
-	console.log("Active games:", Array.from(activeGames.entries()).map(([id, g]) => ({ id, code: g.code })));
 	for (const [gameId, g] of activeGames.entries()) {
 		if (g.code === code) return gameId;
 	}
@@ -63,7 +61,7 @@ export function getPublicGame(): any[] {
 		if (g.visibility === true) {
 			// attempt to fetch authoritative settings (may be undefined)
 			const settings = gameGetSettingsByGameId(id);
-			const maxPlayers = settings?.game?.maxPlayers;
+			const maxPlayers = settings?.newSettings?.game?.maxPlayers;
 			games.push({
 				id,
 				code: g.code,

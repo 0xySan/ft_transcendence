@@ -144,7 +144,7 @@ async function loadAndRenderSummary(): Promise<void> {
     try {
         const candidate = String(g.code ?? g.id ?? '');
         const query = (/^[A-Z0-9]{4}$/.test(candidate.toUpperCase())) ? `code=${encodeURIComponent(candidate.toUpperCase())}` : `gameId=${encodeURIComponent(candidate)}`;
-        const res = await fetch(`/api/game/settings?${query}`);
+        const res = await fetch(`/api/game/settings?${query}`, { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
             const settings = data?.settings;
@@ -279,4 +279,22 @@ addListener(updateBtn, 'click', () => {
 });
 
 // auto-load
-fetchGames();
+// Ensure user is logged in. Prefer using `window.currentUserPromise` when available.
+(() => {
+    try {
+        const cur = window.currentUser;
+        let userData: any = null;
+        if (cur)
+            userData = cur;
+
+        console.log('Public lobbies page user data:', userData);
+        // If no user info found, return to home
+        if (!userData) {
+            loadPage('/home');
+            notify?.('Please log in to access public lobbies.', { type: 'warning' });
+            return;
+        }
+    } catch (err) {
+        loadPage('/home');
+    }
+})();

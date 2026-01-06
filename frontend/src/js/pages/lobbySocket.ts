@@ -351,21 +351,14 @@ function removePlayer(id: string): void {
 function updateCounts(current: number): void {
 	playerCurrentCountEl.textContent = String(current);
 	if (window.lobbySettings && window.lobbySettings.game) {
-		playerMaxCountEl.textContent = String(window.lobbySettings.game.playerCount) || '?';
+		playerMaxCountEl.textContent = String(window.lobbySettings.game.maxPlayers) || '?';
 	}
 }
 
 /* -------------------------------------------------------------------------- */
 /* 									Owner / Launch logic					  */
 /* -------------------------------------------------------------------------- */
-
-/** ### updateLaunchVisibility
- * Update the visibility and state of the launch button based on the lobby mode and player count.
- * 
- * @param mode - The current lobby mode ("lobby-online" or "lobby-offline").
- * @param playerCount - The current number of players in the lobby.
- */
-export function updateLaunchVisibility(mode:string, playerCount:number): void {
+export function updateLaunchVisibility(mode:string, maxPlayers:number): void {
 
 	const isOwner =
 		myPlayerId !== null &&
@@ -378,14 +371,14 @@ export function updateLaunchVisibility(mode:string, playerCount:number): void {
 	{
 		if (!isOwner)
 			launchBtn.classList.add("unloaded");
-		else if (playerCount === (window.lobbySettings?.game?.playerCount || 2))
+		else if (maxPlayers === (window.lobbySettings?.game?.maxPlayers || 2))
 		{
 			launchBtn.classList.remove("unclickable");
 			launchBtn.style.opacity = "1";
 		}
 		else if (isOwner)
 			launchBtn.style.opacity = "0.4";
-	} else if (mode === "lobby-offline" && playerCount == 0) launchBtn.classList.add("unloaded");
+	} else if (mode === "lobby-offline" && maxPlayers == 0) launchBtn.classList.add("unloaded");
 }
 
 /* -------------------------------------------------------------------------- */

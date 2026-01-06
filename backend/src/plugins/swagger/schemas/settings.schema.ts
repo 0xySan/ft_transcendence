@@ -41,7 +41,7 @@ export const postSettingsSchema = {
 
 export const getSettingsSchema = {
 	summary: "Get current game settings for the user",
-	description: "Returns the current effective `game.config` for the game the authenticated user is participating in.",
+	description: "Returns the current `settingsPayload` for the game (includes `gameId`, `userId`, and `newSettings`).",
 	tags: ["Game"],
  	querystring: {
  		type: 'object',
@@ -52,14 +52,25 @@ export const getSettingsSchema = {
  	},
  	response: {
  		200: {
- 			description: "Current game settings",
+ 			description: "Current game settings payload",
  			type: "object",
  			properties: {
- 				settings: { type: "object" }
+ 				settings: {
+ 					type: "object",
+ 					properties: {
+ 						gameId: { type: "string" },
+ 						userId: { type: "string" },
+ 						newSettings: { type: "object" }
+ 					}
+ 				}
  			},
  			example: {
  				settings: {
- 					game: { visibility: true, mode: "online", code: "ABCD", maxPlayers: 2, spectatorsAllowed: false }
+ 					gameId: "some-game-id",
+ 					userId: "owner-user-id",
+ 					newSettings: {
+ 						game: { visibility: true, mode: "online", code: "ABCD", maxPlayers: 2, spectatorsAllowed: false }
+ 					}
  				}
  			}
  		},

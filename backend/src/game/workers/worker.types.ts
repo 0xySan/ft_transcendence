@@ -42,4 +42,5 @@ export interface activeGame {
  */
 export interface workerMessage extends socket.message<any> {
 	userIds: string[];
+	gameId?: string;
 }

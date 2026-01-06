@@ -95,6 +95,7 @@
     "playText": "Play",
     "leaderboardText": "Leaderboard",
     "profileText": "Profile",
+    "publicLobbies": "Available lobby list",
     "loginButton": "Login",
     "registerButton": "Register"
   },
