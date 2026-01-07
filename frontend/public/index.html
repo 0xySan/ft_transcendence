@@ -105,9 +105,9 @@
 
 				loggedOut.classList.add("unloaded");
 				loggedIn.classList.remove("unloaded");
-
-				profileLink.href = `/profile/${profile.username}`;
-
+				
+				profileLink.href = `/profile?user=${profile.username}`;
+				
 				if (profile.profilePicture) {
 					pfpImg.src = "api/users/data/imgs/" + profile.profilePicture;
 					pfpImg.classList.remove("unloaded");
