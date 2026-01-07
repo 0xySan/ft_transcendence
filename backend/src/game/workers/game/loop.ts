@@ -54,8 +54,15 @@ function gameLoop(): void {
 			}
 		}
 
-		if (state !== "playing")
+		if (state === "stopped") {
+			gameStates.delete(game.id);
+			gameStartTimes.delete(game.id);
+			accumulators.delete(game.id);
+			game.resetGame();
 			return;
+		} else if (state !== "playing")
+			return;
+
 		let accumulator = accumulators.get(gameId) ?? 0;
 		accumulator += deltaTime;
 
@@ -263,6 +270,7 @@ function stepGame(game: Game, dt: number): void {
 /* -------------------------------------------------------------------------- */
 
 parentPort!.on("message", (message: msg.message<msg.payload>) => {
+	console.log("DEBUG: server msg = ", message);
 	switch (message.type) {
 		case "create":
 			createHandler(message as msg.message<msg.createPayload>, games);
@@ -294,6 +302,8 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 				gameStates.set(payload.gameId, "starting");
 				gameStartTimes.set(payload.gameId, startTime);
 				accumulators.set(payload.gameId, 0);
+
+				console.log("DEBUG: server msg START HERE\n");
 
 				game.broadcast("game", {
 					action: "start",

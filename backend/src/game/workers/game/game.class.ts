@@ -273,11 +273,15 @@ export class Game {
 	}
 
 	resetGame() {
+		console.log("DEBUG: reset game");
 		this.ball = {
 			x: 0,
 			y: 0,
 			vx: 0,
 			vy: 0
 		};
+		this.state = "waiting";
+		this.isFinished = false;
+		this.currentFrameId = 0;
 	}
 }

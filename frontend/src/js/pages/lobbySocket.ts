@@ -6,6 +6,7 @@ declare global {
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		localPlayerId?: string;
 		lobbyGameId?: string;
+		token: string;
 		playerSyncData: PlayerSyncPayload;
 		pendingGameStart?: gameStartAckPayload;
 		currentUser: UserData | null;
@@ -137,14 +138,7 @@ export interface gameStartAckPayload {
 /* -------------------------------------------------------------------------- */
 /* WebSocket                                                                  */
 /* -------------------------------------------------------------------------- */
-function connectWebSocket(token: string): void {
-	if (window.socket)
-		window.socket.close();
-
-	const protocol = location.protocol === "https:" ? "wss" : "ws";
-	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
-	window.socket = socket;
-
+function applyListener(socket: WebSocket, token: string) {
 	addListener(socket, "open", () => {
 		notify('Connected to the game lobby.', { type: 'success' });
 		const msg: SocketMessage<ConnectPayload> = {
@@ -162,6 +156,7 @@ function connectWebSocket(token: string): void {
 
 	addListener(socket, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
+		console.log("DEBUG: client msg = ", msg);
 		switch (msg.type) {
 			case "playerSync":
 				console.log("Received playerSync:", msg.payload);
@@ -175,6 +170,7 @@ function connectWebSocket(token: string): void {
 
 			case "game":
 				if ((msg.payload as GamePayload).action === "start") {
+					console.log("DEBUG: start here");
 					notify('The game is starting!', { type: 'success' });
 					window.pendingGameStart = msg.payload as gameStartAckPayload;
 					loadPage("/pong-board");
@@ -199,6 +195,74 @@ function connectWebSocket(token: string): void {
 		window.socket = undefined;
 		resetLobbyState();
 	});
+}
+
+function connectWebSocket(token: string): void {
+	console.log("DEBUG: websocket connexion");
+	if (window.socket)
+		window.socket.close();
+
+	const protocol = location.protocol === "https:" ? "wss" : "ws";
+	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
+	window.socket = socket;
+
+	applyListener(socket, token);
+	// addListener(socket, "open", () => {
+	// 	notify('Connected to the game lobby.', { type: 'success' });
+	// 	const msg: SocketMessage<ConnectPayload> = {
+	// 		type: "connect",
+	// 		payload: { token },
+	// 	};
+	// 	socket.send(JSON.stringify(msg));
+
+	// 	// start client keepalive: send a small "send" message every 20s
+	// 	(window as any).socketPingInterval = window.setInterval(() => {
+	// 		if (socket.readyState === WebSocket.OPEN)
+	// 			socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
+	// 	}, 20_000);
+	// });
+
+	// addListener(socket, "message", (event: MessageEvent) => {
+	// 	const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
+	// 	console.log("DEBUG: client msg = ", msg);
+	// 	switch (msg.type) {
+	// 		case "playerSync":
+	// 			console.log("Received playerSync:", msg.payload);
+	// 			handlePlayerSync(msg.payload as PlayerSyncPayload);
+	// 			window.playerSyncData = msg.payload as PlayerSyncPayload;
+	// 			break;
+
+	// 		case "player":
+	// 			handlePlayer(msg.payload as PlayerPayload);
+	// 			break;
+
+	// 		case "game":
+	// 			if ((msg.payload as GamePayload).action === "start") {
+	// 				console.log("DEBUG: start here");
+	// 				notify('The game is starting!', { type: 'success' });
+	// 				window.pendingGameStart = msg.payload as gameStartAckPayload;
+	// 				loadPage("/pong-board");
+	// 			}
+	// 			break;
+	// 		case "settings":
+	// 			window.setPartialLobbyConfig(msg.payload as Partial<Settings>);
+	// 			notify('Game settings have been updated.', { type: 'info' });
+	// 			break;
+
+	// 		default:
+	// 			console.warn("Unknown socket message:", msg);
+	// 	}
+	// });
+
+	// addListener(socket, "close", (event: CloseEvent) => {
+	// 	if ((window as any).socketPingInterval) {
+	// 		clearInterval((window as any).socketPingInterval);
+	// 		(window as any).socketPingInterval = undefined;
+	// 	}
+	// 	notify('Disconnected from the game lobby.', { type: 'warning' });
+	// 	window.socket = undefined;
+	// 	resetLobbyState();
+	// });
 
 	leaveBtn.style.opacity = "1";
 	leaveBtn.classList.remove("unloaded");
@@ -352,6 +416,7 @@ async function joinGame(code: string): Promise<void> {
 	gameId = data.gameId;
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
+	window.token = data.authToken;
 
 	if (!authToken) throw new Error("Missing auth token");
 	window.selectLobbyMode("join");
@@ -453,6 +518,7 @@ if (window.playerSyncData) {
 		gameId = window.lobbyGameId || null;
 		htmlSettings.basic.div.classList.remove("grayed");
 	}
+	if (window.socket) applyListener(window.socket, window.token);
 }
 
 myPlayerId = await window.currentUserReady.then(() => {
