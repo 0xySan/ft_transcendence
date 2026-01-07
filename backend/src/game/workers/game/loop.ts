@@ -54,14 +54,8 @@ function gameLoop(): void {
 			}
 		}
 
-		if (state === "stopped") {
-			gameStates.delete(game.id);
-			gameStartTimes.delete(game.id);
-			accumulators.delete(game.id);
+		if (state !== "playing")
 			return;
-		} else if (state !== "playing")
-			return;
-
 		let accumulator = accumulators.get(gameId) ?? 0;
 		accumulator += deltaTime;
 
@@ -125,8 +119,7 @@ function stepGame(game: Game, dt: number): void {
 			- padCfg.margin
 			- padCfg.width;
 
-		p.x = index === 0 ? leftX : rightX;
-
+	    p.x = index % 2 === 0 ? leftX : rightX;
 		if (p.y === undefined)
 			p.y = (world.height - padCfg.height) / 2;
 
@@ -215,6 +208,7 @@ function stepGame(game: Game, dt: number): void {
 		if (scorer)
 			scorer.score = (scorer.score ?? 0) + 1;
 
+		console.log("DEBUG: score = " + scorer.score + " | firstto = " + game.config.scoring.firstTo);
 		if (scorer.score >= game.config.scoring.firstTo) {
 			gameStates.set(game.id, "stopped");
 			const message: msg.gamePayload = {
@@ -279,7 +273,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			settingsHandler(message as msg.message<msg.settingsPayload>, games);
 			break;
 		case "input":
-			inputsHandler(message as msg.message<msg.workerInputPayload>, games, gameStates);
+			inputsHandler(message as msg.message<msg.workerInputPayload>, games);
 			break;
 		case "game": {
 			const payload = message.payload as msg.workerGamePayload;
@@ -293,7 +287,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			if (payload.action === "start") {
 				if (game.players.length < 2)
 					return;
-				game.resetGame();
+
 				const startTime = Date.now() + 3000;
 
 				gameStates.set(payload.gameId, "starting");
@@ -313,6 +307,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			else if (payload.action === "resume")
 				gameStates.set(payload.gameId, "playing");
 			else if (payload.action === "abort") {
+				console.log("DEBUG: end game = ", game.players);
 				gameStates.set(payload.gameId, "stopped");
 				accumulators.delete(payload.gameId);
 			}

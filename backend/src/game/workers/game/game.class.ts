@@ -279,12 +279,5 @@ export class Game {
 			vx: 0,
 			vy: 0
 		};
-		this.state = "waiting";
-		this.isFinished = false;
-		this.currentFrameId = 0;
-
-		for (const target of this.players) target.resetPlayer();
-
-		this.assignSidesAndPositions();
 	}
 }

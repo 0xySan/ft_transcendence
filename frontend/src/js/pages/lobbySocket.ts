@@ -6,8 +6,7 @@ declare global {
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		localPlayerId?: string;
 		lobbyGameId?: string;
-		token: string;
-		playerSyncData: PlayerSyncPayload | null;
+		playerSyncData: PlayerSyncPayload;
 		pendingGameStart?: gameStartAckPayload;
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
@@ -138,7 +137,14 @@ export interface gameStartAckPayload {
 /* -------------------------------------------------------------------------- */
 /* WebSocket                                                                  */
 /* -------------------------------------------------------------------------- */
-function applyListener(socket: WebSocket, token: string) {
+function connectWebSocket(token: string): void {
+	if (window.socket)
+		window.socket.close();
+
+	const protocol = location.protocol === "https:" ? "wss" : "ws";
+	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
+	window.socket = socket;
+
 	addListener(socket, "open", () => {
 		notify('Connected to the game lobby.', { type: 'success' });
 		const msg: SocketMessage<ConnectPayload> = {
@@ -156,7 +162,6 @@ function applyListener(socket: WebSocket, token: string) {
 
 	addListener(socket, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
-		console.log("DEBUG: client msg = ", msg);
 		switch (msg.type) {
 			case "playerSync":
 				console.log("Received playerSync:", msg.payload);
@@ -170,7 +175,6 @@ function applyListener(socket: WebSocket, token: string) {
 
 			case "game":
 				if ((msg.payload as GamePayload).action === "start") {
-					console.log("DEBUG: start here");
 					notify('The game is starting!', { type: 'success' });
 					window.pendingGameStart = msg.payload as gameStartAckPayload;
 					loadPage("/pong-board");
@@ -195,18 +199,6 @@ function applyListener(socket: WebSocket, token: string) {
 		window.socket = undefined;
 		resetLobbyState();
 	});
-}
-
-function connectWebSocket(token: string): void {
-	console.log("DEBUG: websocket connexion");
-	if (window.socket)
-		window.socket.close();
-
-	const protocol = location.protocol === "https:" ? "wss" : "ws";
-	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
-	window.socket = socket;
-
-	applyListener(socket, token);
 
 	leaveBtn.style.opacity = "1";
 	leaveBtn.classList.remove("unloaded");
@@ -224,7 +216,6 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 			player.displayName,
 			player.playerId === ownerId
 		);
-
 		window.playerNames![player.playerId] = player.displayName;
 	});
 
@@ -241,15 +232,12 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 }
 
 function handlePlayer(payload: PlayerPayload): void {
-	if (payload.action === "join" && window.playerSyncData) {
-		const exist: boolean = window.playerSyncData.players.some(player => player.playerId === payload.playerId);
-		if (!exist) {
-			window.playerSyncData.players.push({
-				playerId: payload.playerId,
-				displayName: payload.displayName,
-				status: "player"
-			})
-		}
+	if (payload.action === "join") {
+		window.playerSyncData.players.push({
+			playerId: payload.playerId,
+			displayName: payload.displayName,
+			status: "player"
+		})
 		addPlayer(
 			payload.playerId,
 			payload.displayName,
@@ -260,7 +248,7 @@ function handlePlayer(payload: PlayerPayload): void {
 		updateLaunchVisibility("lobby-online", playerListEl.children.length);
 	}
 
-	if (payload.action === "leave" && window.playerSyncData) {
+	if (payload.action === "leave") {
 		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
 		window.playerSyncData.players.splice(index, 1);
 		delete window.playerNames![payload.playerId];
@@ -364,7 +352,6 @@ async function joinGame(code: string): Promise<void> {
 	gameId = data.gameId;
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
-	window.token = data.authToken;
 
 	if (!authToken) throw new Error("Missing auth token");
 	window.selectLobbyMode("join");
@@ -465,9 +452,7 @@ if (window.playerSyncData) {
 		launchBtn.classList.remove("unloaded");
 		gameId = window.lobbyGameId || null;
 		htmlSettings.basic.div.classList.remove("grayed");
-		htmlSettings.advanced.div.classList.remove("grayed");
 	}
-	if (window.socket) applyListener(window.socket, window.token);
 }
 
 myPlayerId = await window.currentUserReady.then(() => {

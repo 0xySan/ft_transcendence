@@ -415,7 +415,7 @@ class PongBoardCanvas {
 		container.appendChild(this.canvas);
 
 		this.resize();
-		addListener(window, "resize", () => this.resize());
+		window.addEventListener("resize", () => this.resize());
 	}
 
 	/** ### resize
@@ -541,10 +541,6 @@ export class InputBuffer {
 		}
 		return { up, down };
 	}
-
-	public destroy() {
-		this.remoteFrames.clear();
-	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -632,6 +628,11 @@ class Paddle {
 		this.y += this.vy * dt;
 
 		// clamp to field
+
+		// console.log("--- PADDLE UPDATE ---");
+		// console.log(this.y);
+		// console.log(this.height);
+		// console.log(this.x)
 		const field = window.lobbySettings!.field;
 		const top = field.wallThickness;
 		const bottom = window.lobbySettings!.world.height - field.wallThickness - this.height;
@@ -646,7 +647,6 @@ class Paddle {
 		this.context.fillStyle = this.color;
 		this.context.fillRect(this.x, this.y, this.width, this.height);
 	}
-
 }
 
 /* -------------------------------------------------------------------------- */
@@ -817,6 +817,8 @@ class PongBoard {
 			else if (side === "bottom-left" || side === "bottom-right") y = this.canvas.canvas.height - 50 - padH;
 			else y = (this.canvas.canvas.height - padH) / 2;
 
+			console.log("side = ", side);
+			console.log("update paddle x = ", x);
 			const paddle = new Paddle(x, y, padW, padH, context);
 			this.paddles.push(paddle);
 			this.paddleByPlayerId.set(playerId, paddle);
@@ -841,7 +843,7 @@ class PongBoard {
 	 */
 	public update(dt: number) {
 		for (const p of this.paddles) p.update(dt);
-		if (this.ball) this.ball.update(dt);
+		this.ball.update(dt);
 		for (const p of this.paddles) this.ball.checkPaddleCollision(p);
 	}
 
@@ -852,7 +854,7 @@ class PongBoard {
 		const ctx = (this.canvas as any).context as CanvasRenderingContext2D;
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, (this.canvas as any).canvas.width, (this.canvas as any).canvas.height);
-		if (this.ball) this.ball.draw();
+		this.ball.draw();
 		for (const p of this.paddles) p.draw();
 	}
 
@@ -885,13 +887,6 @@ class PongBoard {
 		if (update.scores) {
 			updateScores(update.scores);
 		}
-	}
-
-	public destroy() {
-		this.canvas.canvas.remove();
-		this.paddles = [];
-		this.paddleByPlayerId.clear();
-		this.ball = null as any;
 	}
 }
 
@@ -928,17 +923,28 @@ function updateScores(scores: { playerId: string; score: number }[]) {
 function updatePlayerNames() {
     const playerSides = window.pendingGameStart!.playerSides;
     const leftEl = document.getElementById("player-left");
-    const leftBottomEl = document.getElementById("player-bottom-left");
-    const rightBottomEl = document.getElementById("player-bottom-right");
+    const leftBottomEl = document.getElementById("player-left-bottom");
+    const rightBottomEl = document.getElementById("player-right-bottom");
     const rightEl = document.getElementById("player-right");
+	const barBottom = document.getElementById("pong-bar-bottom");
+
     if (!leftEl || !rightEl || !window.playerNames) return;
+	const hasBottomLeft = Object.values(playerSides).includes("bottom-left");
+	const hasBottomRight = Object.values(playerSides).includes("bottom-right");
+	const hasBottom = hasBottomLeft || hasBottomRight;
+
+	if (!hasBottom) {
+		leftBottomEl?.classList.add("unloaded");
+		rightBottomEl?.classList.add("unloaded");
+		barBottom?.classList.add("unloaded");
+	}
 
     for (const [playerId, side] of Object.entries(playerSides)) {
         const name = window.playerNames[playerId] || playerId;
-        if (side.includes("left")) leftEl.textContent = name;
-        else if (side.includes("right")) rightEl.textContent = name;
-		else if (side === "bottom-left" && leftBottomEl) leftBottomEl.textContent = name;
-		else if (side === "bottom-right" && rightBottomEl) rightBottomEl.textContent = name;
+		if (side.includes("bottom-left") && leftBottomEl) leftBottomEl.textContent = name;
+		else if (side.includes("bottom-right") && rightBottomEl) rightBottomEl.textContent = name;
+		else if (side.includes("left")) leftEl.textContent = name;
+		else if (side.includes("right")) rightEl.textContent = name;
     }
 }
 
@@ -965,13 +971,7 @@ addListener(window.socket!, "message", (event: MessageEvent) => {
 		if (last) paddle.applyInputs(last.inputs);
 	} else if (msg.type === "game") {
 		if (msg.payload.action === "stopped") {
-			notify("Game has ended.", { type: "info" });
-			stopTimer();
-			setTimeout(() => { 
-				pongBoard.destroy();
-				stopTimer();
-				loadPage("lobby"); 
-			}, 1000);
+			// loadPage("/lobby");
 		} else {
 			const payload = msg.payload as GameStateUpdate;
 			pongBoard.applyUpdate(payload);
@@ -1145,11 +1145,6 @@ class PongGame {
 		};
 
 		requestAnimationFrame(loop);
-	}
-
-	public destroy() {
-		this.running = false;
-		this.board.destroy();
 	}
 }
 

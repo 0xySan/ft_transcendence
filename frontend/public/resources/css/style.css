@@ -1324,7 +1324,7 @@ button:active {
 	flex-direction: column;
 }
 
-/* Bars (top & bottom) */
+/* Bars top */
 .pong-bar {
 	/*! width: 100vw !important; */
 	max-width: 1100px;
@@ -1336,7 +1336,20 @@ button:active {
 	align-items: center;
 	justify-content: space-between;
 }
+/* Bars bottom */
+.pong-bars-bottom
+{
+	width: 100vw !important;
+	max-width: 1100px;
 
+	margin: 0 auto;
+	gap: 20em;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
 /* Player blocks */
 .player {
 	min-width: 120px;
@@ -1401,8 +1414,8 @@ button:active {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5rem;
-
+    gap: 1rem;
+	flex-direction: column;
 }
 
 .score-left {
@@ -1431,7 +1444,18 @@ button:active {
 	align-items: center;
 	justify-content: center;
 }
+.pong-bars-top {
+	width: 100%;
+	max-width: 1100px;
 
+	margin: 0 auto;
+	gap: 8px;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
 /* Board wrapper */
 #pong-board {
 	width: 100%;
