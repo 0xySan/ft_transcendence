@@ -150,6 +150,19 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 				}
 			}
 
+			// Determine recipients (exclude self and users who blocked the sender)
+			const recipients: string[] = [];
+			for (const m of allMembers) {
+				if (m.user_id === userId) continue;
+				if (isBlockedBy(userId, m.user_id)) continue;
+				recipients.push(m.user_id);
+			}
+
+			// If there are no recipients left (everyone left or blocked you), disallow sending
+			if (recipients.length === 0) {
+				return reply.status(403).send({ message: "Cannot send message: no other participants remain in this conversation" });
+			}
+
 			const body = request.body as { content?: string; messageType?: string; inviteState?: string | null };
 			const content = body?.content?.trim();
 			if (!content) return reply.status(400).send({ message: "Content is required" });
@@ -175,22 +188,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 				sender_profile_picture: senderProfile?.profile_picture ?? null,
 			};
 
-			// Reactivate participants who haven't blocked the sender
-			const recipients: string[] = [];
-			for (const m of allMembers) {
-				if (m.user_id === userId) continue;
-				
-				// Don't reactivate users who have blocked the sender
-				if (isBlockedBy(userId, m.user_id)) continue;
-				
-				const existing = getConversationMember(conversationId, m.user_id);
-				if (!existing) {
-					addConversationMember(conversationId, m.user_id);
-					recipients.push(m.user_id);
-				} else {
-					recipients.push(m.user_id);
-				}
-			}
+			// Note: Do not auto-reactivate users who left; respect privacy
 
 			try {
 				broadcastMessageToParticipants(userId, recipients, {
@@ -232,6 +230,9 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 			const members = listConversationMembers(conversationId)
 				.map(m => m.user_id);
+
+			if (members.length === 0)
+				return reply.status(500).send({ message: "No members to notify" });
 
 			const payload = { conversationId, messageId, state };
 			for (const memberId of members) broadcastTo(memberId, "inviteState", payload);

@@ -31,11 +31,19 @@ export async function chatDirectRoutes(fastify: FastifyInstance) {
 			// Add both users to the conversation on first creation
 			const userExists = getConversationMember(conversation.conversation_id, userId);
 			if (!userExists)
-				addConversationMember(conversation.conversation_id, userId);
+			{
+				const added = addConversationMember(conversation.conversation_id, userId);
+				if (!added)
+					return reply.status(500).send({ message: "Failed to add user to conversation" });
+			}
 
 			const targetExists = getConversationMember(conversation.conversation_id, targetUserId);
 			if (!targetExists)
-				addConversationMember(conversation.conversation_id, targetUserId);
+			{
+				const added = addConversationMember(conversation.conversation_id, targetUserId);
+				if (!added)
+					return reply.status(500).send({ message: "Failed to add target user to conversation" });
+			}
 
 			return reply.status(201).send({ conversationId: conversation.conversation_id });
 		}

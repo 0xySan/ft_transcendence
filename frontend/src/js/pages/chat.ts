@@ -786,8 +786,16 @@ async function submitMessage(
 		reorderUserList(activeUser);
 	} catch (err) {
 		if (err instanceof Error) {
-			if (err.message.includes('403'))
-				notify('You cannot send messages to this user', { type: 'warning' });
+			if (err.message.includes('403')) {
+				if (err.message.toLowerCase().includes('no other participants') || err.message.toLowerCase().includes('conversation')) {
+					// Disable input for this conversation and notify user
+					input.contentEditable = 'false';
+					sendBtn.hidden = true;
+					notify('You cannot send messages: this conversation has ended.', { type: 'warning' });
+				} else {
+					notify('You cannot send messages to this user', { type: 'warning' });
+				}
+			}
 			else if (err.message.includes('400'))
 				notify('Invalid message - please check your input', { type: 'warning' });
 			else {
