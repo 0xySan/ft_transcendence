@@ -222,9 +222,17 @@
 				<div class="chat-window-bar">
 					<span class="chat-window-title">Chat</span>
 					<div class="chat-window-actions">
-						<button class="chat-window-btn" data-action="minimize">—</button>
-						<button class="chat-window-btn" data-action="original-size">▢</button>
-						<button class="chat-window-btn" data-action="maximize">⬜</button>
+						<button class="chat-window-btn" data-action="minimize" aria-label="Minimize chat">
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<path d="M5 12h14" />
+							</svg>
+						</button>
+
+						<button class="chat-window-btn" data-action="maximize" aria-label="Maximize chat">
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<rect x="4" y="4" width="16" height="16" rx="1" />
+							</svg>
+						</button>
 					</div>
 				</div>
 

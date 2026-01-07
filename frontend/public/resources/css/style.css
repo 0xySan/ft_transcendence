@@ -199,7 +199,7 @@ body {
 	font-family: "Poppins-Regular", sans-serif;
 	color: rgb(var(--text));
 
-	overflow: auto;
+	overflow: hidden;
 }
 
 #scroll-content {
@@ -237,6 +237,7 @@ h1 {
 
 :root {
 	transition: background-color 0.5s ease;
+	overflow: hidden;
 }
 
 .hidden {
@@ -388,10 +389,9 @@ button:active {
    ========================================================================== */
 
 .chat-div-container {
-	position: relative;
 
 	width: 100%;
-	height: calc(75vh - 2rem);
+	height: 100%;
 
 	padding: 10px;
 	padding-bottom: 20px;
@@ -401,7 +401,8 @@ button:active {
 	background-color: rgb(var(--mantle));
 
 	border: 4px solid rgb(var(--surface0));
-	border-radius: 8px;
+	border-bottom-left-radius: 8px;
+	border-bottom-right-radius: 8px;
 
 	display: flex;
 	flex-direction: row;
@@ -1114,6 +1115,165 @@ button:active {
 		font-size: 0.7rem;
 	}
 }
+
+/* ==========================================================================
+							CHAT INTEGRATIONS STYLES 
+   ========================================================================== */
+
+#chat-index-container {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+
+	width: 25vw;
+	height: 50vh;
+
+	min-width: 280px;
+	min-height: 220px;
+
+	container-type: inline-size;
+	z-index: 100;
+}
+
+/* ---------------- Window ---------------- */
+
+.chat-window {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+
+	background: rgb(var(--mantle));
+	border-radius: 10px;
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+
+	overflow: hidden;
+}
+
+/* ---------------- Title bar ---------------- */
+
+.chat-window-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+
+	padding: 6px 8px;
+
+	background: rgb(var(--surface1));
+	border-bottom: 1px solid rgba(var(--surface2), 0.6);
+
+	cursor: grab;
+	user-select: none;
+}
+
+.chat-window-bar:active {
+	cursor: grabbing;
+}
+
+.chat-window-title {
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: rgb(var(--text));
+}
+
+/* ---------------- Actions ---------------- */
+
+.chat-window-actions {
+	display: flex;
+	gap: 0.35rem;
+}
+
+.chat-window-btn {
+	width: 1.8rem;
+	height: 1.8rem;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	border: none;
+	border-radius: 6px;
+
+	background: transparent;
+	color: rgb(var(--subtext1));
+
+	cursor: pointer;
+}
+
+.chat-window-btn svg {
+	display: block;
+	flex: 0 0 auto;
+
+	width: 1.2rem;
+	height: 1.2rem;
+
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+
+.chat-window-btn:hover {
+	background: rgba(var(--surface2), 0.6);
+	color: rgb(var(--text));
+}
+
+.chat-window-btn:active {
+	transform: translateY(1px);
+}
+
+.chat-window-btn[data-action="maximize"]:hover {
+	color: rgb(var(--green));
+}
+
+.chat-window-btn[data-action="minimize"]:hover {
+	color: rgb(var(--yellow));
+}
+
+/* ---------------- Resize handles ---------------- */
+
+.resize-handle {
+	position: absolute;
+	z-index: 20;
+	background: transparent;
+}
+
+.resize-right {
+	top: 0;
+	right: 0;
+	width: 6px;
+	height: 100%;
+	cursor: ew-resize;
+}
+
+.resize-bottom {
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	height: 6px;
+	cursor: ns-resize;
+}
+
+.resize-corner {
+	right: 0;
+	bottom: 0;
+	width: 12px;
+	height: 12px;
+	cursor: nwse-resize;
+}
+
+/* ---------------- States ---------------- */
+
+.chat-window.minimized .chat-div-container {
+	display: none;
+}
+
+.chat-window.minimized {
+	height: fit-content;
+}
+
 
 /* ==========================================================================
 							  AUTH PAGES STYLES

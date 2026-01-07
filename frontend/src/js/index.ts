@@ -228,6 +228,181 @@ function initAnimation(): void {
 initAnimation();
 
 // =========================================================
+// 				        CHAT INTEGRATION
+// =========================================================
+
+const chatContainer = document.getElementById("chat-index-container") as HTMLDivElement;
+if (!chatContainer) throw new Error("Chat container not found");
+
+const chatWindow = chatContainer.querySelector(".chat-window") as HTMLDivElement;
+const chatBar = chatWindow.querySelector(".chat-window-bar") as HTMLDivElement;
+
+// --- Resize ---
+type ResizeType = "right" | "bottom" | "corner";
+
+let isResizing = false;
+let resizeType: ResizeType | null = null;
+let startX = 0;
+let startY = 0;
+let startWidth = 0;
+let startHeight = 0;
+
+function startResize(e: MouseEvent, type: ResizeType): void {
+	e.preventDefault();
+	isResizing = true;
+	resizeType = type;
+
+	startX = e.clientX;
+	startY = e.clientY;
+
+	const rect = chatContainer.getBoundingClientRect();
+	startWidth = rect.width;
+	startHeight = rect.height;
+
+	document.addEventListener("mousemove", resizeMove);
+	document.addEventListener("mouseup", stopResize);
+}
+
+function resizeMove(e: MouseEvent): void {
+	if (!isResizing || !resizeType) return;
+
+	const minWidth = 260;
+	const minHeight = 220;
+
+	if (resizeType === "right" || resizeType === "corner") {
+		const newWidth = Math.max(minWidth, startWidth + (e.clientX - startX));
+		chatContainer.style.width = `${newWidth}px`;
+	}
+
+	if (resizeType === "bottom" || resizeType === "corner") {
+		const newHeight = Math.max(minHeight, startHeight + (e.clientY - startY));
+		chatContainer.style.height = `${newHeight}px`;
+	}
+}
+
+function stopResize(): void {
+	isResizing = false;
+	resizeType = null;
+	document.removeEventListener("mousemove", resizeMove);
+	document.removeEventListener("mouseup", stopResize);
+}
+
+// Assign resize handlers
+const rightHandle = chatContainer.querySelector(".resize-right");
+const bottomHandle = chatContainer.querySelector(".resize-bottom");
+const cornerHandle = chatContainer.querySelector(".resize-corner");
+
+rightHandle?.addEventListener("mousedown", e => startResize(e as MouseEvent, "right"));
+bottomHandle?.addEventListener("mousedown", e => startResize(e as MouseEvent, "bottom"));
+cornerHandle?.addEventListener("mousedown", e => startResize(e as MouseEvent, "corner"));
+
+// --- Drag ---
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let containerStartLeft = 0;
+let containerStartTop = 0;
+
+chatBar.addEventListener("mousedown", (e: MouseEvent) => {
+	e.preventDefault();
+	isDragging = true;
+	dragStartX = e.clientX;
+	dragStartY = e.clientY;
+
+	const rect = chatContainer.getBoundingClientRect();
+	containerStartLeft = rect.left;
+	containerStartTop = rect.top;
+
+	document.addEventListener("mousemove", dragMove);
+	document.addEventListener("mouseup", stopDrag);
+});
+
+function keepChatInBounds() {
+	const rect = chatContainer.getBoundingClientRect();
+
+	// limites max
+	const maxLeft = window.innerWidth - rect.width;
+	const maxTop = window.innerHeight - 40;
+
+	// Check if chat exceeds window bounds
+	if (rect.width > window.innerWidth)
+		chatContainer.style.width = `${window.innerWidth}px`;
+	if (rect.height > window.innerHeight - 40)
+		chatContainer.style.height = `${window.innerHeight - 40}px`;
+
+	chatContainer.dataset.prevWidth = `${chatContainer.offsetWidth}`;
+	chatContainer.dataset.prevHeight = `${chatContainer.offsetHeight}`;
+
+	let newLeft = Math.min(Math.max(0, rect.left), maxLeft);
+	let newTop = Math.min(Math.max(0, rect.top), maxTop);
+
+	if (newLeft !== rect.left) chatContainer.style.left = `${newLeft}px`;
+	if (newTop !== rect.top) chatContainer.style.top = `${newTop}px`;
+}
+
+window.addEventListener("resize", keepChatInBounds); // keep chat in bounds on window resize
+
+function dragMove(e: MouseEvent): void {
+	if (!isDragging) return;
+
+	const dx = e.clientX - dragStartX;
+	const dy = e.clientY - dragStartY;
+
+	// Calculate new position
+	let newLeft = containerStartLeft + dx;
+	let newTop = containerStartTop + dy;
+
+	// Stop from going out of bounds
+	const maxLeft = window.innerWidth - chatContainer.offsetWidth;
+	const maxTop = window.innerHeight - 40; // 40px = title bar height
+
+	newLeft = Math.min(Math.max(0, newLeft), maxLeft);
+	newTop = Math.min(Math.max(0, newTop), maxTop);
+
+	chatContainer.style.left = `${newLeft}px`;
+	chatContainer.style.top = `${newTop}px`;
+}
+
+function stopDrag(): void {
+	isDragging = false;
+	document.removeEventListener("mousemove", dragMove);
+	document.removeEventListener("mouseup", stopDrag);
+}
+
+// --- Minimize / Maximize ---
+chatWindow.querySelectorAll<HTMLButtonElement>(".chat-window-btn").forEach(btn => {
+	btn.addEventListener("click", () => {
+		const action = btn.dataset.action;
+		if (!action) return;
+
+		if (action === "minimize")
+			chatWindow.classList.toggle("minimized");
+		else if (action === "maximize") {
+			if (!chatContainer.dataset.prevWidth) {
+				const rect = chatContainer.getBoundingClientRect();
+				chatContainer.dataset.prevWidth = `${rect.width}`;
+				chatContainer.dataset.prevHeight = `${rect.height}`;
+				chatContainer.dataset.prevLeft = `${rect.left}`;
+				chatContainer.dataset.prevTop = `${rect.top}`;
+			}
+
+			if (chatContainer.classList.toggle("maximized")) {
+				chatContainer.style.width = "100%";
+				chatContainer.style.height = "calc(100% - 5rem)";
+				chatContainer.style.left = "0";
+				chatContainer.style.top = "5rem";
+			} else {
+				chatContainer.style.width = `${chatContainer.dataset.prevWidth}px`;
+				chatContainer.style.height = `${chatContainer.dataset.prevHeight}px`;
+				chatContainer.style.left = `${chatContainer.dataset.prevLeft}px`;
+				chatContainer.style.top = `${chatContainer.dataset.prevTop}px`;
+			}
+		}
+	});
+});
+
+
+// =========================================================
 // 						THEME  CHANGER
 // =========================================================
 
