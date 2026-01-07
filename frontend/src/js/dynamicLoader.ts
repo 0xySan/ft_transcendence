@@ -132,6 +132,12 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 
 	currentUrl = document.getElementById('currentUrl')?.textContent || url;
 
+	const targetUrl = window.location.pathname;
+	console.log("DEBUG: targetUrl = " + targetUrl + " | currentUrl = " + currentUrl);
+	if ((targetUrl == '/lobby' || targetUrl == '/pong-board') && (!currentUrl.includes('lobby') && !currentUrl.includes('pong-board'))) {
+		resetLobby();
+	}
+
 	// Update browser history
 	if (mode === 'replace')
 		history.replaceState(null, '', currentUrl);
@@ -149,6 +155,27 @@ export function loadPage(url: string): void {
 			updatePage(url, html, 'push');
 		})
 		.catch(err => console.error('Fetch error:', err));
+}
+
+function resetLobby() {
+	console.log("DEBUG: reset total");
+	if (window.socket) {
+		window.socket.close();
+	}
+	window.socket = undefined;
+
+	window.localPlayerId = undefined;
+	window.lobbyGameId = undefined;
+	window.pendingGameStart = undefined;
+	window.lobbySettings = undefined;
+
+	window.token = "";
+	window.playerSyncData = null;
+
+	window.currentUserReady = Promise.resolve();
+
+	window.joinLobby = async () => {};
+	window.selectLobbyMode = () => {};
 }
 
 // --- Start routing after DOM is loaded ---

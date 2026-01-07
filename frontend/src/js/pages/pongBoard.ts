@@ -841,7 +841,7 @@ class PongBoard {
 	 */
 	public update(dt: number) {
 		for (const p of this.paddles) p.update(dt);
-		this.ball.update(dt);
+		if (this.ball) this.ball.update(dt);
 		for (const p of this.paddles) this.ball.checkPaddleCollision(p);
 	}
 
@@ -852,7 +852,7 @@ class PongBoard {
 		const ctx = (this.canvas as any).context as CanvasRenderingContext2D;
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, (this.canvas as any).canvas.width, (this.canvas as any).canvas.height);
-		this.ball.draw();
+		if (this.ball) this.ball.draw();
 		for (const p of this.paddles) p.draw();
 	}
 

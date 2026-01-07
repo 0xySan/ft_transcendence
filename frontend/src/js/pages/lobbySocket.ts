@@ -7,7 +7,7 @@ declare global {
 		localPlayerId?: string;
 		lobbyGameId?: string;
 		token: string;
-		playerSyncData: PlayerSyncPayload;
+		playerSyncData: PlayerSyncPayload | null;
 		pendingGameStart?: gameStartAckPayload;
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
@@ -207,62 +207,6 @@ function connectWebSocket(token: string): void {
 	window.socket = socket;
 
 	applyListener(socket, token);
-	// addListener(socket, "open", () => {
-	// 	notify('Connected to the game lobby.', { type: 'success' });
-	// 	const msg: SocketMessage<ConnectPayload> = {
-	// 		type: "connect",
-	// 		payload: { token },
-	// 	};
-	// 	socket.send(JSON.stringify(msg));
-
-	// 	// start client keepalive: send a small "send" message every 20s
-	// 	(window as any).socketPingInterval = window.setInterval(() => {
-	// 		if (socket.readyState === WebSocket.OPEN)
-	// 			socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
-	// 	}, 20_000);
-	// });
-
-	// addListener(socket, "message", (event: MessageEvent) => {
-	// 	const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
-	// 	console.log("DEBUG: client msg = ", msg);
-	// 	switch (msg.type) {
-	// 		case "playerSync":
-	// 			console.log("Received playerSync:", msg.payload);
-	// 			handlePlayerSync(msg.payload as PlayerSyncPayload);
-	// 			window.playerSyncData = msg.payload as PlayerSyncPayload;
-	// 			break;
-
-	// 		case "player":
-	// 			handlePlayer(msg.payload as PlayerPayload);
-	// 			break;
-
-	// 		case "game":
-	// 			if ((msg.payload as GamePayload).action === "start") {
-	// 				console.log("DEBUG: start here");
-	// 				notify('The game is starting!', { type: 'success' });
-	// 				window.pendingGameStart = msg.payload as gameStartAckPayload;
-	// 				loadPage("/pong-board");
-	// 			}
-	// 			break;
-	// 		case "settings":
-	// 			window.setPartialLobbyConfig(msg.payload as Partial<Settings>);
-	// 			notify('Game settings have been updated.', { type: 'info' });
-	// 			break;
-
-	// 		default:
-	// 			console.warn("Unknown socket message:", msg);
-	// 	}
-	// });
-
-	// addListener(socket, "close", (event: CloseEvent) => {
-	// 	if ((window as any).socketPingInterval) {
-	// 		clearInterval((window as any).socketPingInterval);
-	// 		(window as any).socketPingInterval = undefined;
-	// 	}
-	// 	notify('Disconnected from the game lobby.', { type: 'warning' });
-	// 	window.socket = undefined;
-	// 	resetLobbyState();
-	// });
 
 	leaveBtn.style.opacity = "1";
 	leaveBtn.classList.remove("unloaded");
@@ -280,6 +224,7 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 			player.displayName,
 			player.playerId === ownerId
 		);
+
 		window.playerNames![player.playerId] = player.displayName;
 	});
 
@@ -296,12 +241,15 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 }
 
 function handlePlayer(payload: PlayerPayload): void {
-	if (payload.action === "join") {
-		window.playerSyncData.players.push({
-			playerId: payload.playerId,
-			displayName: payload.displayName,
-			status: "player"
-		})
+	if (payload.action === "join" && window.playerSyncData) {
+		const exist: boolean = window.playerSyncData.players.some(player => player.playerId === payload.playerId);
+		if (!exist) {
+			window.playerSyncData.players.push({
+				playerId: payload.playerId,
+				displayName: payload.displayName,
+				status: "player"
+			})
+		}
 		addPlayer(
 			payload.playerId,
 			payload.displayName,
@@ -312,7 +260,7 @@ function handlePlayer(payload: PlayerPayload): void {
 		updateLaunchVisibility("lobby-online", playerListEl.children.length);
 	}
 
-	if (payload.action === "leave") {
+	if (payload.action === "leave" && window.playerSyncData) {
 		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
 		window.playerSyncData.players.splice(index, 1);
 		delete window.playerNames![payload.playerId];
@@ -517,6 +465,7 @@ if (window.playerSyncData) {
 		launchBtn.classList.remove("unloaded");
 		gameId = window.lobbyGameId || null;
 		htmlSettings.basic.div.classList.remove("grayed");
+		htmlSettings.advanced.div.classList.remove("grayed");
 	}
 	if (window.socket) applyListener(window.socket, window.token);
 }
