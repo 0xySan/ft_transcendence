@@ -29,6 +29,7 @@ export function initializeDatabase(): SqliteDatabase {
 	const dbFile = path.join(dataDir, "database.sqlite");     // SQLite database file
 	const initSqlFile = path.join("sql", "init.sql");         // SQL file for schema initialization
 	const authInitSqlFile = path.join("sql", "authentication.sql"); // SQL file for auth schema (if needed)
+	const chatSqlFile = path.join("sql", "chat.sql");         // SQL file for chat schema
 
 	let dbExists = false;
 	let db: SqliteDatabase;
@@ -78,6 +79,14 @@ export function initializeDatabase(): SqliteDatabase {
 			}
 		}
 
+		if (fs.existsSync(chatSqlFile)) {
+			const chatSql = fs.readFileSync(chatSqlFile, "utf8");
+			if (chatSql.trim().length > 0) {
+				db.exec(chatSql);
+				console.log(`Executed chat SQL from ${chatSqlFile}`);
+			}
+		}
+
 		// --- Run seeder functions to populate initial data ---
 		try {
 			populateCountries(db);
@@ -98,6 +107,7 @@ export function initializeDatabase(): SqliteDatabase {
 	} else {
 		log("Database already exists, skipping init.sql execution and seeders");
 	}
+
 	console.log = log; // Restore original console.log if it was overridden
 
 	return db;
