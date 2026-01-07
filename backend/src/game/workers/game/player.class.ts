@@ -89,4 +89,8 @@ export class Player {
 			else if (i.key === 'down') this.activeInputs.down = i.pressed;
 		}
 	}
+
+	resetPlayer() {
+		this.inputBuffer = new Map();
+	}
 }

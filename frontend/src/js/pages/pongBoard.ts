@@ -415,7 +415,7 @@ class PongBoardCanvas {
 		container.appendChild(this.canvas);
 
 		this.resize();
-		window.addEventListener("resize", () => this.resize());
+		addListener(window, "resize", () => this.resize());
 	}
 
 	/** ### resize
@@ -541,6 +541,10 @@ export class InputBuffer {
 		}
 		return { up, down };
 	}
+
+	public destroy() {
+		this.remoteFrames.clear();
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -642,6 +646,7 @@ class Paddle {
 		this.context.fillStyle = this.color;
 		this.context.fillRect(this.x, this.y, this.width, this.height);
 	}
+
 }
 
 /* -------------------------------------------------------------------------- */
@@ -881,6 +886,13 @@ class PongBoard {
 			updateScores(update.scores);
 		}
 	}
+
+	public destroy() {
+		this.canvas.canvas.remove();
+		this.paddles = [];
+		this.paddleByPlayerId.clear();
+		this.ball = null as any;
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -953,7 +965,13 @@ addListener(window.socket!, "message", (event: MessageEvent) => {
 		if (last) paddle.applyInputs(last.inputs);
 	} else if (msg.type === "game") {
 		if (msg.payload.action === "stopped") {
-			loadPage("/lobby");
+			notify("Game has ended.", { type: "info" });
+			stopTimer();
+			setTimeout(() => { 
+				pongBoard.destroy();
+				stopTimer();
+				loadPage("lobby"); 
+			}, 1000);
 		} else {
 			const payload = msg.payload as GameStateUpdate;
 			pongBoard.applyUpdate(payload);
@@ -1127,6 +1145,11 @@ class PongGame {
 		};
 
 		requestAnimationFrame(loop);
+	}
+
+	public destroy() {
+		this.running = false;
+		this.board.destroy();
 	}
 }
 

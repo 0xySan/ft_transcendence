@@ -273,7 +273,6 @@ export class Game {
 	}
 
 	resetGame() {
-		console.log("DEBUG: reset game");
 		this.ball = {
 			x: 0,
 			y: 0,
@@ -283,5 +282,13 @@ export class Game {
 		this.state = "waiting";
 		this.isFinished = false;
 		this.currentFrameId = 0;
+
+		for (const target of this.players) {
+			target.score = 0;
+		}
+
+		for (const target of this.players) target.resetPlayer();
+
+		this.assignSidesAndPositions();
 	}
 }

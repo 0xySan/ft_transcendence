@@ -98,6 +98,7 @@ function stepGame(game: Game, dt: number): void {
 	/* ---------------------------- INPUTS ----------------------------------- */
 
 	game.players.forEach(player => {
+		console.log("DEBUG: user = " + player.name + " | x = " + player.x + " | y = " + player.y);
 		const frames = player.getInputsForFrame(targetFrame);
 		if (frames && frames.length > 0)
 			player.applyPersistentInputs(frames);
