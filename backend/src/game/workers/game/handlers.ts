@@ -135,16 +135,11 @@ export function settingsHandler(msg: msg.message<msg.settingsPayload>, games: Ma
  * @param msg - The message containing the input payload.
  * @param games - The map of active games.
  */
-export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: Map<string, Game>, gameStates: Map<string, "starting" | "playing" | "paused" | "stopped" | "ended">) {
+export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: Map<string, Game>) {
 	const payload = msg.payload as msg.workerInputPayload;
 	const game = games.get(payload.gameId);
 	if (!game) {
 		console.warn(`Game with ID ${payload.gameId} not found for input handling.`);
-		return;
-	}
-
-	if (gameStates.get(payload.gameId) !== "playing") {
-		console.warn(`Game with ID ${payload.gameId} is not in playing state; ignoring inputs.`);
 		return;
 	}
 
@@ -155,6 +150,9 @@ export function inputsHandler(msg: msg.message<msg.workerInputPayload>, games: M
 	}
 
 	if (!payload.inputs || payload.inputs.length === 0) return;
+
+	console.log(`Processing inputs for player ${payload.userId} in game ${payload.gameId}`);
+	console.log(payload.inputs);
 
 	// calibrate frameOffset if needed
 	const clientLatest = Math.max(...payload.inputs.map(f => f.frameId));

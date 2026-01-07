@@ -97,7 +97,6 @@ function gameLoop(): void {
 		} else if (state !== "playing")
 			return;
 
-
 		let accumulator = accumulators.get(gameId) ?? 0;
 		accumulator += deltaTime;
 
@@ -356,7 +355,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			settingsHandler(message as msg.message<msg.settingsPayload>, games);
 			break;
 		case "input":
-			inputsHandler(message as msg.message<msg.workerInputPayload>, games, gameStates);
+			inputsHandler(message as msg.message<msg.workerInputPayload>, games);
 			break;
 		case "game": {
 			const payload = message.payload as msg.workerGamePayload;
@@ -404,6 +403,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			else if (payload.action === "resume")
 				gameStates.set(payload.gameId, "playing");
 			else if (payload.action === "abort") {
+				console.log("DEBUG: end game = ", game.players);
 				gameStates.set(payload.gameId, "stopped");
 				accumulators.delete(payload.gameId);
 			}

@@ -3276,6 +3276,7 @@ button:active {
 	align-items: center;
 	justify-content: space-between;
 }
+
 /* Bars bottom */
 .pong-bars-bottom {
 	width: 100vw !important;
@@ -3289,6 +3290,7 @@ button:active {
 	align-items: center;
 	justify-content: space-between;
 }
+
 /* Player blocks */
 .player {
 	min-width: 120px;
@@ -3349,13 +3351,11 @@ button:active {
 }
 
 .match-container {
-
 	gap: 1rem;
-	display: flex;
-
 	flex-direction: column;
-	align-items: center;
-	justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .score-left {

@@ -210,7 +210,7 @@ class PongBoardCanvas {
 		}
 
 		this.resize();
-		addListener(window, "resize", () => this.resize());
+		window.addEventListener("resize", () => this.resize());
 	}
 
 	private resize() {
@@ -513,6 +513,11 @@ class Paddle {
 		this.y += this.vy * dt;
 
 		// clamp to field
+
+		// console.log("--- PADDLE UPDATE ---");
+		// console.log(this.y);
+		// console.log(this.height);
+		// console.log(this.x)
 		const field = window.lobbySettings!.field;
 		const top = field.wallThickness;
 		const bottom = window.lobbySettings!.world.height - field.wallThickness - this.height;
@@ -871,7 +876,7 @@ class PongBoard {
 		const ctx = (this.canvas as any).context as CanvasRenderingContext2D;
 		ctx.fillStyle = currentThemeColors["--crust"] || 'black';
 		ctx.fillRect(0, 0, (this.canvas as any).canvas.width, (this.canvas as any).canvas.height);
-		if (this.ball) this.ball.draw();
+		this.ball.draw();
 		for (const p of this.paddles) p.draw();
 	}
 

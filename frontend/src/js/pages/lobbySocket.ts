@@ -9,7 +9,6 @@ declare global {
 		playerNames?: Record<string, string>;
 		localPlayerId?: string;
 		lobbyGameId?: string;
-
 		__resolveCurrentUser: (user?: any) => void;
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
@@ -259,7 +258,6 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 			player.displayName,
 			player.playerId === ownerId
 		);
-
 		window.playerNames![player.playerId] = player.displayName;
 	});
 
@@ -302,7 +300,7 @@ function handlePlayer(payload: PlayerPayload): void {
 		updateLaunchVisibility("lobby-online", playerListEl.children.length);
 	}
 
-	if (payload.action === "leave" && window.playerSyncData) {
+	if (payload.action === "leave") {
 		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
 		window.playerSyncData.players.splice(index, 1);
 		delete window.playerNames![payload.playerId];
@@ -595,7 +593,6 @@ if (window.socket) {
 		launchBtn.classList.remove("unloaded");
 		gameId = window.lobbyGameId || null;
 		htmlSettings.basic.div.classList.remove("grayed");
-		htmlSettings.advanced.div.classList.remove("grayed");
 	}
 }
 
