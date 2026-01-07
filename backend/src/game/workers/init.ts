@@ -19,6 +19,7 @@ import * as game from "../workers/game/game.types.js";
 import{ activeGames, workers } from "../../globals.js";
 import WebSocket from "ws";
 import { workerMessage } from "./worker.types.js";
+import { getGameByCode } from "../../routes/game/utils.js";
 
 const NUM_WORKERS = os.cpus().length;
 
@@ -95,7 +96,6 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 					newSettings: newSettings || {}
 				} as msg.settingsPayload;
 				gameSettings.set(gid, payload);
-				console.log('gameSettings for', gid, ':', gameSettings.get(gid));
 			}
 		}
 	});
@@ -131,6 +131,19 @@ export function assignGameToWorker(uuid: string, ownerId: string, gameConfig: ga
 			gameConfig: gameConfig
 		} as msg.createPayload
 	} as msg.message<msg.createPayload>);
+	// Store the initial game settings so vanilla games are recorded even
+	// before the worker emits a settings message.
+	try {
+		const owner = ownerId ?? '';
+		const initialPayload: msg.settingsPayload = {
+			gameId: uuid,
+			userId: owner,
+			newSettings: gameConfig as any
+		};
+		gameSettings.set(uuid, initialPayload);
+	} catch (e) {
+		console.warn('Failed to initialize gameSettings for', uuid, e);
+	}
 	return true;
 }
 
@@ -207,6 +220,12 @@ export function gameUpdateSettings(uuid: string, newSettings: Partial<game.confi
 	// Only the original owner can change visibility
 	if (activeGame.ownerId == uuid)
 		activeGame.visibility = newSettings.game?.visibility ?? activeGame.visibility;
+
+	if (newSettings.game?.code) {
+		while (getGameByCode(newSettings.game.code) !== null || newSettings.game.code === '')
+			newSettings.game.code = Math.random().toString(36).substring(2, 6).toUpperCase();
+		activeGame.code = newSettings.game.code;
+	}
 
 	// Notify the worker to update the game settings
 	workerEntry.worker.postMessage({

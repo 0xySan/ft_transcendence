@@ -90,6 +90,7 @@ const defaultSettings: Settings = {
 		mode: "online",
 		spectatorsAllowed: true,
 		maxPlayers: 2,
+		code: '',
 	},
 	scoring: {
 		firstTo: 5,
@@ -135,6 +136,8 @@ const ui = {
 		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
 		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
 		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
+		allowSpectators: getEl<HTMLInputElement>("lobby-allow-spectators"),
+		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code")
 	},
 	ball: {
 		radius: getEl<HTMLInputElement>("ball-radius"),
@@ -312,6 +315,12 @@ function wire(): void {
 		if (v !== 2 && v !== 4) return; // invalid value
 		currentSettings.game.maxPlayers = v;
 		setSpan(ui.lobby.maxPlayersSpan, v);
+	});
+
+	// custom game code
+	addListener(ui.base.customGameCodeInput, "input", () => {
+		const v = ui.base.customGameCodeInput.value.trim();
+		currentSettings.game.code = v;
 	});
 
 	// ball

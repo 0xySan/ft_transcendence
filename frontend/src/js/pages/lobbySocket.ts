@@ -436,7 +436,7 @@ async function createGame(): Promise<void> {
 			game: {
 				mode: "online",
 				code: generateCode(),
-				maxPlayers: 4,
+				maxPlayers: 2,
 				spectatorsAllowed: true,
 			},
 		}),
