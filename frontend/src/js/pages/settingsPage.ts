@@ -19,6 +19,7 @@ K extends keyof EventMapFor<T>
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
 declare function updateNavBar(userData: any): void;
+declare function loadPage(url: string): void;
 
 type SectionName = string;
 
@@ -59,43 +60,305 @@ menuItems.forEach((item) => {
 	});
 });
 
-// When we arrive at the settings page, we have to update the display name and the bio fields to match current values
-// This is because the user might have changed them elsewhere, and we want to show the latest values
-fetch('/api/users/me', {
-	method: 'GET',
-	credentials: 'include',
-	headers: {
-		'accept-language': getUserLang()
+// On page load, fetch user profile data and populate form fields.
+// Prefer using `window.currentUserPromise` if present (avoids duplicate fetch).
+(async () => {
+	try {
+		let data: any;
+		const cur = (window as any).currentUserPromise;
+		if (cur) {
+			// Use the existing promise (may already contain parsed JSON or response object).
+			data = cur;
+		} else {
+			const res = await fetch('/api/users/me', {
+				method: 'GET',
+				credentials: 'include',
+				headers: {
+					'accept-language': getUserLang()
+				}
+			});
+
+			if (res.status === 401 || res.status === 403 || res.status === 404) {
+				loadPage('/home');
+				return;
+			}
+			if (!res.ok) {
+				return;
+			}
+			data = await res.json();
+		}
+
+		if (!data || !data.user || !data.user.profile) {
+			loadPage('/home');
+			return;
+		}
+
+		const profile = data.user.profile;
+		const displayNameInput = document.querySelector<HTMLInputElement>('#profile-form input[name="display-name"]');
+		const bioInput = document.querySelector<HTMLTextAreaElement>('#profile-form textarea[name="bio"]');
+		const currentAvatarContainer = document.getElementById('current-avatar-container');
+		const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
+
+		if (displayNameInput) displayNameInput.value = profile.displayName || '';
+		if (bioInput) bioInput.value = profile.bio || '';
+		if (currentAvatarContainer && currentAvatarImage) {
+			if (profile.profilePicture) {
+				currentAvatarImage.src = `/api/users/data/imgs/${profile.profilePicture}`;
+				currentAvatarContainer.style.display = '';
+			} else {
+				currentAvatarContainer.style.display = 'none';
+			}
+		}
+		updateTwoFaButtons();
+	} catch (err) {
+		console.error('Error fetching profile data:', err);
+		loadPage('/home');
 	}
-})
-.then(async (res) => {
-	if (!res.ok) {
-		return;
+})();
+
+/** Update the 2FA buttons based on current user 2FA methods
+ * Fetches the current 2FA methods and updates the button states accordingly.
+ */
+function updateTwoFaButtons() {
+	fetch('/api/users/twofa/', {
+		method: 'GET',
+		credentials: 'include',
+		headers: { 'accept-language': getUserLang() }
+	})
+	.then(async res => {
+		let methods: any[] = [];
+		if (res.status === 404) methods = [];
+		else if (res.ok) {
+			const data = await res.json();
+			methods = data.twoFaMethods || [];
+		} else {
+			return;
+		}
+		// Find method types
+		const hasEmail = methods.some(m => m.method_type === 0 && m.is_verified);
+		const hasTotp = methods.some(m => m.method_type === 1 && m.is_verified);
+		const hasBackup = methods.some(m => m.method_type === 2 && m.is_verified);
+
+		const emailBtn = document.getElementById('enable-email-otp-btn') as HTMLButtonElement;
+		const totpBtn = document.getElementById('enable-totp-btn') as HTMLButtonElement;
+		const backupBtn = document.getElementById('generate-backup-btn') as HTMLButtonElement;
+
+		if (emailBtn) {
+			if (hasEmail) {
+				emailBtn.setAttribute('data-translate-key', 'settings.twofa.disableEmailOtpButton');
+				emailBtn.classList.add('button-danger');
+			} else {
+				emailBtn.setAttribute('data-translate-key', 'settings.twofa.enableEmailOtpButton');
+				emailBtn.classList.remove('button-danger');
+			}
+			translateElement(getUserLang(), emailBtn);
+		}
+		if (totpBtn) {
+			if (hasTotp) {
+				totpBtn.setAttribute('data-translate-key', 'settings.twofa.disableTotpButton');
+				totpBtn.classList.add('button-danger');
+			} else {
+				totpBtn.setAttribute('data-translate-key', 'settings.twofa.enableTotpButton');
+				totpBtn.classList.remove('button-danger');
+			}
+			translateElement(getUserLang(), totpBtn);
+		}
+		if (backupBtn) {
+			if (hasBackup) {
+				backupBtn.setAttribute('data-translate-key', 'settings.twofa.deleteBackupCodesButton');
+			} else {
+				backupBtn.setAttribute('data-translate-key', 'settings.twofa.generateBackupCodesButton');
+			}
+			translateElement(getUserLang(), backupBtn);
+		}
+	})
+	.catch(err => {
+		console.error('Error fetching 2FA methods:', err);
+	});
+}
+
+/** Minimal QR matrix store and postMessage handler for TOTP popup (414 fix) */
+/** Store the last generated QR matrix for TOTP */
+let lastTotpQrMatrix: any = null;
+addListener(window, 'message', (event: MessageEvent) => {
+	if (event.data && event.data.type === 'request-totp-qr-matrix' && lastTotpQrMatrix) {
+		let matrix = lastTotpQrMatrix;
+		// If matrix is a string, try to parse it as JSON
+		if (typeof matrix === 'string') {
+			try {
+				matrix = JSON.parse(matrix);
+			} catch {}
+		}
+		// Normalize matrix into array of '0'/'1' strings per row
+		function normalizeCell(cell: any) {
+			if (typeof cell === 'boolean') return cell ? '1' : '0';
+			if (typeof cell === 'number') return cell ? '1' : '0';
+			if (typeof cell === 'string') {
+				const s = cell.trim().toLowerCase();
+				if (s === 'true' || s === '1') return '1';
+				if (s === 'false' || s === '0') return '0';
+				// if single-char '0'/'1'
+				if (/^[01]+$/.test(s)) return s;
+			}
+			return '0';
+		}
+
+		if (Array.isArray(matrix)) {
+			matrix = matrix.map((row: any) => {
+				if (typeof row === 'string') {
+					// row may be a comma-joined list like 'true,false,...'
+					if (row.indexOf(',') !== -1) {
+						return row.split(',').map(normalizeCell).join('');
+					}
+					// row may already be '0101' or similar
+					if (/^[01]+$/.test(row.trim())) return row.trim();
+					// otherwise treat as single cell
+					return normalizeCell(row as any);
+				}
+				if (Array.isArray(row)) {
+					return row.map(normalizeCell).join('');
+				}
+				// Single boolean/number cell
+				return normalizeCell(row as any);
+			});
+		}
+
+		// Only send if it's an array of strings
+		if (Array.isArray(matrix) && matrix.every((r: any) => typeof r === 'string')) {
+			const target = event.source as any;
+			try {
+				if (target && typeof target.postMessage === 'function') {
+					const origin = window.location.origin || '*';
+					target.postMessage({ type: 'totp-qr-matrix', matrix }, origin);
+				}
+			} catch (err) {
+				console.warn('Failed to postMessage totp-qr-matrix to popup:', err);
+			}
+		}
 	}
-	
-	const data = await res.json();
-	const profile = data.user.profile;
-	if (!profile) {
-		return;
-	}
-	
-	const displayNameInput = document.querySelector<HTMLInputElement>(
-		'#profile-form input[name="display-name"]'
-	);
-	const bioInput = document.querySelector<HTMLTextAreaElement>(
-		'#profile-form textarea[name="bio"]'
-	);
-	const currentAvatarImage = document.querySelector<HTMLImageElement>(
-		'#current-avatar'
-	);
-	
-	if (displayNameInput) displayNameInput.value = profile.displayName || '';
-	if (bioInput) bioInput.value = profile.bio || '';
-	if (currentAvatarImage) currentAvatarImage.src = `/api/users/data/imgs/${profile.profilePicture || ''}`;
-})
-.catch((err) => {
-	console.error('Error fetching profile data:', err);
 });
+
+function setupTwoFaButtonEvents() {
+    const emailBtn = document.getElementById('enable-email-otp-btn') as HTMLButtonElement;
+    const totpBtn = document.getElementById('enable-totp-btn') as HTMLButtonElement;
+    const backupBtn = document.getElementById('generate-backup-btn') as HTMLButtonElement;
+
+    if (emailBtn) {
+        addListener(emailBtn, 'click', async () => {
+            const enabled = emailBtn.classList.contains('button-danger');
+            const allowed = await ensureTwoFaIfNeeded();
+            if (!allowed) return;
+			if (!enabled) {
+				// Open the email OTP popup for setup (creation is handled there)
+				let popupUrl = '/email_otp_popup';
+				if (typeof allowed === 'string') {
+					popupUrl += `?twoFaToken=${encodeURIComponent(allowed)}`;
+				}
+				window.open(popupUrl, 'email_otp_popup', 'width=420,height=520');
+			} else {
+                // Disable Email OTP
+                let body: any = { changes: {} };
+                const res = await fetch('/api/users/twofa/', { method: 'GET', credentials: 'include' });
+                const data = res.ok ? await res.json() : {};
+                const method = (data.twoFaMethods || []).find((m: any) => m.method_type === 0 && m.is_verified);
+                if (!method) return;
+                body.changes[method.id || method.method_id] = { disable: true };
+                if (typeof allowed === 'string') body.token = allowed;
+                await fetch('/api/users/twofa', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+                    body: JSON.stringify(body)
+                });
+                updateTwoFaButtons();
+            }
+        });
+    }
+    if (totpBtn) {
+        addListener(totpBtn, 'click', async () => {
+            const enabled = totpBtn.classList.contains('button-danger');
+            const allowed = await ensureTwoFaIfNeeded();
+            if (!allowed) return;
+            if (!enabled) {
+                // Enable TOTP: call server first
+                let body: any = { methods: [{ methodType: 1, label: 'Authenticator App' }] };
+                if (typeof allowed === 'string') body.twoFaToken = allowed;
+                const res = await fetch('/api/users/twofa/', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    const methodId = result.results && result.results[0] && result.results[0].methodId;
+                    const qrMatrix = result.results && result.results[0] && result.results[0].params && result.results[0].params.qrMatrix;
+                    if (methodId && qrMatrix) {
+						lastTotpQrMatrix = qrMatrix;
+						window.open(`/totp_qr_popup?uuid=${encodeURIComponent(methodId)}`, 'totp_qr_popup', 'width=640,height=720');
+                    }
+                }
+                updateTwoFaButtons();
+            } else {
+                // Disable TOTP
+                let body: any = { changes: {} };
+                const res = await fetch('/api/users/twofa/', { method: 'GET', credentials: 'include' });
+                const data = res.ok ? await res.json() : {};
+                const method = (data.twoFaMethods || []).find((m: any) => m.method_type === 1 && m.is_verified);
+                if (!method) return;
+                body.changes[method.id || method.method_id] = { disable: true };
+                if (typeof allowed === 'string') body.token = allowed;
+                await fetch('/api/users/twofa', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+                    body: JSON.stringify(body)
+                });
+                updateTwoFaButtons();
+            }
+        });
+    }
+    if (backupBtn) {
+        addListener(backupBtn, 'click', async () => {
+            const enabled = backupBtn.getAttribute('data-translate-key') === 'settings.twofa.deleteBackupCodesButton';
+            const allowed = await ensureTwoFaIfNeeded();
+            if (!allowed) return;
+            if (!enabled) {
+                // Generate backup codes: call server first
+                let body: any = { methods: [{ methodType: 2, label: 'Backup Codes' }] };
+                if (typeof allowed === 'string') body.twoFaToken = allowed;
+                const res = await fetch('/api/users/twofa/', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    // Open backup codes popup, pass codes (result.results[0].params.codes)
+                    window.open(`/backup_codes_popup?codes=${encodeURIComponent(JSON.stringify(result.results[0].params.codes))}`, 'backup_codes_popup', 'width=420,height=520');
+                }
+                updateTwoFaButtons();
+            } else {
+                // Delete backup codes
+                let body: any = { changes: {} };
+                const res = await fetch('/api/users/twofa/', { method: 'GET', credentials: 'include' });
+                const data = res.ok ? await res.json() : {};
+                const method = (data.twoFaMethods || []).find((m: any) => m.method_type === 2 && m.is_verified);
+                if (!method) return;
+                body.changes[method.id || method.method_id] = { disable: true };
+                if (typeof allowed === 'string') body.token = allowed;
+                await fetch('/api/users/twofa', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+                    body: JSON.stringify(body)
+                });
+                updateTwoFaButtons();
+            }
+        });
+    }
+}
 
 // ================================================
 // 			User profile update handling
@@ -191,10 +454,15 @@ addListener(
 			if (res.ok) {
 				// Update displayed avatar if server returned a fileName
 				if (body.profilePicture) {
+					const currentAvatarContainer = document.getElementById('current-avatar-container');
 					const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
-					if (currentAvatarImage) {
+					if (currentAvatarContainer && currentAvatarImage) {
 						currentAvatarImage.src = `/api/users/data/imgs/${body.profilePicture}`;
+						currentAvatarContainer.style.display = '';
 					}
+				} else {
+					const currentAvatarContainer = document.getElementById('current-avatar-container');
+					if (currentAvatarContainer) currentAvatarContainer.style.display = 'none';
 				}
 				// Fetch latest user data and update navbar
 				try {
@@ -215,7 +483,7 @@ addListener(
 			}
 			
 			const data = await res.json().catch(() => ({}));
-			if (data.error === 'invalid_display_name' || data.message === 'Invalid displayName (must be string, ≤50 chars)') {
+			if (data.message === 'Invalid displayName (must be string, ≤50 chars)') {
 				alert('Display name is invalid.');
 				return;
 			}
@@ -283,19 +551,18 @@ addListener(
 			body: JSON.stringify(body)
 		})
 		.then(async (res) => {
-			console.log('Password change response:', res);
 			if (res.ok) {
 				alert('Password updated successfully.');
 				return;
 			}
 			
 			const data = await res.json();
-			if (data.error === 'invalid_old_password') {
+			if (data.message === 'Old password incorrect') {
 				alert('Current password is incorrect.');
 				return;
 			}
 			
-			if (data.error === 'invalid_new_password') {
+			if (data.message === 'New password invalid') {
 				alert('New password is invalid.');
 				return;
 			}
@@ -435,9 +702,11 @@ const oauthPopups = new Map<string, Window>();
 const oauthButtonsPressed = new Map<string, HTMLElement>();
 const oauthInProgress = new Set<HTMLElement>(); // debounce per button
 
+let usersOauthProviders: Record<string, any> = {};
 
 fetch('/api/oauth/', {
 	method: 'GET',
+	credentials: 'include',
 	headers: {
 		'Content-Type': 'application/json',
 		'accept-language': getUserLang()
@@ -446,10 +715,14 @@ fetch('/api/oauth/', {
 .then(async res => {
 	const data = await res.json();
 	if (res.ok) {
+		usersOauthProviders = data.oauth.reduce((acc: Record<string, any>, curr: any) => {
+			acc[curr.provider] = curr;
+			return acc;
+		}, {});
 		oauthButtons.forEach((button) => {
 			const provider = button.href.split('/').pop();
 			if (!provider) return;
-			const isLinked = false; // data.???.includes(provider); --- IGNORE ---
+			const isLinked = data.oauth.some((acc: any) => acc.provider === provider);
 			const textSpan = button.querySelector<HTMLElement>('.oauth-text');
 			if (!textSpan) return;
 			if (isLinked) {
@@ -468,7 +741,7 @@ fetch('/api/oauth/', {
 				}
 				button.dataset.state = 'unlinked';
 			}
-			translateElement(getUserLang(), textSpan)
+			translateElement(getUserLang(), textSpan);
 		});
 	} else
 		throw new Error(data.message || `HTTP ${res.status}`);
@@ -479,7 +752,7 @@ fetch('/api/oauth/', {
 
 addListener(window, "message", (e) => {
 	if (e.origin !== window.location.origin) return;
-	if (!e.data || !e.data.requestId) return
+	if (!e.data || !e.data.requestId) return;
 	
 	const popup = oauthPopups.get(e.data.requestId);
 	const button = oauthButtonsPressed.get(e.data.requestId);
@@ -504,11 +777,24 @@ addListener(window, "message", (e) => {
 	button.dataset.state = 'unlinked';
 });
 
+// Listen for TOTP/creation completion from popups to refresh UI
+addListener(window, 'message', (e) => {
+	if (e.origin !== window.location.origin) return;
+	if (!e.data || e.data.type !== 'TWOFA_CREATION_SUCCESS') return;
+	try {
+		alert('Two-factor authentication configured successfully.');
+	} catch {}
+	try {
+		updateTwoFaButtons();
+	} catch (err) {
+		console.warn('Failed to update 2FA buttons after creation message:', err);
+	}
+});
+
 oauthButtons.forEach((button) => {
 	addListener(button, "click", async (e) => {
 		e.preventDefault();
-		
-		// 🔐 1. Ensure 2FA first
+
 		const allowed = await ensureTwoFaIfNeeded();
 		if (!allowed) return;
 		
@@ -519,9 +805,10 @@ oauthButtons.forEach((button) => {
 			// ======================
 			const provider = button.href.split('/').pop();
 			if (!provider) return;
-			
-			fetch(`/api/oauth/${provider}/unlink`, {
+
+			fetch(`/api/oauth/${provider}/unlink?providerUserId=${usersOauthProviders[provider]?.providerUserId}`, {
 				method: 'GET',
+				credentials: 'include',
 				headers: {
 					'Content-Type': 'application/json',
 					'accept-language': getUserLang()
@@ -554,7 +841,7 @@ oauthButtons.forEach((button) => {
 		// ======================
 		if (oauthInProgress.has(button)) return;
 		oauthInProgress.add(button);
-		
+
 		const requestId = crypto.randomUUID();
 		const url = `${button.href}?requestId=${requestId}`;
 		
@@ -616,7 +903,6 @@ avatarModeRadios.forEach(radio => {
 	});
 });
 
-
-
 // Initial section
 showSection('profile');
+setupTwoFaButtonEvents();

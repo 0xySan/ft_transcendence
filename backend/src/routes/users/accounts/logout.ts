@@ -13,7 +13,7 @@ import { requirePartialAuth } from "../../../middleware/auth.middleware.js";
 
 // ---------- Rate limiting ----------
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5; // max 5 tentatives
+const RATE_LIMIT = 25;
 const RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
 const MIN_DELAY = 500;
 

@@ -105,6 +105,15 @@
       "repeatPasswordLabel": "Repeat New Password:",
       "updatePasswordButton": "Update Password"
     },
+    "authMethods": {
+      "emailOtpPopupTitle": "Email OTP Setup",
+      "emailAddressLabel": "Enter the email address to use for Two-Factor Authentication:",
+      "sendEmailOtpButton": "Send Email",
+      "emailSentMsg": "Email sent! Please check your inbox.",
+      "emailOtpLabel": "Enter the code sent to your email:",
+      "validateEmailOtpButton": "Validate",
+      "emailOtpError": "Invalid code. Please try again."
+    },
     "twofa": {
       "title": "Two-Factor Authentication",
       "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",
@@ -143,8 +152,19 @@
     "otpContainer": "",
     "otherMethodLabel": "Other method of Two Factor Authentication",
     "methodSelect": "",
-    "resendButton": "Resend verification code"
-  },
+    "resendButton": "Resend verification code",
+    "totpPopupTitle": "Authenticator Setup",
+    "totpCodeLabel": "Enter the code from your app:",
+    "validateTotpButton": "Validate",
+    "totpError": "Invalid code. Please try again.",
+    "emailOtpPopupTitle": "Email OTP Setup",
+    "emailOtpLabel": "Enter the code sent to your email:",
+    "validateEmailOtpButton": "Validate",
+    "emailOtpError": "Invalid code. Please try again.",
+    "backupCodesPopupTitle": "Backup Codes",
+    "backupCodesInfo": "Please write these codes down and keep them safe. Each code can only be used once.",
+    "closeBackupCodesButton": "Close"
+  }
   "chat": {
     "send": "Send",
     "invite": {
@@ -163,5 +183,4 @@
       "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
       "loadHint": "Scroll up to load previous messages"
     }
-  }
 }

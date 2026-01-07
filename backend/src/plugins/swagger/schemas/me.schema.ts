@@ -74,7 +74,6 @@ export const updateMeSchema = {
 			country: { type: "number", description: "Country ID (optional)"},
 			bio: { type: "string", maxLength: 500, description: "User biography (optional, ≤500 chars)" }
 		},
-		// no required properties — partial updates allowed
 	},
 	response: {
 		200: {

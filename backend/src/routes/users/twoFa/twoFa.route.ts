@@ -61,7 +61,7 @@ export const ALLOWED_TOTP_DIGITS = [6, 8];
 /* ---------- Rate Limiting ---------- */
 const ipRequestCount: Record<string, { count: number; lastReset: number }> = {};
 const userRequestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5;
+const RATE_LIMIT = 25;
 const IP_RATE_WINDOW = 60_000;
 const USER_RATE_WINDOW = 300_000;
 
@@ -114,7 +114,7 @@ function generateNumericCode(): string {
  * @param len Length of each code
  * @returns Array of backup codes
  */
-function generateBackupCodes(count = 10, len = 8): string[] {
+export function generateBackupCodes(count = 10, len = 8): string[] {
 	const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O, I/1
 	const codes: string[] = [];
 	for (let i = 0; i < count; i++) {

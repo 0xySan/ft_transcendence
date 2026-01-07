@@ -40,7 +40,7 @@ export function getOauthAccountsByUserId(user_id: string): oauthAccount[] {
  * @param provider_user_id - The user ID assigned by the OAuth provider
  * @returns The oauthAccount object if found, otherwise undefined
  */
-export function getOauthAccountByProviderAndUserId(provider_name: string, provider_user_id: string): oauthAccount | undefined {
+export function getOauthAccountByProviderAndProviderUserId(provider_name: string, provider_user_id: string): oauthAccount | undefined {
 	try {
 		const stmt = db.prepare(`SELECT * FROM oauth_accounts WHERE provider_name = ? AND provider_user_id = ?`);
 		const row = stmt.get(provider_name, provider_user_id);

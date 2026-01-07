@@ -1,0 +1,25 @@
+<div class="popup-container">
+    <h2 data-translate-key="settings.authMethods.emailOtpPopupTitle">Email OTP Setup</h2>
+    <div style="margin-bottom:0.75rem;">
+        <label for="email-address-input" data-translate-key="settings.authMethods.emailAddressLabel">Enter your email address:</label>
+        <input id="email-address-input" type="email" maxlength="100" autocomplete="email" style="display:block; margin-top:0.5rem;" />
+    </div>
+    <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.75rem;">
+        <button id="send-email-otp-btn" class="button nav-button" data-translate-key="settings.authMethods.sendEmailOtpButton">Send Email</button>
+        <div id="email-otp-send-msg" class="info-message" style="display:none;"></div>
+    </div>
+    <label id="email-otp-label" for="email-otp-input" data-translate-key="settings.authMethods.emailOtpLabel" style="display:none; margin-top:0.5rem;">Enter the code sent to your email:</label>
+    <div id="email-otp-container" class="otp-container" style="display:none; margin-top:0.5rem;">
+        <input type="text" maxlength="1" inputmode="text" class="otp-input" />
+        <input type="text" maxlength="1" inputmode="text" class="otp-input" />
+        <input type="text" maxlength="1" inputmode="text" class="otp-input" />
+        <input type="text" maxlength="1" inputmode="text" class="otp-input" />
+        <input type="text" maxlength="1" inputmode="text" class="otp-input" />
+        <input type="text" maxlength="1" inputmode="text" class="otp-input" />
+    </div>
+    <div style="margin-top:0.75rem;">
+        <button id="validate-email-otp-btn" class="button nav-button" data-translate-key="settings.authMethods.validateEmailOtpButton" disabled style="display:none;">Validate</button>
+    </div>
+    <div id="email-otp-error" class="error-message" data-translate-key="settings.authMethods.emailOtpError" style="display:none;"></div>
+</div>
+<script src="/js/pages/email_otp_popup.js"></script>

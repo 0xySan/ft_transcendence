@@ -1,0 +1,15 @@
+<div class="popup-container">
+    <h2 data-translate-key="settings.twofa.totpPopupTitle">Authenticator Setup</h2>
+    <div id="qr-code-container"></div>
+    <label data-translate-key="settings.twofa.totpCodeLabel">Enter the code from your app:</label>
+    <div id="totp-code-inputs" class="otp-container" aria-label="Enter 6 digit code">
+        <input inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" aria-label="Digit 1">
+        <input inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" aria-label="Digit 2">
+        <input inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" aria-label="Digit 3">
+        <input inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" aria-label="Digit 4">
+        <input inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" aria-label="Digit 5">
+        <input inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" aria-label="Digit 6">
+    </div>
+    <div id="totp-error" class="error-message" data-translate-key="settings.twofa.totpError" style="display:none;"></div>
+</div>
+<script src="/js/pages/totp_qr_popup.js"></script>

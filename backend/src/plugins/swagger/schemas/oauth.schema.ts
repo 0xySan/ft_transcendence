@@ -51,9 +51,11 @@ export const oauthListSchema = {
 						properties: {
 							provider: { type: 'string', example: 'discord' },
 							linkedAt: { type: 'integer', example: 1765380705242 },
+							providerUserId: { type: 'string', example: '123456789' },
 							profile: {
 								type: 'object',
 								description: 'Raw profile info from the OAuth provider',
+								additionalProperties: true,
 								example: {
 									id: '123456789',
 									username: 'JohnDoe',

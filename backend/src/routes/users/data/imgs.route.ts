@@ -42,6 +42,7 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			if (ext === '.png') contentType = 'image/png';
 			else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
 			else if (ext === '.webp') contentType = 'image/webp';
+			else if (ext === '.gif') contentType = 'image/gif';
 
 			// Stream file
 			reply.type(contentType);
@@ -101,6 +102,11 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 			const file = await request.file();
 			if (!file) return reply.status(400).send({ error: 'No file uploaded' });
+			// Early quick check on MIME type to reject non-image uploads before buffering
+			const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+			if (!file.mimetype || !allowedMimes.includes(file.mimetype)) {
+				return reply.status(400).send({ error: 'Invalid file type' });
+			}
 			const fileName = await saveAvatarFromFile(userId, file);
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {

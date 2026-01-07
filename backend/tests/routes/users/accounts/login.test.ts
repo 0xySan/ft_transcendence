@@ -153,7 +153,7 @@ describe("POST /accounts/login", () => {
 		(mocks.db.getUser2FaMethodsByUserId as any).mockReturnValue([]);
 
 		// RATE_LIMIT is 5 in route
-		for (let i = 0; i < 5; i++) {
+		for (let i = 0; i < 25; i++) {
 			const r = await fastify.inject({ method: "POST", url: "/accounts/login", payload, ip: testIp });
 			expect([200, 202, 400, 429, 500]).toContain(r.statusCode); // just ensure route responds; mostly 202 here
 		}
@@ -205,7 +205,7 @@ describe("POST /accounts/login", () => {
 
 		// Make requests that will be accepted until rate limit reached.
 		// Use `remoteAddress` so Fastify inject sets the request IP correctly.
-		for (let i = 0; i < 5; i++) {
+		for (let i = 0; i < 25; i++) {
 			const r = await fastify.inject({
 				method: "POST",
 				url: "/accounts/login",
