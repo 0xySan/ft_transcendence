@@ -58,7 +58,6 @@ function gameLoop(): void {
 			gameStates.delete(game.id);
 			gameStartTimes.delete(game.id);
 			accumulators.delete(game.id);
-			game.resetGame();
 			return;
 		} else if (state !== "playing")
 			return;
@@ -98,7 +97,6 @@ function stepGame(game: Game, dt: number): void {
 	/* ---------------------------- INPUTS ----------------------------------- */
 
 	game.players.forEach(player => {
-		console.log("DEBUG: user = " + player.name + " | x = " + player.x + " | y = " + player.y);
 		const frames = player.getInputsForFrame(targetFrame);
 		if (frames && frames.length > 0)
 			player.applyPersistentInputs(frames);
@@ -217,7 +215,6 @@ function stepGame(game: Game, dt: number): void {
 		if (scorer)
 			scorer.score = (scorer.score ?? 0) + 1;
 
-		console.log("DEBUG: score = " + scorer.score + " | firstto = " + game.config.scoring.firstTo);
 		if (scorer.score >= game.config.scoring.firstTo) {
 			gameStates.set(game.id, "stopped");
 			const message: msg.gamePayload = {
@@ -271,7 +268,6 @@ function stepGame(game: Game, dt: number): void {
 /* -------------------------------------------------------------------------- */
 
 parentPort!.on("message", (message: msg.message<msg.payload>) => {
-	console.log("DEBUG: server msg = ", message);
 	switch (message.type) {
 		case "create":
 			createHandler(message as msg.message<msg.createPayload>, games);
@@ -283,7 +279,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			settingsHandler(message as msg.message<msg.settingsPayload>, games);
 			break;
 		case "input":
-			inputsHandler(message as msg.message<msg.workerInputPayload>, games);
+			inputsHandler(message as msg.message<msg.workerInputPayload>, games, gameStates);
 			break;
 		case "game": {
 			const payload = message.payload as msg.workerGamePayload;
@@ -297,14 +293,12 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			if (payload.action === "start") {
 				if (game.players.length < 2)
 					return;
-
+				game.resetGame();
 				const startTime = Date.now() + 3000;
 
 				gameStates.set(payload.gameId, "starting");
 				gameStartTimes.set(payload.gameId, startTime);
 				accumulators.set(payload.gameId, 0);
-
-				console.log("DEBUG: server msg START HERE\n");
 
 				game.broadcast("game", {
 					action: "start",
@@ -319,7 +313,6 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			else if (payload.action === "resume")
 				gameStates.set(payload.gameId, "playing");
 			else if (payload.action === "abort") {
-				console.log("DEBUG: end game = ", game.players);
 				gameStates.set(payload.gameId, "stopped");
 				accumulators.delete(payload.gameId);
 			}

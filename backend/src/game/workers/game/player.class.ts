@@ -92,5 +92,10 @@ export class Player {
 
 	resetPlayer() {
 		this.inputBuffer = new Map();
+		this.activeInputs = { up: false, down: false };
+		this.frameOffset = undefined;
+		this.score = 0;
+		this.x = 0;
+		this.y = 0;
 	}
 }

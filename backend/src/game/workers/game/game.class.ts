@@ -283,10 +283,6 @@ export class Game {
 		this.isFinished = false;
 		this.currentFrameId = 0;
 
-		for (const target of this.players) {
-			target.score = 0;
-		}
-
 		for (const target of this.players) target.resetPlayer();
 
 		this.assignSidesAndPositions();

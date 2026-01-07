@@ -35,7 +35,6 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				if (gameObj.players.has(userId)) {
 					const ws = gameObj.players.get(userId);
 					if (ws && ws.readyState === WebSocket.OPEN) {
-						console.log("DEBUG: server msg = " + userId + " | server msg = ", message);
 						ws.send(message);
 					}
 				}
