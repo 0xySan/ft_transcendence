@@ -109,6 +109,14 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 	}
 	return (await res.json()) as T;
 }
+
+function parseApiDate(raw: string): Date {
+	if (!raw) return new Date(NaN);
+	if (/Z$|[+-]\d{2}:\d{2}$/.test(raw)) return new Date(raw);
+	const normalized = raw.replace(' ', 'T');
+	return new Date(`${normalized}Z`);
+}
+
 const visibleStart: Record<string, number> = {};
 const scrollPositions: Record<string, number> = {};
 const loadingOlderMessages: Record<string, boolean> = {};
@@ -240,7 +248,7 @@ function mapApiMessage(
 	return {
 		sender: senderName,
 		text: msg.content,
-		timestamp: new Date(msg.created_at),
+		timestamp: parseApiDate(msg.created_at),
 		type: msg.message_type,
 		inviteState: msg.invite_state || undefined,
 		id: msg.message_id,

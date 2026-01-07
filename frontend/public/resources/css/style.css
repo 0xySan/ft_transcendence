@@ -1514,7 +1514,7 @@ button:active {
 }
 
 #profile-div {
-	background-image: url("/resources/imgs/background.gif");
+	/* background-image: url("/resources/imgs/background.gif"); To do a setting to make it possible to set background image */
 	background-size: cover;
 	background-position: center;
 	background-attachment: fixed;
