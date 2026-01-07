@@ -35,11 +35,6 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 			if (!body.settings)
 				return reply.status(400).send({ error: 'Settings data is required.' });
 
-			console.log('Received settings update request from user', userId, ':', body.settings);
-			// Print the type of the maxPlayers field if it exists
-			if (body.settings.game.maxPlayers !== undefined) {
-				console.log('maxPlayers type:', typeof body.settings.game.maxPlayers, 'value:', body.settings.game.maxPlayers);
-			}
 			const [valid, config] = parseGameConfig(body.settings);
 			if (!valid || typeof config === 'string' || !config.game)
 				return reply.status(400).send({ error: config });
@@ -108,7 +103,6 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 				if (!payload)
 					return reply.status(404).send({ error: 'Settings not found for the game.' });
 
-				console.log('Returning settings for user', userId, ':', payload);
 				return reply.status(200).send({ settings: payload });
 			} catch (err) {
 				console.error('Error getting settings:', err);

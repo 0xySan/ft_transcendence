@@ -137,7 +137,7 @@ async function loadAndRenderSummary(): Promise<void> {
     }
 
     const g = games[selectedIndex];
-    const { current } = playersCount(g);
+    const { current, max: localMax } = playersCount(g);
 
     // try to fetch authoritative settings for the selected lobby
     let max: number | undefined;
@@ -157,6 +157,9 @@ async function loadAndRenderSummary(): Promise<void> {
         console.error('Failed to fetch lobby settings', e);
     }
 
+    // prefer authoritative max from server; fall back to local info
+    const finalMax = (typeof max === 'number') ? max : localMax;
+
     const infoList = document.createElement('div');
     infoList.className = 'public-lobby-info-list';
 
@@ -164,7 +167,8 @@ async function loadAndRenderSummary(): Promise<void> {
     codeRow.textContent = `Code: ${g.code ? String(g.code).toUpperCase() : '—'}`;
     infoList.appendChild(codeRow);
     const playersRow = document.createElement('div');
-    playersRow.textContent = (typeof max === 'number') ? `Players: ${current} / ${max}` : `Players: ${current}`;
+    const playersText = (typeof finalMax === 'number') ? `${current}/${finalMax}` : String(current);
+    playersRow.textContent = `Players: ${playersText}`;
     infoList.appendChild(playersRow);
 
     const joinBtn = document.createElement('button');

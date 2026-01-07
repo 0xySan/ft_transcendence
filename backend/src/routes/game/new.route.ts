@@ -52,7 +52,6 @@ export function createNewGameRoute(fastify: FastifyInstance) {
 
 		addUserToGame(userId, newGameId, config.game.code);
 
-
 		assignGameToWorker(newGameId, userId, config as config);
 
 		return reply.status(201).send({
