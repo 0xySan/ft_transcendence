@@ -38,11 +38,12 @@ export function listMessages(
 	const limit = options?.limit ?? 50;
 	const offset = options?.offset ?? 0;
 	const ascending = options?.ascending ?? false;
-	const orderDirection = ascending ? "ASC" : "DESC";
-
-	const stmt = db.prepare(
-		`SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ${orderDirection} LIMIT ? OFFSET ?`
-	);
+	// Whitelist order direction to prevent any potential SQL injection
+	const sqlAscending =
+		`SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?`;
+	const sqlDescending =
+		`SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+	const stmt = db.prepare(ascending === true ? sqlAscending : sqlDescending);
 	return stmt.all(conversationId, limit, offset) as ChatMessage[];
 }
 

@@ -1,16 +1,18 @@
 import { FastifyInstance } from "fastify";
-import { requirePartialAuth } from "../../middleware/auth.middleware.js";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 import {
   ensureDirectConversation,
 } from "../../db/wrappers/chat/chatConversations.js";
 import {
   addConversationMember,
+	getConversationMember,
 } from "../../db/wrappers/chat/chatConversationMembers.js";
+import { rateLimiters } from "./rateLimit.js";
 
 export async function chatDirectRoutes(fastify: FastifyInstance) {
     fastify.post(
 		"/direct",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.messaging] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -26,8 +28,22 @@ export async function chatDirectRoutes(fastify: FastifyInstance) {
 			const conversation = ensureDirectConversation(userId, targetUserId, userId);
 			if (!conversation) return reply.status(500).send({ message: "Failed to create conversation" });
 
-			addConversationMember(conversation.conversation_id, userId, "admin", "active");
-			addConversationMember(conversation.conversation_id, targetUserId, "member", "active");
+			// Add both users to the conversation on first creation
+			const userExists = getConversationMember(conversation.conversation_id, userId);
+			if (!userExists)
+			{
+				const added = addConversationMember(conversation.conversation_id, userId);
+				if (!added)
+					return reply.status(500).send({ message: "Failed to add user to conversation" });
+			}
+
+			const targetExists = getConversationMember(conversation.conversation_id, targetUserId);
+			if (!targetExists)
+			{
+				const added = addConversationMember(conversation.conversation_id, targetUserId);
+				if (!added)
+					return reply.status(500).send({ message: "Failed to add target user to conversation" });
+			}
 
 			return reply.status(201).send({ conversationId: conversation.conversation_id });
 		}

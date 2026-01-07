@@ -18,9 +18,6 @@ export interface ChatDirectConversation {
 }
 
 export interface UserConversationSummary extends ChatConversation {
-	role: "member" | "admin";
-	status: "active" | "left" | "banned";
-	notifications_muted: 0 | 1;
 	last_read_message_id: number | null;
 	last_read_at: string | null;
 	last_message_at: string | null;
@@ -60,26 +57,46 @@ export function ensureDirectConversation(
 	const existing = getDirectConversation(userA, userB);
 	if (existing) return existing;
 
-	const conversation = createConversation("direct", { createdBy });
-	if (!conversation) return undefined;
-
 	const [a, b] = [userA, userB].sort();
 
-	try {
+	// Wrap in transaction to prevent orphaned conversation records
+	const createTransaction = db.transaction(() => {
+		const conversation = createConversation("direct", { createdBy });
+		if (!conversation) throw new Error("Failed to create conversation");
+
 		const info = db.prepare(
 			`INSERT OR IGNORE INTO chat_direct_conversations (conversation_id, user_a, user_b) VALUES (?, ?, ?)`
 		).run(conversation.conversation_id, a, b);
-		if (info.changes > 0) return conversation;
-		return getDirectConversation(userA, userB);
+		
+		if (info.changes === 0) {
+			// Another transaction created it concurrently
+			const concurrentStmt = db.prepare(
+				`SELECT c.*
+				 FROM chat_direct_conversations dc
+				 JOIN chat_conversations c ON c.conversation_id = dc.conversation_id
+				 WHERE dc.user_a = ? AND dc.user_b = ?`
+			);
+			const concurrent = concurrentStmt.get(a, b) as ChatConversation | undefined;
+			if (concurrent) {
+				return concurrent;
+			}
+			throw new Error("Failed to resolve concurrently created direct conversation");
+		}
+		
+		return conversation;
+	});
+
+	try {
+		return createTransaction();
 	} catch (err) {
 		console.error("Failed to create direct conversation:", (err as Error).message);
-		return undefined;
+		return getDirectConversation(userA, userB);
 	}
 }
 
 export function listConversationsForUser(userId: string): UserConversationSummary[] {
 	const stmt = db.prepare(`
-		SELECT c.*, m.role, m.status, m.notifications_muted, m.last_read_message_id, m.last_read_at,
+		SELECT c.*, m.last_read_message_id, m.last_read_at,
 		       (
 		           SELECT MAX(created_at)
 		           FROM chat_messages
@@ -91,4 +108,12 @@ export function listConversationsForUser(userId: string): UserConversationSummar
 		ORDER BY COALESCE(last_message_at, c.updated_at) DESC
 	`);
 	return stmt.all(userId) as UserConversationSummary[];
+}
+
+export function deleteConversation(conversationId: number): boolean {
+	const stmt = db.prepare(
+		`DELETE FROM chat_conversations WHERE conversation_id = ?`
+	);
+	const info = stmt.run(conversationId);
+	return info.changes > 0;
 }

@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cookie from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import swaggerPlugin from "./plugins/swagger/index.js";
+import { closeAll,  } from "./utils/chatEvent.js";
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -69,6 +70,7 @@ async function start() {
 process.on("SIGINT", async () => {
 	console.log("SIGINT received, shutting down");
 	try {
+		closeAll();
 		const app = await buildServer();
 		await app.close();
 		process.exit(0);

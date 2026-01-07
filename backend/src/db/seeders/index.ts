@@ -108,13 +108,6 @@ export function initializeDatabase(): SqliteDatabase {
 		log("Database already exists, skipping init.sql execution and seeders");
 	}
 
-	if (dbExists && fs.existsSync(chatSqlFile)) {
-		const chatSql = fs.readFileSync(chatSqlFile, "utf8");
-		if (chatSql.trim().length > 0) {
-			db.exec(chatSql);
-			log(`Ensured chat schema from ${chatSqlFile}`);
-		}
-	}
 	console.log = log; // Restore original console.log if it was overridden
 
 	return db;
