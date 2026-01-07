@@ -209,45 +209,6 @@ function appendTextWithLineBreaks(parent: HTMLElement, text: string): void {
 	});
 }
 
-function showWarning(message: string): void {
-	const existing = document.querySelector('.chat-warning-notification');
-	if (existing) existing.remove();
-
-	const warning = document.createElement('div');
-	warning.className = 'chat-warning-notification';
-	warning.textContent = message;
-	warning.style.cssText = `
-		position: fixed;
-		top: 20px;
-		left: 50%;
-		transform: translateX(-50%);
-		background: #f44336;
-		color: white;
-		padding: 12px 24px;
-		border-radius: 4px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-		z-index: 10000;
-		font-size: 14px;
-		animation: slideDown 0.3s ease-out;
-	`;
-	
-	const style = document.createElement('style');
-	style.textContent = `
-		@keyframes slideDown {
-			from { opacity: 0; transform: translate(-50%, -20px); }
-			to { opacity: 1; transform: translate(-50%, 0); }
-		}
-	`;
-	document.head.appendChild(style);
-	
-	document.body.appendChild(warning);
-	
-	setTimeout(() => {
-		warning.style.animation = 'slideDown 0.3s ease-out reverse';
-		setTimeout(() => warning.remove(), 300);
-	}, 5000);
-}
-
 // ============================================================================
 // DATA LOADING (API)
 // ============================================================================
@@ -392,7 +353,7 @@ async function blockUserApi(user: string): Promise<boolean> {
 		blockedUsers.add(user);
 		return true;
 	} catch (err) {
-		showWarning(`Failed to block ${user}`);
+		notify(`Failed to block ${user}`, { type: 'error' });
 		console.error('Block user error:', err);
 		return false;
 	} finally {
@@ -414,7 +375,7 @@ async function unblockUserApi(user: string): Promise<boolean> {
 		blockedUsers.delete(user);
 		return true;
 	} catch (err) {
-		showWarning(`Failed to unblock ${user}`);
+		notify(`Failed to unblock ${user}`, { type: 'error' });
 		console.error('Unblock user error:', err);
 		return false;
 	} finally {
@@ -768,13 +729,13 @@ async function submitMessage(
 	// Rate limiting
 	const now = Date.now();
 	if (now - lastMessageTime < MESSAGE_COOLDOWN) {
-		showWarning('Please slow down - wait a moment between messages');
+		notify('Please slow down - wait a moment between messages', { type: 'warning' });
 		return;
 	}
 
 	// Content length validation
 	if (text.length > 4000) {
-		showWarning('Message must be 4000 characters or less');
+		notify('Message must be 4000 characters or less', { type: 'warning' });
 		return;
 	}
 
@@ -826,11 +787,11 @@ async function submitMessage(
 	} catch (err) {
 		if (err instanceof Error) {
 			if (err.message.includes('403'))
-				showWarning('You cannot send messages to this user');
+				notify('You cannot send messages to this user', { type: 'warning' });
 			else if (err.message.includes('400'))
-				showWarning('Invalid message - please check your input');
+				notify('Invalid message - please check your input', { type: 'warning' });
 			else {
-				showWarning('Failed to send message - please try again');
+				notify('Failed to send message - please try again', { type: 'error' });
 				console.error('Send message error:', err);
 			}
 		}
@@ -863,14 +824,14 @@ async function sendInvite(user: string): Promise<void> {
 			if (window.loadPage)
 				window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
 			else
-				showWarning('Failed to navigate to lobby');
+				notify('Failed to navigate to lobby', { type: 'error' });
 		}, NAVIGATION_DELAY);
 	} catch (err) {
 		if (err instanceof Error) {
 			if (err.message.includes('403')) {
-				showWarning('You cannot send invites to this user');
+				notify('You cannot send invites to this user', { type: 'warning' });
 			} else {
-				showWarning('Failed to send invite - please try again');
+				notify('Failed to send invite - please try again', { type: 'error' });
 				console.error('Send invite error:', err);
 			}
 		}
@@ -970,7 +931,7 @@ async function fetchSingleConversation(conversationId: number): Promise<string |
 
 		return peerName;
 	} catch (err) {
-		showWarning('Failed to load conversation');
+		notify('Failed to load conversation', { type: 'error' });
 		console.error('Failed to fetch conversation:', err);
 		return null;
 	} finally {
@@ -1886,7 +1847,7 @@ function startChatStream() {
 		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 			console.error('Max reconnection attempts reached. Please refresh the page.');
 			isReconnecting = false;
-			showWarning('Connection lost. Please refresh the page.');
+			notify('Connection lost. Please refresh the page.', { type: 'error' });
 			return;
 		}
 		
