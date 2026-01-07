@@ -214,6 +214,52 @@
 				</div>
 			</footer>
 		</div>
+		<div id="chat-index-container">
+			<div class="resize-handle resize-right"></div>
+			<div class="resize-handle resize-bottom"></div>
+			<div class="resize-handle resize-corner"></div>
+			<div class="chat-window">
+				<div class="chat-window-bar">
+					<span class="chat-window-title">Chat</span>
+					<div class="chat-window-actions">
+						<button class="chat-window-btn" data-action="minimize">—</button>
+						<button class="chat-window-btn" data-action="original-size">▢</button>
+						<button class="chat-window-btn" data-action="maximize">⬜</button>
+					</div>
+				</div>
+
+				<div class="chat-div-container" aria-label="Chat interface">
+					<button class="chat-header-toggle-users" aria-label="Toggle User List"></button>
+					<div class="user-list"></div>
+
+					<div class="chat-block">
+						<div class="chat-header">
+							<img class="img_profile hidden" chat-header="true">
+							<a class="chat-header-profile-pic hidden">
+								<span class="chat-header-title hidden">Template</span>
+							</a>
+							<button class="chat-header-btn hidden" aria-pressed="false" block-button="true">
+								Block
+							</button>
+						</div>
+
+						<div class="chat-messages" role="log" aria-live="polite"></div>
+
+						<form class="chat-input-form" novalidate>
+							<div class="invite-wrapper hidden">
+								<button class="chat-invite-btn">+</button>
+								<div class="invite-menu hidden" role="menu">
+									<button type="button" class="invite-menu-btn">Invite Pong</button>
+								</div>
+							</div>
+
+							<div class="chat-input hidden" contenteditable="true"></div>
+							<button type="submit" class="chat-send-btn hidden">Send</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
 		<script defer type="module" src="/js/index.js"></script>
 	</body>
 </html>
