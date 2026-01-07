@@ -18,8 +18,6 @@ export interface ChatDirectConversation {
 }
 
 export interface UserConversationSummary extends ChatConversation {
-	role: "member" | "admin";
-	status: "active" | "left" | "banned";
 	last_read_message_id: number | null;
 	last_read_at: string | null;
 	last_message_at: string | null;
@@ -98,7 +96,7 @@ export function ensureDirectConversation(
 
 export function listConversationsForUser(userId: string): UserConversationSummary[] {
 	const stmt = db.prepare(`
-		SELECT c.*, m.role, m.status, m.last_read_message_id, m.last_read_at,
+		SELECT c.*, m.last_read_message_id, m.last_read_at,
 		       (
 		           SELECT MAX(created_at)
 		           FROM chat_messages
@@ -106,8 +104,16 @@ export function listConversationsForUser(userId: string): UserConversationSummar
 		       ) AS last_message_at
 		FROM chat_conversations c
 		JOIN chat_conversation_members m ON m.conversation_id = c.conversation_id
-		WHERE m.user_id = ? AND m.status = 'active'
+		WHERE m.user_id = ?
 		ORDER BY COALESCE(last_message_at, c.updated_at) DESC
 	`);
 	return stmt.all(userId) as UserConversationSummary[];
+}
+
+export function deleteConversation(conversationId: number): boolean {
+	const stmt = db.prepare(
+		`DELETE FROM chat_conversations WHERE conversation_id = ?`
+	);
+	const info = stmt.run(conversationId);
+	return info.changes > 0;
 }

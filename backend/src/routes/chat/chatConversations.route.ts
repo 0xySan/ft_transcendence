@@ -1,20 +1,22 @@
 import { FastifyInstance } from "fastify";
-import { requirePartialAuth } from "../../middleware/auth.middleware.js";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
 import {
   listConversationsForUser,
   type UserConversationSummary,
+  deleteConversation,
 } from "../../db/wrappers/chat/chatConversations.js";
 import {
 	getConversationMember,
 	listConversationMembers,
 	addConversationMember,
-	setConversationMemberStatus,
+	removeConversationMember,
 	type ChatConversationMember,
 } from "../../db/wrappers/chat/chatConversationMembers.js";
 import { addMessage, listMessages, updateInviteState, type ChatMessage } from "../../db/wrappers/chat/chatMessages.js";
 import { listBlockedUsers, isBlockedBy, type ChatUserBlock } from "../../db/wrappers/chat/chatUserBlocks.js";
 import { broadcastMessageToParticipants, broadcastTo } from "../../utils/chatEvent.js";
+import { rateLimiters } from "./rateLimit.js";
 
 interface MemberPayload {
 	userId: string;
@@ -37,7 +39,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 {
 	fastify.get(
 		"/conversations",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.reading] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -65,7 +67,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 	fastify.get(
 		"/conversations/:id",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.reading] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -98,7 +100,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 	fastify.get(
 		"/conversations/:id/messages",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.reading] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -128,7 +130,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 	fastify.post(
 		"/conversations/:id/messages",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.messaging] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -183,10 +185,9 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 				
 				const existing = getConversationMember(conversationId, m.user_id);
 				if (!existing) {
-					addConversationMember(conversationId, m.user_id, "member", "active");
+					addConversationMember(conversationId, m.user_id);
 					recipients.push(m.user_id);
 				} else {
-					if (existing.status !== "active") setConversationMemberStatus(conversationId, m.user_id, "active");
 					recipients.push(m.user_id);
 				}
 			}
@@ -207,7 +208,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 	fastify.patch(
 		"/messages/:id/invite",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.inviteUpdate] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -230,7 +231,6 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 			if (!ok) return reply.status(500).send({ message: "Failed to update invite state" });
 
 			const members = listConversationMembers(conversationId)
-				.filter(m => m.status === "active")
 				.map(m => m.user_id);
 
 			const payload = { conversationId, messageId, state };
@@ -242,7 +242,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 	fastify.delete(
 		"/conversations/:id",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.reading] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -254,9 +254,16 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 			const member = getConversationMember(conversationId, userId);
 			if (!member) return reply.status(403).send({ message: "Not a member of this conversation" });
 
-			// Set user status to "left" to remove them from the conversation
-			const ok = setConversationMemberStatus(conversationId, userId, "left");
+			// Remove user from the conversation
+			const ok = removeConversationMember(conversationId, userId);
 			if (!ok) return reply.status(500).send({ message: "Failed to leave conversation" });
+
+			// Delete conversation if no members remain
+			const remainingMembers = listConversationMembers(conversationId);
+			if (remainingMembers.length === 0) {
+				const deleted = deleteConversation(conversationId);
+				if (!deleted) return reply.status(500).send({ message: "Failed to delete conversation" });
+			}
 
 			return reply.send({ success: true });
 		}

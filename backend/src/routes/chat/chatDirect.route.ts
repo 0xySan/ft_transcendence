@@ -1,18 +1,18 @@
 import { FastifyInstance } from "fastify";
-import { requirePartialAuth } from "../../middleware/auth.middleware.js";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 import {
   ensureDirectConversation,
 } from "../../db/wrappers/chat/chatConversations.js";
 import {
   addConversationMember,
 	getConversationMember,
-	setConversationMemberStatus,
 } from "../../db/wrappers/chat/chatConversationMembers.js";
+import { rateLimiters } from "./rateLimit.js";
 
 export async function chatDirectRoutes(fastify: FastifyInstance) {
     fastify.post(
 		"/direct",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.messaging] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
@@ -28,19 +28,14 @@ export async function chatDirectRoutes(fastify: FastifyInstance) {
 			const conversation = ensureDirectConversation(userId, targetUserId, userId);
 			if (!conversation) return reply.status(500).send({ message: "Failed to create conversation" });
 
-			// Only add/reactivate the requesting user (do not auto-add target)
-			const existing = getConversationMember(conversation.conversation_id, userId);
-			if (!existing) {
-				addConversationMember(conversation.conversation_id, userId, "admin", "active");
-			} else if (existing.status !== "active") {
-				setConversationMemberStatus(conversation.conversation_id, userId, "active");
-			}
+			// Add both users to the conversation on first creation
+			const userExists = getConversationMember(conversation.conversation_id, userId);
+			if (!userExists)
+				addConversationMember(conversation.conversation_id, userId);
 
-			// Ensure target user has a membership row for peer metadata, but keep them inactive on their side
-			const targetMember = getConversationMember(conversation.conversation_id, targetUserId);
-			if (!targetMember) {
-				addConversationMember(conversation.conversation_id, targetUserId, "member", "left");
-			}
+			const targetExists = getConversationMember(conversation.conversation_id, targetUserId);
+			if (!targetExists)
+				addConversationMember(conversation.conversation_id, targetUserId);
 
 			return reply.status(201).send({ conversationId: conversation.conversation_id });
 		}

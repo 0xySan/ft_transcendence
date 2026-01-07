@@ -5,8 +5,8 @@ import { isBlockedBy } from "../db/wrappers/chat/chatUserBlocks.js";
 export type Session = { userId: string; user_id: string; [key: string]: any };
 
 const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_CONNECTIONS_PER_USER = 5;
-const MAX_TOTAL_CONNECTIONS = 10000;
+const MAX_CONNECTIONS_PER_USER = 3;
+const MAX_TOTAL_CONNECTIONS = 200;
 
 type Client = { userId: string; reply: FastifyReply; heartbeat: NodeJS.Timeout; timeout: NodeJS.Timeout };
 const clients = new Map<string, Set<Client>>();

@@ -1,11 +1,12 @@
 import { FastifyInstance } from "fastify";
-import { requirePartialAuth } from "../../middleware/auth.middleware.js";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 import { addClient } from "../../utils/chatEvent.js";
+import { rateLimiters } from "./rateLimit.js";
 
 export async function chatStreamRoutes(fastify: FastifyInstance) {
 	fastify.get(
 		"/stream",
-		{ preHandler: requirePartialAuth },
+		{ preHandler: [requireAuth, rateLimiters.streaming] },
 		async (request, reply) => {
 			const session = (request as any).session;
 			const userId = session?.user_id;
