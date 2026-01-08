@@ -14,7 +14,6 @@ const DEFAULT_AVATAR = (() => {
 interface ProfileData {
 	user: {
 		id: string;
-		email: string;
 		createdAt: string;
 		profile: {
 			username: string;
