@@ -36,7 +36,6 @@ export async function userUsernameRoutes(fastify: FastifyInstance) {
 			return reply.status(200).send({
 				user: {
 					id: user.user_id,
-					email: user.email,
 					createdAt: user.created_at,
 					profile: {
 						username: profile.username,
