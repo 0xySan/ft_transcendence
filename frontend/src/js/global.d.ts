@@ -95,7 +95,7 @@ export interface WorldSettings {
 export interface GameSettings {
 	mode: string;
 	spectatorsAllowed: boolean;
-	playerCount: 2 | 4;
+	playerCount: 2 | 4 | 8 | 16;
 }
 
 /** ### Scoring Settings
