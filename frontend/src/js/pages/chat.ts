@@ -1945,7 +1945,7 @@ function handleUserChange(user: typeof window.currentUser): void {
 	} else {
 		notLoggedDiv.classList.remove('unloaded');
 		chatDiv.classList.add('unloaded');
-		updateUserListVisibility();
+		renderUserList(renderChat);
 	}
 }
 
@@ -1954,8 +1954,6 @@ await window.currentUserReady.then(async () => {
 		loadChatData().then(startChatStream);
 		notLoggedDiv.classList.add('unloaded');
 		chatDiv.classList.remove('unloaded');
-	} else {
-		updateUserListVisibility();
 	}
 });
 
@@ -2006,13 +2004,4 @@ function resetChatState() {
 	}
 	reconnectAttempts = 0;
 	isReconnecting = false;
-}
-
-function updateUserListVisibility() {
-	if (users.length === 0) {
-		userListDiv.innerHTML = '<p>Nobody here :(</p>';
-	} else {
-		userListDiv.innerHTML = ''; // Clear the message
-		renderUserList(renderChat); // Re-render the user list
-	}
 }
