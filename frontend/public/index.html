@@ -238,36 +238,71 @@
 
 				<div class="chat-div-container" aria-label="Chat interface">
 					<button class="chat-header-toggle-users" aria-label="Toggle User List"></button>
-					<div class="user-list"></div>
-
+					<div class="user-list">
+						<!-- <div class="user-item" data-username="Tournament">
+							<img class="img_profile" src="/resources/imgs/tournament.jpg">
+						<p class="name_profile">Tournament</p>
+						</div> -->
+					</div>
 					<div class="chat-block">
 						<div class="chat-header">
 							<img class="img_profile hidden" chat-header="true">
 							<a class="chat-header-profile-pic hidden">
 								<span class="chat-header-title hidden">Template</span>
 							</a>
-							<button class="chat-header-btn hidden" aria-pressed="false" block-button="true">
-								Block
-							</button>
+							<button class="chat-header-btn hidden" aria-pressed="false" block-button="true" data-translate-key="chat.block.blockbtn">Block</button>
 						</div>
-
 						<div class="chat-messages" role="log" aria-live="polite"></div>
-
-						<form class="chat-input-form" novalidate>
+						<form class="chat-input-form" method="post" action="#" novalidate="">
 							<div class="invite-wrapper hidden">
 								<button class="chat-invite-btn">+</button>
 								<div class="invite-menu hidden" role="menu">
-									<button type="button" class="invite-menu-btn">Invite Pong</button>
+									<button type="button" class="invite-menu-btn" data-translate-key="chat.invite.send">Invite to play Pong</button>
 								</div>
 							</div>
-
 							<div class="chat-input hidden" contenteditable="true"></div>
-							<button type="submit" class="chat-send-btn hidden">Send</button>
+							<button type="submit" class="chat-send-btn hidden" data-translate-key="chat.send">Send</button>
 						</form>
 					</div>
 				</div>
+
+				<template class="user-item-temp">
+					<div class="user-item">
+						<img class="img_profile">
+						<span class="name_profile"></span>
+						<span class="name-profile-remove">⨉</span>
+					</div>
+				</template>
+
+				<template class="invite-cancel-temp">
+					<div class="invite-actions">
+						<button type="button" class="invite-cancel" data-translate-key="chat.invite.cancel">Cancel</button>
+					</div>
+				</template>
+
+				<template class="invite-go-temp">
+					<div class="invite-actions">
+						<button type="button" class="invite-go" data-translate-key="chat.invite.play">Play</button>
+					</div>
+				</template>
+
+				<template class="invite-pending-temp">
+					<div class="invite-actions">
+						<button type="button" class="invite-accept" data-translate-key="chat.invite.accept">Accept</button>
+						<button type="button" class="invite-decline" data-translate-key="chat.invite.decline">Decline</button>
+					</div>
+				</template>
+
+				<template class="default-pfp-temp">
+					<svg id="nav-pfp-fallback" class="img_profile" viewBox="-2 -2 6 8">
+						<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4" fill="currentColor"></path>
+					</svg>
+				</template>
+
+				<script src="/js/pages/chat.js" type="module" defer></script>
 			</div>
 		</div>
+		<div id="notification-container"></div>
 		<script defer type="module" src="/js/index.js"></script>
 	</body>
 </html>

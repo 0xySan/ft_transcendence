@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import cookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import swaggerPlugin from "./plugins/swagger/index.js";
+import { closeAll,  } from "./utils/chatEvent.js";
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -32,6 +34,21 @@ async function buildServer() {
 		secret: process.env.COOKIE_SECRET, // for signing cookies
 	});
 
+	// Register multipart plugin for file uploads
+	// - allow only one file per form (`files: 1`)
+	// - keep reasonable max file size (5 MB)
+	// - do not auto-add file streams to `request.body`; route handlers should handle parts
+	// Note: actual file-type validation (PNG/JPG/WEBP/GIF) is performed in `saveAvatarFromFile`
+	// Cast plugin to `any` to avoid TS incompatibilities across @fastify/multipart versions
+	// Keep limits (fileSize, files). We intentionally avoid provider-specific options
+	// that may not exist in all versions' type definitions.
+	app.register(fastifyMultipart as any, {
+		limits: {
+			fileSize: 5 * 1024 * 1024, // 5 MB file size limit
+			files: 1, // only one file allowed per multipart form
+		},
+	});
+
 	await app.register(swaggerPlugin);
 
 	return app;
@@ -53,6 +70,7 @@ async function start() {
 process.on("SIGINT", async () => {
 	console.log("SIGINT received, shutting down");
 	try {
+		closeAll();
 		const app = await buildServer();
 		await app.close();
 		process.exit(0);

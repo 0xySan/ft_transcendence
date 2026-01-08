@@ -45,6 +45,7 @@ export function oauthRoute(fastify: FastifyInstance) {
 			const OAuth = oauthAccounts.map(acc => ({
 				provider: acc.provider_name,
 				linkedAt: acc.linked_at,
+				providerUserId: acc.provider_user_id,
 				profile: JSON.parse(acc.profile_json)
 			}));
 

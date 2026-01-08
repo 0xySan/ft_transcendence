@@ -3,6 +3,10 @@
 // ============================================================================
 // Complete chat system with messaging, user list, layout, and invite handling
 
+declare function translateElement(language: string, element: HTMLElement): void;
+declare function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null>;
+declare function getUserLang(): string;
+
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
@@ -14,6 +18,8 @@ interface Message {
 	hidden?: boolean;
 	type: 'text' | 'invite' | 'system';
 	inviteState?: 'pending' | 'accepted' | 'declined' | 'cancelled';
+	id?: number;
+	conversationId?: number;
 }
 
 interface Conversation {
@@ -38,15 +44,70 @@ const LOAD_MORE_THRESHOLD = 20;
 const TIMEOUT_DELAY = 50;
 const GROUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes for grouping messages
 const DRAFTS_KEY = 'chat_drafts';
+const LAST_ACTIVE_USER_KEY = 'chat_last_active_user';
+const API_BASE = '/api/chat';
+const DEFAULT_AVATAR = (() => {
+	const template = document.querySelector<HTMLTemplateElement>('.default-pfp-temp');
+	return template
+		? (template.content.cloneNode(true) as DocumentFragment)
+		: document.createDocumentFragment();
+})();
+const LANG = getUserLang() || 'en';
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY = 1000; // Start with 1 second
+const MAX_RECONNECT_DELAY = 30000; // Cap at 30 seconds
 
 // Chat State
 const conversations: Conversation = {};
 let activeUser: string | null = null;
 const blockedUsers: Set<string> = new Set();
 const activeUsers: Set<string> = new Set();
+let currentEventSource: EventSource | null = null;
+let isReconnecting = false;
+
+// Rate limiting
+let lastMessageTime = 0;
+const MESSAGE_COOLDOWN = 1000; // 1 second between messages
+
+// Loading states
+const loadingStates = {
+	sendingMessage: false,
+	blockingUser: false,
+	fetchingConversation: false,
+};
+
+async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+	const headers: HeadersInit = { ...(options.headers || {}) };
+	if (options.body !== undefined && !(headers as Record<string, string>)['Content-Type']) {
+		(headers as Record<string, string>)['Content-Type'] = 'application/json';
+	}
+
+	const res = await fetch(path, {
+		credentials: 'include',
+		headers,
+		...options,
+	});
+	if (!res.ok) {
+		if (res.status === 401) {
+			window.loadPage('/');
+			throw new Error('Unauthorized');
+		}
+		const text = await res.text();
+		throw new Error(`API ${res.status}: ${text || res.statusText}`);
+	}
+	return (await res.json()) as T;
+}
 const visibleStart: Record<string, number> = {};
 const scrollPositions: Record<string, number> = {};
 const loadingOlderMessages: Record<string, boolean> = {};
+const conversationMeta: Record<string, { conversationId: number; userId: string; membersById: Record<string, string> }> = {};
+const userIdToName: Record<string, string> = {};
+const userNameToUserId: Record<string, string> = {};
+const userIdToAvatar: Record<string, string | DocumentFragment> = {};
+const userIdToUsername: Record<string, string> = {}; // prefer username for profile links
+let currentUserId: string | null = null;
+const allMessagesLoaded: Record<string, boolean> = {};
 
 // Drafts (persisted in sessionStorage)
 const drafts: Record<string, string> = (() => {
@@ -59,7 +120,7 @@ const drafts: Record<string, string> = (() => {
 
 // User and profile pictures
 const users: string[] = [];
-const profilepics: string[] = [];
+const profilepics: (string | DocumentFragment)[] = [];
 
 // Layout state
 let userListHidden = false;
@@ -68,8 +129,27 @@ let userListHidden = false;
 // HELPER FUNCTIONS
 // ============================================================================
 
+function setAvatarToElement(imgElement: HTMLImageElement, avatar: string | DocumentFragment): void {
+	if (typeof avatar === 'string')
+		imgElement.src = avatar;
+	else if (avatar instanceof DocumentFragment) {
+		if (imgElement.getAttribute('chat-header') === 'true') {
+			avatar.getElementById('nav-pfp-fallback')!.setAttribute('chat-header', 'true');
+			imgElement.replaceWith(avatar.cloneNode(true));
+		}
+		else 
+			imgElement.replaceWith(avatar.cloneNode(true));
+	}
+}
+
 function setActiveUser(user: string | null): void {
 	activeUser = user;
+	try {
+		if (user) sessionStorage.setItem(LAST_ACTIVE_USER_KEY, user);
+		else sessionStorage.removeItem(LAST_ACTIVE_USER_KEY);
+	} catch (_) {
+		// ignore storage failures
+	}
 }
 
 function saveDraft(user: string | null, text: string): void {
@@ -130,96 +210,177 @@ function appendTextWithLineBreaks(parent: HTMLElement, text: string): void {
 }
 
 // ============================================================================
-// DUMMY DATA
+// DATA LOADING (API)
 // ============================================================================
 
-function seedDummyData(): void {
-	Object.keys(conversations).forEach((key) => delete conversations[key]);
-	users.length = 0;
-	profilepics.length = 0;
+function mapApiMessage(
+	msg: {
+		message_id: number;
+		conversation_id: number;
+		sender_id: string;
+		content: string;
+		message_type: 'text' | 'invite' | 'system';
+		invite_state: 'pending' | 'accepted' | 'declined' | 'cancelled' | null;
+		created_at: string;
+	},
+	membersById: Record<string, string>
+): Message {
+	const senderName = msg.sender_id === currentUserId ? 'me' : membersById[msg.sender_id] || msg.sender_id;
+	return {
+		sender: senderName,
+		text: msg.content,
+		timestamp: new Date(msg.created_at),
+		type: msg.message_type,
+		inviteState: msg.invite_state || undefined,
+		id: msg.message_id,
+		conversationId: msg.conversation_id,
+	};
+}
 
-	for (let i = 0; i < 6; i++) users.push(`user${i}`);
+async function loadChatData(): Promise<void> {
+	try {
+		Object.keys(conversations).forEach((key) => delete conversations[key]);
+		users.length = 0;
+		profilepics.length = 0;
+		blockedUsers.clear();
+		Object.keys(visibleStart).forEach((k) => delete visibleStart[k]);
+		Object.keys(conversationMeta).forEach((k) => delete conversationMeta[k]);
+		Object.keys(userIdToName).forEach((k) => delete userIdToName[k]);
+		Object.keys(userNameToUserId).forEach((k) => delete userNameToUserId[k]);
+		Object.keys(userIdToAvatar).forEach((k) => delete userIdToAvatar[k]);
+		Object.keys(allMessagesLoaded).forEach((k) => delete allMessagesLoaded[k]);
 
-	for (let i = 0; i < 6; i++)
-		profilepics.push(
-			`https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 10) % 5}.png`
-		);
+		const convPayload = await apiFetch<{
+			conversations: Array<{
+				id: number;
+				type: 'direct' | 'group';
+				title: string | null;
+				members: Array<{
+					userId: string;
+					username: string | null;
+					displayName: string | null;
+					profilePicture: string | null;
+				}>;
+			}>;
+			currentUserId: string;
+			blocked: string[];
+		}>(`${API_BASE}/conversations`);
 
-	users.forEach((name, i) => {
-		const base = Date.now() - (i + 1) * 6000000;
-		const list = [] as typeof conversations[string];
-		const count = Math.floor(Math.random() * 1000);
-		for (let j = 0; j < count; j++) {
-			const random = Math.floor(Math.random() * 3);
-			list.push({
-				sender: random === 0 ? name : 'me',
-				text: `msg ${j} from ${random === 0 ? name : 'me'}`,
-				timestamp: new Date(base + j),
-				type: 'text',
+		currentUserId = convPayload.currentUserId;
+
+		const directConversations = convPayload.conversations.filter((c) => c.type === 'direct');
+		const messagePromises: Array<Promise<void>> = [];
+
+		for (const conv of directConversations) {
+			const membersById: Record<string, string> = {};
+			conv.members.forEach((m) => {
+				const name = m.displayName || m.username || m.userId;
+				membersById[m.userId] = name;
+				userIdToName[m.userId] = name;
+				userNameToUserId[name] = m.userId;
+				if (m.profilePicture) userIdToAvatar[m.userId] = `/api/users/data/imgs/${m.profilePicture}`;
+				else userIdToAvatar[m.userId] = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+				if (m.username) userIdToUsername[m.userId] = m.username; // store username
 			});
+
+			const peer = conv.members.find((m) => m.userId !== currentUserId);
+			if (!peer) continue;
+			const peerName = peer.displayName || peer.username || peer.userId;
+
+			conversationMeta[peerName] = {
+				conversationId: conv.id,
+				userId: peer.userId,
+				membersById,
+			};
+
+			users.push(peerName);
+			profilepics.push(peer.profilePicture ? `/api/users/data/imgs/${peer.profilePicture}` : (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
+			conversations[peerName] = [];
+
+			messagePromises.push(
+				apiFetch<{ messages: any[] }>(
+					`${API_BASE}/conversations/${conv.id}/messages?limit=${MESSAGES_PAGE}&ascending=false`
+				).then((res) => {
+					const msgs = res.messages
+						.map((m) => mapApiMessage(m, membersById))
+						.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+					conversations[peerName] = msgs;
+					visibleStart[peerName] = Math.max(0, msgs.length - MESSAGES_PAGE);
+					allMessagesLoaded[peerName] = msgs.length < MESSAGES_PAGE;
+				})
+			);
 		}
-		if (list.length === 0) {
-			list.push({
-				sender: name,
-				text: 'Hey! This is a placeholder message.',
-				timestamp: new Date(base),
-				type: 'text',
-			});
-			list.push({
-				sender: 'me',
-				text: 'Nice, just testing the chat UI!',
-				timestamp: new Date(base + 1),
-				type: 'text',
-			});
+
+		await Promise.all(messagePromises);
+
+		convPayload.blocked?.forEach((blockedId) => {
+			const name = userIdToName[blockedId] || blockedId;
+			blockedUsers.add(name);
+		});
+
+		if (users.length > 0) {
+			const saved = (() => {
+				try { return sessionStorage.getItem(LAST_ACTIVE_USER_KEY); } catch (_) { return null; }
+			})();
+			const initialUser = saved && users.includes(saved) ? saved : users[0];
+			setActiveUser(initialUser);
+			renderUserList(renderChat);
+			// Ensure the active conversation renders immediately without requiring a click
+			renderChat();
+			// Keep user list selection state in sync
+			if (initialUser) reorderUserList(initialUser);
 		}
-		conversations[name] = list;
-	});
+	} catch (err) {
+		if (err instanceof Error && err.message.toLowerCase().includes('unauthorized')) {
+			// Already redirected in apiFetch
+			return;
+		}
+		console.error('Failed to load chat data:', err);
+	}
+}
 
-	conversations['user4'] = [
-		{
-			sender: 'user4',
-			type: 'invite',
-			inviteState: 'pending',
-			text: 'Wanna play Pong?',
-			timestamp: new Date(Date.now() - 1),
-		},
-		{
-			sender: 'user4',
-			type: 'invite',
-			inviteState: 'pending',
-			text: 'Wanna play Pong?',
-			timestamp: new Date(Date.now() - 2),
-		},
-		{
-			sender: 'user4',
-			text: 'This is a longer message to test how the chat UI handles wrapping and multiple lines. Let\'s see how it looks when the message exceeds the typical length of a chat bubble. Hopefully, it wraps nicely and remains readable!',
-			timestamp: new Date(Date.now() - 3),
-			type: 'text',
-		},
-		{
-			sender: 'me',
-			text: 'Indeed, it seems to be working well!\nNew line test.',
-			timestamp: new Date(Date.now() - 4),
-			type: 'text',
-		},
-	];
+async function blockUserApi(user: string): Promise<boolean> {
+	if (loadingStates.blockingUser) return false;
+	const targetId = conversationMeta[user]?.userId || userNameToUserId[user];
+	if (!targetId) return false;
+	
+	loadingStates.blockingUser = true;
+	try {
+		await apiFetch(`${API_BASE}/blocks/${encodeURIComponent(targetId)}`, { 
+			method: 'POST',
+			body: JSON.stringify({})
+		});
+		blockedUsers.add(user);
+		return true;
+	} catch (err) {
+		notify(`Failed to block ${user}`, { type: 'error' });
+		console.error('Block user error:', err);
+		return false;
+	} finally {
+		loadingStates.blockingUser = false;
+	}
+}
 
-	conversations['user2'] = [];
-
-	conversations['Dummy'] = [
-		{ sender: 'Dummy', text: 'Hi there!', timestamp: new Date(Date.now() - 5), type: 'text' },
-		{ sender: 'me', text: 'Hello Dummy, how are you?', timestamp: new Date(Date.now() - 6), type: 'text' },
-		{
-			sender: 'me',
-			type: 'invite',
-			inviteState: 'accepted',
-			text: 'Wanna play Pong?',
-			timestamp: new Date(Date.now() - 7),
-		},
-	];
-
-	users.push('Dummy');
-	profilepics.push('https://i.ibb.co/VcQ5RQwX/dummy.png');
+async function unblockUserApi(user: string): Promise<boolean> {
+	if (loadingStates.blockingUser) return false;
+	const targetId = conversationMeta[user]?.userId || userNameToUserId[user];
+	if (!targetId) return false;
+	
+	loadingStates.blockingUser = true;
+	try {
+		await apiFetch(`${API_BASE}/blocks/${encodeURIComponent(targetId)}`, { 
+			method: 'DELETE',
+			body: JSON.stringify({})
+		});
+		blockedUsers.delete(user);
+		return true;
+	} catch (err) {
+		notify(`Failed to unblock ${user}`, { type: 'error' });
+		console.error('Unblock user error:', err);
+		return false;
+	} finally {
+		loadingStates.blockingUser = false;
+	}
 }
 
 // ============================================================================
@@ -396,6 +557,7 @@ function loadMessages(
 			if (first.sender === 'me') container.classList.add('me');
 			container.dataset.index = String(globalFirstIdx);
 			container.dataset.count = String(group.length);
+			container.dataset.messageId = String(first.id || '');
 
 			const timeSpan = document.createElement('span');
 			timeSpan.className = 'chat-time';
@@ -405,10 +567,13 @@ function loadMessages(
 
 			const inviteText = document.createElement('span');
 			inviteText.className = 'invite-text';
+			const displayUser = first.sender === 'me' ? String(activeUser || 'player') : first.sender;
+
 			if (first.sender === 'me')
-				inviteText.textContent = `You invited ${String(activeUser || 'player')} to play Pong.`;
+				inviteText.textContent = `You invited ${displayUser} to play Pong.`;
 			else
-				inviteText.textContent = `${first.sender} invited you to play Pong.`;
+				inviteText.textContent = `${displayUser} invited you to play Pong.`;
+
 			container.appendChild(inviteText);
 
 			if (first.sender === 'me')
@@ -515,9 +680,16 @@ function updateInviteState(
 	container: HTMLElement,
 	msg: Message,
 	newState: 'accepted' | 'declined' | 'cancelled',
-	msgIndex: number
+	msgIndex: number,
+	skipApi = false
 ): void {
 	msg.inviteState = newState;
+	if (!skipApi && msg.id) {
+		apiFetch(`${API_BASE}/messages/${msg.id}/invite`, {
+			method: 'PATCH',
+			body: JSON.stringify({ state: newState, conversationId: msg.conversationId }),
+		}).catch((err) => console.error('Failed to update invite state', err));
+	}
 
 	// Remove old buttons
 	const buttonsContainer = container.querySelector('div');
@@ -530,10 +702,10 @@ function updateInviteState(
 	// If accepted, add the "go" button
 	if (newState === 'accepted') {
 		const goTemp = document.querySelector<HTMLTemplateElement>('.invite-go-temp');
-		const fragment = goTemp!.content.cloneNode(true) as DocumentFragment;
+		if (!goTemp) return; // template missing, nothing to render
+		const fragment = goTemp.content.cloneNode(true) as DocumentFragment;
 		const goBtn = fragment.querySelector<HTMLButtonElement>('.invite-go');
-		if (goBtn)
-			goBtn.dataset.index = String(msgIndex);
+		if (goBtn) goBtn.dataset.index = String(msgIndex);
 		container.appendChild(fragment);
 	}
 }
@@ -542,64 +714,136 @@ function updateInviteState(
 // ACTIONS
 // ============================================================================
 
-function submitMessage(
+
+async function submitMessage(
 	input: HTMLDivElement,
 	sendBtn: HTMLButtonElement,
 	messagesDiv: HTMLDivElement
-): void {
+): Promise<void> {
 	if (!activeUser) return;
 	if (blockedUsers.has(activeUser)) return;
 
 	const text = input.textContent?.trim() || '';
 	if (!text) return;
 
-	const newMsg: Message = {
-		sender: 'me',
-		text,
-		timestamp: new Date(),
-		type: 'text',
-	};
+	// Rate limiting
+	const now = Date.now();
+	if (now - lastMessageTime < MESSAGE_COOLDOWN) {
+		notify('Please slow down - wait a moment between messages', { type: 'warning' });
+		return;
+	}
 
-	if (!conversations[activeUser]) conversations[activeUser] = [];
-	conversations[activeUser].push(newMsg);
-	const msgIndex = conversations[activeUser].length - 1;
+	// Content length validation
+	if (text.length > 4000) {
+		notify('Message must be 4000 characters or less', { type: 'warning' });
+		return;
+	}
 
-	const len = conversations[activeUser].length;
-	if (!visibleStart[activeUser])
-		visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
-	else if (
-		visibleStart[activeUser] >= len - 1 - MESSAGES_PAGE ||
-		messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 100
-	)
-		visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+	const meta = conversationMeta[activeUser];
+	if (!meta) return;
 
-	input.textContent = '';
-	clearDraft(activeUser);
-	input.classList.add('empty');
-	sendBtn.hidden = true;
-	appendMessageToDOM(newMsg, msgIndex);
-	reorderUserList(activeUser);
+	// Prevent duplicate sends
+	if (loadingStates.sendingMessage) return;
+	loadingStates.sendingMessage = true;
+	sendBtn.disabled = true;
+	sendBtn.dataset.translateKey = 'chat.sending';
+	try {
+		const translated = await getTranslatedElementText(LANG, sendBtn);
+		if (translated) sendBtn.textContent = translated;
+	} catch (e) {
+		sendBtn.textContent = 'Sending...';
+	}
+
+	try {
+		const res = await apiFetch<{ message: any }>(`${API_BASE}/conversations/${meta.conversationId}/messages`, {
+			method: 'POST',
+			body: JSON.stringify({ content: text, messageType: 'text' }),
+		});
+
+		lastMessageTime = now;
+		const newMsg = mapApiMessage(res.message, meta.membersById);
+
+		if (!conversations[activeUser]) conversations[activeUser] = [];
+		conversations[activeUser].push(newMsg);
+		const msgIndex = conversations[activeUser].length - 1;
+
+		const len = conversations[activeUser].length;
+		const currentStart = visibleStart[activeUser];
+
+		if (currentStart === undefined)
+			visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+		else if (
+			currentStart >= len - 1 - MESSAGES_PAGE ||
+			messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 100
+		)
+			visibleStart[activeUser] = Math.max(0, len - MESSAGES_PAGE);
+
+		input.textContent = '';
+		clearDraft(activeUser);
+		input.classList.add('empty');
+		sendBtn.hidden = true;
+		appendMessageToDOM(newMsg, msgIndex);
+		reorderUserList(activeUser);
+	} catch (err) {
+		if (err instanceof Error) {
+			if (err.message.includes('403')) {
+				if (err.message.toLowerCase().includes('no other participants') || err.message.toLowerCase().includes('conversation')) {
+					// Disable input for this conversation and notify user
+					input.contentEditable = 'false';
+					sendBtn.hidden = true;
+					notify('You cannot send messages: this conversation has ended.', { type: 'warning' });
+				} else {
+					notify('You cannot send messages to this user', { type: 'warning' });
+				}
+			}
+			else if (err.message.includes('400'))
+				notify('Invalid message - please check your input', { type: 'warning' });
+			else {
+				notify('Failed to send message - please try again', { type: 'error' });
+				console.error('Send message error:', err);
+			}
+		}
+	} finally {
+		loadingStates.sendingMessage = false;
+		if (!sendBtn.hidden)
+			sendBtn.disabled = false;
+	}
 }
 
-function sendInvite(user: string): void {
+async function sendInvite(user: string): Promise<void> {
 	if (!user) return;
-
 	if (blockedUsers.has(user)) return;
-	if (!conversations[user]) conversations[user] = [];
+	const meta = conversationMeta[user];
+	if (!meta) return;
 
-	const inviteMsg: Message = {
-		sender: 'me',
-		text: `invited ${user} to a pong game`,
-		timestamp: new Date(),
-		type: 'invite',
-		inviteState: 'pending',
-	};
+	try {
+		const res = await apiFetch<{ message: any }>(`${API_BASE}/conversations/${meta.conversationId}/messages`, {
+			method: 'POST',
+			body: JSON.stringify({ content: `invited ${user} to a pong game`, messageType: 'invite', inviteState: 'pending' }),
+		});
 
-	conversations[user].push(inviteMsg);
-	const msgIndex = conversations[user].length - 1;
-
-	reorderUserList(user);
-	appendMessageToDOM(inviteMsg, msgIndex);
+		const inviteMsg = mapApiMessage(res.message, meta.membersById);
+		if (!conversations[user]) conversations[user] = [];
+		conversations[user].push(inviteMsg);
+		const msgIndex = conversations[user].length - 1;
+		reorderUserList(user);
+		appendMessageToDOM(inviteMsg, msgIndex);
+		setTimeout(() => {
+			if (window.loadPage)
+				window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
+			else
+				notify('Failed to navigate to lobby', { type: 'error' });
+		}, NAVIGATION_DELAY);
+	} catch (err) {
+		if (err instanceof Error) {
+			if (err.message.includes('403')) {
+				notify('You cannot send invites to this user', { type: 'warning' });
+			} else {
+				notify('Failed to send invite - please try again', { type: 'error' });
+				console.error('Send invite error:', err);
+			}
+		}
+	}
 }
 
 // ============================================================================
@@ -636,6 +880,106 @@ function reorderUserList(movedUser: string): void {
 	if (!inserted) userListDiv.appendChild(item);
 }
 
+async function fetchSingleConversation(conversationId: number): Promise<string | null> {
+	if (loadingStates.fetchingConversation) return null;
+	
+	loadingStates.fetchingConversation = true;
+	try {
+		const res = await apiFetch<{
+			conversation: {
+				id: number;
+				type: 'direct' | 'group';
+				title: string | null;
+				members: Array<{
+					userId: string;
+					username: string | null;
+					displayName: string | null;
+					profilePicture: string | null;
+				}>;
+			};
+			currentUserId: string;
+		}>(`${API_BASE}/conversations/${conversationId}`);
+
+		const conv = res.conversation;
+		const membersById: Record<string, string> = {};
+		
+		conv.members.forEach((m) => {
+			const name = m.displayName || m.username || m.userId;
+			membersById[m.userId] = name;
+			userIdToName[m.userId] = name;
+			userNameToUserId[name] = m.userId;
+			if (m.profilePicture) userIdToAvatar[m.userId] = `/api/users/data/imgs/${m.profilePicture}`;
+			else userIdToAvatar[m.userId] = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+			if (m.username) userIdToUsername[m.userId] = m.username;
+		});
+
+		const peer = conv.members.find((m) => m.userId !== res.currentUserId);
+		if (!peer) return null;
+		
+		const peerName = peer.displayName || peer.username || peer.userId;
+
+		conversationMeta[peerName] = {
+			conversationId: conv.id,
+			userId: peer.userId,
+			membersById,
+		};
+
+		if (!users.includes(peerName)) {
+			users.push(peerName);
+			profilepics.push(peer.profilePicture ? `/api/users/data/imgs/${peer.profilePicture}` : (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
+		}
+
+		if (!conversations[peerName]) {
+			conversations[peerName] = [];
+			visibleStart[peerName] = 0;
+			allMessagesLoaded[peerName] = true; // No messages loaded yet
+		}
+
+		renderUserList(renderChat);
+
+		return peerName;
+	} catch (err) {
+		notify('Failed to load conversation', { type: 'error' });
+		console.error('Failed to fetch conversation:', err);
+		return null;
+	} finally {
+		loadingStates.fetchingConversation = false;
+	}
+}
+
+function addNewUserToConversation(conversationId: number, senderId: string, senderInfo: { displayName?: string; username?: string; profilePicture?: string; userId?: string }): string | null {
+	// Check if user already exists
+	const existingEntry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
+	if (existingEntry) return existingEntry[0]; // User already in list
+
+	// Create a new conversation entry for this user
+	const peerName = senderInfo.displayName || senderInfo.username || senderId;
+	const userId = senderInfo.userId || senderId;
+	
+	conversationMeta[peerName] = {
+		conversationId,
+		userId,
+		membersById: { [userId]: peerName }
+	};
+
+	if (senderInfo.userId) userIdToUsername[senderInfo.userId] = senderInfo.username || peerName;
+	if (senderInfo.profilePicture) {
+		userIdToAvatar[userId] = `/api/users/data/imgs/${senderInfo.profilePicture}`;
+	} else {
+		userIdToAvatar[userId] = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+	}
+
+	conversations[peerName] = [];
+	activeUsers.add(peerName);
+	visibleStart[peerName] = 0;
+	allMessagesLoaded[peerName] = true;
+
+	userListDiv.innerHTML = ''; // Clear existing list
+	renderUserList(renderChat);
+
+	return peerName;
+}
+
 function renderUserList(onSelectUser: () => void): void {
 	const sortedUsers = Object.keys(conversations).sort(
 		(a, b) => getLastTimestamp(b) - getLastTimestamp(a)
@@ -653,12 +997,14 @@ function renderUserList(onSelectUser: () => void): void {
 
 		const imgElement = fragment.querySelector<HTMLImageElement>('.img_profile');
 		if (imgElement) {
-			const userIdx = users.indexOf(name);
-			imgElement.src =
-				userIdx === -1 ? profilepics[0] : profilepics[userIdx % profilepics.length];
+			const userId = conversationMeta[name]?.userId;
+			const avatar = userId ? userIdToAvatar[userId] : DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+			setAvatarToElement(imgElement, avatar || (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
 		}
 		const pElement = fragment.querySelector<HTMLParagraphElement>('.name_profile');
-		if (pElement) pElement.textContent = name;
+		if (pElement) {
+			pElement.textContent = name;
+		}
 
 		divElement.addEventListener('click', () => {
 			const oldUser = activeUser;
@@ -708,6 +1054,78 @@ function renderUserList(onSelectUser: () => void): void {
 			}
 		});
 
+		// Add remove user functionality
+		const removeBtn = fragment.querySelector<HTMLSpanElement>('.name-profile-remove');
+		if (removeBtn) {
+			removeBtn.addEventListener('click', async (e) => {
+				e.stopPropagation(); // Prevent triggering the user selection
+
+				const conversationId = conversationMeta[name]?.conversationId;
+				if (conversationId) {
+					try {
+						await apiFetch(`${API_BASE}/conversations/${conversationId}`, {
+							method: 'DELETE'
+						});
+					} catch (err) {
+						console.error('Failed to leave conversation:', err);
+						return;
+					}
+				}
+
+				// If the removed user was active, switch to another user or clear the chat
+				if (activeUser === name) {
+					// Find the next available user or clear the view
+					const remainingUsers = Object.keys(conversations).filter(u => u !== name);
+					if (remainingUsers.length > 0) {
+						setActiveUser(remainingUsers[0]);
+						activeUsers.add(remainingUsers[0]);
+					} else {
+						setActiveUser(null);
+						activeUsers.clear();
+					}
+				}
+
+				const messagesSelector = `.chat-messages[user="${CSS.escape(name)}"]`;
+				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(messagesSelector);
+				if (messagesDiv)
+					messagesDiv.remove();
+
+				const userId = userNameToUserId[name];
+				if (userId !== undefined) {
+					delete userIdToName[userId];
+					delete userIdToAvatar[userId];
+					delete userIdToUsername[userId];
+					delete userNameToUserId[name];
+				}
+
+				delete conversations[name];
+				delete conversationMeta[name];
+				delete visibleStart[name];
+				delete scrollPositions[name];
+				delete loadingOlderMessages[name];
+				delete allMessagesLoaded[name];
+				activeUsers.delete(name);
+
+				divElement.remove();
+
+				if (activeUser)
+					renderChat();
+				else {
+					const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
+					const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
+					const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
+					const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
+					const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
+					const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+					profileImg.classList.add('hidden');
+					titleSpan.classList.add('hidden');
+					profileLink.classList.add('hidden');
+					headerBlockBtn.classList.add('hidden');
+					form.classList.add('hidden');
+				}
+			});
+		}
+
 		userListDiv.appendChild(divElement);
 	});
 }
@@ -731,10 +1149,11 @@ function updateBlockedUI(user: string): void {
 	inviteBtn.classList.toggle('disabled', user === 'me' || isBlocked);
 	inviteBtn.title = isBlocked ? `Cannot invite ${user} (blocked)` : `Invite ${user} to play`;
 
-	const placeholderText = isBlocked
-		? `You have blocked @${user}. Unblock to send messages.`
-		: `Type a message to @${user}`;
-	input.dataset.placeholder = placeholderText;
+	input.dataset.translateKey = blockedUsers.has(user) ? "chat.block.blockedPlaceholder" : "chat.block.placeholder";
+	getTranslatedElementText(LANG, input).then(translatedText => {
+		if (translatedText)
+			input.dataset.placeholder = translatedText.replace('$user', user);
+	});
 	input.contentEditable = isBlocked ? 'false' : 'true';
 
 	if (isBlocked) {
@@ -789,13 +1208,22 @@ function updateChatHeader(user: string): void {
 	const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
 	const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
 
-	profileImg.src = profilepics[users.indexOf(user) % profilepics.length];
-	profileImg.alt = `${user}'s profile picture`;
+	const avatar = conversationMeta[user]?.userId
+		? userIdToAvatar[conversationMeta[user].userId]
+		: profilepics[users.indexOf(user) % Math.max(1, profilepics.length)];
+	setAvatarToElement(profileImg, avatar || (DEFAULT_AVATAR.cloneNode(true) as DocumentFragment));
 	titleSpan.textContent = user;
-	profileLink.href = `/profile/${encodeURIComponent(user)}`;
+	const usernameForLink = conversationMeta[user]?.userId
+		? (userIdToUsername[conversationMeta[user].userId] || user)
+		: user;
+	profileLink.href = `/profile?user=${encodeURIComponent(usernameForLink)}`;
 
 	const isBlocked = blockedUsers.has(user);
-	headerBlockBtn.textContent = isBlocked ? 'Unblock' : 'Block';
+	headerBlockBtn.dataset.translateKey = isBlocked ? "chat.block.unblockbtn" : "chat.block.blockbtn";
+	getTranslatedElementText(LANG, headerBlockBtn).then(translatedText => {
+		if (translatedText)
+			headerBlockBtn.textContent = translatedText;
+	});
 	headerBlockBtn.setAttribute('aria-pressed', String(isBlocked));
 	headerBlockBtn.hidden = user === 'me';
 }
@@ -814,11 +1242,14 @@ function updateBlockedState(user: string): void {
 		const msgs = conversations[user] || [];
 		messagesDiv.innerHTML = '';
 		const startIndex = visibleStart[user] || 0;
+		const shouldShowTopHint = msgs.length > 0 && (startIndex > 0 || allMessagesLoaded[user] === false);
 
-		if (startIndex > 0) {
+		if (shouldShowTopHint) {
 			const topHint = document.createElement('div');
 			topHint.className = 'load-older-hint';
-			topHint.textContent = 'Scroll up to load earlier messages';
+			topHint.dataset.translateKey = "chat.block.loadHint";
+			topHint.textContent = 'Scroll up to load previous messages';
+			translateElement(LANG, topHint);
 			messagesDiv.appendChild(topHint);
 		}
 
@@ -877,6 +1308,7 @@ function renderChat(): void {
 	updateChatHeader(activeUser);
 
 	const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+	form.classList.remove('hidden');
 
 	let messagesDiv = chatBlock.querySelector<HTMLDivElement>(currentSelector);
 	if (!messagesDiv) {
@@ -899,21 +1331,28 @@ function renderChat(): void {
 		else div.classList.add('hidden');
 	});
 
-	const newBlockBtn = headerBlockBtn.cloneNode(true) as HTMLButtonElement;
-	headerBlockBtn.replaceWith(newBlockBtn);
-	newBlockBtn.addEventListener('click', (e) => {
+	// Update block button in place - only replace handler, not the element
+	const blockBtnHandler = (e: Event) => {
 		e.preventDefault();
 		e.stopPropagation();
-		if (blockedUsers.has(activeUser!)) blockedUsers.delete(activeUser!);
-		else {
-			blockedUsers.add(activeUser!);
-			if (activeUser)
-				conversations[activeUser]?.forEach((element) => {
+		const user = activeUser as string;
+		if (!user) return;
+		if (blockedUsers.has(user)) {
+			unblockUserApi(user).then(() => updateBlockedState(user));
+		} else {
+			blockUserApi(user).then(() => {
+				conversations[user]?.forEach((element: Message) => {
 					element.hidden = true;
 				});
+				updateBlockedState(user);
+			});
 		}
-		updateBlockedState(activeUser!);
-	});
+	};
+	
+	// Clone only to replace event handlers (no way to remove old listeners without reference)
+	const newBlockBtn = headerBlockBtn.cloneNode(true) as HTMLButtonElement;
+	headerBlockBtn.replaceWith(newBlockBtn);
+	newBlockBtn.addEventListener('click', blockBtnHandler);
 
 	const msgs = conversations[activeUser] || [];
 	if (visibleStart[activeUser] === undefined)
@@ -928,13 +1367,18 @@ function renderChat(): void {
 	messagesDiv.appendChild(fragment);
 	messagesDiv.dataset.messageCount = String(msgs.length);
 
-	if (startIndex > 0) {
+	const shouldShowTopHint = msgs.length > 0 && (startIndex > 0 || allMessagesLoaded[activeUser] === false);
+	if (shouldShowTopHint) {
+		messagesDiv.querySelector('.load-older-hint')?.remove();
 		const topHint = document.createElement('div');
 		topHint.className = 'load-older-hint';
-		topHint.textContent = 'Scroll up to load earlier messages';
+		topHint.dataset.translateKey = "chat.block.loadHint";
+		topHint.textContent = 'Scroll up to load previous messages';
+		translateElement(LANG, topHint);
 		messagesDiv.insertBefore(topHint, messagesDiv.firstChild);
 	}
 
+	// Update form elements in place instead of cloning
 	const newForm = form.cloneNode(true) as HTMLFormElement;
 	form.replaceWith(newForm);
 	const newInput = newForm.querySelector<HTMLDivElement>('.chat-input')!;
@@ -942,10 +1386,9 @@ function renderChat(): void {
 	const newInviteWrapper = newForm.querySelector<HTMLDivElement>('.invite-wrapper')!;
 	const newInviteBtn = newInviteWrapper.querySelector<HTMLButtonElement>('.chat-invite-btn')!;
 	const newInviteMenu = newInviteWrapper.querySelector<HTMLDivElement>('.invite-menu')!;
-	const newInviteMenuBtns = newInviteMenu.querySelectorAll<HTMLButtonElement>(
-		'.invite-menu-btn'
-	);
+	const newInviteMenuBtns = newInviteMenu.querySelectorAll<HTMLButtonElement>('.invite-menu-btn');
 	const newBtnPong = newInviteMenuBtns[0];
+	
 	newInviteMenu.classList.add('hidden');
 	newInviteWrapper.classList.remove('hidden');
 	newInput.classList.remove('hidden');
@@ -956,10 +1399,11 @@ function renderChat(): void {
 	if (blockedUsers.has(activeUser!))
 		newInviteBtn.title = `Cannot invite ${activeUser} (blocked)`;
 
-	const placeholderText = blockedUsers.has(activeUser)
-		? `You have blocked @${activeUser}. Unblock to send messages.`
-		: `Type a message to @${activeUser}`;
-	newInput.dataset.placeholder = placeholderText;
+	newInput.dataset.translateKey = blockedUsers.has(activeUser) ? "chat.block.blockedPlaceholder" : "chat.block.placeholder";
+	getTranslatedElementText(LANG, newInput).then(translatedText => {
+		if (translatedText)
+			newInput.dataset.placeholder = translatedText.replace('$user', activeUser!);
+	});
 	newInput.contentEditable = blockedUsers.has(activeUser) ? 'false' : 'true';
 
 	const initialDraft = drafts[activeUser] || '';
@@ -975,24 +1419,28 @@ function renderChat(): void {
 		newInput.classList.add('blocked-conversation');
 		newSendBtn.disabled = true;
 		newSendBtn.hidden = true;
-		newBlockBtn.textContent = 'Unblock';
+		newBlockBtn.dataset.translateKey = "chat.block.unblockbtn";
 		newBlockBtn.setAttribute('aria-pressed', 'true');
 		newInviteWrapper.setAttribute('aria-disabled', 'true');
 	} else {
 		newInput.classList.remove('blocked-conversation');
 		newSendBtn.disabled = false;
 		newSendBtn.hidden = newInput.textContent!.trim() === '';
-		newBlockBtn.textContent = 'Block';
+		newBlockBtn.dataset.translateKey = "chat.block.blockbtn";
 		newBlockBtn.setAttribute('aria-pressed', 'false');
 		newInviteWrapper.removeAttribute('aria-disabled');
 	}
+	getTranslatedElementText(LANG, newBlockBtn).then(translatedText => {
+		if (translatedText)
+			newBlockBtn.textContent = translatedText;
+	});
 
 	newBtnPong.addEventListener('click', (ev) => {
 		ev.preventDefault();
 		ev.stopPropagation();
 		if (!activeUser) return;
 		if (blockedUsers.has(activeUser)) return;
-		sendInvite(activeUser);
+		void sendInvite(activeUser);
 		newInviteMenu.classList.add('hidden');
 	});
 
@@ -1003,19 +1451,16 @@ function renderChat(): void {
 		newInviteMenu.classList.toggle('hidden');
 	});
 
-	const newMessagesDiv = messagesDiv.cloneNode(true) as HTMLDivElement;
-	messagesDiv.replaceWith(newMessagesDiv);
-
 	newForm.addEventListener('submit', (e) => {
 		e.preventDefault();
-		submitMessage(newInput, newSendBtn, newMessagesDiv);
+		submitMessage(newInput, newSendBtn, messagesDiv);
 	});
 
 	newInput.addEventListener('keydown', (e: KeyboardEvent) => {
 		if (e.isComposing) return;
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
-			submitMessage(newInput, newSendBtn, newMessagesDiv);
+			submitMessage(newInput, newSendBtn, messagesDiv);
 		}
 	});
 
@@ -1033,18 +1478,18 @@ function renderChat(): void {
 	});
 
 	requestAnimationFrame(() => {
-		if (wasNearBottom) newMessagesDiv.scrollTop = newMessagesDiv.scrollHeight;
+		if (wasNearBottom) messagesDiv.scrollTop = messagesDiv.scrollHeight;
 		else if (prevScrollHeight > 0) {
-			newMessagesDiv.scrollTop = newMessagesDiv.scrollHeight - prevScrollHeight + prevScrollTop;
-			if (newMessagesDiv.scrollTop < 0) newMessagesDiv.scrollTop = 0;
+			messagesDiv.scrollTop = messagesDiv.scrollHeight - prevScrollHeight + prevScrollTop;
+			if (messagesDiv.scrollTop < 0) messagesDiv.scrollTop = 0;
 		} else if (scrollPositions[activeUser!] !== undefined) {
-			newMessagesDiv.scrollTop = scrollPositions[activeUser!];
+			messagesDiv.scrollTop = scrollPositions[activeUser!];
 		} else {
-			newMessagesDiv.scrollTop = prevScrollTop;
+			messagesDiv.scrollTop = prevScrollTop;
 		}
 	});
 
-	newMessagesDiv.addEventListener('click', (e) => {
+	messagesDiv.addEventListener('click', (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
 		if (target.classList.contains('show-blocked-btn')) {
@@ -1080,7 +1525,7 @@ function renderChat(): void {
 				updateInviteState(container as HTMLElement, msg, 'accepted', idx);
 				setTimeout(() => {
 					if (window.loadPage)
-						window.loadPage(`/pong-board?enemy=${activeUser}`);
+						window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
 					else
 						return ; // error popup should happen here
 				}, NAVIGATION_DELAY);
@@ -1097,7 +1542,7 @@ function renderChat(): void {
 			if (inviteBtn.classList.contains('invite-go')) {
 				setTimeout(() => {
 					if (window.loadPage)
-						window.loadPage(`/pong-board?enemy=${activeUser}`);
+						window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
 					else
 						return ; // error popup should happen here
 				}, NAVIGATION_DELAY);
@@ -1106,7 +1551,7 @@ function renderChat(): void {
 		}
 	});
 
-	const handleScroll = () => {
+	const handleScroll = async () => {
 		const user = activeUser!;
 		const currentMessagesDiv = chatBlock.querySelector<HTMLDivElement>(
 			`.chat-messages[user="${CSS.escape(user)}"]`
@@ -1115,44 +1560,87 @@ function renderChat(): void {
 		if (loadingOlderMessages[user]) return;
 
 		if (currentMessagesDiv.scrollTop <= LOAD_MORE_THRESHOLD) {
-			const curStart = visibleStart[user] || 0;
-			if (curStart === 0) return;
-
 			loadingOlderMessages[user] = true;
+			const curStart = visibleStart[user] || 0;
 			const prevScrollHeight = currentMessagesDiv.scrollHeight;
 			const prevScrollTop = currentMessagesDiv.scrollTop;
-			const newStart = Math.max(0, curStart - MESSAGES_PAGE);
-			const msgs = conversations[user] || [];
-			const olderSlice = msgs.slice(newStart, curStart);
-			visibleStart[user] = newStart;
 
-			setTimeout(() => {
+			if (curStart > 0) {
+				const newStart = Math.max(0, curStart - MESSAGES_PAGE);
+				const msgs = conversations[user] || [];
+				const olderSlice = msgs.slice(newStart, curStart);
+				visibleStart[user] = newStart;
+
+				setTimeout(() => {
+					const activeMsgDiv = chatBlock.querySelector<HTMLDivElement>(
+						`.chat-messages[user="${CSS.escape(user)}"]`
+					);
+					if (!activeMsgDiv) return;
+
+					const olderFragment = loadMessages(newStart, olderSlice, newStart);
+					const oldHint = activeMsgDiv.querySelector('.load-older-hint');
+					if (oldHint) oldHint.remove();
+					activeMsgDiv.insertBefore(olderFragment, activeMsgDiv.firstChild);
+
+					if (newStart > 0) {
+						const topHint = document.createElement('div');
+						topHint.className = 'load-older-hint';
+						topHint.dataset.translateKey = "chat.block.loadHint";
+						topHint.textContent = 'Scroll up to load previous messages';
+						translateElement(LANG, topHint);
+						activeMsgDiv.insertBefore(topHint, activeMsgDiv.firstChild);
+					}
+
+					requestAnimationFrame(() => {
+						activeMsgDiv.scrollTop = activeMsgDiv.scrollHeight - prevScrollHeight + prevScrollTop;
+						loadingOlderMessages[user] = false;
+					});
+				}, TIMEOUT_DELAY);
+			} else {
+				if (allMessagesLoaded[user]) {
+					loadingOlderMessages[user] = false;
+					return;
+				}
+				const older = await fetchOlderMessages(user);
+				if (!older.length) {
+					allMessagesLoaded[user] = true;
+					loadingOlderMessages[user] = false;
+					return;
+				}
+
 				const activeMsgDiv = chatBlock.querySelector<HTMLDivElement>(
 					`.chat-messages[user="${CSS.escape(user)}"]`
 				);
-				if (!activeMsgDiv) return;
+				if (!activeMsgDiv) {
+					loadingOlderMessages[user] = false;
+					return;
+				}
 
-				const olderFragment = loadMessages(newStart, olderSlice, newStart);
+				const olderFragment = loadMessages(0, older, 0);
 				const oldHint = activeMsgDiv.querySelector('.load-older-hint');
 				if (oldHint) oldHint.remove();
 				activeMsgDiv.insertBefore(olderFragment, activeMsgDiv.firstChild);
 
-				if (newStart > 0) {
+				if (older.length === MESSAGES_PAGE) {
 					const topHint = document.createElement('div');
 					topHint.className = 'load-older-hint';
-					topHint.textContent = 'Scroll up to load earlier messages';
+					topHint.dataset.translateKey = "chat.block.loadHint";
+					topHint.textContent = 'Scroll up to load previous messages';
+					translateElement(LANG, topHint);
 					activeMsgDiv.insertBefore(topHint, activeMsgDiv.firstChild);
 				}
+
+				activeMsgDiv.dataset.messageCount = String((conversations[user] || []).length);
 
 				requestAnimationFrame(() => {
 					activeMsgDiv.scrollTop = activeMsgDiv.scrollHeight - prevScrollHeight + prevScrollTop;
 					loadingOlderMessages[user] = false;
 				});
-			}, TIMEOUT_DELAY);
+			}
 		}
 	};
 
-	newMessagesDiv.addEventListener('scroll', handleScroll);
+	messagesDiv.addEventListener('scroll', handleScroll);
 }
 
 // ============================================================================
@@ -1161,6 +1649,271 @@ function renderChat(): void {
 
 export {};
 
+function startChatStream() {
+	// Close existing connection if any (closing automatically removes all listeners)
+	if (currentEventSource) {
+		currentEventSource.close();
+		currentEventSource = null;
+	}
+
+	currentEventSource = new EventSource("/api/chat/stream", { withCredentials: true });
+
+	const onOpen = () => {
+		reconnectAttempts = 0; // Reset on successful connection
+		console.log('Chat stream connected successfully');
+	};
+
+	const onMessage = async (ev: MessageEvent) => {
+		try {
+			const payload = JSON.parse(ev.data) as { conversationId: number; message: any };
+			const { conversationId } = payload;
+			const msg = payload.message;
+
+			// Ignore my own message (already appended after POST)
+			if (msg?.sender_id && msg.sender_id === currentUserId) return;
+
+			// Find username by conversationId
+			let entry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);
+	  
+			// If this is a new conversation not in our list, reload conversations to add the new user
+			if (!entry) {
+				if (msg?.sender_id && msg.sender_id !== currentUserId) {
+					const prevActive = activeUser;
+					
+					try {
+						// Fetch only the new conversation instead of reloading everything
+						const peerName = await fetchSingleConversation(conversationId);
+						if (peerName) {
+							entry = [peerName, conversationMeta[peerName]] as [string, { conversationId: number; userId: string; membersById: Record<string, string> }];
+						}
+					} catch (err) {
+						console.error('Failed to fetch conversation:', err);
+					}
+
+					// Restore previous active user if still present
+					if (prevActive && conversations[prevActive]) {
+						setActiveUser(prevActive);
+						reorderUserList(prevActive);
+						renderChat();
+					}
+
+					// Fallback: if still missing, create a minimal entry using sender info
+					if (!entry && msg?.sender_id) {
+						const syntheticUser = addNewUserToConversation(conversationId, msg.sender_id, {
+							userId: msg.sender_id,
+							username: msg.sender_username,
+							displayName: msg.sender_display_name,
+							profilePicture: msg.sender_profile_picture,
+						});
+						if (syntheticUser) {
+							entry = [syntheticUser, conversationMeta[syntheticUser]] as [string, { conversationId: number; userId: string; membersById: Record<string, string> }];
+						}
+					}
+				}
+				if (!entry) return;
+			}
+
+			const username = entry[0];
+			const membersById = conversationMeta[username]?.membersById || {};
+			const mapped = mapApiMessage(msg, membersById);
+
+			const arr = conversations[username] || (conversations[username] = []);
+	  
+			// Deduplicate by message id for new messages
+			if (mapped.id && arr.some((m) => m.id === mapped.id)) return;
+
+			// Optimize for common case: message arrives in order at the end
+			let insertIndex: number;
+			if (arr.length === 0 || mapped.timestamp.getTime() >= arr[arr.length - 1].timestamp.getTime()) {
+				arr.push(mapped);
+				insertIndex = arr.length - 1;
+			} else {
+				// Message arrived out of order - use binary search to find correct position (O(log n))
+				let left = 0;
+				let right = arr.length;
+				
+				while (left < right) {
+					const mid = Math.floor((left + right) / 2);
+					if (arr[mid].timestamp.getTime() <= mapped.timestamp.getTime())
+						left = mid + 1;
+					else
+						right = mid;
+				}
+				
+				insertIndex = left;
+				arr.splice(insertIndex, 0, mapped);
+			}
+
+			if (activeUser === username) {
+				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(
+					`.chat-messages[user="${CSS.escape(username)}"]`
+				);
+				if (messagesDiv) {
+					if (insertIndex === arr.length - 1)
+						appendMessageToDOM(mapped, insertIndex);
+					else {
+						const wasNearBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < SCROLL_THRESHOLD;
+						const prevScrollHeight = messagesDiv.scrollHeight;
+						const prevScrollTop = messagesDiv.scrollTop;
+						
+						const startIdx = visibleStart[username] || 0;
+
+						if (insertIndex >= startIdx - 1) {
+							const renderStart = Math.max(0, startIdx > 0 && insertIndex < startIdx ? startIdx - 1 : startIdx);
+							const slice = arr.slice(renderStart);
+							const fragment = loadMessages(renderStart, slice, renderStart);
+
+							const shouldShowTopHint = arr.length > 0 && (startIdx > 0 || allMessagesLoaded[username] === false);
+							if (shouldShowTopHint) {
+								const topHint = document.createElement('div');
+								topHint.className = 'load-older-hint';
+								topHint.dataset.translateKey = "chat.block.loadHint";
+								topHint.textContent = 'Scroll up to load previous messages';
+								translateElement(LANG, topHint);
+								messagesDiv.appendChild(topHint);
+							}
+
+							messagesDiv.appendChild(fragment);
+							messagesDiv.dataset.messageCount = String(arr.length);
+
+							requestAnimationFrame(() => {
+								if (wasNearBottom) {
+									messagesDiv.scrollTop = messagesDiv.scrollHeight;
+								} else {
+									const newScrollHeight = messagesDiv.scrollHeight;
+									const heightChange = newScrollHeight - prevScrollHeight;
+									
+									if (insertIndex < startIdx) 
+										messagesDiv.scrollTop = prevScrollTop + heightChange;
+									else 
+										messagesDiv.scrollTop = prevScrollTop + (renderStart < startIdx ? heightChange : 0);
+								}
+							});
+						}
+						else
+							messagesDiv.dataset.messageCount = String(arr.length);
+					}
+				}
+			}
+			reorderUserList(username);
+		} catch (e) {
+			console.error('Error in chat stream onMessage:', e);
+		}
+	};
+	
+	const onInviteState = (ev: MessageEvent) => {
+		try {
+			const payload = JSON.parse(ev.data) as { conversationId: number; messageId: number; state: 'accepted' | 'declined' | 'cancelled' };
+			const entry = Object.entries(conversationMeta).find(([, meta]) => meta.conversationId === payload.conversationId);
+			if (!entry) return;
+			const username = entry[0];
+			const msgs = conversations[username] || [];
+			const idx = msgs.findIndex((m) => m.id === payload.messageId);
+			if (idx === -1) return;
+			const msg = msgs[idx];
+			msg.inviteState = payload.state;
+
+			if (activeUser === username) {
+				const messagesDiv = chatBlock.querySelector<HTMLDivElement>(`.chat-messages[user="${CSS.escape(username)}"]`);
+				const container = messagesDiv?.querySelector<HTMLElement>(`.chat-message[data-message-id="${payload.messageId}"]`);
+				if (container) updateInviteState(container, msg, payload.state, idx, true);
+			}
+		} catch (e) {
+			console.error('Error in inviteState handler:', e);
+		}
+	};
+	
+	const onPing = () => {};
+	
+	const onError = async (event: Event) => {
+		// Prevent multiple simultaneous reconnection attempts
+		if (isReconnecting) return;
+		isReconnecting = true;
+		
+		// Check if this is an authentication error
+		try {
+			const response = await fetch('/api/users/me', {
+				method: 'GET',
+				credentials: 'include'
+			});
+			
+			if (response.status === 401) {
+				console.error('Authentication failed. Redirecting to login...');
+				// Stop reconnecting and redirect
+				if (currentEventSource) {
+					currentEventSource.close();
+					currentEventSource = null;
+				}
+				window.loadPage('/');
+				return;
+			}
+		} catch (checkError) {
+			console.warn('Auth check failed:', checkError);
+		}
+		
+		// Check if we've hit max attempts
+		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+			console.error('Max reconnection attempts reached. Please refresh the page.');
+			isReconnecting = false;
+			notify('Connection lost. Please refresh the page.', { type: 'error' });
+			return;
+		}
+		
+		// Properly clean up the current connection
+		if (currentEventSource) {
+			currentEventSource.removeEventListener("message", onMessage);
+			currentEventSource.removeEventListener("inviteState", onInviteState);
+			currentEventSource.removeEventListener("ping", onPing);
+			currentEventSource.removeEventListener("open", onOpen);
+			currentEventSource.onerror = null;
+			currentEventSource.close();
+			currentEventSource = null;
+		}
+		
+		// Calculate delay with exponential backoff
+		reconnectAttempts++;
+		const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+		
+		console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+		
+		setTimeout(() => {
+			isReconnecting = false;
+			startChatStream();
+		}, delay);
+	};
+
+	// ADD THIS NEW EVENT LISTENER
+	currentEventSource.addEventListener("open", onOpen);
+	currentEventSource.addEventListener("message", onMessage);
+	currentEventSource.addEventListener("inviteState", onInviteState);
+	currentEventSource.addEventListener("ping", onPing);
+	currentEventSource.onerror = onError;
+}
+
+async function fetchOlderMessages(user: string): Promise<Message[]> {
+	const meta = conversationMeta[user];
+	if (!meta) return [];
+	if (allMessagesLoaded[user]) return [];
+	const msgs = conversations[user] || [];
+	const offset = msgs.length;
+
+	try {
+		const res = await apiFetch<{ messages: any[] }>(
+			`${API_BASE}/conversations/${meta.conversationId}/messages?limit=${MESSAGES_PAGE}&ascending=false&offset=${offset}`
+		);
+		const older = res.messages
+			.map((m) => mapApiMessage(m, meta.membersById))
+			.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+		if (!older.length) return [];
+		conversations[user] = older.concat(msgs);
+		visibleStart[user] = 0;
+		allMessagesLoaded[user] = older.length < MESSAGES_PAGE;
+		return older;
+	} catch (err) {
+		console.error('Failed to load older messages', err);
+		return [];
+	}
+}
+
 initLayout();
-seedDummyData();
-renderUserList(renderChat);
+loadChatData().then(startChatStream);

@@ -60,3 +60,68 @@ export const meSchema = {
 		},
 	},
 };
+
+export const updateMeSchema = {
+	summary: "Update authenticated user's profile",
+	description: "Update the authenticated user's profile fields (displayName, profilePicture, country, bio). Username cannot be changed here.",
+	tags: ["Users: Me"],
+	body: {
+		type: "object",
+		additionalProperties: false,
+		properties: {
+			displayName: { type: "string", maxLength: 50, description: "Display name (optional, ≤50 chars)" },
+			profilePicture: { type: "string", maxLength: 255, description: "Profile picture filename or URL (optional, ≤255 chars)" },
+			country: { type: "number", description: "Country ID (optional)"},
+			bio: { type: "string", maxLength: 500, description: "User biography (optional, ≤500 chars)" }
+		},
+	},
+	response: {
+		200: {
+			description: "Profile updated successfully",
+			type: "object",
+			properties: {
+				success: { type: "boolean", example: true },
+				profile: {
+					type: "object",
+					properties: {
+						username: { type: "string", example: "user123" },
+						displayName: { type: "string", nullable: true, example: "User OneTwoThree" },
+						profilePicture: { type: "string", nullable: true, example: "avatar_1.png" },
+						bio: { type: "string", nullable: true, example: "This is my bio." },
+						country: {
+							type: "object",
+							properties: {
+								id: { type: "number", example: 42 },
+								name: { type: "string", example: "France" },
+								code: { type: "string", example: "FR" },
+								flag: { type: "string", example: "<svg></svg>" },
+							},
+							nullable: true,
+						},
+					},
+					nullable: true,
+				},
+			},
+		},
+		400: {
+			description: "Bad request - validation error",
+			type: "object",
+			properties: { message: { type: "string", example: "Invalid displayName (must be string, ≤50 chars)" } }
+		},
+		401: {
+			description: "Unauthorized - missing or invalid session",
+			type: "object",
+			properties: { message: { type: "string", example: "Unauthorized: No session token" } }
+		},
+		404: {
+			description: "Profile not found",
+			type: "object",
+			properties: { message: { type: "string", example: "Profile not found" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { message: { type: "string", example: "Internal server error" } }
+		},
+	},
+};

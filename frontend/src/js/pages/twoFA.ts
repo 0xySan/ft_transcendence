@@ -323,7 +323,8 @@ function prepareInputs() {
         })
         .then(data => {
             if (!data) return;
-            methods = data.twoFaMethods ?? [];
+            // Filter only verified methods
+            methods = (data.twoFaMethods ?? []).filter((m: any) => m.is_verified);
             if (!methods || methods.length === 0) { loadPage('/home'); return; }
 
             primary = methods.find((m: any) => m.is_primary);

@@ -437,3 +437,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	observer.observe(switcher, { childList: true, subtree: true });
 });
+
+/* =========================================================
+						NOTIFICATIONS
+========================================================= */
+
+declare global {
+	interface Window {
+		notify: (message: string, options?: NotifOptions) => void;
+	}
+}
+
+(function initNotifier(): void {
+	const CONTAINER_ID = "notification-container";
+	const DEFAULT_DURATION = 4000;
+
+	function getContainer(): HTMLElement {
+		let container = document.getElementById(CONTAINER_ID);
+		if (!container) {
+			container = document.createElement("div");
+			container.id = CONTAINER_ID;
+			document.body.appendChild(container);
+		}
+		return container;
+	}
+
+	window.notify = (
+		message: string,
+		options: NotifOptions = {}
+	): void => {
+		const {
+			type = "info",
+			duration = DEFAULT_DURATION,
+		} = options;
+
+		const notif = document.createElement("div");
+		notif.className = `notification ${type}`;
+		notif.textContent = message;
+
+		notif.style.setProperty("--duration", `${duration}ms`);
+
+		getContainer().appendChild(notif);
+
+		setTimeout(() => {
+			notif.classList.add("hide");
+			setTimeout(() => notif.remove(), 300);
+		}, duration);
+	};
+})();

@@ -95,5 +95,94 @@
     "otherMethodLabel": "Autre méthode d’authentification à deux facteurs",
     "methodSelect": "",
     "resendButton": "Renvoyer le code de vérification"
+  },
+  "settings": {
+    "section": {
+      "profile": "Profil",
+      "security": "Sécurité",
+      "twofa": "Authentification 2FA",
+      "oauth": "OAuth"
+    },
+    "profileTitle": "Paramètres du profil",
+    "profile": {
+      "displayNameLabel": "Nom affiché :",
+      "bioLabel": "Bio :",
+      "avatarLabel": "Avatar :",
+      "avatarMode": {
+        "file": "Fichier",
+        "url": "URL"
+      },
+      "currentAvatarLabel": "Avatar actuel :",
+      "updateButton": "Mettre à jour le profil"
+    },
+    "securityTitle": "Paramètres de sécurité",
+    "security": {
+      "currentPasswordLabel": "Mot de passe actuel :",
+      "newPasswordLabel": "Nouveau mot de passe :",
+      "repeatPasswordLabel": "Répéter le nouveau mot de passe :",
+      "updatePasswordButton": "Mettre à jour le mot de passe"
+    },
+    "authMethods": {
+      "emailOtpPopupTitle": "Configuration OTP par e-mail",
+      "emailAddressLabel": "Entrez l'adresse e-mail à utiliser pour l'authentification à deux facteurs :",
+      "sendEmailOtpButton": "Envoyer l'e-mail",
+      "emailSentMsg": "E-mail envoyé ! Veuillez vérifier votre boîte de réception.",
+      "emailOtpLabel": "Entrez le code envoyé à votre e-mail :",
+      "validateEmailOtpButton": "Valider",
+      "emailOtpError": "Code invalide. Veuillez réessayer."
+    },
+    "twofa": {
+      "title": "Authentification à deux facteurs",
+      "instructions": "Gérez vos méthodes 2FA : TOTP (application), OTP par e‑mail et codes de secours.",
+      "enableEmailOtpButton": "Activer OTP par e-mail",
+      "enableTotpButton": "Activer TOTP (Authentificateur)",
+      "generateBackupCodesButton": "Générer des codes de secours",
+      "disableEmailOtpButton": "Désactiver OTP par e-mail",
+      "disableTotpButton": "Désactiver TOTP (Authentificateur)",
+      "deleteBackupCodesButton": "Supprimer les codes de secours",
+      "totpPopupTitle": "Configuration de l'authentificateur",
+      "totpCodeLabel": "Entrez le code de votre application :",
+      "validateTotpButton": "Valider",
+      "totpError": "Code invalide. Veuillez réessayer.",
+      "emailOtpPopupTitle": "Configuration OTP par e-mail",
+      "emailOtpLabel": "Entrez le code envoyé à votre e-mail :",
+      "validateEmailOtpButton": "Valider",
+      "emailOtpError": "Code invalide. Veuillez réessayer.",
+      "backupCodesPopupTitle": "Codes de secours",
+      "backupCodesInfo": "Veuillez noter ces codes et les conserver en lieu sûr. Chaque code ne peut être utilisé qu'une seule fois.",
+      "closeBackupCodesButton": "Fermer"
+    },
+    "oauth": {
+      "title": "Comptes OAuth",
+      "instructions": "Connectez ou déconnectez des fournisseurs OAuth pour une connexion rapide.",
+      "42link": "Connecter 42",
+      "42unlink": "Déconnecter 42",
+      "GitHublink": "Connecter GitHub",
+      "GitHubunlink": "Déconnecter GitHub",
+      "Discordlink": "Connecter Discord",
+      "Discordunlink": "Déconnecter Discord",
+      "Googlelink": "Connecter Google",
+      "Googleunlink": "Déconnecter Google"
+    }
+  },
+  "chat": {
+    "send": "Envoyer",
+    "sending": "Envoi...",
+    "invite": {
+      "send": "Inviter à jouer à Pong",
+      "accept": "Accepter",
+      "decline": "Refuser",
+      "cancel": "Annuler",
+      "play": "Jouer",
+      "receivedmsg": "@$user vous a invité à jouer à Pong.",
+      "sentmsg": "Tu as invité @$user à jouer à Pong."
+    },
+    "block": {
+      "blockbtn": "Bloquer",
+      "unblockbtn": "Débloquer",
+      "placeholder": "Envoyer un message à @$user",
+      "blockedPlaceholder": "Vous avez bloqué @$user. Débloquez-le pour envoyer des messages.",
+      "loadHint": "Défiler vers le haut pour charger les messages précédents"
+    }
   }
 }
