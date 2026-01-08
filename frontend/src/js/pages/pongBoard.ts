@@ -820,8 +820,6 @@ class PongBoard {
 			else if (side === "bottom-left" || side === "bottom-right") y = this.canvas.canvas.height - 50 - padH;
 			else y = (this.canvas.canvas.height - padH) / 2;
 
-			console.log("side = ", side);
-			console.log("update paddle x = ", x);
 			const paddle = new Paddle(x, y, padW, padH, context);
 			this.paddles.push(paddle);
 			this.paddleByPlayerId.set(playerId, paddle);

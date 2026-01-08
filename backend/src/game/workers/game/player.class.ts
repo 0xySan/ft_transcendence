@@ -15,6 +15,8 @@ export class Player {
 	y: number;
 	/** Player position */
 	x: number;
+	/** Player y vector */
+	vy: number;
 	/** Input buffer mapped by server frame id */
 	inputBuffer: Map<number, socket.gameInput[]>;
 	/** Frame offset for input synchronization */
@@ -34,6 +36,7 @@ export class Player {
 		this.inputBuffer = new Map();
 		this.x = 0;
 		this.y = 0;
+		this.vy = 0;
 		this.activeInputs = { up: false, down: false };
 	}
 
@@ -97,5 +100,6 @@ export class Player {
 		this.score = 0;
 		this.x = 0;
 		this.y = 0;
+		this.vy = 0;
 	}
 }

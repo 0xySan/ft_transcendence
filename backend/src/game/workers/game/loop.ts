@@ -127,12 +127,14 @@ function stepGame(game: Game, dt: number): void {
 			- padCfg.width;
 
 	    p.x = index % 2 === 0 ? leftX : rightX;
-		if (p.y === undefined)
-			p.y = (world.height - padCfg.height) / 2;
+		const topY = field.wallThickness + padCfg.margin;
+		const bottomY = world.height - field.wallThickness - padCfg.margin - padCfg.height;
+		if (p.y === undefined || p.y === 0)
+			p.y = index % 2 === 0 ? topY : bottomY;
 
 		if (p.vy === undefined)
 			p.vy = 0;
-
+console.log("DEBUG: player ", player.id, " y = ", p.y);
 		const inputUp = p.activeInputs?.up ?? false;
 		const inputDown = p.activeInputs?.down ?? false;
 
@@ -280,7 +282,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			settingsHandler(message as msg.message<msg.settingsPayload>, games);
 			break;
 		case "input":
-			inputsHandler(message as msg.message<msg.workerInputPayload>, games);
+			inputsHandler(message as msg.message<msg.workerInputPayload>, games, gameStates);
 			break;
 		case "game": {
 			const payload = message.payload as msg.workerGamePayload;
