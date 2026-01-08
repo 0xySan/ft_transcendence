@@ -285,7 +285,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 				return;
 
 			if (payload.action === "start") {
-				if (game.players.length < 2)
+				if (game.players.length === game.config.game.maxPlayers)
 					return;
 
 				const startTime = Date.now() + 3000;

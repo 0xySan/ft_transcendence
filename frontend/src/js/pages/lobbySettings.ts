@@ -124,8 +124,6 @@ const defaultSettings: Settings = {
 };
 
 let currentSettings: Settings = structuredClone(defaultSettings);
-let customPlayerCount: 2 | 4 = defaultSettings.game.playerCount as 2 | 4;
-let tournamentPlayerCount: 4 | 8 | 16 = 4;
 
 /* -------------------------------------------------------------------------- */
 /*                                   UI registry                               */
@@ -175,38 +173,12 @@ const ui = {
 		numPlayersSelect: document.getElementById("lobby-num-players") as HTMLSelectElement,
 		maxPlayersSpan: document.getElementById("player-max-count") as HTMLSpanElement,
 	},
-	tournament: {
-		allowSpectators: getEl<HTMLInputElement>("tournament-allow-spectators"),
-		gameCode: getEl<HTMLInputElement>("tournament-game-code"),
-		numPlayers: getEl<HTMLSelectElement>("tournament-num-players"),
-		firstToInput: getEl<HTMLInputElement>("tournament-first-to"),
-		firstToSpan: getEl<HTMLSpanElement>("tournament-first-to-value"),
-		winByInput: getEl<HTMLInputElement>("tournament-win-by"),
-		winBySpan: getEl<HTMLSpanElement>("tournament-win-by-value"),
-		bracketType: getEl<HTMLSelectElement>("tournament-bracket-type"),
-		resetBtn: getEl<HTMLButtonElement>("tournament-reset-settings-button"),
-		saveBtn: getEl<HTMLButtonElement>("tournament-save-settings-button"),
-	},
 	actionButtons: {
 		joinBtn: getEl<HTMLButtonElement>("lobby-btn-join"),
 		leaveBtn: getEl<HTMLButtonElement>("lobby-btn-leave"),
 		launchBtn: getEl<HTMLButtonElement>("lobby-btn-launch"),
 	},
 } as const;
-
-function setCustomPlayerCount(v: 2 | 4): void {
-	customPlayerCount = v;
-	currentSettings.game.playerCount = v as any;
-	ui.lobby.numPlayersSelect.value = String(v);
-	setSpan(ui.lobby.maxPlayersSpan, v);
-}
-
-function setTournamentPlayerCount(v: 4 | 8 | 16): void {
-	tournamentPlayerCount = v;
-	currentSettings.game.playerCount = v as any;
-	ui.tournament.numPlayers.value = String(v);
-	setSpan(ui.lobby.maxPlayersSpan, v);
-}
 
 /* -------------------------------------------------------------------------- */
 /*                              UI population helpers                          */
@@ -225,17 +197,8 @@ function populateUi(): void {
 	setSpan(ui.base.winBySpan, s.scoring.winBy);
 	ui.base.allowSpectators.checked = s.game.spectatorsAllowed;
 	// lobby player count
-	if (s.game.playerCount === 2 || s.game.playerCount === 4) {
-		setCustomPlayerCount(s.game.playerCount);
-		customPlayerCount = s.game.playerCount;
-		// keep tournament select in a sensible state
-		ui.tournament.numPlayers.value = String(tournamentPlayerCount);
-	} else if (s.game.playerCount === 8 || s.game.playerCount === 16) {
-		setTournamentPlayerCount(s.game.playerCount);
-	} else {
-		// fallback
-		setTournamentPlayerCount(4);
-	}
+	ui.lobby.numPlayersSelect.value = String(s.game.playerCount);
+	setSpan(ui.lobby.maxPlayersSpan, s.game.playerCount);
 
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
@@ -262,13 +225,6 @@ function populateUi(): void {
 	setInput(ui.field.wallThickness, s.field.wallThickness);
 	setInput(ui.world.width, s.world.width);
 	setInput(ui.world.height, s.world.height);
-
-	// tournament
-	ui.tournament.firstToInput.value = String(s.scoring.firstTo);
-	setSpan(ui.tournament.firstToSpan, s.scoring.firstTo);
-	ui.tournament.winByInput.value = String(s.scoring.winBy);
-	setSpan(ui.tournament.winBySpan, s.scoring.winBy);
-	ui.tournament.allowSpectators.checked = s.game.spectatorsAllowed;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -357,7 +313,8 @@ function wire(): void {
 	addListener(ui.lobby.numPlayersSelect, "change", () => {
 		const v = parseInt(ui.lobby.numPlayersSelect.value, 10) || defaultSettings.game.playerCount;
 		if (v !== 2 && v !== 4) return; // invalid value
-		setCustomPlayerCount(v as 2 | 4);
+		currentSettings.game.playerCount = v;
+		setSpan(ui.lobby.maxPlayersSpan, v);
 	});
 
 	// ball
@@ -397,60 +354,6 @@ function wire(): void {
 	bindNumber(ui.field.wallThickness, (v) => (currentSettings.field.wallThickness = v));
 	bindNumber(ui.world.width, (v) => (currentSettings.world.width = v));
 	bindNumber(ui.world.height, (v) => (currentSettings.world.height = v));
-
-	// tournament settings
-	addListener(ui.tournament.firstToInput, "input", () => {
-		const v = readNumber(ui.tournament.firstToInput, defaultSettings.scoring.firstTo);
-		currentSettings.scoring.firstTo = v;
-		setSpan(ui.tournament.firstToSpan, v);
-		// sync with custom game
-		ui.base.firstToInput.value = String(v);
-		setSpan(ui.base.firstToSpan, v);
-	});
-
-	addListener(ui.tournament.winByInput, "input", () => {
-		const v = readNumber(ui.tournament.winByInput, defaultSettings.scoring.winBy);
-		currentSettings.scoring.winBy = v;
-		setSpan(ui.tournament.winBySpan, v);
-		// sync with custom game
-		ui.base.winByInput.value = String(v);
-		setSpan(ui.base.winBySpan, v);
-	});
-
-	bindCheckbox(ui.tournament.allowSpectators, (v) => {
-		currentSettings.game.spectatorsAllowed = v;
-		ui.base.allowSpectators.checked = v;
-	});
-
-	addListener(ui.tournament.numPlayers, "change", () => {
-		const raw = parseInt(ui.tournament.numPlayers.value, 10) || 4;
-		const v: 4 | 8 | 16 = raw === 16 ? 16 : raw === 8 ? 8 : 4;
-		setTournamentPlayerCount(v);
-	});
-
-	addListener(ui.tournament.resetBtn, "click", () => {
-		currentSettings = structuredClone(defaultSettings);
-		populateUi();
-	});
-
-	addListener(ui.tournament.saveBtn, "click", () => {
-		fetch("/api/game/settings", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ settings: currentSettings }),
-		}).then(async (res) => {
-			if (!res.ok) {
-				const data = await res.json();
-				throw new Error(data.error || 'Failed to save settings.');
-			}
-		}).then(() => {
-			notify('Tournament settings saved successfully.', { type: "success" });
-		}).catch((error) => {
-			notify(`Error saving tournament settings: ${error.message}`, { type: "error" });
-		});
-	});
 
 	// actions
 	addListener(ui.actions.reset, "click", () => {
@@ -585,23 +488,9 @@ function setupModeSelection(): void {
 	Object.values(modes).forEach(mode => {
 		addListener(mode.button, "click", () => {
 			Object.values(modes).forEach(m => {
-				m.button.classList.remove("current-mode");
-				m.tab.classList.add("unloaded");
+				m.button.classList.toggle("current-mode", m === mode);
+				m.tab.classList.toggle("unloaded", m !== mode);
 			});
-			mode.button.classList.add("current-mode");
-			mode.tab.classList.remove("unloaded");
-
-			if (mode === modes.tournament) {
-				if (currentSettings.game.playerCount === 2 || currentSettings.game.playerCount === 4)
-					customPlayerCount = currentSettings.game.playerCount as 2 | 4;
-				setTournamentPlayerCount(tournamentPlayerCount ?? 4);
-				// Disable advanced settings button for tournament
-				subTabs.tournament.advBtn.disabled = true;
-				subTabs.tournament.advBtn.style.opacity = "0.5";
-				subTabs.tournament.advBtn.style.cursor = "not-allowed";
-			} else if (mode === modes.custom) {
-				setCustomPlayerCount(customPlayerCount);
-			}
 		});
 	});
 }
@@ -715,9 +604,9 @@ const subTabs: Record<string, SubTabs> = {
 	},
 	tournament: {
 		basicBtn: getEl("lobby-tournament-basic-settings-button"),
-		advBtn: getEl("lobby-custom-game-advanced-settings-button"),
+		advBtn: getEl("lobby-tournament-advanced-settings-button"),
 		basicTab: getEl("lobby-tournament-basic-settings"),
-		advTab: getEl("lobby-custom-game-advanced-settings"),
+		advTab: getEl("lobby-tournament-advanced-settings"),
 	},
 };
 

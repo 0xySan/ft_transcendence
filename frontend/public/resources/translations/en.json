@@ -63,8 +63,7 @@
     "paddleFriction": "Paddle Friction",
     "worldWidth": "World Width",
     "worldHeight": "World Height",
-    "fieldWallThickness": "Field Wall Thickness",
-    "bracketType": "Bracket Type"
+    "fieldWallThickness": "Field Wall Thickness"
   },
   "login": {
     "forgotPasswordText": "Forgot your password? <a href=\"/forgot-password\">Reset it here</a>",

@@ -63,8 +63,7 @@
     "paddleFriction": "Fricción de la paleta",
     "worldWidth": "Ancho del mundo",
     "worldHeight": "Alto del mundo",
-    "fieldWallThickness": "Grosor de las paredes del campo",
-    "bracketType": "Tipo de bracket"
+    "fieldWallThickness": "Grosor de las paredes del campo"
   },
   "mailverification": {
     "changeEmail": "Change email",
