@@ -190,18 +190,6 @@ const ui = {
 		numPlayersSelect: document.getElementById("lobby-num-players") as HTMLSelectElement,
 		maxPlayersSpan: document.getElementById("player-max-count") as HTMLSpanElement,
 	},
-	tournament: {
-		allowSpectators: getEl<HTMLInputElement>("tournament-allow-spectators"),
-		gameCode: getEl<HTMLInputElement>("tournament-game-code"),
-		numPlayers: getEl<HTMLSelectElement>("tournament-num-players"),
-		firstToInput: getEl<HTMLInputElement>("tournament-first-to"),
-		firstToSpan: getEl<HTMLSpanElement>("tournament-first-to-value"),
-		winByInput: getEl<HTMLInputElement>("tournament-win-by"),
-		winBySpan: getEl<HTMLSpanElement>("tournament-win-by-value"),
-		bracketType: getEl<HTMLSelectElement>("tournament-bracket-type"),
-		resetBtn: getEl<HTMLButtonElement>("tournament-reset-settings-button"),
-		saveBtn: getEl<HTMLButtonElement>("tournament-save-settings-button"),
-	},
 	actionButtons: {
 		joinBtn: getEl<HTMLButtonElement>("lobby-btn-join"),
 		leaveBtn: getEl<HTMLButtonElement>("lobby-btn-leave"),
@@ -278,13 +266,6 @@ function populateUi(): void {
 	setInput(ui.field.wallThickness, s.field.wallThickness);
 	setInput(ui.world.width, s.world.width);
 	setInput(ui.world.height, s.world.height);
-
-	// tournament
-	ui.tournament.firstToInput.value = String(s.scoring.firstTo);
-	setSpan(ui.tournament.firstToSpan, s.scoring.firstTo);
-	ui.tournament.winByInput.value = String(s.scoring.winBy);
-	setSpan(ui.tournament.winBySpan, s.scoring.winBy);
-	ui.tournament.allowSpectators.checked = s.game.spectatorsAllowed;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -809,23 +790,9 @@ function setupModeSelection(): void {
 				const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
 				lobbySelectMode.classList.add("unloaded");
 			}
-				m.button.classList.remove("current-mode");
-				m.tab.classList.add("unloaded");
+				m.button.classList.toggle("current-mode", m === mode);
+				m.tab.classList.toggle("unloaded", m !== mode);
 			});
-			mode.button.classList.add("current-mode");
-			mode.tab.classList.remove("unloaded");
-
-			if (mode === modes.tournament) {
-				if (currentSettings.game.playerCount === 2 || currentSettings.game.playerCount === 4)
-					customPlayerCount = currentSettings.game.playerCount as 2 | 4;
-				setTournamentPlayerCount(tournamentPlayerCount ?? 4);
-				// Disable advanced settings button for tournament
-				subTabs.tournament.advBtn.disabled = true;
-				subTabs.tournament.advBtn.style.opacity = "0.5";
-				subTabs.tournament.advBtn.style.cursor = "not-allowed";
-			} else if (mode === modes.custom) {
-				setCustomPlayerCount(customPlayerCount);
-			}
 		});
 	});
 }
@@ -866,6 +833,7 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 		joinBtn.classList.add("unloaded");
 		leaveBtn.classList.remove("unloaded");
 		joinBox.classList.add("unloaded");
+		let tabMode = document.querySelector("#lobby-mode-buttons");
 		tabMode?.classList.add("grayed");
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
 	} else if (customGameSelection === "online") {
@@ -965,9 +933,9 @@ const subTabs: Record<string, SubTabs> = {
 	},
 	tournament: {
 		basicBtn: getEl("lobby-tournament-basic-settings-button"),
-		advBtn: getEl("lobby-custom-game-advanced-settings-button"),
+		advBtn: getEl("lobby-tournament-advanced-settings-button"),
 		basicTab: getEl("lobby-tournament-basic-settings"),
-		advTab: getEl("lobby-custom-game-advanced-settings"),
+		advTab: getEl("lobby-tournament-advanced-settings"),
 	},
 };
 
