@@ -203,7 +203,7 @@ export class Game {
 		const sides: string[] = [];
 
 		if (numPlayers === 2) sides.push("left", "right");
-		else if (numPlayers === 4) sides.push("top-left", "bottom-left", "top-right", "bottom-right");
+		else if (numPlayers === 4) sides.push("top-left", "top-right", "bottom-left", "bottom-right");
 		else for (let i = 0; i < numPlayers; i++) sides.push("left"); // fallback
 
 		this.players.forEach((player, index) => {

@@ -17,6 +17,7 @@ declare global {
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
+		isGameOffline: boolean;
 	}
 }
 
@@ -501,7 +502,10 @@ function setupModeSelection(): void {
  * @param modeKey - 'online' | 'offline' | 'join'
  */
 function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void {
-	console.log(`Selected lobby mode: ${modeKey}`);
+	if (modeKey === "offline")
+		window.isGameOffline = true;
+	else
+		window.isGameOffline = false;
 	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
 	const joinBtn = ui.actionButtons.joinBtn;
 	const leaveBtn = ui.actionButtons.leaveBtn;
@@ -512,7 +516,6 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.add("unloaded");
 		leaveBtn.classList.remove("unloaded");
-		console.log("DEBUG: find here");
 
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
 		let tabMode = document.querySelector("#lobby-mode-buttons");

@@ -60,6 +60,7 @@ let ownerId: string | null = null;
 const joinInput = getEl<HTMLInputElement>("lobby-input");
 const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
 const createBtn = getEl<HTMLDivElement>("lobby-online");
+
 const lobbyTournamentBtn = getEl<HTMLDivElement>("lobby-tournament-button");
 const multiplayerBtn = getEl<HTMLDivElement>("lobby-multiplayer-button");
 
@@ -156,7 +157,6 @@ function applyListener(socket: WebSocket, token: string) {
 
 	addListener(socket, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
-		console.log("DEBUG: client msg = ", msg);
 		switch (msg.type) {
 			case "playerSync":
 				console.log("Received playerSync:", msg.payload);
@@ -170,7 +170,6 @@ function applyListener(socket: WebSocket, token: string) {
 
 			case "game":
 				if ((msg.payload as GamePayload).action === "start") {
-					console.log("DEBUG: start here");
 					notify('The game is starting!', { type: 'success' });
 					window.pendingGameStart = msg.payload as gameStartAckPayload;
 					loadPage("/pong-board");
@@ -198,7 +197,6 @@ function applyListener(socket: WebSocket, token: string) {
 }
 
 function connectWebSocket(token: string): void {
-	console.log("DEBUG: websocket connexion");
 	if (window.socket)
 		window.socket.close();
 
@@ -412,7 +410,11 @@ addListener(leaveBtn, "click", () => {
 });
 
 addListener(launchBtn, "click", () => {
-	console.log("DEBUG: socker = ", window.socket + " | gameId = " + gameId + " | lobbyGameId = " + window.lobbyGameId);
+	if (window.isGameOffline)
+	{
+		loadPage("/pong-board");
+		return;
+	}
 	if (window.lobbyGameId) gameId = window.lobbyGameId;
 	if (!window.socket || !gameId) return;
 

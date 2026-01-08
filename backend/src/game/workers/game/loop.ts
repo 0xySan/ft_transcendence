@@ -164,7 +164,7 @@ function stepGame(game: Game, dt: number): void {
 
 		if (p.vy === undefined)
 			p.vy = 0;
-console.log("DEBUG: player ", player.id, " y = ", p.y);
+
 		const inputUp = p.activeInputs?.up ?? false;
 		const inputDown = p.activeInputs?.down ?? false;
 
@@ -258,7 +258,6 @@ console.log("DEBUG: player ", player.id, " y = ", p.y);
 			lastHit = "";
 		}
 
-		console.log("DEBUG: score = " + scorer.score + " | firstto = " + game.config.scoring.firstTo);
 		if (scorer.score >= game.config.scoring.firstTo) {
 			gameStates.set(game.id, "stopped");
 			const message: msg.gamePayload = {
@@ -371,7 +370,6 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			else if (payload.action === "resume")
 				gameStates.set(payload.gameId, "playing");
 			else if (payload.action === "abort") {
-				console.log("DEBUG: end game = ", game.players);
 				gameStates.set(payload.gameId, "stopped");
 				accumulators.delete(payload.gameId);
 			}

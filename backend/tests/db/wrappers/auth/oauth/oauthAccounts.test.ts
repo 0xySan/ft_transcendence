@@ -76,7 +76,6 @@ describe("oauthAccount wrapper - tests", () => {
         });
 
         const accounts = getOauthAccountsByUserId(userId);
-        console.log("DEBUG: len accounts = " + accounts)
         expect(Array.isArray(accounts)).toBe(true);
         expect(accounts.length).toBeGreaterThanOrEqual(2);
 

@@ -133,7 +133,6 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 	currentUrl = document.getElementById('currentUrl')?.textContent || url;
 
 	const targetUrl = window.location.pathname;
-	console.log("DEBUG: targetUrl = " + targetUrl + " | currentUrl = " + currentUrl);
 	if ((targetUrl == '/lobby' || targetUrl == '/pong-board') && (!currentUrl.includes('lobby') && !currentUrl.includes('pong-board'))) {
 		resetLobby();
 	}
@@ -158,7 +157,6 @@ export function loadPage(url: string): void {
 }
 
 function resetLobby() {
-	console.log("DEBUG: reset total");
 	if (window.socket) {
 		window.socket.close();
 	}

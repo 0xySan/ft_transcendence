@@ -1,6 +1,6 @@
 // reorganized-pong.ts
 import type { BallSettings, PlayerPayload, Settings } from "../global";
-import type { gameStartAckPayload } from "./lobbySocket";
+import type { gameStartAckPayload, PlayerSide, PlayerSideMap } from "./lobbySocket";
 
 /* -------------------------------------------------------------------------- */
 /*                               GLOBAL DECLARATIONS                          */
@@ -114,12 +114,26 @@ function cancelLoading(message: string): void {
 
 // check required globals for game operation
 if (!window.lobbySettings) cancelLoading("Lobby settings are not available.");
-if (!window.socket || window.socket.readyState !== WebSocket.OPEN) cancelLoading("WebSocket connection is not established.");
-if (!window.localPlayerId) cancelLoading("Local player ID is not set.");
-if (!window.pendingGameStart) cancelLoading("No pending game start information found.");
+
+if (window.isGameOffline) // If we play online
+{
+	window.pendingGameStart = {
+		action: "start",
+		playerSides: {
+			user1: "left",
+			user2: "right",
+		},
+		startTime: Date.now() + 3000
+	}
+	window.localPlayerId = "user1";
+} else {
+	if (!window.socket || window.socket.readyState !== WebSocket.OPEN) cancelLoading("WebSocket connection is not established.");
+	if (!window.localPlayerId) cancelLoading("Local player ID is not set.");
+	if (!window.pendingGameStart) cancelLoading("No pending game start information found.");
+}
 
 /* -------------------------------------------------------------------------- */
-/*																		TIMER		                          */
+/*                                      TIMER                                 */
 /* -------------------------------------------------------------------------- */
 
 // MM:SS morphing timer — uses colon squares and JS-controlled blink,
@@ -794,6 +808,8 @@ class PongBoard {
 	public paddles: Paddle[] = [];
 	/** The Paddle instance representing the local player's paddle. */
 	public playerPaddle: Paddle;
+	/** Optional paddle for the second player in offline games */
+	public player2Paddle?: Paddle;
 	/** Map of player IDs to their corresponding Paddle instances. */
 	private paddleByPlayerId = new Map<string, Paddle>();
 	/** The Ball instance representing the pong ball. */
@@ -826,6 +842,9 @@ class PongBoard {
 		}
 
 		this.playerPaddle = this.paddleByPlayerId.get(window.localPlayerId!)!;
+
+		if (window.isGameOffline)
+			this.player2Paddle = this.paddleByPlayerId.get("user2")
 		this.ball = new Ball(context, window.lobbySettings!.ball);
 	}
 
@@ -906,7 +925,7 @@ class PongBoard {
  * @param scores - Array of score data from server
  */
 function updateScores(scores: { playerId: string; score: number }[]) {
-	if (!scores || scores.length < 2) return;
+	if (!scores || scores.length === 0) return;
 
 	const playerSides = window.pendingGameStart!.playerSides;
 	const scoreLeftEl = document.getElementById("score-left");
@@ -914,17 +933,22 @@ function updateScores(scores: { playerId: string; score: number }[]) {
 
 	if (!scoreLeftEl || !scoreRightEl) return;
 
-	// Find which player is on which side
-	for (const scoreData of scores) {
-		const side = playerSides[scoreData.playerId];
+	let leftScore: number | null = null;
+	let rightScore: number | null = null;
+
+	for (const { playerId, score } of scores) {
+		const side = playerSides[playerId];
 		if (!side) continue;
 
 		if (side === "left" || side === "top-left" || side === "bottom-left") {
-			scoreLeftEl.textContent = String(scoreData.score);
+			leftScore = leftScore === null ? score : Math.max(leftScore, score);
 		} else if (side === "right" || side === "top-right" || side === "bottom-right") {
-			scoreRightEl.textContent = String(scoreData.score);
+			rightScore = rightScore === null ? score : Math.max(rightScore, score);
 		}
 	}
+
+	if (leftScore !== null) scoreLeftEl.textContent = String(leftScore);
+	if (rightScore !== null) scoreRightEl.textContent = String(rightScore);
 }
 
 function updatePlayerNames() {
@@ -976,49 +1000,50 @@ function handlePlayer(payload: PlayerPayload) {
 	}
 }
 
+if (!window.isGameOffline) {
+	addListener(window.socket!, "message", (event: MessageEvent) => {
+		const msg = JSON.parse(event.data);
+		if (msg.type === "input") {
+			const payload = msg.payload as ClientInputPayload;
+			const paddle = pongBoard.getPaddleByPlayerId(payload.userId);
+			if (!paddle) return;
 
-addListener(window.socket!, "message", (event: MessageEvent) => {
-	const msg = JSON.parse(event.data);
-	if (msg.type === "input") {
-		const payload = msg.payload as ClientInputPayload;
-		const paddle = pongBoard.getPaddleByPlayerId(payload.userId);
-		if (!paddle) return;
+			// store authoritative frames
+			paddle.buffer.pushRemoteFrames(payload.inputs);
 
-		// store authoritative frames
-		paddle.buffer.pushRemoteFrames(payload.inputs);
-
-		// apply the last snapshot immediately for visual responsiveness
-		const last = payload.inputs[payload.inputs.length - 1];
-		if (last) paddle.applyInputs(last.inputs);
-	} else if (msg.type === "game") {
-		if (msg.payload.action === "stopped") {
-			notify("Game has ended.", { type: "info" });
-			stopTimer();
-			setTimeout(() => { 
-				pongBoard.destroy();
+			// apply the last snapshot immediately for visual responsiveness
+			const last = payload.inputs[payload.inputs.length - 1];
+			if (last) paddle.applyInputs(last.inputs);
+		} else if (msg.type === "game") {
+			if (msg.payload.action === "stopped") {
+				notify("Game has ended.", { type: "info" });
 				stopTimer();
-				loadPage("lobby"); 
-			}, 1000);
-		} else {
-			const payload = msg.payload as GameStateUpdate;
-			pongBoard.applyUpdate(payload);
+				setTimeout(() => { 
+					pongBoard.destroy();
+					stopTimer();
+					loadPage("lobby"); 
+				}, 1000);
+			} else {
+				const payload = msg.payload as GameStateUpdate;
+				pongBoard.applyUpdate(payload);
+			}
+		} else if (msg.type === "player") {
+			{
+				const payload = msg.payload as PlayerPayload;
+				if (payload.displayName)
+					window.playerNames![payload.playerId] = payload.displayName;
+				handlePlayer(payload);
+				updatePlayerNames();
+			}
 		}
-	} else if (msg.type === "player") {
-		{
-			const payload = msg.payload as PlayerPayload;
-			if (payload.displayName)
-				window.playerNames![payload.playerId] = payload.displayName;
-			handlePlayer(payload);
-			updatePlayerNames();
-		}
-	}
-});
+	});
 
-addListener(window.socket!, "close", () => {
-	notify("Connection lost.", { type: "warning" });
-	stopTimer();
-	setTimeout(() => { loadPage("lobby"); }, 3000);
-});
+	addListener(window.socket!, "close", () => {
+		notify("Connection lost.", { type: "warning" });
+		stopTimer();
+		setTimeout(() => { loadPage("lobby"); }, 3000);
+	});
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                 INPUT HANDLING                             */
@@ -1041,21 +1066,32 @@ function handleKey(event: KeyboardEvent, pressed: boolean) {
 	// prevent page scroll on arrow keys
 	event.preventDefault();
 
-	const buffer = pongBoard.playerPaddle.buffer;
+	let buffer: InputBuffer;
+	if (!window.isGameOffline)
+		buffer = pongBoard.playerPaddle.buffer;
+	else {
+		if (event.key === "w" || event.key === "s")
+			buffer = pongBoard.playerPaddle.buffer;
+		else
+			buffer = pongBoard.player2Paddle!.buffer;
+	}
+
 
 	// build a frame only on transition
 	const frameId = pongGame.getCurrentFrame();
 	const frame = buffer.setKeyAndBuildFrame(direction, pressed, frameId);
 	if (!frame) return;
 
-	// send with user id to let server attribute frames
-	window.socket!.send(JSON.stringify({
-		type: "input",
-		payload: {
-			userId: window.localPlayerId!,
-			inputs: [frame],
-		} as ClientInputPayload
-	}));
+	if (!window.isGameOffline) {
+		// send with user id to let server attribute frames
+		window.socket!.send(JSON.stringify({
+			type: "input",
+			payload: {
+				userId: window.localPlayerId!,
+				inputs: [frame],
+			} as ClientInputPayload
+		}));
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1153,7 +1189,7 @@ class PongGame {
 
 				// apply remote inputs for other paddles (snapshot or hold-state fallback)
 				for (const paddle of this.board.paddles) {
-					if (paddle === this.board.playerPaddle) continue;
+					if (paddle === this.board.playerPaddle || (window.isGameOffline && paddle === this.board.player2Paddle)) continue;
 					const snap = paddle.buffer.getRemoteInputsForFrame(this.clientFrame);
 					if (snap) paddle.applyInputs(snap);
 					else {
