@@ -1,6 +1,9 @@
 export {};
 
 declare function addListener(target: EventTarget | null, event: string, handler: EventListener): void;
+declare function getUserLang(): string;
+declare function translateElement(lang: string, el: HTMLElement): void;
+declare function translateElementAsync(lang: string, el: HTMLElement): Promise<void>;
 declare function notify(message: string, options?: { type?: string }): void;
 declare function loadPage(url: string): void;
 
@@ -131,7 +134,9 @@ async function loadAndRenderSummary(): Promise<void> {
     summaryContent.innerHTML = '';
     if (selectedIndex < 0 || selectedIndex >= games.length) {
         const p = document.createElement('p');
-        p.textContent = 'Select a lobby to see details.';
+        // Add the data-translate-key attribute for localization
+        p.setAttribute('data-translate-key', 'publicLobbies.selectHint');
+        translateElement(getUserLang(), p);
         summaryContent.appendChild(p);
         return;
     }
@@ -167,8 +172,10 @@ async function loadAndRenderSummary(): Promise<void> {
     codeRow.textContent = `Code: ${g.code ? String(g.code).toUpperCase() : '—'}`;
     infoList.appendChild(codeRow);
     const playersRow = document.createElement('div');
+    playersRow.setAttribute('data-translate-key', 'publicLobbies.columns.players');
+    await translateElementAsync(getUserLang(), playersRow);
     const playersText = (typeof finalMax === 'number') ? `${current}/${finalMax}` : String(current);
-    playersRow.textContent = `Players: ${playersText}`;
+    playersRow.textContent = (playersRow.textContent || '') + `: ${playersText}`;
     infoList.appendChild(playersRow);
 
     const joinBtn = document.createElement('button');
@@ -219,40 +226,29 @@ function selectLobby(idx: number): void {
 
 async function joinLobby(g: RawGame): Promise<void> {
     try {
-        // Decide payload like lobbySocket.joinGame: if a 4-char code, send as code, otherwise as gameId
-        const candidate = String(g.code ?? g.id ?? '');
-        const payload = (/^[A-Z0-9]{4}$/.test(candidate.toUpperCase()))
-            ? { code: candidate.toUpperCase() }
-            : { gameId: candidate };
-
-        const res = await fetch('/api/game/join', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        const gameId = data.gameId;
-        const authToken = data.authToken;
-
-        if (!authToken) throw new Error('Missing auth token');
-
-        // Store token so the lobby page can use it to connect the websocket if needed
-        try {
-            sessionStorage.setItem('pendingGameAuthToken', authToken);
-            if (gameId) sessionStorage.setItem('pendingGameId', gameId);
-        } catch (e) {
-            /* ignore storage errors */
+        // ensure user is logged in before attempting join
+        const isLogged = await window.currentUserReady.then(() => Boolean(window.currentUser)).catch(() => false);
+        if (!isLogged) {
+            notify?.('Please log in to join a lobby.', { type: 'warning' });
+            return;
+        }
+        // Decide candidate and navigate to the lobby page with the code/gameId in the URL.
+        const candidate = String(g.code ?? g.id ?? '').trim();
+        if (!candidate) {
+            notify?.('Invalid game identifier.', { type: 'error' });
+            return;
         }
 
-        notify?.('Joined lobby successfully.', { type: 'success' });
-        // navigate to lobby page where websocket/connect logic lives
-        loadPage('/lobby');
+        const isCode = /^[A-Z0-9]{4}$/.test(candidate.toUpperCase());
+        const url = isCode
+            ? `/lobby?code=${encodeURIComponent(candidate.toUpperCase())}`
+            : `/lobby?gameId=${encodeURIComponent(candidate)}`;
+
+        // navigate to lobby; the lobby page will pick the code from the URL and perform the join
+        loadPage(url);
     } catch (err: any) {
         console.error('Join failed', err);
-        notify?.(`Join failed: ${err.message ?? err}`, { type: 'error' });
+        notify?.(`Join failed: ${err?.message ?? err}`, { type: 'error' });
     }
 }
 
@@ -283,7 +279,6 @@ addListener(updateBtn, 'click', () => {
 });
 
 // auto-load
-// Ensure user is logged in. Prefer using `window.currentUserPromise` when available.
 (() => {
     try {
         const cur = window.currentUser;

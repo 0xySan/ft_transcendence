@@ -17,6 +17,7 @@ declare global {
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
+		changeLobbyCodeInput: (newCode: string) => void;
 		isGameOffline: boolean;
 	}
 }
@@ -388,14 +389,18 @@ function wire(): void {
 				throw new Error(data.error || 'Failed to save settings.');
 			}
 
-			notify('Settings saved successfully.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED || 'Settings saved successfully.', { type: "success" });
 		} catch (err: any) {
-			notify(`Error saving settings: ${err?.message ?? String(err)}`, { type: "error" });
+			const msg = LOBBYSETTINGS_TXT_SAVE_ERROR ? LOBBYSETTINGS_TXT_SAVE_ERROR.replace('{error}', err.message) : `Error saving settings: ${err.message}`;
+			notify(msg, { type: "error" });
 		}
 	});
 }
 
-
+export function changeLobbyCodeInput(newCode: string): void {
+	ui.base.customGameCodeInput.value = newCode;
+	currentSettings.game.code = newCode;
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                 UI – Modes                                  */
@@ -517,9 +522,9 @@ function setupSubTabs(): void {
 			const data = await response.json();
 			window.dispatchEvent(new CustomEvent("joinQueue", { detail: { socketToken: data.authToken } }));
 
-			notify("You are added in a queue.", { type: "success" });
+			notify(LOBBYSETTINGS_TXT_ADDED_QUEUE || "You are added in a queue.", { type: "success" });
 		} catch (error) {
-			notify("Error adding in queue.", { type: "error" });
+			notify(LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR || "Error adding in queue.", { type: "error" });
 		}
 	});
 }
@@ -708,3 +713,44 @@ else if (window.isGameOffline && window.lobbySettings) {
 	window.lobbySettings = structuredClone(currentSettings);
 	setupLobbyModeHandlers();
 }
+
+// Auto-join by code present in URL (query `?code=ABCD`, `?gameCode=ABCD`, path ending with `/ABCD`, or hash `#ABCD`).
+// Reuses the same logic as the `JOIN` button by setting the input value and dispatching a click event.
+(async () => {
+	try {
+		const params = new URLSearchParams(location.search);
+		let code: string | null = params.get('code') || params.get('gameCode') || null;
+
+		if (!code) {
+			const parts = location.pathname.split('/').filter(Boolean);
+			const last = parts.length ? parts[parts.length - 1] : null;
+			if (last && /^[A-Z0-9]{4}$/i.test(last)) code = last;
+		}
+
+		if (!code && location.hash) {
+			const h = location.hash.replace(/^#/, '');
+			if (/^[A-Z0-9]{4}$/i.test(h)) code = h;
+		}
+
+		if (!code) return; // no code present
+
+		code = String(code).toUpperCase();
+		if (!/^[A-Z0-9]{4}$/.test(code)) return; // invalid -> do nothing
+
+		const isLogged = await window.currentUserReady.then(() => Boolean(window.currentUser)).catch(() => false);
+		if (!isLogged) {
+			notify?.('Please log in to join a lobby from a link.', { type: 'warning' });
+			return;
+		}
+
+		// reuse the same join logic directly when available
+		if (typeof window.joinGame === 'function') {
+			await window.joinGame(code);
+		} else {
+			const btn = document.getElementById('lobby-btn-join') as HTMLButtonElement | null;
+			if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		}
+	} catch (err) {
+		console.error('Auto-join processing failed', err);
+	}
+})();

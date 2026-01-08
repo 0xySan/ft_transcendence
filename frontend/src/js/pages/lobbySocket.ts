@@ -13,7 +13,7 @@ declare global {
 		__resolveCurrentUser: (user?: any) => void;
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
-
+		joinGame?: (code: string) => Promise<void>;
 		lobbySettings?: Settings;
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
@@ -26,7 +26,18 @@ declare function addListener(
 	event: string,
 	handler: any,
 ): void;
+declare function changeLobbyCodeInput(newCode: string): void;
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
 
+// Translations (top-level await allowed in modules)
+const LOBBYSOCKET_TXT_CONNECTED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.connected');
+const LOBBYSOCKET_TXT_GAME_STARTING = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.gameStarting');
+const LOBBYSOCKET_TXT_SETTINGS_UPDATED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.settingsUpdated');
+const LOBBYSOCKET_TXT_DISCONNECTED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.disconnected');
+const LOBBYSOCKET_TXT_INVALID_GAME = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.invalidGame');
+const LOBBYSOCKET_TXT_PLAYER_JOINED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.playerJoined');
+const LOBBYSOCKET_TXT_PLAYER_LEFT = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.playerLeft');
 window.playerNames = {};
 
 /* -------------------------------------------------------------------------- */
@@ -423,6 +434,9 @@ async function joinGame(code: string): Promise<void> {
 	connectWebSocket(authToken);
 }
 
+// expose joinGame so other modules (e.g. lobbySettings) can programmatically reuse the same logic
+window.joinGame = joinGame;
+
 /** ### createGame
  * Create a new online game with default settings.
  * Sends a request to the server to create the game and retrieves the game ID and auth token.
@@ -448,6 +462,7 @@ async function createGame(): Promise<void> {
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
 	joinInput.value = data.code;
+	changeLobbyCodeInput(data.code);
 
 	if (!authToken) throw new Error("Missing auth token");
 	connectWebSocket(authToken);
