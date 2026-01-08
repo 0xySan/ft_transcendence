@@ -348,6 +348,11 @@ async function loadChatData(): Promise<void> {
 			renderChat();
 			// Keep user list selection state in sync
 			if (initialUser) reorderUserList(initialUser);
+			// Start streaming only if there are users
+			startChatStream();
+		} else {
+			// No users available - show empty state
+			renderEmptyState();
 		}
 	} catch (err) {
 		if (err instanceof Error && err.message.toLowerCase().includes('unauthorized')) {
@@ -1129,19 +1134,8 @@ function renderUserList(onSelectUser: () => void): void {
 
 				if (activeUser)
 					renderChat();
-				else {
-					const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
-					const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
-					const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
-					const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
-					const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
-					const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
-					profileImg.classList.add('hidden');
-					titleSpan.classList.add('hidden');
-					profileLink.classList.add('hidden');
-					headerBlockBtn.classList.add('hidden');
-					form.classList.add('hidden');
-				}
+				else
+					renderEmptyState();
 			});
 		}
 
@@ -1220,7 +1214,9 @@ function refreshInputForUser(user: string): void {
 	}
 }
 
-function updateChatHeader(user: string): void {
+function updateChatHeader(user: string | null): void {
+	if (!user) return;
+
 	const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
 	const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
 	const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
@@ -1294,8 +1290,42 @@ function updateBlockedState(user: string): void {
 	updateChatHeader(user);
 }
 
+function renderEmptyState(): void {
+	// Hide user list UI
+	userListDiv.innerHTML = '';
+
+	// Update header to show no conversations message
+	const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
+	const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
+	const titleSpan = document.createElement('span');
+	const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
+	const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
+
+	profileImg.classList.add('nondisplayable');
+	profileLink.classList.add('nondisplayable');
+	headerBlockBtn.classList.add('nondisplayable');
+	titleSpan.textContent = 'No current available conversations';
+	titleSpan.className = 'chat-header-title';
+	header.appendChild(titleSpan);
+
+	const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+	form.classList.add('hidden');
+
+	userListHidden = !userListHidden;
+	if (userListHidden) userListDiv.classList.add('hidden');
+	else userListDiv.classList.remove('hidden');
+	updateToggleBtnText();
+}
+
 function renderChat(): void {
-	if (!activeUser) return;
+	if (!activeUser) {
+		renderEmptyState();
+		return;
+	}
+
+	// Hide empty state if it was shown
+	const emptyStateDiv = chatBlock.querySelector<HTMLDivElement>('.chat-empty-state');
+	if (emptyStateDiv) emptyStateDiv.classList.add('hidden');
 
 	const currentSelector = `.chat-messages[user="${CSS.escape(activeUser)}"]`;
 	const oldMessagesDiv = chatBlock.querySelector<HTMLDivElement>(currentSelector);
@@ -1669,6 +1699,12 @@ function renderChat(): void {
 export {};
 
 function startChatStream() {
+	// Don't start stream if no users available
+	if (users.length === 0) {
+		console.log('No users available - skipping stream initialization');
+		return;
+	}
+
 	// Close existing connection if any (closing automatically removes all listeners)
 	if (currentEventSource) {
 		currentEventSource.close();

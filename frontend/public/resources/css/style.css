@@ -1567,7 +1567,7 @@ button:active {
 	align-items: center;
 	gap: 0.5rem;
 	margin-bottom: 0.5rem;
-    width: 100%;
+	width: 100%;
 }
 
 .profile-info-username {
@@ -1577,9 +1577,9 @@ button:active {
 	color: rgb(var(--subtext0));
 	margin-top: -0.8rem;
 	margin-left: 7.1rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .profile-info-flag {
@@ -1616,6 +1616,22 @@ button:active {
 
 	cursor: pointer;
 	margin-top: -1rem;
+}
+
+.profile-error-message {
+	padding: 0.75rem 1rem;
+
+	background: rgba(var(--red), 0.2);
+
+	border: 1px solid rgba(var(--red), 0.6);
+	border-radius: 6px;
+
+	color: rgb(var(--red));
+	text-align: center;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
 
 @media (max-width: 768px) {

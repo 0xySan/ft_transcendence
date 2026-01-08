@@ -3,6 +3,14 @@ export {};
 const params = new URLSearchParams(window.location.search);
 const user: string | null = params.get("user");
 
+// Default avatar template
+const DEFAULT_AVATAR = (() => {
+	const template = document.querySelector<HTMLTemplateElement>('.default-pfp-temp');
+	return template
+		? (template.content.cloneNode(true) as DocumentFragment)
+		: document.createDocumentFragment();
+})();
+
 interface ProfileData {
 	user: {
 		id: string;
@@ -39,7 +47,7 @@ async function getCurrentUser(): Promise<ProfileData | null> {
 		currentUserId = data.user?.id || null;
 		return data;
 	} catch (err) {
-		console.error(err);
+		notify(`${err}`, { type: 'error' });
 		return null;
 	}
 }
@@ -55,7 +63,7 @@ async function ensureAuthenticated(): Promise<void> {
 		throw new Error('Username not found');
   }
   catch (err) {
-	console.error(err);
+	notify(`${err}`, { type: 'error' });
 	window.loadPage('/');
   }
 }
@@ -65,34 +73,37 @@ function updateProfileUI(profileData: ProfileData): void {
 
 	const profileInfoDiv = document.querySelector('.profile-info');
 	if (!profileInfoDiv) {
-		console.error('Profile info div not found');
+		notify('Profile info div not found', { type: 'error' });
 		return;
 	}
 
-	profileInfoDiv.classList.remove('hidden');
+	profileInfoDiv.classList.remove('nondisplayable');
 
 	if (!profile) {
-		console.error('No profile data available');
+		notify('No profile data available', { type: 'error' });
 		return;
 	}
 
 	// Update profile image
 	const profileImg = document.querySelector('.profile-info-img') as HTMLImageElement;
 	if (profileImg) {
-		console.log('Setting profile picture to:', profile.profilePicture);
 		if (profile.profilePicture) {
 			profileImg.src = `/api/users/data/imgs/${profile.profilePicture}`;
 			profileImg.onerror = () => {
-				console.error('Failed to load profile picture from:', profile.profilePicture);
-				profileImg.src = '/resources/imgs/default-avatar.svg'; // fallback
+				// Replace img with SVG fallback on error
+				const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+				profileImg.replaceWith(fallback);
+				notify('Failed to load profile picture', { type: 'error' });
 			};
-			console.log('Profile picture set to:', profile.profilePicture);
-		} else {
-			profileImg.src = '/resources/imgs/default-avatar.svg'; // fallback
 		}
-	} else {
-		console.warn('Profile image element not found');
+		else {
+			// Replace img with SVG fallback if no picture
+			const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+			profileImg.replaceWith(fallback);
+		}
 	}
+	else
+		console.warn('Profile image element not found');
 
 	// Update display name
 	const displayName = document.querySelector('.profile-display-name');
@@ -102,29 +113,33 @@ function updateProfileUI(profileData: ProfileData): void {
 
 	// Update username
 	const username = document.querySelector('.profile-info-username');
-	if (username) {
+	if (username)
 		username.textContent = `@${profile.username}`;
-	}
 
 	// Update flag
 	const flag = document.querySelector('.profile-info-flag') as HTMLImageElement;
 	if (flag && profile.country?.code ) {
 		flag.src = `/resources/imgs/svg/flags/${profile.country.code.toLowerCase()}.svg`;
 		flag.alt = profile.country.code;
-	} else if (flag) {
-		flag.style.display = 'none';
 	}
+	else if (flag)
+		flag.style.display = 'none';
 
 	// Update bio
 	const bioText = document.querySelector('.profile-info-bio p');
-	if (bioText) {
-		if (profile.bio) {
-			bioText.innerHTML = `<span class="profile-info-bio-label">Bio :</span><br>${profile.bio}`;
-		} else {
-			bioText.innerHTML = '<span class="profile-info-bio-label">Bio :</span><br>No bio available.';
-		}
-	}
+	if (bioText)
+	{
+		while (bioText.firstChild)
+			bioText.removeChild(bioText.firstChild);
+		const labelSpan = document.createElement('span');
 
+		labelSpan.className = 'profile-info-bio-label';
+		labelSpan.textContent = 'Bio :';
+		bioText.appendChild(labelSpan);
+		bioText.appendChild(document.createElement('br'));
+		const bioContent = document.createTextNode(profile.bio || 'No bio available.');
+		bioText.appendChild(bioContent);
+	}
 	// Update "Add to chat" button visibility
 	const chatButton = document.querySelector('.profile-chat-button') as HTMLButtonElement;
 	if (chatButton) {
@@ -148,21 +163,17 @@ function updateProfileUI(profileData: ProfileData): void {
 						body: JSON.stringify({ targetUserId: viewedUserId })
 					});
 
-					if (!res.ok) {
+					if (!res.ok)
 						throw new Error('Failed to create conversation');
-					}
 
-					const data = await res.json();
-					// Navigate to chat page with the conversation ID
 					window.loadPage('/chat');
 				} catch (err) {
-					console.error('Error creating chat:', err);
-					alert('Failed to create chat. Please try again.');
+					notify('Failed to create chat. Please try again.', { type: 'error' });
 				}
 			});
-		} else {
-			chatButton.classList.add('hidden');
 		}
+		else
+			chatButton.classList.add('nondisplayable');
 	}
 }
 
@@ -175,7 +186,6 @@ async function fetchProfileData(username: string): Promise<void> {
 		if (!res.ok)
 			throw new Error('Failed to fetch profile data');
 		const profileData: ProfileData = await res.json();
-		console.log('Profile Data:', profileData);
 		
 		// Store the viewed user's ID
 		viewedUserId = profileData.user?.id || null;
@@ -184,9 +194,15 @@ async function fetchProfileData(username: string): Promise<void> {
 		updateProfileUI(profileData);
 	}
 	catch (err) {
-		console.error(err);
-		const content = document.getElementById('content');
-		if (content) content.innerHTML = '<div style="text-align: center; padding: 40px; font-size: 18px; color: red;">Error 404: User not found</div>';
+		notify(`${err}`, { type: 'error' });
+		const profileDiv = document.querySelector<HTMLDivElement>('#profile-div');
+
+		if (profileDiv) {
+			const errorDiv = document.createElement('div');
+			errorDiv.className = 'profile-error-message';
+			errorDiv.textContent = 'Error 404: User not found';
+			profileDiv.appendChild(errorDiv);
+		}
 	}
 }
 
