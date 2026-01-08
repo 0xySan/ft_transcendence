@@ -64,7 +64,8 @@
     "worldWidth": "Largeur du monde",
     "worldHeight": "Hauteur du monde",
     "waitingTitle": "Attente de joueur",
-    "fieldWallThickness": "Épaisseur des murs du terrain"
+    "fieldWallThickness": "Épaisseur des murs du terrain",
+    "bracketType": "Type de bracket"
   },
   "login": {
     "forgotPasswordText": "Mot de passe oublié ? <a href=\"/forgot-password\">Réinitialisez-le ici</a>",

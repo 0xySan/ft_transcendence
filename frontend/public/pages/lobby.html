@@ -205,11 +205,44 @@
 					<button class="lobby-rocker-switch lobby-btn-active" id="lobby-tournament-basic-settings-button" data-translate-key="lobby.roomSettingsButton">Room settings</button>
 					<button class="lobby-rocker-switch" id="lobby-tournament-advanced-settings-button" data-translate-key="lobby.advancedSettingsButton">Advanced settings</button>
 				</div>
-				<div class="lobby-setting-list" id="lobby-tournament-basic-settings">
-
-				</div>
-				<div class="lobby-setting-list" id="lobby-tournament-advanced-settings">
-
+				<div class="lobby-setting-list grayed" id="lobby-tournament-basic-settings">
+					<div class="lobby-setting-container">
+						<label for="tournament-allow-spectators" data-translate-key="lobby.allowSpectatorsLabel">Allow Spectators</label>
+						<input type="checkbox" id="tournament-allow-spectators" class="lobby-checkbox" checked>
+					</div>
+					<div class="lobby-setting-container">
+						<label for="tournament-game-code" data-translate-key="lobby.gameCodeLabel">Tournament Code</label>
+						<input type="text" id="tournament-game-code" class="lobby-textbox" maxlength="4" placeholder="Enter code">
+					</div>
+					<div class="lobby-setting-container">
+						<label for="tournament-num-players" data-translate-key="lobby.numPlayersLabel">Number of Players</label>
+						<select id="tournament-num-players" class="lobby-select">
+							<option value="4">4</option>
+							<option value="8">8</option>
+							<option value="16">16</option>
+						</select>
+					</div>
+					<div class="lobby-setting-container">
+						<label for="tournament-first-to" data-translate-key="lobby.firstToLabel">First To</label>
+						<span id="tournament-first-to-value">5</span>
+						<input type="range" id="tournament-first-to" class="lobby-slider" min="1" max="10" value="5">
+					</div>
+					<div class="lobby-setting-container">
+						<label for="tournament-win-by" data-translate-key="lobby.winByLabel">Win By</label>
+						<span id="tournament-win-by-value">0</span>
+						<input type="range" id="tournament-win-by" class="lobby-slider" min="0" max="5" value="0">
+					</div>
+					<div class="lobby-setting-container">
+						<label for="tournament-bracket-type" data-translate-key="lobby.bracketType">Bracket Type</label>
+						<select id="tournament-bracket-type" class="lobby-select">
+							<option value="single-elimination">Single Elimination</option>
+							<option value="double-elimination">Double Elimination</option>
+						</select>
+					</div>
+					<div id="tournament-basic-settings-buttons">
+						<button id="tournament-reset-settings-button" data-translate-key="lobby.resetSettingsButton">RESET TO DEFAULTS</button>
+						<button id="tournament-save-settings-button" data-translate-key="lobby.saveSettingsButton">SAVE SETTINGS</button>
+					</div>
 				</div>
 			</div>
 		</div>

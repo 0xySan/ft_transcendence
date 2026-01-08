@@ -369,6 +369,35 @@ function updateCounts(current: number): void {
 	}
 }
 
+function activateTournamentUI(): void {
+	const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+	lobbySelectMode.classList.remove("current-mode");
+	lobbySelectMode.classList.add("unloaded");
+
+	const tournamentTab = getEl<HTMLDivElement>("lobby-tournament-tab");
+	tournamentTab.classList.add("current-mode");
+	tournamentTab.classList.remove("unloaded");
+
+	const customTab = getEl<HTMLDivElement>("lobby-custom-game-tab");
+	customTab.classList.remove("current-mode");
+	customTab.classList.add("unloaded");
+
+	const multiplayerTab = getEl<HTMLDivElement>("lobby-multiplayer-tab");
+	multiplayerTab.classList.remove("current-mode");
+	multiplayerTab.classList.add("unloaded");
+
+	getEl<HTMLButtonElement>("lobby-tournament-button").classList.add("current-mode");
+	getEl<HTMLButtonElement>("lobby-custom-game-button").classList.remove("current-mode");
+	getEl<HTMLButtonElement>("lobby-multiplayer-button").classList.remove("current-mode");
+
+	// Ungray tournament settings if owner
+	const isOwner = myPlayerId !== null && ownerId !== null && myPlayerId === ownerId;
+	const tournamentBasicSettings = getEl<HTMLDivElement>("lobby-tournament-basic-settings");
+	if (isOwner) {
+		tournamentBasicSettings.classList.remove("grayed");
+	}
+}
+
 /* -------------------------------------------------------------------------- */
 /* 									Owner / Launch logic					  */
 /* -------------------------------------------------------------------------- */
@@ -493,6 +522,11 @@ async function createGame(): Promise<void> {
 addListener(joinBtn, "click", () => joinGame(joinInput.value));
 
 addListener(createBtn, "click", () => createGame());
+
+addListener(lobbyTournamentBtn, "click", () => {
+	window.selectLobbyMode("online");
+	activateTournamentUI();
+});
 
 addListener(leaveBtn, "click", () => {
 	window.socket?.close();
