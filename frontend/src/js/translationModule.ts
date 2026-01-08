@@ -3,6 +3,7 @@ declare global {
     interface Window {
         translatePage: typeof translatePage;
         translateElement: typeof translateElement;
+        translateElementAsync: typeof translateElementAsync;
         getUserLang: typeof getUserLang;
         getTranslatedElementText: typeof getTranslatedElementText;
     }
@@ -141,7 +142,6 @@ export function translateElement(language: string, element: HTMLElement) {
         if (json) {
             const key = element.getAttribute("data-translate-key");
             if (key) {
-                /// Delete when done getting all the initial texts
                 printToJsonLine(key, element.innerText);
                 const keys = key.split(".");
                 const translatedText = getNestedJsonValue(json, keys);
@@ -152,6 +152,24 @@ export function translateElement(language: string, element: HTMLElement) {
         }
     });
 }
+
+export async function translateElementAsync(language: string, element: HTMLElement): Promise<void> {
+    const correlatedLanguage = correlateLangCode(language);
+    const json = await fetchTranslationJson(correlatedLanguage);
+    if (!json) return;
+    if (!element || !element.hasAttribute("data-translate-key")) return;
+
+    const key = element.getAttribute("data-translate-key");
+    if (key) {
+        printToJsonLine(key, element.innerText);
+        const keys = key.split(".");
+        const translatedText = getNestedJsonValue(json, keys);
+        if (translatedText) {
+            element.innerText = translatedText;
+        }
+    }
+}
+
 
 export function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null> {
     const correlatedLanguage = correlateLangCode(language);
@@ -176,6 +194,7 @@ export function getTranslatedElementText(language: string, element: HTMLElement)
 
 window.translatePage = translatePage;
 window.translateElement = translateElement;
+window.translateElementAsync = translateElementAsync;
 window.getTranslatedElementText = getTranslatedElementText;
 window.getUserLang = getUserLang;
 

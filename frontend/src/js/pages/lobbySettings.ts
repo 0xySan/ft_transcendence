@@ -17,6 +17,7 @@ declare global {
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
+		changeLobbyCodeInput: (newCode: string) => void;
 		isGameOffline: boolean;
 	}
 }
@@ -370,12 +371,18 @@ function wire(): void {
 	});
 
 	addListener(ui.actions.save, "click", () => {
+		// avoid sending an empty `code` field (server will reject with "Invalid code")
+		const payloadSettings: any = structuredClone(currentSettings);
+		if (payloadSettings?.game && typeof payloadSettings.game.code === 'string' && payloadSettings.game.code.trim() === '') {
+			delete payloadSettings.game.code;
+		}
+
 		fetch("/api/game/settings", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({ settings: currentSettings }),
+			body: JSON.stringify({ settings: payloadSettings }),
 		}).then(async (res) => {
 			if (!res.ok) {
 				const data = await res.json();
@@ -413,6 +420,11 @@ export function initLobbySettings(initial?: Partial<Settings>): void {
 	populateUi();
 	window.lobbySettings = structuredClone(currentSettings);
 	wire();
+}
+
+export function changeLobbyCodeInput(newCode: string): void {
+	ui.base.customGameCodeInput.value = newCode;
+	currentSettings.game.code = newCode;
 }
 
 /* auto-init */
@@ -720,9 +732,51 @@ async function dynLoaderCleanPage() {
 /* -------------------------------------------------------------------------- */
 
 window.setPartialLobbyConfig = setPartialLobbyConfig;
+window.changeLobbyCodeInput = changeLobbyCodeInput;
 
 setupModeSelection();
 setupSubTabs();
 await setupLobbyModeHandlers();
+
+// Auto-join by code present in URL (query `?code=ABCD`, `?gameCode=ABCD`, path ending with `/ABCD`, or hash `#ABCD`).
+// Reuses the same logic as the `JOIN` button by setting the input value and dispatching a click event.
+(async () => {
+	try {
+		const params = new URLSearchParams(location.search);
+		let code: string | null = params.get('code') || params.get('gameCode') || null;
+
+		if (!code) {
+			const parts = location.pathname.split('/').filter(Boolean);
+			const last = parts.length ? parts[parts.length - 1] : null;
+			if (last && /^[A-Z0-9]{4}$/i.test(last)) code = last;
+		}
+
+		if (!code && location.hash) {
+			const h = location.hash.replace(/^#/, '');
+			if (/^[A-Z0-9]{4}$/i.test(h)) code = h;
+		}
+
+		if (!code) return; // no code present
+
+		code = String(code).toUpperCase();
+		if (!/^[A-Z0-9]{4}$/.test(code)) return; // invalid -> do nothing
+
+		const isLogged = await window.currentUserReady.then(() => Boolean(window.currentUser)).catch(() => false);
+		if (!isLogged) {
+			notify?.('Please log in to join a lobby from a link.', { type: 'warning' });
+			return;
+		}
+
+		// reuse the same join logic directly when available
+		if (typeof window.joinGame === 'function') {
+			await window.joinGame(code);
+		} else {
+			const btn = document.getElementById('lobby-btn-join') as HTMLButtonElement | null;
+			if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		}
+	} catch (err) {
+		console.error('Auto-join processing failed', err);
+	}
+})();
 
 registerDynamicCleanup(dynLoaderCleanPage);

@@ -13,6 +13,7 @@ declare global {
 		currentUserReady: Promise<void>;
 		__resolveCurrentUser: (user?: any) => void;
 		joinLobby: () => Promise<void>;
+		joinGame?: (code: string) => Promise<void>;
 		lobbySettings?: Settings;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
 	}
@@ -26,6 +27,7 @@ declare function addListener(
 	event: string,
 	handler: any,
 ): void;
+declare function changeLobbyCodeInput(newCode: string): void;
 
 declare global {
     interface Window {
@@ -368,6 +370,9 @@ async function joinGame(code: string): Promise<void> {
 	connectWebSocket(authToken);
 }
 
+// expose joinGame so other modules (e.g. lobbySettings) can programmatically reuse the same logic
+window.joinGame = joinGame;
+
 async function createGame(): Promise<void> {
 	const res = await fetch("/api/game/new", {
 		method: "POST",
@@ -388,6 +393,7 @@ async function createGame(): Promise<void> {
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
 	joinInput.value = data.code;
+	changeLobbyCodeInput(data.code);
 
 	if (!authToken) throw new Error("Missing auth token");
 	connectWebSocket(authToken);
