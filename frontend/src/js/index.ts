@@ -231,13 +231,47 @@ initAnimation();
 // 				        CHAT INTEGRATION
 // =========================================================
 
+
 const chatContainer = document.getElementById("chat-index-container") as HTMLDivElement;
 if (!chatContainer) throw new Error("Chat container not found");
 
 const chatWindow = chatContainer.querySelector(".chat-window") as HTMLDivElement;
 const chatBar = chatWindow.querySelector(".chat-window-bar") as HTMLDivElement;
 
-// --- Resize ---
+// ---------------------- Helpers ------------------------
+
+/**
+ * Get client X/Y coordinates from MouseEvent or TouchEvent
+ */
+function getClientXY(e: MouseEvent | TouchEvent) {
+	if ('touches' in e && e.touches.length > 0) {
+		return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+	}
+	return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
+}
+
+/**
+ * Keep chat within viewport bounds
+ */
+function keepChatInBounds() {
+	const rect = chatContainer.getBoundingClientRect();
+	const maxLeft = window.innerWidth - rect.width;
+	const maxTop = window.innerHeight - 40;
+
+	if (rect.width > window.innerWidth) chatContainer.style.width = `${window.innerWidth}px`;
+	if (rect.height > window.innerHeight - 40) chatContainer.style.height = `${window.innerHeight - 40}px`;
+
+	let newLeft = Math.min(Math.max(0, rect.left), maxLeft);
+	let newTop = Math.min(Math.max(0, rect.top), maxTop);
+
+	if (newLeft !== rect.left) chatContainer.style.left = `${newLeft}px`;
+	if (newTop !== rect.top) chatContainer.style.top = `${newTop}px`;
+}
+
+window.addEventListener("resize", keepChatInBounds);
+
+// ---------------------- Resize ------------------------
+
 type ResizeType = "right" | "bottom" | "corner";
 
 let isResizing = false;
@@ -247,114 +281,125 @@ let startY = 0;
 let startWidth = 0;
 let startHeight = 0;
 
-function startResize(e: MouseEvent, type: ResizeType): void {
+/**
+ * Start resizing
+ */
+function startResize(e: MouseEvent | TouchEvent, type: ResizeType) {
 	e.preventDefault();
 	isResizing = true;
 	resizeType = type;
 
-	startX = e.clientX;
-	startY = e.clientY;
+	const { x, y } = getClientXY(e);
+	startX = x;
+	startY = y;
 
 	const rect = chatContainer.getBoundingClientRect();
 	startWidth = rect.width;
 	startHeight = rect.height;
 
+	// Desktop
 	document.addEventListener("mousemove", resizeMove);
 	document.addEventListener("mouseup", stopResize);
+
+	// Mobile
+	document.addEventListener("touchmove", resizeMove, { passive: false });
+	document.addEventListener("touchend", stopResize);
 }
 
-function resizeMove(e: MouseEvent): void {
+/**
+ * Resize handler
+ */
+function resizeMove(e: MouseEvent | TouchEvent) {
 	if (!isResizing || !resizeType) return;
+	e.preventDefault();
+
+	const { x: clientX, y: clientY } = getClientXY(e);
 
 	const minWidth = 260;
 	const minHeight = 220;
 
 	if (resizeType === "right" || resizeType === "corner") {
-		const newWidth = Math.max(minWidth, startWidth + (e.clientX - startX));
+		const newWidth = Math.max(minWidth, startWidth + (clientX - startX));
 		chatContainer.style.width = `${newWidth}px`;
 	}
 
 	if (resizeType === "bottom" || resizeType === "corner") {
-		const newHeight = Math.max(minHeight, startHeight + (e.clientY - startY));
+		const newHeight = Math.max(minHeight, startHeight + (clientY - startY));
 		chatContainer.style.height = `${newHeight}px`;
 	}
 }
 
-function stopResize(): void {
+/**
+ * Stop resizing
+ */
+function stopResize() {
 	isResizing = false;
 	resizeType = null;
+
 	document.removeEventListener("mousemove", resizeMove);
 	document.removeEventListener("mouseup", stopResize);
+
+	document.removeEventListener("touchmove", resizeMove);
+	document.removeEventListener("touchend", stopResize);
 }
 
-// Assign resize handlers
-const rightHandle = chatContainer.querySelector(".resize-right");
-const bottomHandle = chatContainer.querySelector(".resize-bottom");
-const cornerHandle = chatContainer.querySelector(".resize-corner");
+// Attach resize handles
+chatContainer.querySelector(".resize-right")?.addEventListener("mousedown", e => startResize(e as MouseEvent, "right"));
+chatContainer.querySelector(".resize-bottom")?.addEventListener("mousedown", e => startResize(e as MouseEvent, "bottom"));
+chatContainer.querySelector(".resize-corner")?.addEventListener("mousedown", e => startResize(e as MouseEvent, "corner"));
 
-rightHandle?.addEventListener("mousedown", e => startResize(e as MouseEvent, "right"));
-bottomHandle?.addEventListener("mousedown", e => startResize(e as MouseEvent, "bottom"));
-cornerHandle?.addEventListener("mousedown", e => startResize(e as MouseEvent, "corner"));
+chatContainer.querySelector(".resize-right")?.addEventListener("touchstart", e => startResize(e as TouchEvent, "right"), { passive: false });
+chatContainer.querySelector(".resize-bottom")?.addEventListener("touchstart", e => startResize(e as TouchEvent, "bottom"), { passive: false });
+chatContainer.querySelector(".resize-corner")?.addEventListener("touchstart", e => startResize(e as TouchEvent, "corner"), { passive: false });
 
-// --- Drag ---
+// ---------------------- Drag ------------------------
+
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
 let containerStartLeft = 0;
 let containerStartTop = 0;
 
-chatBar.addEventListener("mousedown", (e: MouseEvent) => {
+/**
+ * Start dragging
+ */
+function startDrag(e: MouseEvent | TouchEvent) {
 	e.preventDefault();
 	isDragging = true;
-	dragStartX = e.clientX;
-	dragStartY = e.clientY;
+
+	const { x: clientX, y: clientY } = getClientXY(e);
+	dragStartX = clientX;
+	dragStartY = clientY;
 
 	const rect = chatContainer.getBoundingClientRect();
 	containerStartLeft = rect.left;
 	containerStartTop = rect.top;
 
+	// Desktop
 	document.addEventListener("mousemove", dragMove);
 	document.addEventListener("mouseup", stopDrag);
-});
 
-function keepChatInBounds() {
-	const rect = chatContainer.getBoundingClientRect();
-
-	// limites max
-	const maxLeft = window.innerWidth - rect.width;
-	const maxTop = window.innerHeight - 40;
-
-	// Check if chat exceeds window bounds
-	if (rect.width > window.innerWidth)
-		chatContainer.style.width = `${window.innerWidth}px`;
-	if (rect.height > window.innerHeight - 40)
-		chatContainer.style.height = `${window.innerHeight - 40}px`;
-
-	chatContainer.dataset.prevWidth = `${chatContainer.offsetWidth}`;
-	chatContainer.dataset.prevHeight = `${chatContainer.offsetHeight}`;
-
-	let newLeft = Math.min(Math.max(0, rect.left), maxLeft);
-	let newTop = Math.min(Math.max(0, rect.top), maxTop);
-
-	if (newLeft !== rect.left) chatContainer.style.left = `${newLeft}px`;
-	if (newTop !== rect.top) chatContainer.style.top = `${newTop}px`;
+	// Mobile
+	document.addEventListener("touchmove", dragMove, { passive: false });
+	document.addEventListener("touchend", stopDrag);
 }
 
-window.addEventListener("resize", keepChatInBounds); // keep chat in bounds on window resize
-
-function dragMove(e: MouseEvent): void {
+/**
+ * Drag handler
+ */
+function dragMove(e: MouseEvent | TouchEvent) {
 	if (!isDragging) return;
+	e.preventDefault();
 
-	const dx = e.clientX - dragStartX;
-	const dy = e.clientY - dragStartY;
+	const { x: clientX, y: clientY } = getClientXY(e);
+	const dx = clientX - dragStartX;
+	const dy = clientY - dragStartY;
 
-	// Calculate new position
 	let newLeft = containerStartLeft + dx;
 	let newTop = containerStartTop + dy;
 
-	// Stop from going out of bounds
 	const maxLeft = window.innerWidth - chatContainer.offsetWidth;
-	const maxTop = window.innerHeight - 40; // 40px = title bar height
+	const maxTop = window.innerHeight - 40;
 
 	newLeft = Math.min(Math.max(0, newLeft), maxLeft);
 	newTop = Math.min(Math.max(0, newTop), maxTop);
@@ -363,21 +408,37 @@ function dragMove(e: MouseEvent): void {
 	chatContainer.style.top = `${newTop}px`;
 }
 
-function stopDrag(): void {
+/**
+ * Stop dragging
+ */
+function stopDrag() {
 	isDragging = false;
+
 	document.removeEventListener("mousemove", dragMove);
 	document.removeEventListener("mouseup", stopDrag);
+
+	document.removeEventListener("touchmove", dragMove);
+	document.removeEventListener("touchend", stopDrag);
 }
 
-// --- Minimize / Maximize ---
+// Attach drag events
+chatBar.addEventListener("mousedown", e => startDrag(e as MouseEvent));
+chatBar.addEventListener("touchstart", e => startDrag(e as TouchEvent), { passive: false });
+
+// ---------------------- Minimize / Maximize ------------------------
+
 chatWindow.querySelectorAll<HTMLButtonElement>(".chat-window-btn").forEach(btn => {
-	btn.addEventListener("click", () => {
+	const toggleAction = () => {
 		const action = btn.dataset.action;
 		if (!action) return;
 
-		if (action === "minimize")
+		if (action === "minimize") {
 			chatWindow.classList.toggle("minimized");
-		else if (action === "maximize") {
+			if (chatWindow.classList.contains("minimized")) {
+				chatContainer.dataset.prevHeight = `${chatContainer.offsetHeight}`;
+				chatContainer.style.height = "40px";
+			}
+		} else if (action === "maximize") {
 			if (!chatContainer.dataset.prevWidth) {
 				const rect = chatContainer.getBoundingClientRect();
 				chatContainer.dataset.prevWidth = `${rect.width}`;
@@ -398,9 +459,14 @@ chatWindow.querySelectorAll<HTMLButtonElement>(".chat-window-btn").forEach(btn =
 				chatContainer.style.top = `${chatContainer.dataset.prevTop}px`;
 			}
 		}
-	});
-});
+	};
 
+	btn.addEventListener("click", toggleAction);
+	btn.addEventListener("touchstart", (e) => { 
+		e.preventDefault(); // Prevent conflict with drag
+		toggleAction();
+	}, { passive: false });
+});
 
 // =========================================================
 // 						THEME  CHANGER

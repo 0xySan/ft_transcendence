@@ -1931,7 +1931,7 @@ initLayout();
 const notLoggedDiv = document.getElementById("chat-not-logged");
 const chatDiv = document.querySelector<HTMLDivElement>(".chat-div-container");
 
-if (!notLoggedDiv || !chatDiv)
+if (!notLoggedDiv || !chatDiv || !userListDiv)
 	throw new Error("Chat initialization failed: missing elements");
 
 function handleUserChange(user: typeof window.currentUser): void {
@@ -1942,10 +1942,10 @@ function handleUserChange(user: typeof window.currentUser): void {
 		loadChatData().then(startChatStream);
 		notLoggedDiv.classList.add('unloaded');
 		chatDiv.classList.remove('unloaded');
-	}
-	else {
+	} else {
 		notLoggedDiv.classList.remove('unloaded');
 		chatDiv.classList.add('unloaded');
+		updateUserListVisibility();
 	}
 }
 
@@ -1954,12 +1954,13 @@ await window.currentUserReady.then(async () => {
 		loadChatData().then(startChatStream);
 		notLoggedDiv.classList.add('unloaded');
 		chatDiv.classList.remove('unloaded');
+	} else {
+		updateUserListVisibility();
 	}
 });
 
 window.addEventListener("user:change", (event: Event) => {
 	const { detail } = event as CustomEvent<typeof window.currentUser>;
-
 	handleUserChange(detail);
 });
 
@@ -1967,11 +1968,21 @@ function resetChatState() {
 	activeUser = null;
 	activeUsers.clear();
 	blockedUsers.clear();
-
-	const userListDiv = chatBlock.querySelector<HTMLDivElement>('.chat-user-list');
-	if (userListDiv) {
-		userListDiv.innerHTML = '';
-	}
+	
+	// Clear all conversation data
+	Object.keys(conversations).forEach((key) => delete conversations[key]);
+	users.length = 0;
+	profilepics.length = 0;
+	Object.keys(visibleStart).forEach((k) => delete visibleStart[k]);
+	Object.keys(scrollPositions).forEach((k) => delete scrollPositions[k]);
+	Object.keys(loadingOlderMessages).forEach((k) => delete loadingOlderMessages[k]);
+	Object.keys(conversationMeta).forEach((k) => delete conversationMeta[k]);
+	Object.keys(userIdToName).forEach((k) => delete userIdToName[k]);
+	Object.keys(userNameToUserId).forEach((k) => delete userNameToUserId[k]);
+	Object.keys(userIdToAvatar).forEach((k) => delete userIdToAvatar[k]);
+	Object.keys(userIdToUsername).forEach((k) => delete userIdToUsername[k]);
+	Object.keys(allMessagesLoaded).forEach((k) => delete allMessagesLoaded[k]);
+	Object.keys(drafts).forEach((k) => delete drafts[k]);
 
 	const messagesDivs = chatBlock.querySelectorAll<HTMLDivElement>('.chat-messages[user]');
 	messagesDivs.forEach((div) => div.remove());
@@ -1987,4 +1998,21 @@ function resetChatState() {
 	profileLink.classList.add('hidden');
 	headerBlockBtn.classList.add('hidden');
 	form.classList.add('hidden');
+	
+	// Close event stream if active
+	if (currentEventSource) {
+		currentEventSource.close();
+		currentEventSource = null;
+	}
+	reconnectAttempts = 0;
+	isReconnecting = false;
+}
+
+function updateUserListVisibility() {
+	if (users.length === 0) {
+		userListDiv.innerHTML = '<p>Nobody here :(</p>';
+	} else {
+		userListDiv.innerHTML = ''; // Clear the message
+		renderUserList(renderChat); // Re-render the user list
+	}
 }
