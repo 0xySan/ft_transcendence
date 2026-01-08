@@ -11,6 +11,14 @@ import {
 	state
 } from "./game.types.js";
 import { parentPort } from "worker_threads";
+import { parseArgs } from "util";
+
+export interface userStatsInterface {
+	userId:			string;
+	earnPoints:		number;
+	score:			number;
+	state:			"lose" | "win" | "null";
+}
 
 /**
  * Game class representing a game instance.
@@ -121,6 +129,24 @@ export class Game {
 				...(configOverrides?.network ?? {}),
 			}
 		};
+	}
+
+	endGame(stats: userStatsInterface[], startTime: number | undefined, scoreLimit: number, gameId: string) {
+		let time: number = 0;
+		if (startTime) time = Date.now() - startTime;
+
+		const message: worker.workerMessage = {
+			type: "db",
+			payload: {
+				users: stats,
+				timeGame: time,
+				scoreLimit: scoreLimit,
+				gameId: gameId
+			},
+			userIds: this.players.map(p => p.id)
+		};
+
+		parentPort!.postMessage(message);
 	}
 
 	/**

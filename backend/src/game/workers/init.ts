@@ -8,12 +8,17 @@ import { fileURLToPath } from "node:url";
 import path from "path";
 import os from "os";
 
+import { getStatsByUserId, createStats, updateStats, incrementGamesWon, incrementGamesLost } from "../../db/wrappers/main/users/userStats.js"
+import { createGame, getAllGames } from "../../db/wrappers/main/games/games.js"
+import { addParticipant, getAllParticipants } from "../../db/wrappers/main/games/gameParticipants.js"
+
 import type * as msg from "../sockets/socket.types.js";
-import type * as game from "../workers/game/game.types.js";
+import * as game from "../workers/game/game.types.js";
 
 import{ activeGames, workers } from "../../globals.js";
 import WebSocket from "ws";
 import { workerMessage } from "./worker.types.js";
+import { create } from "node:domain";
 
 const NUM_WORKERS = os.cpus().length;
 
@@ -30,6 +35,42 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 			type: msg.type,
 			payload: msg.payload
 		});
+
+		if (msg.type === "db" && msg.payload as msg.dbPayload) {
+			let winner_id: string = "null";
+
+			for (const stat of msg.payload.users) {
+				let userStats = getStatsByUserId(stat.userId);
+
+				if (!userStats)
+					userStats = createStats(stat.userId);
+
+				if (userStats) {
+					updateStats(stat.userId, {
+						games_played: (userStats.games_played ?? 0) + 1,
+						earn_points: (userStats.earn_points ?? 0) + stat.earnPoints,
+						total_play_time: (userStats.total_play_time ?? 0) + msg.payload.timeGame
+					});
+
+					if (stat.state == "win") { incrementGamesWon(userStats.user_id); winner_id = userStats.user_id; }
+					else if (stat.state == "lose") incrementGamesLost(userStats.user_id);
+				}
+			}
+
+			createGame("online", msg.payload.scoreLimit, msg.payload.users.length, msg.payload.timeGame, "completed", winner_id, msg.payload.gameId);
+			for (const stat of msg.payload.users) {
+				if (stat.state == "null") stat.state = "draw";
+				else if (stat.state == "lose") stat.state = "loss";
+				console.log("DEBUG: user_id = " + stat.userId);
+				addParticipant(msg.payload.gameId, stat.userId, stat.score, stat.state, msg.payload.users.length > 2 ? 2 : 1);
+				console.log("DEBUG: new participant !");
+			}
+
+			console.log("DEBUG: participant = ", getAllParticipants());
+
+			return;
+		}
+
 		for (const userId of msg.userIds) {
 			for (const [gameId, gameObj] of activeGames.entries()) {
 				if (gameObj.players.has(userId)) {
@@ -85,12 +126,11 @@ function getGameIdByUser(userId: string): string | null {
 	// Iterate through active games to find the one containing the userId
 	for (const [gameId, gameObj] of activeGames.entries()) {
 		if (gameObj.players.has(userId)) {
-			return gameId; // Return the game ID if userId is found
+			return (gameId); // Return the game ID if userId is found
 		}
 	}
 	return null;
 }
-
 
 /**
  * Add a player to a game via the appropriate worker.
@@ -114,8 +154,9 @@ export function addOrRemovePlayerGameWorker(uuid: string, displayName: string = 
 		activeGames.delete(gameId);
 		// Remove the game from the worker's active games list
 		workerEntry.activeGames = workerEntry.activeGames.filter(gid => gid !== gameId);
-	} else if (action === "leave")
+	} else if (action === "leave") {
 		activeGames.get(gameId)?.players.delete(uuid);
+	}
 
 	// Notify the worker to add the player
 	workerEntry.worker.postMessage({

@@ -66,13 +66,15 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 		parentPort!.postMessage(personalMessage);
 	}
 	else if (payload.action === "leave") {
+		
 		game.removePlayer(payload.playerId);
-		if (game.players.length === 0 && game.spectators.length === 0) {
-			games.delete(game.id); // Clean up empty games
-			return;
+		if (gameStates.get(game.id) == "playing") {
+			gameStates.set(game.id, "stopped");
 		}
-		if (game.players.length < 2)
-			gameStates.set(payload.gameId, "paused");
+		console.log("\n\n\n\n\n\n\n\n\n\n\n\nDEBUG: state = ", gameStates);
+		console.log("ID: ", game.id);
+		// if (game.players.length < 2)
+		// 	gameStates.set(payload.gameId, "paused");
 		if (game.ownerId === payload.playerId) { // Transfer ownership if the owner leaves
 			game.ownerId = game.players.length > 0 ? game.players[0].id : (game.spectators.length > 0 ? game.spectators[0].id : "");
 			const message : msg.playerSyncPayload = {

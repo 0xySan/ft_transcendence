@@ -4,7 +4,7 @@
  */
 
 import { parentPort } from "worker_threads";
-import { Game } from "./game.class.js";
+import { Game, userStatsInterface } from "./game.class.js";
 import type * as msg from "../../sockets/socket.types.js";
 import {
 	createHandler,
@@ -12,6 +12,14 @@ import {
 	playerHandler,
 	settingsHandler
 } from "./handlers.js";
+import { parseArgs } from "util";
+
+/* -------------------------------------------------------------------------- */
+/*                                   STATS                                    */
+/* -------------------------------------------------------------------------- */
+
+let		userStats: userStatsInterface[] = [];
+let		lastHit: string = "";
 
 /* -------------------------------------------------------------------------- */
 /*                                   STATE                                    */
@@ -48,6 +56,9 @@ function gameLoop(): void {
 				game.currentFrameId = 0;
 				accumulators.set(gameId, 0);
 				gameStates.set(gameId, "playing");
+				for (const targetPlayer of game.players) {
+					userStats.push({ userId: targetPlayer.id, earnPoints: 0, state: "null", score: 0 });
+				}
 			}
 			else {
 				return;
@@ -55,6 +66,25 @@ function gameLoop(): void {
 		}
 
 		if (state === "stopped") {
+			const winnerScore = game.players.reduce((max, player) => Math.max(max, player.score ?? 0), 0);
+
+			const scores = game.players.map(p => p.score ?? 0);
+			const equal = scores.some(score => score !== winnerScore);
+
+			for (const statTarget of userStats) {
+				const player = game.players.find(p => p.id === statTarget.userId);
+				if (!player) continue;
+				statTarget.score = player.score;
+
+				if (equal) {
+					statTarget.state = (player.score === winnerScore) ? "win" : "lose";
+				} else {
+					statTarget.state = "null";
+				}
+			}
+
+			game.endGame(userStats, gameStartTimes.get(gameId), game.config.scoring.firstTo, gameId);
+			userStats = []
 			gameStates.delete(game.id);
 			gameStartTimes.delete(game.id);
 			accumulators.delete(game.id);
@@ -206,6 +236,7 @@ console.log("DEBUG: player ", player.id, " y = ", p.y);
 			const rel =
 				(ball.y - p.y) / padCfg.height - 0.5;
 			ball.vy += rel * game.config.ball.speedIncrement;
+			lastHit = player.id;
 			break;
 		}
 	}
@@ -214,8 +245,18 @@ console.log("DEBUG: player ", player.id, " y = ", p.y);
 		const scorer =
 			ball.x < 0 ? orderedPlayers[1] : orderedPlayers[0];
 
-		if (scorer)
+		if (scorer) {
 			scorer.score = (scorer.score ?? 0) + 1;
+			if (lastHit != "") {
+				for (const statsTarget of userStats) {
+					if (statsTarget.userId == lastHit) {
+						statsTarget.earnPoints += 1;
+						break
+					}
+				}	
+			}
+			lastHit = "";
+		}
 
 		console.log("DEBUG: score = " + scorer.score + " | firstto = " + game.config.scoring.firstTo);
 		if (scorer.score >= game.config.scoring.firstTo) {
@@ -287,15 +328,29 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 		case "game": {
 			const payload = message.payload as msg.workerGamePayload;
 			const game = games.get(payload.gameId);
-			if (!game)
+			if (!game) {
+				console.log("CANT START GAME: game not found");
 				return;
+			}
 
 			if (payload.userId && !game.isOwner(payload.userId))
+			{
+				console.log("CANT START GAME: User is not owner");
 				return;
+			}
+
+			if (gameStates.has(payload.gameId))
+			{
+				console.log("CANT START GAME: game already in game state");
+				return;
+			}
 
 			if (payload.action === "start") {
 				if (game.players.length < 2)
+				{
+					console.log("CANT START GAME: Not enough player");
 					return;
+				}
 				game.resetGame();
 				const startTime = Date.now() + 3000;
 

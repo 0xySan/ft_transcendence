@@ -67,6 +67,7 @@ CREATE TABLE user_stats (
 	games_played INTEGER DEFAULT 0,                           -- Total games played
 	games_won INTEGER DEFAULT 0,                              -- Total games won
 	games_lost INTEGER DEFAULT 0,                             -- Total games lost
+	earn_points INTEGER DEFAULT 0,                            -- Total earn points
     level INTEGER DEFAULT 1,                                  -- Player level
     rank INTEGER DEFAULT 0,                                   -- Global or local ranking
     total_play_time INTEGER DEFAULT 0                         -- Total playtime in seconds
@@ -75,7 +76,7 @@ CREATE TABLE user_stats (
 -- Table: games
 -- Stores metadata about each game played.
 CREATE TABLE games (
-    game_id INTEGER PRIMARY KEY AUTOINCREMENT,                -- Unique identifier
+    game_id TEXT PRIMARY KEY,                -- Unique identifier
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,            -- When the game was created
     duration INTEGER CHECK(duration >= 0),                   -- Game duration in seconds (non-negative)
     mode TEXT CHECK(mode IN ('local','online','tournament')), -- Game mode
@@ -90,7 +91,7 @@ CREATE TABLE games (
 -- Stores participants of each game, their team, and result.
 CREATE TABLE game_participants (
     participant_id INTEGER PRIMARY KEY AUTOINCREMENT,         -- Unique identifier
-    game_id INTEGER NOT NULL REFERENCES games(game_id) 
+    game_id TEXT NOT NULL REFERENCES games(game_id) 
         ON DELETE CASCADE,                                    -- Link to games
     user_id TEXT NOT NULL REFERENCES users(user_id) 
         ON DELETE CASCADE,                                    -- Link to users

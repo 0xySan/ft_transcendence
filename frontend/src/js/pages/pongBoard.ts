@@ -958,8 +958,22 @@ function updatePlayerNames() {
 function handlePlayer(payload: PlayerPayload) {
 	if (payload.action === "join")
 		notify(`${payload.displayName} joined the game.`, { type: "info" });
-	else if (payload.action === "leave")
+	else if (payload.action === "leave") {
 		notify(`${payload.displayName} left the game.`, { type: "warning" });
+		
+		if (!window.playerSyncData) return;
+
+		let isOwner: boolean = false;
+		if (window.playerSyncData.ownerId == payload.playerId) isOwner = true;
+
+		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
+		if (index !== -1) window.playerSyncData.players.splice(index, 1);
+
+		// TODO owner verif here
+		if (isOwner && window.playerSyncData.players.length > 0) window.playerSyncData.ownerId = window.playerSyncData.players[0].playerId;
+
+		loadPage('/lobby');
+	}
 }
 
 

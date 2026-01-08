@@ -52,7 +52,7 @@ export interface pendingConnection {
  * - **game**: Game control message (start/pause/resume/abort). - `socket` and `worker`.
  * - **input**: Player input frames. - `socket` and `worker`.
  */
-export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings" | "game" | "input";
+export type msgType = "connect" | "player" | "playerSync" | "create" | "send" | "settings" | "game" | "input" | "stopped" | "db";
 
 /**
  * Generic message interface for socket communication.
@@ -67,6 +67,20 @@ export interface message<T> {
 // ===================================
 // 			Payload Types
 // ===================================
+
+export interface statsPayload {
+	userId:		string;
+	earnPoints:	number;
+	score: number;
+	state: "lose" | "win" | "null";
+}
+
+export interface dbPayload {
+	users: statsPayload[];
+	timeGame: number;
+	scoreLimit: number;
+	gameId: string;
+}
 
 /**
  * Authentication token sent by the client at connection.
