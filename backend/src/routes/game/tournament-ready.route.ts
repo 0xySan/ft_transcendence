@@ -9,14 +9,13 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 import { v7 as uuidv7 } from "uuid";
 
 import {
-	activeTournaments,
 	isPlayerInTournament,
 	markPlayerReady,
 	areBothPlayersReady,
 } from "./utils.js";
 import { addUserToGame } from "./utils.js";
 import { generateRandomToken } from "../../utils/crypto.js";
-import { wsPendingConnections } from "../../globals.js";
+import { wsPendingConnections, activeTournaments } from "../../globals.js";
 import { assignGameToWorker } from "../../game/workers/init.js";
 import { config } from "../../game/workers/game/game.types.js";
 

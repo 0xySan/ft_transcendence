@@ -9,13 +9,12 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 import { v7 as uuidv7 } from "uuid";
 
 import {
-	activeTournaments,
 	isValidTournamentSize,
 	isUserInTournament,
 	isUserInGame,
-	Tournament,
 } from "./utils.js";
 import { parseGameConfig } from "./utils.js";
+import { activeTournaments, Tournament } from "../../globals.js";
 
 export function createTournamentRoute(fastify: FastifyInstance) {
 	fastify.post(
@@ -64,6 +63,8 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 				status: 'waiting',
 				currentRound: 0,
 				config: config as Partial<import('../../game/workers/game/game.types.js').config>,
+				createdAt: Date.now(),
+				completedAt: null,
 			};
 
 			activeTournaments.set(tournamentId, tournament);

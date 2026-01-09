@@ -6,7 +6,8 @@
 import { FastifyInstance } from "fastify";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 
-import { activeTournaments, isPlayerInTournament } from "./utils.js";
+import { isPlayerInTournament } from "./utils.js";
+import { activeTournaments } from "../../globals.js";
 
 export function tournamentStatusRoute(fastify: FastifyInstance) {
 	fastify.get(
