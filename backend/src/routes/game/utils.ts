@@ -8,6 +8,247 @@ import * as game from "../../game/workers/game/game.types.js";
 import * as worker from '../../game/workers/worker.types.js';
 import { gameGetSettingsByGameId } from '../../game/workers/init.js';
 
+/* ======================== TOURNAMENT TYPES ======================== */
+
+export interface TournamentMatch {
+	matchId: string;
+	gameId: string | null;
+	player1Id: string | null;
+	player2Id: string | null;
+	player1Ready: boolean;
+	player2Ready: boolean;
+	winner: string | null;
+	round: number;
+}
+
+export interface Tournament {
+	tournamentId: string;
+	code: string;
+	ownerId: string;
+	maxPlayers: number;
+	players: Set<string>;
+	bracket: TournamentMatch[];
+	status: "waiting" | "in-progress" | "completed";
+	currentRound: number;
+	config: Partial<game.config>;
+}
+
+/**
+ * Map to store active tournaments.
+ * - Key: Tournament ID **string**
+ * - Value: Tournament object
+ */
+export const activeTournaments: Map<string, Tournament> = new Map();
+
+/* ======================== TOURNAMENT UTILITIES ======================== */
+
+/**
+ * Generates a single elimination bracket for a tournament.
+ * @param players - Array of player IDs
+ * @param round - Current round number (default 0)
+ * @returns Array of TournamentMatch objects
+ */
+export function generateBracket(players: string[], round: number = 0): TournamentMatch[] {
+	const bracket: TournamentMatch[] = [];
+	
+	// Shuffle players for random pairings
+	const shuffled = [...players].sort(() => Math.random() - 0.5);
+	
+	for (let i = 0; i < shuffled.length; i += 2) {
+		bracket.push({
+			matchId: `match_${round}_${i / 2}`,
+			gameId: null,
+			player1Id: shuffled[i] || null,
+			player2Id: shuffled[i + 1] || null,
+			player1Ready: false,
+			player2Ready: false,
+			winner: null,
+			round: round
+		});
+	}
+	
+	return bracket;
+}
+
+/**
+ * Validates if a tournament can have a specific number of players.
+ * Valid sizes: 2, 4, 8, 16, 32, 64, 128, etc. (power of 2)
+ * @param count - Number of players
+ * @returns true if valid tournament size, false otherwise
+ */
+export function isValidTournamentSize(count: number): boolean {
+	return count >= 2 && (count & (count - 1)) === 0; // Check if power of 2
+}
+
+/**
+ * Gets the next round matches after current round is completed.
+ * @param completedMatches - Matches from current round with winners set
+ * @param currentRound - Current round number
+ * @returns Array of matches for next round
+ */
+export function getNextRoundMatches(completedMatches: TournamentMatch[], currentRound: number): TournamentMatch[] {
+	const nextMatches: TournamentMatch[] = [];
+	
+	for (let i = 0; i < completedMatches.length; i += 2) {
+		const winner1 = completedMatches[i]?.winner;
+		const winner2 = completedMatches[i + 1]?.winner;
+		
+		if (winner1 || winner2) {
+			nextMatches.push({
+				matchId: `match_${currentRound + 1}_${nextMatches.length}`,
+				gameId: null,
+				player1Id: winner1 || null,
+				player2Id: winner2 || null,
+				player1Ready: false,
+				player2Ready: false,
+				winner: null,
+				round: currentRound + 1
+			});
+		}
+	}
+	
+	return nextMatches;
+}
+
+/**
+ * Checks if a player is in a tournament.
+ * @param userId - The unique identifier of the user.
+ * @param tournamentId - The unique identifier of the tournament.
+ * @returns true if player is in tournament, false otherwise
+ */
+export function isPlayerInTournament(userId: string, tournamentId: string): boolean {
+	const tournament = activeTournaments.get(tournamentId);
+	return tournament ? tournament.players.has(userId) : false;
+}
+
+/**
+ * Checks if a user is already in an active tournament.
+ * @param userId - The unique identifier of the user.
+ * @returns true if user is in any tournament, false otherwise
+ */
+export function isUserInTournament(userId: string): boolean {
+	for (const tournament of activeTournaments.values()) {
+		if (tournament.players.has(userId)) return true;
+	}
+	return false;
+}
+
+/**
+ * Gets tournament by code.
+ * @param code - The tournament code
+ * @returns Tournament ID if found, null otherwise
+ */
+export function getTournamentByCode(code: string): string | null {
+	for (const [tournamentId, tournament] of activeTournaments.entries()) {
+		if (tournament.code === code) return tournamentId;
+	}
+	return null;
+}
+
+/**
+ * Marks a player as ready for their match.
+ * @param tournamentId - The tournament ID
+ * @param matchId - The match ID
+ * @param userId - The user ID
+ * @returns true if successful, error message otherwise
+ */
+export function markPlayerReady(tournamentId: string, matchId: string, userId: string): boolean | string {
+	const tournament = activeTournaments.get(tournamentId);
+	if (!tournament) return "Tournament not found";
+	
+	const match = tournament.bracket.find(m => m.matchId === matchId);
+	if (!match) return "Match not found";
+	
+	if (match.player1Id === userId) {
+		match.player1Ready = true;
+	} else if (match.player2Id === userId) {
+		match.player2Ready = true;
+	} else {
+		return "Player not in this match";
+	}
+	
+	return true;
+}
+
+/**
+ * Checks if both players in a match are ready.
+ * @param tournamentId - The tournament ID
+ * @param matchId - The match ID
+ * @returns true if both players are ready, false otherwise
+ */
+export function areBothPlayersReady(tournamentId: string, matchId: string): boolean {
+	const tournament = activeTournaments.get(tournamentId);
+	if (!tournament) return false;
+	
+	const match = tournament.bracket.find(m => m.matchId === matchId);
+	if (!match) return false;
+	
+	return match.player1Ready && match.player2Ready && match.player1Id !== null && match.player2Id !== null;
+}
+
+/**
+ * Records a match winner.
+ * @param tournamentId - The tournament ID
+ * @param matchId - The match ID
+ * @param winnerId - The winning player ID
+ * @returns true if successful, error message otherwise
+ */
+export function recordMatchWinner(tournamentId: string, matchId: string, winnerId: string): boolean | string {
+	const tournament = activeTournaments.get(tournamentId);
+	if (!tournament) return "Tournament not found";
+	
+	const match = tournament.bracket.find(m => m.matchId === matchId);
+	if (!match) return "Match not found";
+	
+	if (match.player1Id !== winnerId && match.player2Id !== winnerId) {
+		return "Winner not in this match";
+	}
+	
+	match.winner = winnerId;
+	return true;
+}
+
+/**
+ * Checks if current round is completed.
+ * @param tournamentId - The tournament ID
+ * @returns true if all matches in current round have winners, false otherwise
+ */
+export function isCurrentRoundCompleted(tournamentId: string): boolean {
+	const tournament = activeTournaments.get(tournamentId);
+	if (!tournament) return false;
+	
+	const currentRoundMatches = tournament.bracket.filter(m => m.round === tournament.currentRound);
+	return currentRoundMatches.length > 0 && currentRoundMatches.every(m => m.winner !== null);
+}
+
+/**
+ * Advances tournament to next round.
+ * @param tournamentId - The tournament ID
+ * @returns true if advanced, error message if tournament ended
+ */
+export function advanceToNextRound(tournamentId: string): boolean | string {
+	const tournament = activeTournaments.get(tournamentId);
+	if (!tournament) return "Tournament not found";
+	
+	const currentRoundMatches = tournament.bracket.filter(m => m.round === tournament.currentRound);
+	
+	if (!isCurrentRoundCompleted(tournamentId)) {
+		return "Current round not completed";
+	}
+	
+	// Check if tournament is finished (only 1 match and has winner)
+	if (currentRoundMatches.length === 1 && currentRoundMatches[0].winner) {
+		tournament.status = "completed";
+		return "Tournament completed";
+	}
+	
+	const nextMatches = getNextRoundMatches(currentRoundMatches, tournament.currentRound);
+	tournament.bracket.push(...nextMatches);
+	tournament.currentRound++;
+	
+	return true;
+}
+
 /**
  * Checks if a user is already in an active game.
  * @param userId - The unique identifier of the user.
