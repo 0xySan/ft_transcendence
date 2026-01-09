@@ -1935,7 +1935,6 @@ if (!notLoggedDiv || !chatDiv || !userListDiv)
 	throw new Error("Chat initialization failed: missing elements");
 
 function handleUserChange(user: typeof window.currentUser): void {
-	console.log('User change detected in chat:', user);
 	resetChatState();
 	if (!notLoggedDiv || !chatDiv) return;
 	if (user) {
