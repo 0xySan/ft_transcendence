@@ -3,42 +3,31 @@
  * @description Utility functions for game routes, including parsing and game player management.
  */
 
-import { activeGames } from "../../globals.js";
+import { activeGames, activeTournaments, TournamentMatch } from "../../globals.js";
 import * as game from "../../game/workers/game/game.types.js";
 import * as worker from '../../game/workers/worker.types.js';
 import { gameGetSettingsByGameId } from '../../game/workers/init.js';
 
-/* ======================== TOURNAMENT TYPES ======================== */
+/* ======================== TOURNAMENT CLEANUP ======================== */
 
-export interface TournamentMatch {
-	matchId: string;
-	gameId: string | null;
-	player1Id: string | null;
-	player2Id: string | null;
-	player1Ready: boolean;
-	player2Ready: boolean;
-	winner: string | null;
-	round: number;
-}
-
-export interface Tournament {
-	tournamentId: string;
-	code: string;
-	ownerId: string;
-	maxPlayers: number;
-	players: Set<string>;
-	bracket: TournamentMatch[];
-	status: "waiting" | "in-progress" | "completed";
-	currentRound: number;
-	config: Partial<game.config>;
-}
-
-/**
- * Map to store active tournaments.
- * - Key: Tournament ID **string**
- * - Value: Tournament object
- */
-export const activeTournaments: Map<string, Tournament> = new Map();
+// Clean up old tournaments every 5 minutes
+// Remove completed tournaments after 1 hour
+// Remove abandoned waiting tournaments after 30 minutes
+setInterval(() => {
+	const now = Date.now();
+	for (const [tournamentId, tournament] of activeTournaments.entries()) {
+		// Remove completed tournaments after 1 hour
+		if (tournament.status === 'completed' && tournament.completedAt && (now - tournament.completedAt) > 60 * 60 * 1000) {
+			activeTournaments.delete(tournamentId);
+			console.log(`Cleaned up completed tournament: ${tournamentId}`);
+		}
+		// Remove waiting tournaments that haven't started after 30 minutes
+		else if (tournament.status === 'waiting' && (now - tournament.createdAt) > 30 * 60 * 1000) {
+			activeTournaments.delete(tournamentId);
+			console.log(`Cleaned up abandoned tournament: ${tournamentId}`);
+		}
+	}
+}, 5 * 60 * 1000);
 
 /* ======================== TOURNAMENT UTILITIES ======================== */
 
@@ -239,6 +228,7 @@ export function advanceToNextRound(tournamentId: string): boolean | string {
 	// Check if tournament is finished (only 1 match and has winner)
 	if (currentRoundMatches.length === 1 && currentRoundMatches[0].winner) {
 		tournament.status = "completed";
+		tournament.completedAt = Date.now();
 		return "Tournament completed";
 	}
 	

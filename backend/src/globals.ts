@@ -6,6 +6,7 @@
 
 import * as socket from './game/sockets/socket.types.js';
 import * as worker from './game/workers/worker.types.js';
+import * as game from "./game/workers/game/game.types.js";
 import { WorkerInfo } from "./game/workers/worker.types.js";
 
 /**
@@ -43,3 +44,35 @@ export const workers: WorkerInfo[] = [];
  * 	- players - **string[]**, list of player IDs participating in the game
  */
 export const activeGames: Map<string, worker.activeGame> = new Map();
+
+export interface TournamentMatch {
+	matchId: string;
+	gameId: string | null;
+	player1Id: string | null;
+	player2Id: string | null;
+	player1Ready: boolean;
+	player2Ready: boolean;
+	winner: string | null;
+	round: number;
+}
+
+export interface Tournament {
+	tournamentId: string;
+	code: string;
+	ownerId: string;
+	maxPlayers: number;
+	players: Set<string>;
+	bracket: TournamentMatch[];
+	status: "waiting" | "in-progress" | "completed";
+	currentRound: number;
+	config: Partial<game.config>;
+	createdAt: number;
+	completedAt: number | null;
+}
+
+/**
+ * Map to store active tournaments.
+ * - Key: Tournament ID **string**
+ * - Value: Tournament object
+ */
+export const activeTournaments: Map<string, Tournament> = new Map();

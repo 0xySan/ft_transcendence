@@ -7,12 +7,13 @@ import { FastifyInstance } from "fastify";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 
 import {
-	activeTournaments,
 	getTournamentByCode,
 	isUserInGame,
 	isUserInTournament,
 	generateBracket,
 } from "./utils.js";
+
+import { activeTournaments } from "../../globals.js";
 
 export function joinTournamentRoute(fastify: FastifyInstance) {
 	fastify.post(
