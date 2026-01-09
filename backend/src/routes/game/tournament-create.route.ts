@@ -13,11 +13,9 @@ import {
 	isValidTournamentSize,
 	isUserInTournament,
 	isUserInGame,
-	generateBracket,
 	Tournament,
 } from "./utils.js";
 import { parseGameConfig } from "./utils.js";
-import { generateRandomToken } from "../../utils/crypto.js";
 
 export function createTournamentRoute(fastify: FastifyInstance) {
 	fastify.post(
