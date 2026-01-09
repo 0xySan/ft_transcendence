@@ -13,7 +13,6 @@ import {
 	isUserInTournament,
 	generateBracket,
 } from "./utils.js";
-import { wsPendingConnections } from "../../globals.js";
 
 export function joinTournamentRoute(fastify: FastifyInstance) {
 	fastify.post(
