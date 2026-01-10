@@ -57,7 +57,7 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				}
 			}
 
-			createGame("online", msg.payload.scoreLimit, msg.payload.users.length, msg.payload.timeGame, "completed", winner_id, msg.payload.gameId);
+			createGame("online", msg.payload.scoreLimit, msg.payload.users.length, msg.payload.timeGame, "completed", winner_id, JSON.stringify(msg.payload.pointsTime), msg.payload.gameId);
 			for (const stat of msg.payload.users) {
 				if (stat.state == "null") stat.state = "draw";
 				else if (stat.state == "lose") stat.state = "loss";
@@ -66,7 +66,7 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				console.log("DEBUG: new participant !");
 			}
 
-			console.log("DEBUG: participant = ", getAllParticipants());
+			console.log("DEBUG: games = ", getAllGames());
 
 			return;
 		}

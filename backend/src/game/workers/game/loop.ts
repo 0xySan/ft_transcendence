@@ -4,7 +4,7 @@
  */
 
 import { parentPort } from "worker_threads";
-import { Game, userStatsInterface } from "./game.class.js";
+import { Game, userStatsInterface, pointsInterface } from "./game.class.js";
 import type * as msg from "../../sockets/socket.types.js";
 import {
 	createHandler,
@@ -20,6 +20,7 @@ import { parseArgs } from "util";
 
 let		userStats: userStatsInterface[] = [];
 let		lastHit: string = "";
+let		pointsTime: pointsInterface[] = [];
 
 /* -------------------------------------------------------------------------- */
 /*                                   STATE                                    */
@@ -83,8 +84,9 @@ function gameLoop(): void {
 				}
 			}
 
-			game.endGame(userStats, gameStartTimes.get(gameId), game.config.scoring.firstTo, gameId);
-			userStats = []
+			game.endGame(userStats, gameStartTimes.get(gameId), game.config.scoring.firstTo, gameId, pointsTime);
+			userStats = [];
+			pointsTime = [];
 			gameStates.delete(game.id);
 			gameStartTimes.delete(game.id);
 			accumulators.delete(game.id);
@@ -247,6 +249,8 @@ function stepGame(game: Game, dt: number): void {
 
 		if (scorer) {
 			scorer.score = (scorer.score ?? 0) + 1;
+			const startTime = gameStartTimes.get(game.id);
+			if (startTime !== undefined) pointsTime.push({ time: Date.now() - startTime, who: lastHit });
 			if (lastHit != "") {
 				for (const statsTarget of userStats) {
 					if (statsTarget.userId == lastHit) {

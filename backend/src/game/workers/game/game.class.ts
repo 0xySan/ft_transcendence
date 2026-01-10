@@ -13,6 +13,11 @@ import {
 import { parentPort } from "worker_threads";
 import { parseArgs } from "util";
 
+export interface pointsInterface {
+	time: number;
+	who: string;
+}
+
 export interface userStatsInterface {
 	userId:			string;
 	earnPoints:		number;
@@ -131,7 +136,7 @@ export class Game {
 		};
 	}
 
-	endGame(stats: userStatsInterface[], startTime: number | undefined, scoreLimit: number, gameId: string) {
+	endGame(stats: userStatsInterface[], startTime: number | undefined, scoreLimit: number, gameId: string, pointsTime: pointsInterface[]) {
 		let time: number = 0;
 		if (startTime) time = Date.now() - startTime;
 
@@ -141,7 +146,8 @@ export class Game {
 				users: stats,
 				timeGame: time,
 				scoreLimit: scoreLimit,
-				gameId: gameId
+				gameId: gameId,
+				pointsTime: pointsTime
 			},
 			userIds: this.players.map(p => p.id)
 		};

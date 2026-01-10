@@ -16,6 +16,7 @@ export interface Game {
 	score_limit: number;
 	winner_id?: string;
 	max_players: number;
+	points: string;
 }
 
 /**
@@ -43,8 +44,10 @@ export function createGame(
 	duration: number,
 	status: 'completed' | 'ongoing' | 'abandoned' | 'waiting',
 	winner_id: string,
+	points: string,
 	id?: string
 ): Game | undefined {
+
 	const game_id = id ? id : uuidv7();
 	// Insert the new game into the database
 	const game = insertRow<Game>("games", {
@@ -55,7 +58,8 @@ export function createGame(
 		duration: duration,
 		status: status,
 		created_at: Date.now() - duration,
-		winner_id: winner_id
+		winner_id: winner_id,
+		points: points
 	});
 
 	if (!game) return undefined;

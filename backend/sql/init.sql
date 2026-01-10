@@ -82,6 +82,7 @@ CREATE TABLE games (
     mode TEXT CHECK(mode IN ('local','online','tournament')), -- Game mode
     status TEXT CHECK(status IN ('completed','ongoing','abandoned','waiting')) 
         DEFAULT 'waiting',                                    -- Current game status
+    points TEXT,                                               -- Json file of points with time
     score_limit INTEGER DEFAULT 11 CHECK(score_limit > 0),   -- Score needed to win (positive)
     winner_id TEXT REFERENCES users(user_id),             -- Winner of the game (if completed)
     max_players INTEGER DEFAULT 2 CHECK(max_players >= 1 AND max_players <= 4) -- Maximum players allowed
