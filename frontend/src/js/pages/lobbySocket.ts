@@ -477,3 +477,7 @@ myPlayerId = await window.currentUserReady.then(() => {
 	return window.localPlayerId || null;
 });
 console.log("LobbbySocket Current user ID:", myPlayerId);
+
+registerDynamicCleanup(() => {
+	resetLobbyState();
+});

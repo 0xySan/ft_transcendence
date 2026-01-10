@@ -2,12 +2,34 @@ export {};
 
 import { getUserLang } from "./translationModule.js";
 
+type CleanupFn = () => void | Promise<void>;
+
 // Global listeners array to track dynamically added event listeners
 declare global {
 	var listeners: Listener[];
 	interface Window {
 		loadPage: typeof loadPage;
 	}
+
+	var dynamicCleanups: CleanupFn[];
+	var registerDynamicCleanup: (fn: CleanupFn) => void;
+}
+
+window.dynamicCleanups = [];
+
+window.registerDynamicCleanup = (fn: CleanupFn): void => {
+	window.dynamicCleanups.push(fn);
+};
+
+async function runDynamicCleanups(): Promise<void> {
+	for (const cleanup of window.dynamicCleanups) {
+		try {
+			await cleanup();
+		} catch (err) {
+			console.error('Cleanup error:', err);
+		}
+	}
+	window.dynamicCleanups.length = 0;
 }
 
 const contentDiv = document.getElementById('content') as HTMLElement;
@@ -121,6 +143,8 @@ function setupDynamicRouting(): void {
 // --- Update the #content div with new HTML and manage history ---
 async function updatePage(url: string, html: string, mode: 'push' | 'replace'): Promise<void> {
 	if (!contentDiv) return;
+
+	await runDynamicCleanups(); // Run registered cleanup functions
 
 	clearAllListeners(); // Remove old listeners
 
