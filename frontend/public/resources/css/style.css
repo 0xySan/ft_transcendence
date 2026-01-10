@@ -1511,6 +1511,44 @@ button:active {
 }
 
 /* ==========================================================================
+						  TOURNAMENT PAGE STYLES
+   ========================================================================== */
+
+#tournament-container {
+	display: flex;
+	flex-direction: row;
+	width:100vw;
+	margin-top: -1rem;
+	margin-bottom: -1rem;
+	height: calc(100vh - 11rem);
+}
+
+#tournament-player-list {
+	width: 20%;
+	background-color: rgb(var(--crust));
+	border: 2px solid rgb(var(--surface0));
+	border-radius: 8px;
+}
+
+#tournament-map-container {
+	position: relative;
+	width: 90%;
+	height: 100%;
+	background-color: rgb(var(--mantle));
+	overflow: hidden;
+}
+
+#tournament-map {
+    transform-origin: 0 0;
+    will-change: transform;
+    cursor: grab;
+}
+
+#tournament-map:active {
+    cursor: grabbing;
+}
+
+/* ==========================================================================
                               NAVBAR STYLES 
    ========================================================================== */
 

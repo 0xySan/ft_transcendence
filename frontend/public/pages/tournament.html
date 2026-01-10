@@ -1,0 +1,28 @@
+<div id="tournament-container">
+	<div id="tournament-player-list">
+		<h2>Players</h2>
+		<ul id="player-list-ul">
+			<!-- Player list items will be dynamically inserted here -->
+		</ul>
+	</div>
+	<div id="tournament-map-container">
+		<div id="tournament-map"></div>
+	</div>
+</div>
+
+<script src="/js/pages/tournament.js" defer></script>
+
+<!-- TEMPLATES -->
+<template id="player-list-item-template">
+	<li class="player-list-item">
+		<span class="player-name"></span>
+		<span class="player-rank"></span>
+	</li>
+</template>
+
+<template id="match-bracket-template">
+	<div class="match-bracket">
+		<span class="match-player1"></span> vs <span class="match-player2"></span>
+		<span class="match-time"></span>
+	</div>
+</template>
