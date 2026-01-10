@@ -43,6 +43,7 @@ export async function userMeRoutes(fastify: FastifyInstance) {
 							username: userProfile?.username || null,
 							displayName: userProfile?.display_name || null,
 							profilePicture: userProfile?.profile_picture || null,
+							backgroundPicture: userProfile?.background_picture || null,
 							bio: userProfile?.bio || null,
 							country: country ? { 
 								id: country.country_id,

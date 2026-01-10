@@ -44,6 +44,7 @@ CREATE TABLE user_profiles (
     ),                                                         -- Username validation (3-20 chars, no spaces/emails)
     display_name TEXT CHECK(length(display_name) <= 50),     -- Optional display name, max 50 chars
     profile_picture TEXT CHECK(length(profile_picture) <= 255), -- Path or URL, max 255 chars
+    background_picture TEXT CHECK(length(background_picture) <= 255), -- Path or URL, max 255 chars
     country_id INTEGER REFERENCES countries(country_id),     -- Country reference
     bio TEXT CHECK(length(bio) <= 500)                       -- Short biography, max 500 chars
 );
