@@ -19,14 +19,6 @@ function updateUserImageInDb(userId: string | number, field: 'profile_picture' |
 	return updateProfile(profile.profile_id, { [field]: imageUrl });
 }
 
-function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
-	return updateUserImageInDb(userId, 'profile_picture', avatarUrl);
-}
-
-function updateUserBackgroundPictureInDb(userId: string | number, backgroundUrl: string) {
-	return updateUserImageInDb(userId, 'background_picture', backgroundUrl);
-}
-
 /**
  * Check if the buffer is a valid image (PNG, JPG, WEBP, GIF)
  * @param buffer - The buffer to check
@@ -46,9 +38,13 @@ function isAllowedImage(buffer: Buffer): boolean {
 }
 
 /**
- * Save an avatar from a remote URL
+ * Save an image from a URL as avatar or background.
+ * @param userId - The user's ID
+ * @param imageUrl - The URL of the image to download
+ * @param type - 'avatar' or 'background'
+ * @returns The saved file name
  */
-export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
+export async function saveImageFromUrl(userId: string, imageUrl: string, type: 'avatar' | 'background') {
 	const res = await fetch(imageUrl);
 	if (!res.ok) {
 		throw new Error(`Failed to download image: ${res.statusText}`);
@@ -60,7 +56,7 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 	}
 
 	const ext = contentType.split('/')[1] || 'png';
-	const fileName = `avatar_${userId}.${ext}`;
+	const fileName = `${type}_${userId}.${ext}`;
 	const filePath = path.join(USER_IMG_DIR, fileName);
 
 	// Remove existing avatar if exists
@@ -90,16 +86,20 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 
 	await fs.promises.writeFile(filePath, buffer);
 
-	updateUserAvatarInDb(userId, fileName);
+	updateUserImageInDb(userId, type === 'avatar' ? 'profile_picture' : 'background_picture', fileName);
 	return fileName;
 }
 
 /**
- * Save an avatar from an uploaded file (e.g. multipart/form-data)
+ * Save an uploaded image file as avatar or background.
+ * @param userId - The user's ID
+ * @param file - The uploaded file object
+ * @param type - 'avatar' or 'background'
+ * @returns The saved file name
  */
-export async function saveAvatarFromFile(userId: string, file: any) {
+export async function saveImageFromFile(userId: string, file: any, type: 'avatar' | 'background') {
 	const fileExt = path.extname(file.filename) || '.png';
-	const fileName = `avatar_${userId}${fileExt}`;
+	const fileName = `${type}_${userId}${fileExt}`;
 	const filePath = path.join(USER_IMG_DIR, fileName);
 
 	// Remove existing avatar if exists
@@ -112,77 +112,6 @@ export async function saveAvatarFromFile(userId: string, file: any) {
 
 	await fs.promises.writeFile(filePath, buffer);
 
-	updateUserAvatarInDb(userId, fileName);
-	return fileName;
-}
-
-/**
- * Save a background picture from a remote URL
- */
-export async function saveBackgroundFromUrl(userId: string, imageUrl: string) {
-	const res = await fetch(imageUrl);
-	if (!res.ok) {
-		throw new Error(`Failed to download image: ${res.statusText}`);
-	}
-
-	const contentType = res.headers.get('content-type') || '';
-	if (!contentType.startsWith('image/')) {
-		throw new Error('URL does not point to an image');
-	}
-
-	const ext = contentType.split('/')[1] || 'png';
-	const fileName = `background_${userId}.${ext}`;
-	const filePath = path.join(USER_IMG_DIR, fileName);
-
-	// Remove existing background if exists
-	if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-	if (!res.body) throw new Error('Response body is null');
-
-	// Download to buffer first for validation
-	let buffer: Buffer;
-	if (typeof res.body.pipe === 'function') {
-		// Node stream
-		const chunks: Buffer[] = [];
-		for await (const chunk of res.body) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-		buffer = Buffer.concat(chunks);
-	} else {
-		// Web ReadableStream
-		const { Readable } = await import('stream');
-		const nodeStream = Readable.fromWeb(res.body as any);
-		const chunks: Buffer[] = [];
-		for await (const chunk of nodeStream) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-		buffer = Buffer.concat(chunks);
-	}
-
-	if (!isAllowedImage(buffer)) {
-		throw new Error('Downloaded file is not a valid PNG/JPG/WEBP/GIF image');
-	}
-
-	await fs.promises.writeFile(filePath, buffer);
-
-	updateUserBackgroundPictureInDb(userId, fileName);
-	return fileName;
-}
-
-/**
- * Save a background picture from an uploaded file (e.g. multipart/form-data)
- */
-export async function saveBackgroundFromFile(userId: string, file: any) {
-	const fileExt = path.extname(file.filename) || '.png';
-	const fileName = `background_${userId}${fileExt}`;
-	const filePath = path.join(USER_IMG_DIR, fileName);
-
-	// Remove existing background if exists
-	if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-	const buffer = await file.toBuffer();
-	if (!isAllowedImage(buffer)) {
-		throw new Error('Uploaded file is not a valid PNG/JPG/WEBP/GIF image');
-	}
-
-	await fs.promises.writeFile(filePath, buffer);
-
-	updateUserBackgroundPictureInDb(userId, fileName);
+	updateUserImageInDb(userId, type === 'avatar' ? 'profile_picture' : 'background_picture', fileName);
 	return fileName;
 }
