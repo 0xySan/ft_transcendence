@@ -1337,6 +1337,175 @@ button:active {
 }
 
 /* ==========================================================================
+							CHAT INTEGRATIONS STYLES 
+   ========================================================================== */
+
+#chat-index-container {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+	z-index: 100;
+
+	width: 25vw;
+	height: 50vh;
+	min-width: 280px;
+	min-height: 220px;
+
+	container-type: inline-size;
+}
+
+/* ---------------- Window ---------------- */
+
+.chat-window {
+	height: 100%;
+
+	background: rgb(var(--mantle));
+
+	border-radius: 10px;
+
+	display: flex;
+	flex-direction: column;
+
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+	overflow: hidden;
+}
+
+/* ---------------- Title bar ---------------- */
+
+.chat-window-bar {
+	padding: 6px 8px;
+
+	background: rgb(var(--surface1));
+
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+
+	border-bottom: 1px solid rgba(var(--surface2), 0.6);
+	cursor: grab;
+	user-select: none;
+}
+
+.chat-window-bar:active {
+	cursor: grabbing;
+}
+
+.chat-window-title {
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: rgb(var(--text));
+}
+
+/* ---------------- Actions ---------------- */
+
+.chat-window-actions {
+	gap: 0.35rem;
+
+	display: flex;
+}
+
+.chat-window-btn {
+	width: 1.8rem;
+	height: 1.8rem;
+
+	background: transparent;
+
+	border: none;
+	border-radius: 6px;
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	color: rgb(var(--subtext1));
+
+	cursor: pointer;
+}
+
+.chat-window-btn svg {
+	width: 1.2rem;
+	height: 1.2rem;
+
+	display: block;
+	flex: 0 0 auto;
+
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+
+.chat-window-btn:hover {
+	background: rgba(var(--surface2), 0.6);
+
+	color: rgb(var(--text));
+}
+
+.chat-window-btn:active {
+	transform: translateY(1px);
+}
+
+.chat-window-btn[data-action="maximize"]:hover {
+	color: rgb(var(--green));
+}
+
+.chat-window-btn[data-action="minimize"]:hover {
+	color: rgb(var(--yellow));
+}
+
+/* ---------------- Resize handles ---------------- */
+
+.resize-handle {
+	position: absolute;
+	z-index: 20;
+
+	background: transparent;
+}
+
+.resize-right {
+	top: 0;
+	right: 0;
+
+	width: 6px;
+	height: 100%;
+
+	cursor: ew-resize;
+}
+
+.resize-bottom {
+	bottom: 0;
+	left: 0;
+
+	width: 100%;
+	height: 6px;
+
+	cursor: ns-resize;
+}
+
+.resize-corner {
+	right: 0;
+	bottom: 0;
+
+	width: 12px;
+	height: 12px;
+
+	cursor: nwse-resize;
+}
+
+/* ---------------- States ---------------- */
+
+.chat-window.minimized .chat-div-container,
+.chat-window.minimized #chat-not-logged {
+	display: none;
+}
+
+.chat-window.minimized {
+	height: fit-content;
+}
+
+/* ==========================================================================
 							PROFILE PAGE STYLES 
    ========================================================================== */
 
@@ -1438,87 +1607,6 @@ button:active {
 	padding: 0.6rem 1.5rem;
 
 	background: rgba(var(--sapphire), 0.6);
-							CHAT INTEGRATIONS STYLES 
-   ========================================================================== */
-
-#chat-index-container {
-	position: absolute;
-	right: 0.5rem;
-	bottom: 0.5rem;
-	z-index: 100;
-
-	width: 25vw;
-	height: 50vh;
-	min-width: 280px;
-	min-height: 220px;
-
-	container-type: inline-size;
-}
-
-/* ---------------- Window ---------------- */
-
-.chat-window {
-	height: 100%;
-
-	background: rgb(var(--mantle));
-
-	border-radius: 10px;
-
-	display: flex;
-	flex-direction: column;
-
-	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-	overflow: hidden;
-}
-
-/* ---------------- Title bar ---------------- */
-
-.chat-window-bar {
-	padding: 6px 8px;
-
-	background: rgb(var(--surface1));
-
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-
-	border-bottom: 1px solid rgba(var(--surface2), 0.6);
-	cursor: grab;
-	user-select: none;
-}
-
-.chat-window-bar:active {
-	cursor: grabbing;
-}
-
-.chat-window-title {
-	font-size: 0.85rem;
-	font-weight: 600;
-	color: rgb(var(--text));
-}
-
-/* ---------------- Actions ---------------- */
-
-.chat-window-actions {
-	gap: 0.35rem;
-
-	display: flex;
-}
-
-.chat-window-btn {
-	width: 1.8rem;
-	height: 1.8rem;
-
-	background: transparent;
-
-	border: none;
-	border-radius: 6px;
-
-	font-size: 1rem;
-	color: rgb(var(--text));
-
-	cursor: pointer;
-	margin-top: -1rem;
 }
 
 .profile-error-message {
@@ -1724,96 +1812,6 @@ button:active {
 		padding: 0.4rem 0.8rem;
 		font-size: 0.8rem;
 	}
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-
-	color: rgb(var(--subtext1));
-
-	cursor: pointer;
-}
-
-.chat-window-btn svg {
-	width: 1.2rem;
-	height: 1.2rem;
-
-	display: block;
-	flex: 0 0 auto;
-
-	fill: none;
-	stroke: currentColor;
-	stroke-width: 2;
-	stroke-linecap: round;
-	stroke-linejoin: round;
-	vector-effect: non-scaling-stroke;
-}
-
-.chat-window-btn:hover {
-	background: rgba(var(--surface2), 0.6);
-
-	color: rgb(var(--text));
-}
-
-.chat-window-btn:active {
-	transform: translateY(1px);
-}
-
-.chat-window-btn[data-action="maximize"]:hover {
-	color: rgb(var(--green));
-}
-
-.chat-window-btn[data-action="minimize"]:hover {
-	color: rgb(var(--yellow));
-}
-
-/* ---------------- Resize handles ---------------- */
-
-.resize-handle {
-	position: absolute;
-	z-index: 20;
-
-	background: transparent;
-}
-
-.resize-right {
-	top: 0;
-	right: 0;
-
-	width: 6px;
-	height: 100%;
-
-	cursor: ew-resize;
-}
-
-.resize-bottom {
-	bottom: 0;
-	left: 0;
-
-	width: 100%;
-	height: 6px;
-
-	cursor: ns-resize;
-}
-
-.resize-corner {
-	right: 0;
-	bottom: 0;
-
-	width: 12px;
-	height: 12px;
-
-	cursor: nwse-resize;
-}
-
-/* ---------------- States ---------------- */
-
-.chat-window.minimized .chat-div-container,
-.chat-window.minimized #chat-not-logged {
-	display: none;
-}
-
-.chat-window.minimized {
-	height: fit-content;
 }
 
 /* ==========================================================================
@@ -2706,7 +2704,7 @@ button:active {
 }
 
 /* ==========================================================================
-							SETTINGS PAGE STYLES
+                            SETTINGS PAGE STYLES
    ========================================================================== */
 
 .settings-layout {
@@ -3207,7 +3205,7 @@ nav {
 }
 
 /* ==========================================================================
-							   LINK STYLES 
+                               LINK STYLES 
    ========================================================================== */
 
 a {

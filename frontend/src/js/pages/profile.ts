@@ -5,7 +5,7 @@ const user: string | null = params.get("user");
 
 // Default avatar template
 const DEFAULT_AVATAR = (() => {
-	const template = document.querySelector<HTMLTemplateElement>('.default-pfp-temp');
+	const template = document.querySelector<HTMLTemplateElement>('.profile-default-pfp-temp');
 	return template
 		? (template.content.cloneNode(true) as DocumentFragment)
 		: document.createDocumentFragment();
