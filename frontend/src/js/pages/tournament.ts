@@ -117,6 +117,21 @@ interface tournamentPlayer {
 	rank:	number;
 }
 
+/** ### MatchSlot
+ * Interface representing a match slot in the tournament bracket.
+ * Contains:
+ * - **p1**: `tournamentPlayer | null` representing the first player in the match.
+ * - **p2**: `tournamentPlayer | null` representing the second player in the match.
+ * - **number**: `number` representing the match number within the round (1-based).
+ * - **globalId**: `number` representing the unique global match ID (1-based).
+ */
+type MatchSlot = {
+	p1: tournamentPlayer | null;
+	p2: tournamentPlayer | null;
+	number: number;		// number within this round (1-based)
+	globalId: number;	// unique global match id (1-based)
+};
+
 /* ==================================================================
 							PAN & ZOOM FUNCTIONS
    ================================================================== */
@@ -466,40 +481,267 @@ function updatePlayerList(players: tournamentPlayer[]): void {
 						BRACKET MATCH FUNCTIONS
    ================================================================== */
 
+   
+/** ### roundTemplate
+ * The HTML template element for a tournament round.
+ */
+const roundTemplate: HTMLTemplateElement | null = document.getElementById("round-template") as HTMLTemplateElement | null;
+
 /** ### bracketMatchTemplate
  * The HTML template element for a bracket match.
  */
 const bracketMatchTemplate: HTMLTemplateElement | null = document.getElementById("match-bracket-template") as HTMLTemplateElement | null;
 
+/** ### connectorSvgTemplate
+ * The HTML template element for the SVG connectors.
+ */
+const connectorSvgTemplate: HTMLTemplateElement | null = document.getElementById("connector-svg-template") as HTMLTemplateElement | null;
+
+/** ### roundsWrapper
+ * The div element that wraps all tournament rounds.
+ */
+const roundsWrapper: HTMLDivElement | null = document.getElementById("rounds-wrapper") as HTMLDivElement | null;
+
+if (!roundTemplate || !bracketMatchTemplate || !connectorSvgTemplate || !roundsWrapper)
+	throw new Error("Missing bracket template element for tournament page");
+
 /** ### createBracketMatch
  * Creates a bracket match element.
- * @param player1 - The first player in the match.
- * @param player2 - The second player in the match.
- * @returns The created bracket match element.
+ * @param slot - The `MatchSlot` object containing player information.
+ * @param placeholderLeft - Optional placeholder text for the left player if absent.
+ * @param placeholderRight - Optional placeholder text for the right player if absent.
+ * @returns The created match HTMLElement.
  */
-function createBracketMatch(player1: tournamentPlayer, player2: tournamentPlayer): HTMLElement {
+function createBracketMatch(slot: MatchSlot, placeholderLeft?: string, placeholderRight?: string): HTMLElement {
 	const matchElem = bracketMatchTemplate!.content.cloneNode(true) as HTMLElement;
-	const player1Elem = matchElem.querySelector(".match-player1") as HTMLElement;
-	const player2Elem = matchElem.querySelector(".match-player2") as HTMLElement;
+	const container = matchElem.querySelector(".match-bracket") as HTMLElement;
 
-	player1Elem.textContent = player1.name;
-	player2Elem.textContent = player2.name;
+	// ensure score spans exist in template: .match-score1 / .match-score2
+	const player1Elem = container.querySelector(".match-player1") as HTMLElement;
+	const player2Elem = container.querySelector(".match-player2") as HTMLElement;
+	const score1Elem = container.querySelector(".match-score1") as HTMLElement | null;
+	const score2Elem = container.querySelector(".match-score2") as HTMLElement | null;
 
-	return matchElem;
+	// set names or placeholders
+	if (slot.p1) player1Elem.textContent = slot.p1.name;
+	else player1Elem.textContent = placeholderLeft ?? "TBD";
+
+	if (slot.p2) player2Elem.textContent = slot.p2.name;
+	else player2Elem.textContent = placeholderRight ?? "TBD";
+
+	// default scores
+	if (score1Elem) score1Elem.textContent = "-";
+	if (score2Elem) score2Elem.textContent = "-";
+
+	// match global number at left
+	const numberElem = document.createElement("span");
+	numberElem.className = "match-number";
+	numberElem.textContent = String(slot.globalId);
+	container.prepend(numberElem);
+
+	return container;
 }
 
-/** ### InitializeBracket */
-function InitializeBracket(players: tournamentPlayer[]): void {
-	tournamentMap!.innerHTML = ""; // Clear existing bracket
+/** ### nextPowerOfTwo
+ * Calculates the next power of two greater than or equal to the given number.
+ * @param v - The input number.
+ * @returns The next power of two.
+ */
+function nextPowerOfTwo(v: number): number {
+	let n = 1;
+	while (n < v) n <<= 1;
+	return n;
+}
 
-	// Example: Create matches for the first round
-	for (let i = 0; i < players.length; i += 2) {
-		if (i + 1 < players.length) {
-			const matchElem = createBracketMatch(players[i], players[i + 1]);
-			tournamentMap!.appendChild(matchElem);
-		}
+/** ### createRoundElement
+ * Creates a round element for the tournament bracket.
+ * @param index - The index of the round.
+ * @param title - Optional title for the round.
+ * @returns The created round HTMLElement.
+ */
+function createRoundElement(index: number, title?: string): HTMLElement {
+	const roundClone = roundTemplate!.content.cloneNode(true) as HTMLElement;
+	const roundElem = roundClone.querySelector(".tournament-round") as HTMLElement;
+	roundElem.dataset.roundIndex = String(index);
+	const titleElem = roundElem.querySelector(".round-title") as HTMLElement;
+	titleElem.textContent = title ?? `Round ${index + 1}`;
+	return roundElem;
+}
+
+/** ### ensureConnectorSvg
+ * Ensures that the SVG element for bracket connectors exists.
+ * If it doesn't exist, it creates and appends it to the map.
+ * @returns The SVGSVGElement for bracket connectors.
+ */
+function ensureConnectorSvg(): SVGSVGElement {
+	let svg = mapState.map.querySelector<SVGSVGElement>(".bracket-connectors");
+	if (svg) return svg;
+
+	if (connectorSvgTemplate) {
+		const clone = connectorSvgTemplate.content.cloneNode(true) as HTMLElement;
+		mapState.map.appendChild(clone);
+		svg = mapState.map.querySelector<SVGSVGElement>(".bracket-connectors")!;
+	} else {
+		const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		el.classList.add("bracket-connectors");
+		el.setAttribute("width", "100%");
+		el.setAttribute("height", "100%");
+		mapState.map.appendChild(el);
+		svg = el;
+	}
+	svg.style.position = "absolute";
+	svg.style.left = "0";
+	svg.style.top = "0";
+	svg.style.pointerEvents = "none";
+	return svg;
+}
+
+/** ### drawConnectors
+ * Draws SVG connectors between bracket matches.
+ * Connects matches from one round to the next using cubic Bezier curves.
+ */
+function drawConnectors(): void {
+	const svg = ensureConnectorSvg();
+	while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+	const rounds = Array.from(mapState.map.querySelectorAll<HTMLElement>(".tournament-round"))
+		.sort((a, b) => Number(a.dataset.roundIndex) - Number(b.dataset.roundIndex));
+
+	const circleRadius = 4; // end circle
+
+	for (let r = 0; r < rounds.length - 1; r++) {
+		const thisMatches = Array.from(rounds[r].querySelectorAll<HTMLElement>(".match-bracket"));
+		const nextMatches = Array.from(rounds[r + 1].querySelectorAll<HTMLElement>(".match-bracket"));
+
+		thisMatches.forEach((mElem, idx) => {
+			const targetIdx = Math.floor(idx / 2);
+			const nextMatch = nextMatches[targetIdx];
+			if (!nextMatch) return;
+
+			const a = mElem.getBoundingClientRect();
+			const b = nextMatch.getBoundingClientRect();
+			const containerRect = mapState.map.getBoundingClientRect();
+
+			// Calculate start and end points relative to SVG container
+			const startX = a.right - containerRect.left;
+			const startY = a.top + a.height / 2 - containerRect.top;
+			const endX = b.left - containerRect.left;
+			const endY = b.top + b.height / 2 - containerRect.top;
+
+			const midX = startX + (endX - startX) / 2;
+
+			// Create svg path for connector
+			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+			const d = `
+				M ${startX} ${startY}
+				L ${midX} ${startY}
+				L ${midX} ${endY}
+				L ${endX - circleRadius} ${endY}
+			`;
+			path.setAttribute("d", d);
+			path.setAttribute("class", "bracket-line");
+			path.setAttribute("fill", "none");
+			path.setAttribute("stroke-width", "2");
+			svg.appendChild(path);
+
+			// Little circle at the end
+			const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			circle.setAttribute("class", "bracket-end-circle");
+			circle.setAttribute("cx", String(endX));
+			circle.setAttribute("cy", String(endY));
+			circle.setAttribute("r", String(circleRadius));
+			svg.appendChild(circle);
+		});
 	}
 }
+
+/** ### InitializeBracket
+ * Initializes the tournament bracket with the given players.
+ * Creates rounds and matches, and draws connectors between them.
+ * @param players - An array of `tournamentPlayer` objects representing the players.
+ */
+function InitializeBracket(players: tournamentPlayer[]): void {
+	roundsWrapper!.innerHTML = "";
+
+	const count = players.length;
+	const bracketSize = nextPowerOfTwo(Math.max(1, count)); // >=1 safeguard
+
+	// pad players to power of two (null = BYE)
+	const padded: (tournamentPlayer | null)[] = [...players];
+	for (let i = count; i < bracketSize; i++) padded.push(null);
+
+	// roundsMatches[r] = array of MatchSlot for round r
+	const roundsMatches: MatchSlot[][] = [];
+
+	// first round: create matches from padded players (pairs)
+	let globalCounter = 1;
+	const firstRoundMatches: MatchSlot[] = [];
+	for (let i = 0; i < padded.length; i += 2) {
+		firstRoundMatches.push({
+			p1: padded[i],
+			p2: padded[i + 1],
+			number: (i / 2) + 1,    // 1-based within round
+			globalId: globalCounter++,
+		});
+	}
+	roundsMatches.push(firstRoundMatches);
+
+	// subsequent rounds placeholders
+	let prevMatches = firstRoundMatches.length;
+	while (prevMatches > 1) {
+		const curMatches: MatchSlot[] = [];
+		for (let i = 0; i < prevMatches; i += 2) {
+			curMatches.push({
+				p1: null,
+				p2: null,
+				number: (i / 2) + 1,
+				globalId: globalCounter++,
+			});
+		}
+		roundsMatches.push(curMatches);
+		prevMatches = curMatches.length;
+	}
+
+	// Render each round
+	for (let r = 0; r < roundsMatches.length; r++) {
+		const roundMatches = roundsMatches[r];
+		const roundElem = createRoundElement(r, r === 0 ? "Round 1" : `Round ${r + 1}`);
+		const matchesContainer = roundElem.querySelector(".round-matches") as HTMLElement;
+
+		for (let mi = 0; mi < roundMatches.length; mi++) {
+			const slot = roundMatches[mi];
+
+			// If this is not first round, compute placeholders from previous round numbers
+			let placeholderLeft: string | undefined;
+			let placeholderRight: string | undefined;
+			if (r > 0) {
+				const prev = roundsMatches[r - 1];
+				const leftMatch = prev[mi * 2];
+				const rightMatch = prev[mi * 2 + 1];
+				// if previous match exists, refer to its per-round number:
+				if (leftMatch) placeholderLeft = `Winner of ${leftMatch.globalId}`;
+				if (rightMatch) placeholderRight = `Winner of ${rightMatch.globalId}`;
+			}
+
+			const matchElem = createBracketMatch(slot, placeholderLeft, placeholderRight);
+			const wrapper = document.createElement("div");
+			wrapper.className = "match-wrapper";
+			wrapper.style.display = "flex";
+			wrapper.style.justifyContent = "center";
+			wrapper.appendChild(matchElem);
+			matchesContainer.appendChild(wrapper);
+		}
+
+		roundsWrapper!.appendChild(roundElem);
+	}
+
+	// create svg overlay and draw connectors after layout
+	ensureConnectorSvg();
+	// draw after layout to have bounding rects correct
+	setTimeout(drawConnectors, 0);
+}
+
+
 
 /* ==================================================================
 						INITIALIZATION
@@ -519,11 +761,28 @@ addListener(document, "touchcancel", onTouchCancel);
 // Add event listener for zooming
 addListener(mapContainer, "wheel", onZoom);
 
+// Add event listener with timeout to redraw connectors on window resize
+let resizeTimeout: number | null = null;
+addListener(window, "resize", () => {
+	if (resizeTimeout !== null) {
+		clearTimeout(resizeTimeout);
+	}
+	resizeTimeout = window.setTimeout(() => {
+		drawConnectors();
+		resizeTimeout = null;
+	}, 200);
+});
+
 // Example usage (this will be replaced with actual data fetching logic)
 const examplePlayers: tournamentPlayer[] = [
 	{ id: 1, name: "PlayerOne", rank: 1 },
 	{ id: 2, name: "PlayerTwo", rank: 2 },
 	{ id: 3, name: "PlayerThree", rank: 3 },
+	{ id: 4, name: "PlayerFour", rank: 4 },
+	{ id: 5, name: "PlayerFive", rank: 5 },
+	{ id: 6, name: "PlayerSix", rank: 6 },
+	{ id: 7, name: "PlayerSeven", rank: 7 },
+	{ id: 8, name: "PlayerEight", rank: 8 },
 ];
 
 // Initialize player list (with example data)

@@ -3247,7 +3247,7 @@ button:active {
 }
 
 /* ==========================================================================
-                          PONG BOARD PAGE STYLES 
+						  PONG BOARD PAGE STYLES 
    ========================================================================== */
 /* Root layout */
 #pong-page {
@@ -3352,10 +3352,11 @@ button:active {
 
 .match-container {
 	gap: 1rem;
+
+	display: flex;
 	flex-direction: column;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	align-items: center;
+	justify-content: center;
 }
 
 .score-left {
@@ -3365,7 +3366,6 @@ button:active {
 
 	font-size: 32px;
 	font-weight: bold;
-
 	color: rgb(var(--red));
 }
 
@@ -3376,7 +3376,6 @@ button:active {
 
 	font-size: 32px;
 	font-weight: bold;
-
 	color: rgb(var(--blue));
 }
 
@@ -3459,37 +3458,148 @@ button:active {
    ========================================================================== */
 
 #tournament-container {
-	display: flex;
-	flex-direction: row;
-	width:100vw;
+	width: 100vw;
+	height: calc(100vh - 11rem);
+
 	margin-top: -1rem;
 	margin-bottom: -1rem;
-	height: calc(100vh - 11rem);
+
+	display: flex;
+	flex-direction: row;
 }
 
 #tournament-player-list {
 	width: 20%;
+
 	background-color: rgb(var(--crust));
+
 	border: 2px solid rgb(var(--surface0));
 	border-radius: 8px;
 }
 
 #tournament-map-container {
 	position: relative;
+
 	width: 90%;
 	height: 100%;
+
 	background-color: rgb(var(--mantle));
+
 	overflow: hidden;
 }
 
 #tournament-map {
-    transform-origin: 0 0;
-    will-change: transform;
-    cursor: grab;
+	transform-origin: 0 0;
+	will-change: transform;
+	cursor: grab;
 }
 
 #tournament-map:active {
-    cursor: grabbing;
+	cursor: grabbing;
+}
+
+#rounds-wrapper {
+	display: flex;
+	flex-direction: row;
+}
+
+.tournament-round {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+}
+
+.tournament-round .round-matches {
+	width: 15rem;
+
+	gap: 1.2rem;
+
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+}
+
+.match-bracket {
+	width: 10rem;
+
+	padding: 0.5rem;
+
+	background-color: rgb(var(--crust));
+
+	border: 2px solid rgb(var(--base));
+	border-radius: 4px;
+}
+
+.match-number {
+	position: absolute;
+
+	margin-right: 8px;
+	margin-left: -1.5rem;
+
+	font-weight: bold;
+	color: #666;
+}
+
+.match-player-row {
+	width: 100%;
+
+	padding: 2px 0;
+
+	border-radius: 4px;
+
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.match-player-row:hover {
+	background-color: rgb(var(--mantle));
+}
+
+.match-player1,
+.match-player2 {
+	padding-left: 0.5rem;
+
+	flex: 1; /* prend tout l’espace disponible */
+
+	white-space: nowrap;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.match-score1,
+.match-score2 {
+	width: 2rem;
+
+	font-weight: bold;
+	text-align: center;
+	color: var(--c-light-brown);
+}
+
+#tournament-map {
+	position: relative;
+}
+
+.bracket-connectors {
+	position: absolute;
+	top: 0;
+	left: 0;
+
+	width: 100%;
+	height: 100%;
+}
+
+.bracket-line {
+	stroke: rgb(var(--lavender));
+	stroke-width: 2;
+	fill: none;
+}
+
+.bracket-end-circle {
+	fill: rgb(var(--maroon));
 }
 
 /* ==========================================================================
@@ -3793,7 +3903,7 @@ nav {
 }
 
 /* ==========================================================================
-                               LINK STYLES 
+							   LINK STYLES 
    ========================================================================== */
 
 a {
