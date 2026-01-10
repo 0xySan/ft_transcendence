@@ -2,8 +2,6 @@ services:
   backend:
     build: ./backend
     container_name: backend
-    cpus: 10
-    mem_limit: 16g
     expose:
       - "3000"
     volumes:
@@ -18,14 +16,10 @@ services:
     container_name: frontend
     expose:
       - "80"
-    cpus: 10
-    mem_limit: 16g
 
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy
-    cpus: 10
-    mem_limit: 16g
     ports:
       - "8080:80"
     volumes:
