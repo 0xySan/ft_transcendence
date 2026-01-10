@@ -228,6 +228,247 @@ function initAnimation(): void {
 initAnimation();
 
 // =========================================================
+// 				        CHAT INTEGRATION
+// =========================================================
+
+
+const chatContainer = document.getElementById("chat-index-container") as HTMLDivElement;
+if (!chatContainer) throw new Error("Chat container not found");
+
+const chatWindow = chatContainer.querySelector(".chat-window") as HTMLDivElement;
+const chatBar = chatWindow.querySelector(".chat-window-bar") as HTMLDivElement;
+
+// ---------------------- Helpers ------------------------
+
+/**
+ * Get client X/Y coordinates from MouseEvent or TouchEvent
+ */
+function getClientXY(e: MouseEvent | TouchEvent) {
+	if ('touches' in e && e.touches.length > 0) {
+		return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+	}
+	return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
+}
+
+/**
+ * Keep chat within viewport bounds
+ */
+function keepChatInBounds() {
+	const rect = chatContainer.getBoundingClientRect();
+	const maxLeft = window.innerWidth - rect.width;
+	const maxTop = window.innerHeight - 40;
+
+	if (rect.width > window.innerWidth) chatContainer.style.width = `${window.innerWidth}px`;
+	if (rect.height > window.innerHeight - 40) chatContainer.style.height = `${window.innerHeight - 40}px`;
+
+	let newLeft = Math.min(Math.max(0, rect.left), maxLeft);
+	let newTop = Math.min(Math.max(0, rect.top), maxTop);
+
+	if (newLeft !== rect.left) chatContainer.style.left = `${newLeft}px`;
+	if (newTop !== rect.top) chatContainer.style.top = `${newTop}px`;
+}
+
+window.addEventListener("resize", keepChatInBounds);
+
+// ---------------------- Resize ------------------------
+
+type ResizeType = "right" | "bottom" | "corner";
+
+let isResizing = false;
+let resizeType: ResizeType | null = null;
+let startX = 0;
+let startY = 0;
+let startWidth = 0;
+let startHeight = 0;
+
+/**
+ * Start resizing
+ */
+function startResize(e: MouseEvent | TouchEvent, type: ResizeType) {
+	e.preventDefault();
+	isResizing = true;
+	resizeType = type;
+
+	const { x, y } = getClientXY(e);
+	startX = x;
+	startY = y;
+
+	const rect = chatContainer.getBoundingClientRect();
+	startWidth = rect.width;
+	startHeight = rect.height;
+
+	// Desktop
+	document.addEventListener("mousemove", resizeMove);
+	document.addEventListener("mouseup", stopResize);
+
+	// Mobile
+	document.addEventListener("touchmove", resizeMove, { passive: false });
+	document.addEventListener("touchend", stopResize);
+}
+
+/**
+ * Resize handler
+ */
+function resizeMove(e: MouseEvent | TouchEvent) {
+	if (!isResizing || !resizeType) return;
+	e.preventDefault();
+
+	const { x: clientX, y: clientY } = getClientXY(e);
+
+	const minWidth = 260;
+	const minHeight = 220;
+
+	if (resizeType === "right" || resizeType === "corner") {
+		const newWidth = Math.max(minWidth, startWidth + (clientX - startX));
+		chatContainer.style.width = `${newWidth}px`;
+	}
+
+	if (resizeType === "bottom" || resizeType === "corner") {
+		const newHeight = Math.max(minHeight, startHeight + (clientY - startY));
+		chatContainer.style.height = `${newHeight}px`;
+	}
+}
+
+/**
+ * Stop resizing
+ */
+function stopResize() {
+	isResizing = false;
+	resizeType = null;
+
+	document.removeEventListener("mousemove", resizeMove);
+	document.removeEventListener("mouseup", stopResize);
+
+	document.removeEventListener("touchmove", resizeMove);
+	document.removeEventListener("touchend", stopResize);
+}
+
+// Attach resize handles
+chatContainer.querySelector(".resize-right")?.addEventListener("mousedown", e => startResize(e as MouseEvent, "right"));
+chatContainer.querySelector(".resize-bottom")?.addEventListener("mousedown", e => startResize(e as MouseEvent, "bottom"));
+chatContainer.querySelector(".resize-corner")?.addEventListener("mousedown", e => startResize(e as MouseEvent, "corner"));
+
+chatContainer.querySelector(".resize-right")?.addEventListener("touchstart", e => startResize(e as TouchEvent, "right"), { passive: false });
+chatContainer.querySelector(".resize-bottom")?.addEventListener("touchstart", e => startResize(e as TouchEvent, "bottom"), { passive: false });
+chatContainer.querySelector(".resize-corner")?.addEventListener("touchstart", e => startResize(e as TouchEvent, "corner"), { passive: false });
+
+// ---------------------- Drag ------------------------
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let containerStartLeft = 0;
+let containerStartTop = 0;
+
+/**
+ * Start dragging
+ */
+function startDrag(e: MouseEvent | TouchEvent) {
+	e.preventDefault();
+	isDragging = true;
+
+	const { x: clientX, y: clientY } = getClientXY(e);
+	dragStartX = clientX;
+	dragStartY = clientY;
+
+	const rect = chatContainer.getBoundingClientRect();
+	containerStartLeft = rect.left;
+	containerStartTop = rect.top;
+
+	// Desktop
+	document.addEventListener("mousemove", dragMove);
+	document.addEventListener("mouseup", stopDrag);
+
+	// Mobile
+	document.addEventListener("touchmove", dragMove, { passive: false });
+	document.addEventListener("touchend", stopDrag);
+}
+
+/**
+ * Drag handler
+ */
+function dragMove(e: MouseEvent | TouchEvent) {
+	if (!isDragging) return;
+	e.preventDefault();
+
+	const { x: clientX, y: clientY } = getClientXY(e);
+	const dx = clientX - dragStartX;
+	const dy = clientY - dragStartY;
+
+	let newLeft = containerStartLeft + dx;
+	let newTop = containerStartTop + dy;
+
+	const maxLeft = window.innerWidth - chatContainer.offsetWidth;
+	const maxTop = window.innerHeight - 40;
+
+	newLeft = Math.min(Math.max(0, newLeft), maxLeft);
+	newTop = Math.min(Math.max(0, newTop), maxTop);
+
+	chatContainer.style.left = `${newLeft}px`;
+	chatContainer.style.top = `${newTop}px`;
+}
+
+/**
+ * Stop dragging
+ */
+function stopDrag() {
+	isDragging = false;
+
+	document.removeEventListener("mousemove", dragMove);
+	document.removeEventListener("mouseup", stopDrag);
+
+	document.removeEventListener("touchmove", dragMove);
+	document.removeEventListener("touchend", stopDrag);
+}
+
+// Attach drag events
+chatBar.addEventListener("mousedown", e => startDrag(e as MouseEvent));
+chatBar.addEventListener("touchstart", e => startDrag(e as TouchEvent), { passive: false });
+
+// ---------------------- Minimize / Maximize ------------------------
+
+chatWindow.querySelectorAll<HTMLButtonElement>(".chat-window-btn").forEach(btn => {
+	const toggleAction = () => {
+		const action = btn.dataset.action;
+		if (!action) return;
+
+		if (action === "minimize") {
+			chatWindow.classList.toggle("minimized");
+			if (chatWindow.classList.contains("minimized")) {
+				chatContainer.dataset.prevHeight = `${chatContainer.offsetHeight}`;
+				chatContainer.style.height = "40px";
+			}
+		} else if (action === "maximize") {
+			if (!chatContainer.dataset.prevWidth) {
+				const rect = chatContainer.getBoundingClientRect();
+				chatContainer.dataset.prevWidth = `${rect.width}`;
+				chatContainer.dataset.prevHeight = `${rect.height}`;
+				chatContainer.dataset.prevLeft = `${rect.left}`;
+				chatContainer.dataset.prevTop = `${rect.top}`;
+			}
+
+			if (chatContainer.classList.toggle("maximized")) {
+				chatContainer.style.width = "100%";
+				chatContainer.style.height = "calc(100% - 5rem)";
+				chatContainer.style.left = "0";
+				chatContainer.style.top = "5rem";
+			} else {
+				chatContainer.style.width = `${chatContainer.dataset.prevWidth}px`;
+				chatContainer.style.height = `${chatContainer.dataset.prevHeight}px`;
+				chatContainer.style.left = `${chatContainer.dataset.prevLeft}px`;
+				chatContainer.style.top = `${chatContainer.dataset.prevTop}px`;
+			}
+		}
+	};
+
+	btn.addEventListener("click", toggleAction);
+	btn.addEventListener("touchstart", (e) => { 
+		e.preventDefault(); // Prevent conflict with drag
+		toggleAction();
+	}, { passive: false });
+});
+
+// =========================================================
 // 						THEME  CHANGER
 // =========================================================
 
