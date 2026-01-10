@@ -35,10 +35,11 @@ export async function userLogoutRoute(fastify: FastifyInstance) {
 			if (!upgraded)
 				return reply.status(500).send({ message: "Failed to logout session." });
 
+			const isSecureReq = request.headers['x-forwarded-proto'] === 'https' || (request as any).protocol === 'https' || process.env.NODE_ENV === 'production';
 			reply.clearCookie("session", {
 				path: "/",
 				httpOnly: true,
-				secure: process.env.NODE_ENV !== "test",
+				secure: isSecureReq,
 				sameSite: "lax"
 			});
 			
