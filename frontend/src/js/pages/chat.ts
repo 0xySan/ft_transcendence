@@ -3,6 +3,8 @@
 // ============================================================================
 // Complete chat system with messaging, user list, layout, and invite handling
 
+import { UserData } from "../global";
+
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null>;
 declare function getUserLang(): string;
@@ -10,6 +12,15 @@ declare function getUserLang(): string;
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
+
+
+declare global {
+	interface Window {
+		currentUser: UserData | null;
+		currentUserReady: Promise<void>;
+		__resolveCurrentUser: (user?: any) => void;
+	}
+}
 
 interface Message {
 	sender: string;
@@ -1916,4 +1927,80 @@ async function fetchOlderMessages(user: string): Promise<Message[]> {
 }
 
 initLayout();
-loadChatData().then(startChatStream);
+
+const notLoggedDiv = document.getElementById("chat-not-logged");
+const chatDiv = document.querySelector<HTMLDivElement>(".chat-div-container");
+
+if (!notLoggedDiv || !chatDiv || !userListDiv)
+	throw new Error("Chat initialization failed: missing elements");
+
+function handleUserChange(user: typeof window.currentUser): void {
+	resetChatState();
+	if (!notLoggedDiv || !chatDiv) return;
+	if (user) {
+		loadChatData().then(startChatStream);
+		notLoggedDiv.classList.add('unloaded');
+		chatDiv.classList.remove('unloaded');
+	} else {
+		notLoggedDiv.classList.remove('unloaded');
+		chatDiv.classList.add('unloaded');
+		renderUserList(renderChat);
+	}
+}
+
+await window.currentUserReady.then(async () => {
+	if (window.currentUser) {
+		loadChatData().then(startChatStream);
+		notLoggedDiv.classList.add('unloaded');
+		chatDiv.classList.remove('unloaded');
+	}
+});
+
+window.addEventListener("user:change", (event: Event) => {
+	const { detail } = event as CustomEvent<typeof window.currentUser>;
+	handleUserChange(detail);
+});
+
+function resetChatState() {
+	activeUser = null;
+	activeUsers.clear();
+	blockedUsers.clear();
+	
+	// Clear all conversation data
+	Object.keys(conversations).forEach((key) => delete conversations[key]);
+	users.length = 0;
+	profilepics.length = 0;
+	Object.keys(visibleStart).forEach((k) => delete visibleStart[k]);
+	Object.keys(scrollPositions).forEach((k) => delete scrollPositions[k]);
+	Object.keys(loadingOlderMessages).forEach((k) => delete loadingOlderMessages[k]);
+	Object.keys(conversationMeta).forEach((k) => delete conversationMeta[k]);
+	Object.keys(userIdToName).forEach((k) => delete userIdToName[k]);
+	Object.keys(userNameToUserId).forEach((k) => delete userNameToUserId[k]);
+	Object.keys(userIdToAvatar).forEach((k) => delete userIdToAvatar[k]);
+	Object.keys(userIdToUsername).forEach((k) => delete userIdToUsername[k]);
+	Object.keys(allMessagesLoaded).forEach((k) => delete allMessagesLoaded[k]);
+	Object.keys(drafts).forEach((k) => delete drafts[k]);
+
+	const messagesDivs = chatBlock.querySelectorAll<HTMLDivElement>('.chat-messages[user]');
+	messagesDivs.forEach((div) => div.remove());
+
+	const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
+	const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
+	const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
+	const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
+	const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
+	const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+	profileImg.classList.add('hidden');
+	titleSpan.classList.add('hidden');
+	profileLink.classList.add('hidden');
+	headerBlockBtn.classList.add('hidden');
+	form.classList.add('hidden');
+	
+	// Close event stream if active
+	if (currentEventSource) {
+		currentEventSource.close();
+		currentEventSource = null;
+	}
+	reconnectAttempts = 0;
+	isReconnecting = false;
+}

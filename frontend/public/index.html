@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html data-theme="catppuccin-macchiato" lang="en">
 	<head>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta charset="UTF-8">
-		<title>Example</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Transcendence</title>
 		<link href="style.css" rel="stylesheet">
+
+		<!-- Modules -->
 		<script src="/js/translationModule.js" type="module" defer></script>
 		<script defer type="module" src="/js/dynamicLoader.js"></script>
+
+		<!-- Listeners helper -->
 		<script>
 			const listeners = [];
 			function addListener(element, type, callback, options = false) {
@@ -14,37 +18,96 @@
 				listeners.push({ element, type, callback, options });
 			}
 		</script>
-		<!-- Flag to indicate full page load completion -> see dupChecker -->
+
+		<!-- Flag full page load -->
 		<script>
 			window.isFullPageLoaded = true;
 		</script>
+
+		<!-- User state store -->
+		<script>
+			(function () {
+				let resolveReady;
+				let readyResolved = false;
+
+				window.currentUser = null;
+				window.currentUserReady = new Promise(resolve => resolveReady = resolve);
+
+				window.__setCurrentUser = function(userData) {
+					if (userData && userData.user)
+						window.currentUser = userData.user;
+					else
+						window.currentUser = null;
+
+					if (!readyResolved) {
+						readyResolved = true;
+						resolveReady();
+					}
+
+					window.dispatchEvent(new CustomEvent("user:change", { detail: window.currentUser }));
+				};
+			})();
+		</script>
+
+		<!-- UI Event Listeners -->
+		<script>
+			// Dropdown toggle	
+			document.addEventListener("DOMContentLoaded", () => {
+					const pfpWrapper = document.getElementById("nav-pfp-wrapper");
+					const dropdown = document.getElementById("nav-profile-dropdown");
+
+					if (!pfpWrapper || !dropdown) return;
+
+					pfpWrapper.addEventListener("click", e => {
+						e.stopPropagation();
+						dropdown.classList.toggle("unloaded");
+					});
+
+					document.addEventListener("click", () => {
+						dropdown.classList.add("unloaded");
+					});
+
+
+					// Logout
+					const logoutBtn = document.getElementById("nav-logout-btn");
+					if (logoutBtn) {
+						logoutBtn.addEventListener("click", () => {
+							fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })
+								.then(res => {
+									if (res.ok) {
+										window.updateNavBar(null);
+										loadPage("/home");
+									}
+								});
+						});
+					}
+				});
+		</script>
+
+		<!-- Update navbar function -->
 		<script>
 			function updateNavBar(userData) {
 				const loggedOut = document.getElementById("nav-logged-out");
 				const loggedIn = document.getElementById("nav-logged-in");
-				
+				const profileLink = document.getElementById("nav-profile-link");
 				const pfpImg = document.getElementById("nav-pfp-img");
 				const pfpFallback = document.getElementById("nav-pfp-fallback");
-				const dropdown = document.getElementById("nav-profile-dropdown");
-				const profileLink = document.getElementById("nav-profile-link");
-				const logoutBtn = document.getElementById("nav-logout-btn");
-				const pfpWrapper = document.getElementById("nav-pfp-wrapper");
-				
+
+				window.__setCurrentUser(userData);
+
 				if (!userData || !userData.user || !userData.user.profile) {
 					loggedOut.classList.remove("unloaded");
 					loggedIn.classList.add("unloaded");
 					return;
 				}
-				
-				// It's only a Promise by name, it's actually just a bunch of user data
-				window.currentUserPromise = userData;
-				
+
 				const profile = userData.user.profile;
+
 				loggedOut.classList.add("unloaded");
 				loggedIn.classList.remove("unloaded");
-				
+
 				profileLink.href = `/profile/${profile.username}`;
-				
+
 				if (profile.profilePicture) {
 					pfpImg.src = "api/users/data/imgs/" + profile.profilePicture;
 					pfpImg.classList.remove("unloaded");
@@ -53,42 +116,18 @@
 					pfpImg.classList.add("unloaded");
 					pfpFallback.classList.remove("unloaded");
 				}
-				
-				pfpWrapper.addEventListener("click", (e) => {
-					e.stopPropagation();
-					dropdown.classList.toggle("unloaded");
-				});
-				
-				document.addEventListener("click", () => {
-					dropdown.classList.add("unloaded");
-				});
-				
-				logoutBtn.addEventListener("click", () => {
-					fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })
-					.then(res => {
-						if (res.ok) {
-							updateNavBar(null);
-							loadPage('/home');
-						}
-						else {
-							null;
-						}
-					});
-				});
 			}
-			fetch("/api/users/me")
-			.then(res => res.ok ? res.json() : null)
-			.then(data => {
-				updateNavBar(data);
-			})
-			.catch(err => {
-				console.error("Error fetching user data:", err);
-				updateNavBar(null);
-			});
-			
+
 			window.updateNavBar = updateNavBar;
+
+			// Initial fetch
+			fetch("/api/users/me")
+				.then(res => res.ok ? res.json() : null)
+				.then(data => updateNavBar(data))
+				.catch(() => updateNavBar(null));
 		</script>
 	</head>
+
 	<body class="flex-space-between">
 		<header>
 			<nav>
@@ -213,6 +252,102 @@
 					© 2025 Transcendence 42. All rights reserved.
 				</div>
 			</footer>
+		</div>
+		<div id="chat-index-container">
+			<div class="resize-handle resize-right"></div>
+			<div class="resize-handle resize-bottom"></div>
+			<div class="resize-handle resize-corner"></div>
+			<div class="chat-window">
+				<div class="chat-window-bar">
+					<span class="chat-window-title">Chat</span>
+					<div class="chat-window-actions">
+						<button class="chat-window-btn" data-action="minimize" aria-label="Minimize chat">
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<path d="M5 12h14" />
+							</svg>
+						</button>
+
+						<button class="chat-window-btn" data-action="maximize" aria-label="Maximize chat">
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<rect x="4" y="4" width="16" height="16" rx="1" />
+							</svg>
+						</button>
+					</div>
+				</div>
+				<div id="chat-not-logged">
+					<div class="chat-not-logged-content">
+						<p data-translate-key="chat.loginPrompt.text">Please log in to access the chat feature.</p>
+						<a href="/login">
+							<button type="button" data-translate-key="chat.loginPrompt.button">Login</button>
+						</a>
+				</div>
+
+				</div>
+				<div class="chat-div-container unloaded" aria-label="Chat interface">
+					<button class="chat-header-toggle-users" aria-label="Toggle User List"></button>
+					<div class="user-list">
+						<!-- <div class="user-item" data-username="Tournament">
+							<img class="img_profile" src="/resources/imgs/tournament.jpg">
+						<p class="name_profile">Tournament</p>
+						</div> -->
+					</div>
+					<div class="chat-block">
+						<div class="chat-header">
+							<img class="img_profile hidden" chat-header="true">
+							<a class="chat-header-profile-pic hidden">
+								<span class="chat-header-title hidden">Template</span>
+							</a>
+							<button class="chat-header-btn hidden" aria-pressed="false" block-button="true" data-translate-key="chat.block.blockbtn">Block</button>
+						</div>
+						<div class="chat-messages" role="log" aria-live="polite"></div>
+						<form class="chat-input-form" method="post" action="#" novalidate="">
+							<div class="invite-wrapper hidden">
+								<button class="chat-invite-btn">+</button>
+								<div class="invite-menu hidden" role="menu">
+									<button type="button" class="invite-menu-btn" data-translate-key="chat.invite.send">Invite to play Pong</button>
+								</div>
+							</div>
+							<div class="chat-input hidden" contenteditable="true"></div>
+							<button type="submit" class="chat-send-btn hidden" data-translate-key="chat.send">Send</button>
+						</form>
+					</div>
+				</div>
+
+				<template class="user-item-temp">
+					<div class="user-item">
+						<img class="img_profile">
+						<span class="name_profile"></span>
+						<span class="name-profile-remove">⨉</span>
+					</div>
+				</template>
+
+				<template class="invite-cancel-temp">
+					<div class="invite-actions">
+						<button type="button" class="invite-cancel" data-translate-key="chat.invite.cancel">Cancel</button>
+					</div>
+				</template>
+
+				<template class="invite-go-temp">
+					<div class="invite-actions">
+						<button type="button" class="invite-go" data-translate-key="chat.invite.play">Play</button>
+					</div>
+				</template>
+
+				<template class="invite-pending-temp">
+					<div class="invite-actions">
+						<button type="button" class="invite-accept" data-translate-key="chat.invite.accept">Accept</button>
+						<button type="button" class="invite-decline" data-translate-key="chat.invite.decline">Decline</button>
+					</div>
+				</template>
+
+				<template class="default-pfp-temp">
+					<svg id="nav-pfp-fallback" class="img_profile" viewBox="-2 -2 6 8">
+						<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4" fill="currentColor"></path>
+					</svg>
+				</template>
+
+				<script src="/js/pages/chat.js" type="module" defer></script>
+			</div>
 		</div>
 		<div id="notification-container"></div>
 		<script defer type="module" src="/js/index.js"></script>

@@ -183,6 +183,10 @@
       "placeholder": "Envoyer un message à @$user",
       "blockedPlaceholder": "Vous avez bloqué @$user. Débloquez-le pour envoyer des messages.",
       "loadHint": "Défiler vers le haut pour charger les messages précédents"
-    }
+    },
+	"loginPrompt": {
+		"text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
+		"loginButton": "Connexion"
+	}
   }
 }
