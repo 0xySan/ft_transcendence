@@ -9,6 +9,7 @@ import { verifyUserAccountRoutes } from './verify.route.js';
 import { passwordResetRoutes } from './passwordReset.route.js';
 import { newUserLoginRoutes } from './login.route.js';
 import { userLogoutRoute } from './logout.js';
+import { changePasswordRoutes } from './changePassword.route.js';
 
 export function userAccountRoutes(fastify: FastifyInstance) {
 	newUserAccountRoutes(fastify);
@@ -16,4 +17,5 @@ export function userAccountRoutes(fastify: FastifyInstance) {
 	passwordResetRoutes(fastify);
 	newUserLoginRoutes(fastify);
 	userLogoutRoute(fastify);
+	changePasswordRoutes(fastify);
 }

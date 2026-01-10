@@ -43,7 +43,7 @@ export function createGame(
 	maxPlayers = 2,
 	duration: number,
 	status: 'completed' | 'ongoing' | 'abandoned' | 'waiting',
-	winner_id: string,
+	winner_id: string | null,
 	points: string,
 	id?: string
 ): Game | undefined {

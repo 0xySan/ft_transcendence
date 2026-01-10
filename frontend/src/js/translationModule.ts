@@ -4,10 +4,15 @@ declare global {
         translatePage: typeof translatePage;
         translateElement: typeof translateElement;
         getUserLang: typeof getUserLang;
+        getTranslatedElementText: typeof getTranslatedElementText;
     }
 }
 
 const DefaultLocale = "en";
+
+// Cache fetched translation JSONs. We store the Promise so concurrent
+// requests for the same language reuse the same in-flight fetch.
+const translationCache = new Map<string, Promise<Record<string, any> | null>>();
 
 /**
  * Gets the user's lang
@@ -29,15 +34,25 @@ export function getUserLang() {
 async function fetchTranslationJson(
     language: string
 ): Promise<Record<string, any> | null> {
-    try {
-        const res = await fetch(`../../resources/translations/${language}.json`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        return await res.json();
-    } catch (err) {
-        console.error("Fetch error:", err);
-        return null;
+    if (translationCache.has(language)) {
+        return await translationCache.get(language)!;
     }
+
+    const fetchPromise = (async () => {
+        try {
+            const res = await fetch(`../../resources/translations/${language}.json`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            return await res.json();
+        } catch (err) {
+            console.error("Fetch error:", err);
+            return null;
+        }
+    })();
+
+    translationCache.set(language, fetchPromise);
+
+    return await fetchPromise;
 }
 
 /**
@@ -138,8 +153,30 @@ export function translateElement(language: string, element: HTMLElement) {
     });
 }
 
+export function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null> {
+    const correlatedLanguage = correlateLangCode(language);
+    const translationPromise = fetchTranslationJson(correlatedLanguage);
+    if (!translationPromise) return Promise.resolve(null);
+    if (!element || !element.hasAttribute("data-translate-key")) return Promise.resolve(null);
+
+    return translationPromise.then((json) => {
+        if (json) {
+            const key = element.getAttribute("data-translate-key");
+            if (key) {
+                const keys = key.split(".");
+                const translatedText = getNestedJsonValue(json, keys);
+                if (translatedText) {
+                    return translatedText;
+                }
+            }
+        }
+        return null;
+    });
+}
+
 window.translatePage = translatePage;
 window.translateElement = translateElement;
+window.getTranslatedElementText = getTranslatedElementText;
 window.getUserLang = getUserLang;
 
 translatePage(getUserLang());

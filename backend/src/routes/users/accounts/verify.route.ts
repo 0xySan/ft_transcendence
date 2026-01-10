@@ -15,7 +15,7 @@ import { checkRateLimit, delayResponse } from "../../../utils/security.js";
 
 // Simple in-memory rate limiter (per IP)
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 50; // max 50 requests per 15 minutes
+const RATE_LIMIT = 10;
 const RATE_WINDOW = 15 * 60 * 1000;
 const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 

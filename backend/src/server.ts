@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import cookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import swaggerPlugin from "./plugins/swagger/index.js";
+import { closeAll,  } from "./utils/chatEvent.js";
 import { WebSocketServer } from 'ws';
 import { Worker } from 'worker_threads';
 
@@ -35,13 +37,6 @@ if (process.env.DOMAIN_NAME === undefined || process.env.DOMAIN_NAME.length === 
 const SERVER_PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 
-/**
- * Stock every worker (thread) here.
- * Stock the number of parties here, "base: 8"
- */
-export const workers: worker[] = [];
-export const parties_per_core = 8;
-
 async function buildServer() {
 	const app = Fastify({
 		logger: true,
@@ -51,6 +46,21 @@ async function buildServer() {
 	// Register cookie plugin
 	app.register(cookie, {
 		secret: process.env.COOKIE_SECRET,
+	});
+
+	// Register multipart plugin for file uploads
+	// - allow only one file per form (`files: 1`)
+	// - keep reasonable max file size (5 MB)
+	// - do not auto-add file streams to `request.body`; route handlers should handle parts
+	// Note: actual file-type validation (PNG/JPG/WEBP/GIF) is performed in `saveAvatarFromFile`
+	// Cast plugin to `any` to avoid TS incompatibilities across @fastify/multipart versions
+	// Keep limits (fileSize, files). We intentionally avoid provider-specific options
+	// that may not exist in all versions' type definitions.
+	app.register(fastifyMultipart as any, {
+		limits: {
+			fileSize: 5 * 1024 * 1024, // 5 MB file size limit
+			files: 1, // only one file allowed per multipart form
+		},
 	});
 
 	await app.register(swaggerPlugin);
@@ -81,6 +91,7 @@ async function start() {
 process.on("SIGINT", async () => {
 	console.log("SIGINT received, shutting down");
 	try {
+		closeAll();
 		const app = await buildServer();
 		await app.close();
 		process.exit(0);

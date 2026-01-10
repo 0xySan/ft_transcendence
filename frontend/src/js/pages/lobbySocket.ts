@@ -159,7 +159,6 @@ function applyListener(socket: WebSocket, token: string) {
 		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
 		switch (msg.type) {
 			case "playerSync":
-				console.log("Received playerSync:", msg.payload);
 				handlePlayerSync(msg.payload as PlayerSyncPayload);
 				window.playerSyncData = msg.payload as PlayerSyncPayload;
 				break;
@@ -475,9 +474,4 @@ if (window.playerSyncData) {
 myPlayerId = await window.currentUserReady.then(() => {
 	window.localPlayerId = window.currentUser ? String(window.currentUser.id) : undefined;
 	return window.localPlayerId || null;
-});
-console.log("LobbbySocket Current user ID:", myPlayerId);
-
-registerDynamicCleanup(() => {
-	resetLobbyState();
 });

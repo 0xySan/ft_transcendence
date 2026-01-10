@@ -109,6 +109,64 @@
     "resetButton": "Reset Password",
     "title": "Reset Password"
   },
+  "settings": {
+    "section": {
+      "profile": "Profile",
+      "security": "Security",
+      "twofa": "Two-Factor",
+      "oauth": "OAuth"
+    },
+    "profileTitle": "Profile Settings",
+    "profile": {
+      "displayNameLabel": "Display Name:",
+      "bioLabel": "Bio:",
+      "avatarLabel": "Avatar:",
+      "avatarMode": {
+        "file": "File",
+        "url": "URL"
+      },
+      "currentAvatarLabel": "Current Avatar:",
+      "updateButton": "Update Profile"
+    },
+    "securityTitle": "Security Settings",
+    "security": {
+      "currentPasswordLabel": "Current Password:",
+      "newPasswordLabel": "New Password:",
+      "repeatPasswordLabel": "Repeat New Password:",
+      "updatePasswordButton": "Update Password"
+    },
+    "authMethods": {
+      "emailOtpPopupTitle": "Email OTP Setup",
+      "emailAddressLabel": "Enter the email address to use for Two-Factor Authentication:",
+      "sendEmailOtpButton": "Send Email",
+      "emailSentMsg": "Email sent! Please check your inbox.",
+      "emailOtpLabel": "Enter the code sent to your email:",
+      "validateEmailOtpButton": "Validate",
+      "emailOtpError": "Invalid code. Please try again."
+    },
+    "twofa": {
+      "title": "Two-Factor Authentication",
+      "instructions": "Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.",
+      "enableEmailOtpButton": "Enable Email OTP",
+      "enableTotpButton": "Enable TOTP (Authenticator)",
+      "generateBackupCodesButton": "Generate Backup Codes",
+      "disableEmailOtpButton": "Disable Email OTP",
+      "disableTotpButton": "Disable TOTP (Authenticator)",
+      "deleteBackupCodesButton": "Delete Backup Codes"
+    },
+    "oauth": {
+      "title": "OAuth Accounts",
+      "instructions": "Connect or disconnect OAuth providers for quick sign-in.",
+      "42link": "Link 42",
+      "42unlink": "Unlink 42",
+      "GitHublink": "Link GitHub",
+      "GitHubunlink": "Unlink GitHub",
+      "Discordlink": "Link Discord",
+      "Discordunlink": "Unlink Discord",
+      "Googlelink": "Link Google",
+      "Googleunlink": "Unlink Google"
+    }
+  },
   "twofa": {
     "title": {
       "totp": "Check your TOTP app",
@@ -124,6 +182,41 @@
     "otpContainer": "",
     "otherMethodLabel": "Other method of Two Factor Authentication",
     "methodSelect": "",
-    "resendButton": "Resend verification code"
+    "resendButton": "Resend verification code",
+    "totpPopupTitle": "Authenticator Setup",
+    "totpCodeLabel": "Enter the code from your app:",
+    "validateTotpButton": "Validate",
+    "totpError": "Invalid code. Please try again.",
+    "emailOtpPopupTitle": "Email OTP Setup",
+    "emailOtpLabel": "Enter the code sent to your email:",
+    "validateEmailOtpButton": "Validate",
+    "emailOtpError": "Invalid code. Please try again.",
+    "backupCodesPopupTitle": "Backup Codes",
+    "backupCodesInfo": "Please write these codes down and keep them safe. Each code can only be used once.",
+    "closeBackupCodesButton": "Close"
+  },
+  "chat": {
+    "send": "Send",
+    "sending": "Sending...",
+    "invite": {
+      "send": "Invite to play Pong",
+      "accept": "Accept",
+      "decline": "Decline",
+      "cancel": "Cancel",
+      "play": "Play",
+      "receivedmsg": "@$user invited you to play Pong.",
+      "sentmsg": "You invited @$user to play Pong."
+    },
+    "block": {
+      "blockbtn": "Block",
+      "unblockbtn": "Unblock",
+      "placeholder": "Type a message to @$user",
+      "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
+      "loadHint": "Scroll up to load previous messages"
+    },
+	"loginPrompt": {
+		"text": "Please log in to access the chat feature.",
+		"loginButton": "Login"
+	}
   }
 }

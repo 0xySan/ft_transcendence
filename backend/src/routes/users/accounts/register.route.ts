@@ -27,7 +27,7 @@ dotenv.config({ quiet: true });
 
 // Simple in-memory rate limiter (can be replaced with Redis later)
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 5; // max 5 registrations per 15 minutes per IP
+const RATE_LIMIT = 5;
 const RATE_WINDOW = 15 * 60 * 1000;
 const MIN_DELAY = 500; // ms, minimum response time to prevent timing attacks
 

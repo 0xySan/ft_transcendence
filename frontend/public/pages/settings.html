@@ -1,0 +1,218 @@
+<div class="auth-pages-container settings-page-container">
+	
+	<div class="settings-layout">
+		<!-- Sidebar -->
+		<aside class="settings-sidebar">
+			<ul class="settings-menu">
+				<li class="settings-item active" data-section="profile" data-translate-key="settings.section.profile">
+					Profile
+				</li>
+				<li class="settings-item" data-section="security" data-translate-key="settings.section.security">
+					Security
+				</li>
+				<li class="settings-item" data-section="twofa" data-translate-key="settings.section.twofa">
+					Two-Factor
+				</li>
+				<li class="settings-item" data-section="oauth" data-translate-key="settings.section.oauth">
+					OAuth
+				</li>
+			</ul>
+		</aside>
+		
+		<!-- Content -->
+		<main class="settings-content">
+			
+			<!-- PROFILE -->
+			<section class="settings-section" data-section="profile">
+				<h2 data-translate-key="settings.profileTitle">Profile Settings</h2>
+				
+				<form id="profile-form">
+					<div class="div-title-and-text-input">
+						<label for="display-name" data-translate-key="settings.profile.displayNameLabel">
+							Display Name:
+						</label>
+						<input
+						type="text"
+						id="display-name"
+						name="display-name"
+						class="form-input-field settings-input"
+						placeholder="Your display name"
+						/>
+					</div>
+					
+					<div class="div-title-and-text-input">
+						<label for="bio" data-translate-key="settings.profile.bioLabel">
+							Bio:
+						</label>
+						<textarea
+						id="bio"
+						name="bio"
+						class="form-input-field bio-textarea settings-textarea"
+						rows="4"
+						placeholder="Tell us something about you..."
+						></textarea>
+					</div>
+
+					<div class="div-title-and-text-input">
+						<label data-translate-key="settings.profile.avatarLabel">Avatar:</label>
+						<div style="display: flex; gap: 1em; align-items: center;">
+							<label><input type="radio" name="avatar-mode" value="file" checked data-translate-key="settings.profile.avatarMode.file"> File</label>
+							<label><input type="radio" name="avatar-mode" value="url" data-translate-key="settings.profile.avatarMode.url"> URL</label>
+						</div>
+						<div id="avatar-file-group">
+							<input
+								type="file"
+								id="avatar-file"
+								name="avatar-file"
+								class="form-input-field"
+								accept="image/*"
+							/>
+						</div>
+						<div id="avatar-url-group" style="display:none;">
+							<input
+								type="text"
+								id="avatar"
+								name="avatar"
+								class="form-input-field settings-input"
+								placeholder="Paste image URL or filename"
+							/>
+						</div>
+					</div>
+
+					<div id="current-avatar-container" class="current-avatar-container" style="display: none;">
+						<p data-translate-key="settings.profile.currentAvatarLabel">Current Avatar:</p>
+						<span style="position: relative; display: inline-block;">
+							<img id="current-avatar" src="" alt="Current Avatar" class="current-avatar-image avatar-circle"/>
+						</span>
+					</div>
+					
+					<button
+					type="submit"
+					class="button button-fit-div-width nav-button"
+					data-translate-key="settings.profile.updateButton"
+					>
+					Update Profile
+					</button>
+				</form>
+			</section>
+		
+			<!-- SECURITY -->
+			<section class="settings-section unloaded" data-section="security">
+				<h2 data-translate-key="settings.securityTitle">Security Settings</h2>
+
+				<form id="security-form">
+					<div class="div-title-and-text-input">
+						<label for="current-password" data-translate-key="settings.security.currentPasswordLabel">
+							Current Password:
+						</label>
+						<input
+						type="password"
+						id="current-password"
+						name="current-password"
+						class="form-input-field settings-input"
+						placeholder="Current password"
+						/>
+					</div>
+
+					<div class="div-title-and-text-input">
+						<label for="new-password" data-translate-key="settings.security.newPasswordLabel">
+							New Password:
+						</label>
+						<input
+						type="password"
+						id="new-password"
+						name="new-password"
+						class="form-input-field settings-input"
+						placeholder="New password"
+						/>
+					</div>
+
+					<div class="div-title-and-text-input">
+						<label for="repeat-password" data-translate-key="settings.security.repeatPasswordLabel">
+							Repeat New Password:
+						</label>
+						<input
+						type="password"
+						id="repeat-password"
+						name="repeat-password"
+						class="form-input-field settings-input"
+						placeholder="Repeat new password"
+						/>
+					</div>
+
+					<button
+					type="submit"
+					class="button button-fit-div-width nav-button"
+					data-translate-key="settings.security.updatePasswordButton"
+					>
+					Update Password
+					</button>
+				</form>
+			</section>
+	
+			<!-- TWO-FA -->
+			<section class="settings-section unloaded" data-section="twofa">
+				<h2 data-translate-key="settings.twofa.title">Two-Factor Authentication</h2>
+
+				<p data-translate-key="settings.twofa.instructions">
+					Manage your 2FA methods: TOTP (authenticator), email OTP and backup codes.
+				</p>
+
+				<div class="twofa-actions">
+					<button id="enable-email-otp-btn" class="button button-fit-div-width nav-button" data-translate-key="settings.twofa.enableEmailOtpButton">
+						Enable Email OTP
+					</button>
+
+					<button id="enable-totp-btn" class="button button-fit-div-width nav-button" data-translate-key="settings.twofa.enableTotpButton">
+						Enable TOTP (Authenticator)
+					</button>
+
+					<button id="generate-backup-btn" class="button button-fit-div-width nav-button" data-translate-key="settings.twofa.generateBackupCodesButton">
+						Generate Backup Codes
+					</button>
+				</div>
+			</section>
+	
+			<!-- OAUTH -->
+			<section class="settings-section unloaded" data-section="oauth">
+				<h2 data-translate-key="settings.oauth.title">OAuth Accounts</h2>
+
+				<p data-translate-key="settings.oauth.instructions">
+					Connect or disconnect OAuth providers for quick sign-in.
+				</p>
+
+				<div class="oauth-buttons-container">
+					<a href="/api/oauth/forty-two" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/42.svg#icon-42"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.42link">Link 42</span>
+					</a>
+
+					<a href="/api/oauth/github" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/github.svg#icon-github"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.GitHublink">Link GitHub</span>
+					</a>
+
+					<a href="/api/oauth/discord" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/discord.svg#icon-discord"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.Discordlink">Link Discord</span>
+					</a>
+
+					<a href="/api/oauth/google" class="oauth-button no-dynamic-load">
+						<svg class="oauth-icon">
+							<use href="/resources/imgs/svg/icons/google.svg#icon-google"></use>
+						</svg>
+						<span class="oauth-text" data-translate-key="settings.oauth.Googlelink">Link Google</span>
+					</a>
+				</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<script defer type="module" src="/js/pages/settingsPage.js"></script>

@@ -16,7 +16,6 @@ const passwordInput = document.getElementById('password-text-input') as HTMLInpu
  * @param message the message to be shown
  */
 function showErrorMessage(element: HTMLSpanElement, message: string): void {
-	console.log('Showing error message:', message);
 	element.textContent = message;
 	element.classList.remove('hidden');
 	element.setAttribute('aria-hidden', 'false');
@@ -77,7 +76,6 @@ function handleLogin(event: Event): void {
 			const data = await res.json();
 			if (res.ok)
 			{
-				console.log('Login successful:', data);
 				if (data.message === '2FA required.')
 					loadPage('/twofa');
 				else {
@@ -166,8 +164,6 @@ const oauthPopups = new Map();
 window.addEventListener("message", (e) => {
 	if (e.origin !== window.location.origin) return;
 	if (!e.data || !e.data.requestId) return;
-
-	console.log("OAuth result:", e.data);
 
 	// Get the popup and close it
 	const popup = oauthPopups.get(e.data.requestId);

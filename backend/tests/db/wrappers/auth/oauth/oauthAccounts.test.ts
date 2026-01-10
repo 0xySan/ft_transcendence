@@ -6,7 +6,7 @@ import {
     createOauthAccount,
     getOauthAccountById,
     updateOauthAccount,
-    getOauthAccountByProviderAndUserId,
+    getOauthAccountByProviderAndProviderUserId,
     getOauthAccountsByUserId
 } from "../../../../../src/db/wrappers/auth/oauth/oauthAccounts.js";
 
@@ -104,7 +104,7 @@ describe("oauthAccount wrapper - tests", () => {
             provider_user_id: provider_user_id
         });
 
-        const found = getOauthAccountByProviderAndUserId(providerName, provider_user_id);
+        const found = getOauthAccountByProviderAndProviderUserId(providerName, provider_user_id);
 
         expect(found).toBeDefined();
 
@@ -115,7 +115,7 @@ describe("oauthAccount wrapper - tests", () => {
 
 
     it("should return undefined for unknown provider/user combination", () => {
-        const found = getOauthAccountByProviderAndUserId("non-existent-provider", "non-existent-user");
+        const found = getOauthAccountByProviderAndProviderUserId("non-existent-provider", "non-existent-user");
         expect(found).toBeUndefined();
     });
 
@@ -146,8 +146,8 @@ describe("oauthAccount wrapper - tests", () => {
             profile_json: complexProfile
         });
 
-        const found = getOauthAccountByProviderAndUserId(providerName, "json_test_user");
-        if (!found) throw new Error("Expected an OAuth account from getOauthAccountByProviderAndUserId, but got undefined.");
+        const found = getOauthAccountByProviderAndProviderUserId(providerName, "json_test_user");
+        if (!found) throw new Error("Expected an OAuth account from getOauthAccountByProviderAndProviderUserId, but got undefined.");
         expect(found.profile_json).toBe(complexProfile);
     });
 
@@ -243,13 +243,13 @@ describe("oauthAccount wrapper - tests", () => {
         expect(account).toBeUndefined();
     });
 
-    it("should return undefined if db.prepare throws an error in getOauthAccountByProviderAndUserId", () => {
+    it("should return undefined if db.prepare throws an error in getOauthAccountByProviderAndProviderUserId", () => {
         const originalPrepare = db.prepare;
 
         // @ts-expect-error
         db.prepare = vi.fn(() => { throw new Error("forced error"); });
 
-        const result = getOauthAccountByProviderAndUserId("any-provider", "any-user");
+        const result = getOauthAccountByProviderAndProviderUserId("any-provider", "any-user");
 
         expect(result).toBeUndefined();
         db.prepare = originalPrepare;

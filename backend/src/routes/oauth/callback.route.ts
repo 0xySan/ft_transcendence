@@ -9,7 +9,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { oauthCallbackSchema } from '../../plugins/swagger/schemas/callback.schema.js'
 import geoip from 'geoip-lite';
 import {	createEmailVerification, createOauthAccount, createProfile, createUser,
-			getCountryByCode, getOauthAccountByProviderAndUserId,
+			getCountryByCode, getOauthAccountByProviderAndProviderUserId,
 			getOauthProviderByName, getProfileByUsername,
 			getRoleByName, getUserByEmail, OauthProvider } from '../../db/index.js';
 import { decryptSecret, generateRandomToken, hashString } from '../../utils/crypto.js';
@@ -108,7 +108,7 @@ function handleLoggedInUser(
 	if (!session || !session.user_id)
 		return reply.status(401).send('Unauthorized: Invalid or expired session');
 
-	const oauthAccount = getOauthAccountByProviderAndUserId(provider, userInfo.id);
+	const oauthAccount = getOauthAccountByProviderAndProviderUserId(provider, userInfo.id);
 	if (oauthAccount) // OAuth account already linked
 		return reply.status(400).send('OAuth account already linked');
 
@@ -125,29 +125,30 @@ function handleLoggedInUser(
 
 	return reply.send('OAuth account linked successfully');
 }
+
 function sanitizeUsername(inputUsername: string, email: string): string {
-    let username = inputUsername.toLowerCase();        // tout en minuscules
+	let username = inputUsername.toLowerCase(); // Only lowercase
 
-    // Ne garder que lettres, chiffres et _
-    username = username.replace(/[^a-z0-9_]/g, '');
+	// Only keep alphanumeric and underscores
+	username = username.replace(/[^a-z0-9_]/g, '');
 
-    // Vérifie la longueur
-    if (username.length < 3 || username.length > 20) {
-        // Si invalide, utilise la partie avant @ de l'email
-        username = email.split('@')[0].toLowerCase();
-        username = username.replace(/[^a-z0-9_]/g, '');
-    }
+	// Check length validity
+	if (username.length < 3 || username.length > 20) {
+		// Not valid -> try to keep part before '@' in email
+		username = email.split('@')[0].toLowerCase();
+		username = username.replace(/[^a-z0-9_]/g, '');
+	}
 
-    // Ajuste la longueur
-    if (username.length < 3) {
-        username += generateRandomToken(3).slice(0, 3 - username.length); // compléter si trop court
-    }
-    if (username.length > 20) {
-        username = username.slice(0, 20); // tronquer si trop long
-    }
+	// Adjust length
+	if (username.length < 3)
+		username += generateRandomToken(3).slice(0, 3 - username.length); // pad if too short
 
-    return username;
+	if (username.length > 20)
+		username = username.slice(0, 20); // trim if too long
+
+	return username;
 }
+
 async function handleOauthUserCreation(
 	userInfo:	OAuth.NormalizedUserInfo,
 	tokenData:	OAuth.Token,
@@ -274,7 +275,7 @@ export function oauthCallbackRoutes(fastify: FastifyInstance) {
 			if (sessionToken) // If user is logged in, try to link account
 				return handleLoggedInUser(userInfo, provider, request, reply);
 			
-			const oauthAccount = getOauthAccountByProviderAndUserId(provider, userInfo.id);
+			const oauthAccount = getOauthAccountByProviderAndProviderUserId(provider, userInfo.id);
 
 			const queryParams = request.query as Record<string, string>;
 			const requestId = queryParams.state;

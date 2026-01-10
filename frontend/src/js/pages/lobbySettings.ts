@@ -686,7 +686,6 @@ function setupSubTabs(): void {
 
 async function dynLoaderCleanPage() {
 	const elem: HTMLElement | null = document.getElementById("lobby-multiplayer-button");
-	console.log("DEBUG: document = ", elem);
 	if (elem && elem.classList.contains("current-mode")) {
 		try {
 			const response = await fetch("/api/game/leave", {
