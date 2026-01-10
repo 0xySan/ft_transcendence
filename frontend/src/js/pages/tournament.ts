@@ -43,11 +43,11 @@ if (!mapContainer || !tournamentMap)
  * - **offsetY**: `number` representing the current Y offset.
  */
 interface DragState {
-    isDragging: boolean;
-    startX: number;
-    startY: number;
-    offsetX: number;
-    offsetY: number;
+	isDragging: boolean;
+	startX: number;
+	startY: number;
+	offsetX: number;
+	offsetY: number;
 }
 
 
@@ -79,6 +79,28 @@ interface mapState {
 	zoom:		ZoomState;
 }
 
+// ----------------------- Pinch State for Mobile --------------------------------
+
+/** ### PinchState
+ * Interface representing the state of a pinch gesture.
+ * Contains:
+ * - **isPinching**: `boolean` indicating if a pinch gesture is active.
+ * - **initialDistance**: `number` representing the initial distance between touch points.
+ * - **initialScale**: `number` representing the initial zoom scale at the start of the pinch.
+ * - **initialOffsetX**: `number` representing the initial X offset at the start of the pinch.
+ * - **initialOffsetY**: `number` representing the initial Y offset at the start of the pinch.
+ * - **initialCenterX**: `number` representing the initial center X coordinate of the pinch.
+ * - **initialCenterY**: `number` representing the initial center Y coordinate of the pinch.
+ */
+interface PinchState {
+	isPinching: boolean;
+	initialDistance: number;
+	initialScale: number;
+	initialOffsetX: number;
+	initialOffsetY: number;
+	initialCenterX: number;
+	initialCenterY: number;
+}
 
 // ----------------------- Tournament interfaces --------------------------------
 
@@ -233,6 +255,176 @@ function onZoom(event: Event): void {
 	applyTransform();
 }
 
+// ------------------------------- Mobile Adapations ----------------------------------
+
+/** ### pinchState
+ * Object holding the state of pinch gestures.
+ */
+const pinchState: PinchState = {
+	isPinching: false,
+	initialDistance: 0,
+	initialScale: 1,
+	initialOffsetX: 0,
+	initialOffsetY: 0,
+	initialCenterX: 0,
+	initialCenterY: 0
+};
+
+/** ### getDistance
+ * Calculates the distance between two touch points.
+ * 
+ * @param touch1 - The first touch point.
+ * @param touch2 - The second touch point.
+ * @returns The distance between the two touch points.
+ */
+function getDistance(touch1: Touch, touch2: Touch): number {
+	const dx = touch2.clientX - touch1.clientX;
+	const dy = touch2.clientY - touch1.clientY;
+	return Math.sqrt(dx * dx + dy * dy);
+}
+
+/** ### getMidpoint
+ * Calculates the midpoint between two touch points relative to the container.
+ * 
+ * @param touch1 - The first touch point.
+ * @param touch2 - The second touch point.
+ * @returns The midpoint coordinates relative to the container.
+ */
+function getMidpoint(touch1: Touch, touch2: Touch): { x: number, y: number } {
+	const rect = mapState.container.getBoundingClientRect();
+	return {
+		x: ((touch1.clientX + touch2.clientX) / 2) - rect.left,
+		y: ((touch1.clientY + touch2.clientY) / 2) - rect.top
+	};
+}
+
+/** ### onTouchStart
+ * Handles the touch start event for mobile devices.
+ * 
+ * @param event - The touch event.
+ */
+function onTouchStart(event: Event): void {
+	const touchEvent = event as TouchEvent;
+	
+	if (touchEvent.touches.length === 2) {
+		// Start pinch gesture
+		event.preventDefault();
+		
+		const touch1 = touchEvent.touches[0];
+		const touch2 = touchEvent.touches[1];
+		
+		pinchState.isPinching = true;
+		pinchState.initialDistance = getDistance(touch1, touch2);
+		pinchState.initialScale = mapState.zoom.scale;
+		pinchState.initialOffsetX = mapState.drag.offsetX;
+		pinchState.initialOffsetY = mapState.drag.offsetY;
+		
+		const midpoint = getMidpoint(touch1, touch2);
+		pinchState.initialCenterX = midpoint.x;
+		pinchState.initialCenterY = midpoint.y;
+		
+		// Disable dragging during pinch
+		mapState.drag.isDragging = false;
+	} else if (touchEvent.touches.length === 1) {
+		// Start drag gesture
+		startDrag(event);
+	}
+}
+
+/** ### onTouchMove
+ * Handles the touch move event for mobile devices.
+ * 
+ * @param event - The touch event.
+ */
+function onTouchMove(event: Event): void {
+	const touchEvent = event as TouchEvent;
+	
+	if (pinchState.isPinching && touchEvent.touches.length === 2) {
+		event.preventDefault();
+		
+		const touch1 = touchEvent.touches[0];
+		const touch2 = touchEvent.touches[1];
+		
+		// Calculate current distance and midpoint
+		const currentDistance = getDistance(touch1, touch2);
+		const currentMidpoint = getMidpoint(touch1, touch2);
+		
+		// Avoid division by zero and very small distances
+		if (currentDistance < 10 || pinchState.initialDistance < 10) return;
+		
+		// Calculate scale factor based on distance ratio
+		const scaleFactor = currentDistance / pinchState.initialDistance;
+		const newScale = Math.min(
+			Math.max(pinchState.initialScale * scaleFactor, mapState.zoom.minScale),
+			mapState.zoom.maxScale
+		);
+		
+		// Calculate the difference from initial midpoint
+		const deltaX = currentMidpoint.x - pinchState.initialCenterX;
+		const deltaY = currentMidpoint.y - pinchState.initialCenterY;
+		
+		// Apply the same panzoom formula but account for initial state
+		mapState.drag.offsetX = pinchState.initialOffsetX + deltaX;
+		mapState.drag.offsetY = pinchState.initialOffsetY + deltaY;
+		
+		// Adjust offset for zoom centered on initial midpoint
+		mapState.drag.offsetX = pinchState.initialCenterX - 
+			(pinchState.initialCenterX - mapState.drag.offsetX) * 
+			(newScale / pinchState.initialScale);
+		mapState.drag.offsetY = pinchState.initialCenterY - 
+			(pinchState.initialCenterY - mapState.drag.offsetY) * 
+			(newScale / pinchState.initialScale);
+		
+		mapState.zoom.scale = newScale;
+		applyTransform();
+	} else if (touchEvent.touches.length === 1 && mapState.drag.isDragging) {
+		// Continue drag gesture
+		onDrag(event);
+	} else if (touchEvent.touches.length === 1) {
+		// Single touch but not dragging (just moving)
+		event.preventDefault();
+	}
+}
+
+/** ### onTouchEnd
+ * Handles the touch end event for mobile devices.
+ * 
+ * @param event - The touch event.
+ */
+function onTouchEnd(event: Event): void {
+	const touchEvent = event as TouchEvent;
+	
+	if (pinchState.isPinching && touchEvent.touches.length < 2) {
+		// End pinch gesture
+		pinchState.isPinching = false;
+		pinchState.initialDistance = 0;
+		pinchState.initialScale = 1;
+		pinchState.initialOffsetX = 0;
+		pinchState.initialOffsetY = 0;
+		pinchState.initialCenterX = 0;
+		pinchState.initialCenterY = 0;
+	}
+	
+	if (touchEvent.touches.length === 0) {
+		// No more touches, end drag
+		endDrag();
+	} else if (touchEvent.touches.length === 1) {
+		// Still one touch (could be dragging or about to drag)
+		// Reset drag state to allow new drag to start
+		mapState.drag.isDragging = false;
+	}
+}
+
+/** ### onTouchCancel
+ * Handles the touch cancel event for mobile devices.
+ * 
+ * @param event - The touch event.
+ */
+function onTouchCancel(event: Event): void {
+	pinchState.isPinching = false;
+	endDrag();
+}
+
 
 /* ==================================================================
 						PLAYER LIST FUNCTIONS
@@ -313,13 +505,16 @@ function InitializeBracket(players: tournamentPlayer[]): void {
 						INITIALIZATION
    ================================================================== */
 
-// Add event listeners for dragging
+// Add event listeners for panzoom
 addListener(mapContainer, "mousedown", startDrag);
-addListener(mapContainer, "touchstart", startDrag);
+addListener(mapContainer, "touchstart", onTouchStart);
+
 addListener(document, "mousemove", onDrag);
-addListener(document, "touchmove", onDrag);
+addListener(document, "touchmove", onTouchMove);
+
 addListener(document, "mouseup", endDrag);
-addListener(document, "touchend", endDrag);
+addListener(document, "touchend", onTouchEnd);
+addListener(document, "touchcancel", onTouchCancel);
 
 // Add event listener for zooming
 addListener(mapContainer, "wheel", onZoom);
