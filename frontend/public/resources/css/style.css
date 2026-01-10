@@ -1063,6 +1063,17 @@ button:active {
 	font-size: x-large;
 }
 
+.lobby-multiplayer-div {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.lobby-leave-button {
+	background-color: rgb(var(--red));
+}
+
 .lobby-setting-type {
 	width: 100%;
 

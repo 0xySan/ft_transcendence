@@ -594,9 +594,21 @@ type SubTabs = {
 	advTab: HTMLDivElement;
 };
 
+type SubTabsMultiplayer = {
+	findBtn: HTMLButtonElement;
+	leaveBtn: HTMLButtonElement;
+};
+
 /** ### subTabs
  * - record of sub-tabs for custom and tournament modes
  */
+const subTabsMultiplayer: Record<string, SubTabsMultiplayer> = {
+	multiplayer: {
+		findBtn: getEl("lobby-wating-find-player"),
+		leaveBtn: getEl("lobby-leave-queue")
+	}
+};
+
 const subTabs: Record<string, SubTabs> = {
 	custom: {
 		basicBtn: getEl("lobby-custom-game-basic-settings-button"),
@@ -609,7 +621,7 @@ const subTabs: Record<string, SubTabs> = {
 		advBtn: getEl("lobby-tournament-advanced-settings-button"),
 		basicTab: getEl("lobby-tournament-basic-settings"),
 		advTab: getEl("lobby-tournament-advanced-settings"),
-	},
+	}
 };
 
 function setupSubTabs(): void {
@@ -628,6 +640,72 @@ function setupSubTabs(): void {
 			tab.basicTab.classList.add("unloaded");
 		});
 	});
+
+	Object.values(subTabsMultiplayer).forEach((tab) => {
+		addListener(tab.findBtn, "click", async () => {
+			try {
+				const response = await fetch("/api/game/finding", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ settings: currentSettings }),
+				});
+
+				if (!response.ok) {
+					throw new Error("Request failed");
+				}
+
+				notify("You are added in a queue.", { type: "success" });
+			} catch (error) {
+				notify("Error adding in queue.", { type: "error" });
+			}
+		});
+
+		addListener(tab.leaveBtn, "click", async () => {
+			try {
+				const response = await fetch("/api/game/leave", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ settings: currentSettings }),
+				});
+
+				if (!response.ok) {
+					throw new Error("Request failed");
+				}
+
+				notify("You left the queue.", { type: "success" });
+			} catch (error) {
+				notify("Error leaving the queue.", { type: "error" });
+			}
+		});
+	})
+}
+
+async function dynLoaderCleanPage() {
+	const elem: HTMLElement | null = document.getElementById("lobby-multiplayer-button");
+	console.log("DEBUG: document = ", elem);
+	if (elem && elem.classList.contains("current-mode")) {
+		try {
+			const response = await fetch("/api/game/leave", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ settings: "null" }),
+			});
+
+			if (!response.ok) {
+				throw new Error("Request failed");
+			}
+
+			notify("You left the queue.", { type: "success" });
+		} catch (error) {
+			notify("Error leaving the queue.", { type: "error" });
+		}
+	}
 }
 
 /* -------------------------------------------------------------------------- */
@@ -639,3 +717,5 @@ window.setPartialLobbyConfig = setPartialLobbyConfig;
 setupModeSelection();
 setupSubTabs();
 await setupLobbyModeHandlers();
+
+registerDynamicCleanup(dynLoaderCleanPage);

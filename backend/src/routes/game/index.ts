@@ -8,10 +8,12 @@ import { createNewGameRoute } from "./new.route.js";
 import { joinGameRoute } from "./join.route.js";
 import { gameSettingsRoute } from "./settings.route.js";
 import { gamesPublicRoute } from "./public.route.js";
+import { findingGameRoute } from "./finding.route.js";
 
 export function gameRoutes(fastify: FastifyInstance) {
 	createNewGameRoute(fastify);
 	joinGameRoute(fastify);
 	gameSettingsRoute(fastify);
 	gamesPublicRoute(fastify);
+	findingGameRoute(fastify);
 }

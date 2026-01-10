@@ -28,7 +28,9 @@
   "lobby": {
     "offlineMode": "Play offline",
     "onlineMode": "Play online",
+    "leaveQueuPlayerButton": "Leave Queue",
     "customGameButton": "CUSTOM GAME",
+    "findPlayerButton": "Find Player",
     "multiplayerButton": "MULTIPLAYER",
     "players": "Players",
     "tournamentButton": "TOURNAMENT",
@@ -63,6 +65,7 @@
     "paddleFriction": "Paddle Friction",
     "worldWidth": "World Width",
     "worldHeight": "World Height",
+    "waitingTitle": "Find an Opponent",
     "fieldWallThickness": "Field Wall Thickness"
   },
   "login": {

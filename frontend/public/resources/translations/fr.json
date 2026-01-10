@@ -63,6 +63,7 @@
     "paddleFriction": "Friction de la raquette",
     "worldWidth": "Largeur du monde",
     "worldHeight": "Hauteur du monde",
+    "waitingTitle": "Attente de joueur",
     "fieldWallThickness": "Épaisseur des murs du terrain"
   },
   "login": {

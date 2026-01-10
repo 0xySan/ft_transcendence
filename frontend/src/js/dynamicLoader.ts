@@ -152,6 +152,7 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 	const oldScripts = contentDiv.querySelectorAll<HTMLScriptElement>('script[src]');
 	oldScripts.forEach(script => script.remove());
 
+	const contentDivTmp = html;
 	contentDiv.innerHTML = html;
 
 	currentUrl = document.getElementById('currentUrl')?.textContent || url;
