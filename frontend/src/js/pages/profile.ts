@@ -506,7 +506,6 @@ async function initializeProfilePage(): Promise<void> {
 	// Always fetch current user data first to establish authentication context
 	await fetchCurrentUser();
 	
-	// Load the requested user's profile or redirect to home if none specified
 	if (user)
 		await fetchProfileData(user);
 	else
