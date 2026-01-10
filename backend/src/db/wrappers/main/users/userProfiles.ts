@@ -12,6 +12,7 @@ export interface UserProfile {
 	username: string;
 	display_name?: string;
 	profile_picture?: string;
+	background_picture?: string;
 	country_id?: number;
 	bio?: string;
 }

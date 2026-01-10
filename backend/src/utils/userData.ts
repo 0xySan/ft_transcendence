@@ -13,10 +13,18 @@ const streamPipeline = promisify(pipeline);
 import { updateProfile, getProfileByUserId } from '../db/index.js';
 const USER_IMG_DIR = path.join(process.cwd(), 'userData', 'imgs');
 
-function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
+function updateUserImageInDb(userId: string | number, field: 'profile_picture' | 'background_picture', imageUrl: string) {
 	const profile = getProfileByUserId(String(userId));
 	if (!profile) throw new Error('Profile not found');
-	return updateProfile(profile.profile_id, { profile_picture: avatarUrl });
+	return updateProfile(profile.profile_id, { [field]: imageUrl });
+}
+
+function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
+	return updateUserImageInDb(userId, 'profile_picture', avatarUrl);
+}
+
+function updateUserBackgroundPictureInDb(userId: string | number, backgroundUrl: string) {
+	return updateUserImageInDb(userId, 'background_picture', backgroundUrl);
 }
 
 /**
@@ -105,5 +113,76 @@ export async function saveAvatarFromFile(userId: string, file: any) {
 	await fs.promises.writeFile(filePath, buffer);
 
 	updateUserAvatarInDb(userId, fileName);
+	return fileName;
+}
+
+/**
+ * Save a background picture from a remote URL
+ */
+export async function saveBackgroundFromUrl(userId: string, imageUrl: string) {
+	const res = await fetch(imageUrl);
+	if (!res.ok) {
+		throw new Error(`Failed to download image: ${res.statusText}`);
+	}
+
+	const contentType = res.headers.get('content-type') || '';
+	if (!contentType.startsWith('image/')) {
+		throw new Error('URL does not point to an image');
+	}
+
+	const ext = contentType.split('/')[1] || 'png';
+	const fileName = `background_${userId}.${ext}`;
+	const filePath = path.join(USER_IMG_DIR, fileName);
+
+	// Remove existing background if exists
+	if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+	if (!res.body) throw new Error('Response body is null');
+
+	// Download to buffer first for validation
+	let buffer: Buffer;
+	if (typeof res.body.pipe === 'function') {
+		// Node stream
+		const chunks: Buffer[] = [];
+		for await (const chunk of res.body) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+		buffer = Buffer.concat(chunks);
+	} else {
+		// Web ReadableStream
+		const { Readable } = await import('stream');
+		const nodeStream = Readable.fromWeb(res.body as any);
+		const chunks: Buffer[] = [];
+		for await (const chunk of nodeStream) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+		buffer = Buffer.concat(chunks);
+	}
+
+	if (!isAllowedImage(buffer)) {
+		throw new Error('Downloaded file is not a valid PNG/JPG/WEBP/GIF image');
+	}
+
+	await fs.promises.writeFile(filePath, buffer);
+
+	updateUserBackgroundPictureInDb(userId, fileName);
+	return fileName;
+}
+
+/**
+ * Save a background picture from an uploaded file (e.g. multipart/form-data)
+ */
+export async function saveBackgroundFromFile(userId: string, file: any) {
+	const fileExt = path.extname(file.filename) || '.png';
+	const fileName = `background_${userId}${fileExt}`;
+	const filePath = path.join(USER_IMG_DIR, fileName);
+
+	// Remove existing background if exists
+	if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+	const buffer = await file.toBuffer();
+	if (!isAllowedImage(buffer)) {
+		throw new Error('Uploaded file is not a valid PNG/JPG/WEBP/GIF image');
+	}
+
+	await fs.promises.writeFile(filePath, buffer);
+
+	updateUserBackgroundPictureInDb(userId, fileName);
 	return fileName;
 }

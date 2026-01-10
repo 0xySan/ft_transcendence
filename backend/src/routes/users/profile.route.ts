@@ -49,6 +49,7 @@ export async function userProfileRoutes(fastify: FastifyInstance) {
 					username: profile.username,
 					display_name: profile.display_name,
 					profile_picture: profile.profile_picture,
+					background_picture: profile.background_picture,
 					country_id: profile.country_id,
 					bio: profile.bio,
 				}

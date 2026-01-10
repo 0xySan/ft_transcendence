@@ -41,6 +41,7 @@ export async function userUsernameRoutes(fastify: FastifyInstance) {
 						username: profile.username,
 						displayName: profile.display_name || null,
 						profilePicture: profile.profile_picture || null,
+						backgroundPicture: profile.background_picture || null,
 						bio: profile.bio || null,
 						country: country ? {
 							id: country.country_id,

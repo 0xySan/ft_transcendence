@@ -98,6 +98,8 @@ menuItems.forEach((item) => {
 		const bioInput = document.querySelector<HTMLTextAreaElement>('#profile-form textarea[name="bio"]');
 		const currentAvatarContainer = document.getElementById('current-avatar-container');
 		const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
+		const currentBackgroundContainer = document.getElementById('current-background-container');
+		const currentBackgroundImage = document.querySelector<HTMLImageElement>('#current-background');
 
 		if (displayNameInput) displayNameInput.value = profile.displayName || '';
 		if (bioInput) bioInput.value = profile.bio || '';
@@ -107,6 +109,14 @@ menuItems.forEach((item) => {
 				currentAvatarContainer.style.display = '';
 			} else {
 				currentAvatarContainer.style.display = 'none';
+			}
+		}
+		if (currentBackgroundContainer && currentBackgroundImage) {
+			if (profile.backgroundPicture) {
+				currentBackgroundImage.src = `/api/users/data/imgs/${profile.backgroundPicture}`;
+				currentBackgroundContainer.style.display = '';
+			} else {
+				currentBackgroundContainer.style.display = 'none';
 			}
 		}
 		updateTwoFaButtons();
@@ -383,12 +393,19 @@ addListener(
 		const avatarFileInput = form.querySelector<HTMLInputElement>(
 			'input[name="avatar-file"]'
 		);
+		const backgroundUrlInput = form.querySelector<HTMLInputElement>(
+			'input[name="background"]'
+		);
+		const backgroundFileInput = form.querySelector<HTMLInputElement>(
+			'input[name="background-file"]'
+		);
 		
 		if (!displayNameInput || !bioInput || !avatarUrlInput) return;
 		
 		const displayName = displayNameInput.value.trim();
 		const bio = bioInput.value.trim();
 		const avatarUrl = avatarUrlInput.value.trim();
+		const backgroundUrl = backgroundUrlInput?.value.trim() || '';
 		
 		let body: any = {};
 		if (displayName) body.displayName = displayName;
@@ -435,6 +452,48 @@ addListener(
 			alert('Avatar upload failed.');
 			return;
 		}
+
+		// Handle background upload: file first, then URL
+		try {
+			if (backgroundFileInput && backgroundFileInput.files && backgroundFileInput.files.length > 0) {
+				const fd = new FormData();
+				fd.append('file', backgroundFileInput.files[0]);
+				const upRes = await fetch('/api/users/data/imgs/background', {
+					method: 'POST',
+					credentials: 'include',
+					body: fd,
+				});
+				const upData = await upRes.json().catch(() => ({}));
+				if (!upRes.ok) {
+					alert(upData.error || 'Failed to upload background file.');
+					return;
+				}
+				if (upData.fileName) body.backgroundPicture = upData.fileName;
+			} else if (backgroundUrl) {
+				// If background field looks like a remote URL, attempt server-side download
+				if (/^https?:\/\//i.test(backgroundUrl)) {
+					
+					const urlRes = await fetch('/api/users/data/imgs/background-url', {
+						method: 'POST',
+						credentials: 'include',
+						headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+						body: JSON.stringify({ url: backgroundUrl })
+					});
+					const urlData = await urlRes.json().catch(() => ({}));
+					
+					if (!urlRes.ok) {
+						alert(urlData.error || 'Failed to download background from URL.');
+						return;
+					}
+					if (urlData.fileName) body.backgroundPicture = urlData.fileName;
+				} else {
+					body.backgroundPicture = backgroundUrl;
+				}
+			}
+		} catch (err) {
+			alert('Background upload failed.');
+			return;
+		}
 		
 		if (Object.keys(body).length === 0) {
 			return;
@@ -463,6 +522,18 @@ addListener(
 				} else {
 					const currentAvatarContainer = document.getElementById('current-avatar-container');
 					if (currentAvatarContainer) currentAvatarContainer.style.display = 'none';
+				}
+				// Update displayed background if server returned a fileName
+				if (body.backgroundPicture) {
+					const currentBackgroundContainer = document.getElementById('current-background-container');
+					const currentBackgroundImage = document.querySelector<HTMLImageElement>('#current-background');
+					if (currentBackgroundContainer && currentBackgroundImage) {
+						currentBackgroundImage.src = `/api/users/data/imgs/${body.backgroundPicture}`;
+						currentBackgroundContainer.style.display = '';
+					}
+				} else {
+					const currentBackgroundContainer = document.getElementById('current-background-container');
+					if (currentBackgroundContainer) currentBackgroundContainer.style.display = 'none';
 				}
 				// Fetch latest user data and update navbar
 				try {
@@ -883,7 +954,10 @@ oauthButtons.forEach((button) => {
 // Avatar input toggle logic
 const avatarFileGroup = document.getElementById('avatar-file-group');
 const avatarUrlGroup = document.getElementById('avatar-url-group');
+const backgroundFileGroup = document.getElementById('background-file-group');
+const backgroundUrlGroup = document.getElementById('background-url-group');
 const avatarModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="avatar-mode"]');
+const backgroundModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="background-mode"]');
 
 avatarModeRadios.forEach(radio => {
 	radio.addEventListener('change', () => {
@@ -898,6 +972,24 @@ avatarModeRadios.forEach(radio => {
 				if (avatarFileGroup) avatarFileGroup.style.display = 'none';
 				if (avatarUrlGroup) avatarUrlGroup.style.display = '';
 				if (avatarUrlInput) avatarUrlInput.value = '';
+			}
+		}
+	});
+});
+
+backgroundModeRadios.forEach(radio => {
+	radio.addEventListener('change', () => {
+		if (radio.checked) {
+			const backgroundFileInput = document.querySelector<HTMLInputElement>('input[name="background-file"]');
+			const backgroundUrlInput = document.querySelector<HTMLInputElement>('input[name="background"]');
+			if (radio.value === 'file') {
+				if (backgroundFileGroup) backgroundFileGroup.style.display = '';
+				if (backgroundUrlGroup) backgroundUrlGroup.style.display = 'none';
+				if (backgroundFileInput) backgroundFileInput.value = '';
+			} else {
+				if (backgroundFileGroup) backgroundFileGroup.style.display = 'none';
+				if (backgroundUrlGroup) backgroundUrlGroup.style.display = '';
+				if (backgroundUrlInput) backgroundUrlInput.value = '';
 			}
 		}
 	});

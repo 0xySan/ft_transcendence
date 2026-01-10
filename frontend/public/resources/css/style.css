@@ -3294,6 +3294,22 @@ footer {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Background image style for settings page */
+.current-background-image {
+	width: 8rem;
+	height: 4rem;
+
+	margin: 0.25em auto;
+
+	border: 2px solid rgba(var(--sapphire), 0.7);
+	border-radius: 4px;
+
+	display: block;
+
+	object-fit: cover;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
 /* ==========================================================================
 					 Settings: input styles & stable layout
 	 ========================================================================== */

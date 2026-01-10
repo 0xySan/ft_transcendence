@@ -19,6 +19,7 @@ interface ProfileData {
 			username: string;
 			displayName: string | null;
 			profilePicture: string | null;
+			backgroundPicture: string | null;
 			bio: string | null;
 			country: {
 				id: string;
@@ -139,6 +140,21 @@ function updateProfileUI(profileData: ProfileData): void {
 		const bioContent = document.createTextNode(profile.bio || 'No bio available.');
 		bioText.appendChild(bioContent);
 	}
+
+	// Update background image
+	const backgroundImg = document.querySelector('#profile-div') as HTMLImageElement;
+	if (backgroundImg) {
+		if (profile.backgroundPicture) {
+			backgroundImg.style.backgroundImage = `url(/api/users/data/imgs/${profile.backgroundPicture})`;
+			backgroundImg.onerror = () => {
+				backgroundImg.style.backgroundImage = 'none';
+				notify('Failed to load background image', { type: 'error' });
+			};
+		} else {
+			backgroundImg.style.backgroundImage = 'none';
+		}
+	}
+
 	// Update "Add to chat" button visibility
 	const chatButton = document.querySelector('.profile-chat-button') as HTMLButtonElement;
 	if (chatButton) {

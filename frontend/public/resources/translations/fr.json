@@ -141,7 +141,9 @@
         "url": "URL"
       },
       "currentAvatarLabel": "Avatar actuel :",
-      "updateButton": "Mettre à jour le profil"
+      "updateButton": "Mettre à jour le profil",
+      "currentBackgroundLabel": "Arrière-plan actuel :",
+      "backgroundLabel": "Arrière-plan :"
     },
     "securityTitle": "Paramètres de sécurité",
     "security": {

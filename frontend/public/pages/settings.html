@@ -85,6 +85,39 @@
 							<img id="current-avatar" src="" alt="Current Avatar" class="current-avatar-image avatar-circle"/>
 						</span>
 					</div>
+
+					<div class="div-title-and-text-input">
+						<label data-translate-key="settings.profile.backgroundLabel">Background:</label>
+						<div style="display: flex; gap: 1em; align-items: center;">
+							<label><input type="radio" name="background-mode" value="file" checked data-translate-key="settings.profile.avatarMode.file"> File</label>
+							<label><input type="radio" name="background-mode" value="url" data-translate-key="settings.profile.avatarMode.url"> URL</label>
+						</div>
+						<div id="background-file-group">
+							<input
+								type="file"
+								id="background-file"
+								name="background-file"
+								class="form-input-field"
+								accept="image/*"
+							/>
+						</div>
+						<div id="background-url-group" style="display:none;">
+							<input
+								type="text"
+								id="background"
+								name="background"
+								class="form-input-field settings-input"
+								placeholder="Paste image URL or filename"
+							/>
+						</div>
+					</div>
+
+					<div id="current-background-container" class="current-background-container" style="display: none;">
+						<p data-translate-key="settings.profile.currentBackgroundLabel">Current Background:</p>
+						<span style="position: relative; display: inline-block;">
+							<img id="current-background" src="" alt="Current Background" class="current-background-image"/>
+						</span>
+					</div>
 					
 					<button
 					type="submit"

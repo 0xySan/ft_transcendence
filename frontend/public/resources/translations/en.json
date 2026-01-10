@@ -126,7 +126,9 @@
         "url": "URL"
       },
       "currentAvatarLabel": "Current Avatar:",
-      "updateButton": "Update Profile"
+      "updateButton": "Update Profile",
+      "currentBackgroundLabel": "Current Background:",
+      "backgroundLabel": "Background:"
     },
     "securityTitle": "Security Settings",
     "security": {
