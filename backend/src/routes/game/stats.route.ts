@@ -8,18 +8,6 @@ import {
 } from "../../db/index.js";
 import { getRecentGamesByPlayer } from "../../db/wrappers/main/games/games.js";
 
-interface ParticipantRow {
-	participant_id: number;
-	game_id: number;
-	user_id: string;
-	team?: number;
-	score: number;
-	result?: "win" | "loss" | "draw";
-	username?: string;
-	display_name?: string;
-	profile_picture?: string;
-}
-
 export async function gameStatsRoutes(fastify: FastifyInstance) {
 	fastify.post(
 		"/stats",
@@ -50,7 +38,7 @@ export async function gameStatsRoutes(fastify: FastifyInstance) {
 
 				const games = getRecentGamesByPlayer(userId, limit);
 				const recentGames = games.map(game => {
-					const participants = getParticipantsByGameId(game.game_id) as ParticipantRow[];
+					const participants = getParticipantsByGameId(game.game_id);
 					return {
 						id: game.game_id,
 						createdAt: game.created_at,
@@ -61,9 +49,6 @@ export async function gameStatsRoutes(fastify: FastifyInstance) {
 						winnerId: game.winner_id ?? null,
 						participants: participants.map(p => ({
 							userId: p.user_id,
-							username: p.username ?? null,
-							displayName: p.display_name ?? null,
-							profilePicture: p.profile_picture ?? null,
 							team: p.team ?? null,
 							score: p.score,
 							result: p.result ?? null,
