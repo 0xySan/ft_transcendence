@@ -97,8 +97,7 @@ async function handleLogin(event: Event): Promise<void> {
 			}
 			const base = await getTranslatedTextByKey(getUserLang(), 'login.error.loginFailed');
 			const details = err && err.message ? ` (${err.message})` : '.';
-			showErrorMessage(errorTextElement, (base ?? 'Login failed. Please try again later') + details);
-
+			showErrorMessage(errorTextElement, `${base ?? 'Login failed. Please try again later'} ${details}`);
 		});
 	} else {
 		const txt = await getTranslatedTextByKey(getUserLang(), 'login.error.invalidForm');

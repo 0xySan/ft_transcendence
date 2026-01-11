@@ -250,10 +250,10 @@
       "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
       "loadHint": "Scroll up to load previous messages"
     },
-	  "loginPrompt": {
+    "loginPrompt": {
       "text": "Please log in to access the chat feature.",
       "loginButton": "Login"
-	  }
+    }
   },
   "notify": {
     "failedToBlock": "Failed to block {user}",

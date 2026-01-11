@@ -93,11 +93,10 @@ async function handleRegister(event: Event): Promise<void> {
 			const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.registerFailed');
 			showErrorMessage(errorTextElement!, txt ?? 'Register failed. Please try again later.');
 		});
-	} else
-		{
-			const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.formInvalid');
-			showErrorMessage(errorTextElement!, txt ?? 'Form is invalid. Please correct the errors and try again.');
-		}
+	} else {
+		const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.formInvalid');
+		showErrorMessage(errorTextElement!, txt ?? 'Form is invalid. Please correct the errors and try again.');
+	}
 }
 
 /** Verifies the validity of the username input

@@ -125,9 +125,9 @@
       "loadHint": "Desplácese hacia arriba para cargar los mensajes anteriores"
     },
 	  "loginPrompt": {
-	  	"text": "Por favor, inicie sesión para acceder a la función de chat.",
-	  	"loginButton": "Iniciar sesión"
-	  }
+      "text": "Por favor, inicie sesión para acceder a la función de chat.",
+      "loginButton": "Iniciar sesión"
+    }
   },
   "notify": {
     "failedToBlock": "No se pudo bloquear a {user}",

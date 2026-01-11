@@ -248,10 +248,10 @@
       "blockedPlaceholder": "Vous avez bloqué @$user. Débloquez-le pour envoyer des messages.",
       "loadHint": "Défiler vers le haut pour charger les messages précédents"
     },
-	  "loginPrompt": {
-	  	"text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
-	  	"loginButton": "Connexion"
-	  }
+    "loginPrompt": {
+      "text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
+      "loginButton": "Connexion"
+    }
   },
   "notify": {
     "failedToBlock": "Impossible de bloquer {user}",
