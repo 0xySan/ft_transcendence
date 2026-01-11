@@ -3,6 +3,7 @@ export {};
 declare function addListener(target: EventTarget, event: string, handler: EventListenerOrEventListenerObject): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 declare function loadPage(url: string): void;
 declare function updateNavBar(userData: any): void;
 
@@ -105,17 +106,20 @@ async function patchUserToken(totpToken: string): Promise<void> {
         if (res.status === 401 || res.status === 400) {
             const err = await res.json().catch(() => ({ message: 'Invalid code' }));
             console.error('Verification error:', err);
-            alert(err.message || 'Invalid 2FA code');
+            const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.invalidCode');
+            notify(txt || (err.message || 'Invalid 2FA code'), { type: 'warning' });
             inputs.forEach(i => i.value = '');
             if (inputs[0]) inputs[0].focus();
             return;
         }
 
         console.error('Verification failed, status', res.status);
-        alert('Verification failed. Try again later.');
+        const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.verificationFailed');
+        notify(txt || 'Verification failed. Try again later.', { type: 'error' });
     } catch (e) {
         console.error('Network error during verification', e);
-        alert('Network error. Try again.');
+        const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.networkError');
+        notify(txt || 'Network error. Try again.', { type: 'error' });
     } finally {
         inputs.forEach(i => i.disabled = false);
     }
@@ -182,17 +186,20 @@ async function verifyTwoFa(code: string): Promise<void> {
         if (res.status === 401 || res.status === 400) {
             const err = await res.json().catch(() => ({ message: 'Invalid code' }));
             console.error('Verification error:', err);
-            alert(err.message || 'Invalid 2FA code');
+            const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.invalidCode');
+            notify(txt || (err.message || 'Invalid 2FA code'), { type: 'warning' });
             inputs.forEach(i => i.value = '');
             if (inputs[0]) inputs[0].focus();
             return;
         }
 
         console.error('Verification failed, status', res.status);
-        alert('Verification failed. Try again later.');
+        const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.verificationFailed');
+        notify(txt || 'Verification failed. Try again later.', { type: 'error' });
     } catch (e) {
         console.error('Network error during verification', e);
-        alert('Network error. Try again.');
+        const txtNet = await getTranslatedTextByKey(getUserLang(), 'twofa.networkError');
+        notify(txtNet || 'Network error. Try again.', { type: 'error' });
     } finally {
         inputs.forEach(i => i.disabled = false);
     }
@@ -298,14 +305,16 @@ function setupResendButton() {
             });
 
             if (!res.ok) {
-                alert('Failed to send email. Try again later.');
+                const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.failedToSendEmail');
+                notify(txt || 'Failed to send email. Try again later.', { type: 'error' });
                 return;
             }
 
             startResendCooldown();
         } catch (err) {
             console.error(err);
-            alert('Network error. Try again later.');
+            const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.networkError');
+            notify(txt || 'Network error. Try again later.', { type: 'error' });
         }
     });
 }
