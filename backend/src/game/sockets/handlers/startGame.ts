@@ -38,7 +38,8 @@ export function handleGameMessage(
 		payload: {
 			userId: ws.id,
 			gameId: ws.gameId,
-			action: payload.action
+			action: payload.action,
+			noOwnerCheck: false
 		} as socket.workerGamePayload
 	} as socket.message<socket.workerGamePayload>);
 }

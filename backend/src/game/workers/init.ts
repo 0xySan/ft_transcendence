@@ -18,7 +18,6 @@ import * as game from "../workers/game/game.types.js";
 import{ activeGames, workers } from "../../globals.js";
 import WebSocket from "ws";
 import { workerMessage } from "./worker.types.js";
-import { create } from "node:domain";
 
 const NUM_WORKERS = os.cpus().length;
 
@@ -122,7 +121,7 @@ export function assignGameToWorker(uuid: string, ownerId: string, gameConfig: ga
  * @param userId - The unique identifier of the user
  * @returns The game ID as a string if found, otherwise null
  */
-function getGameIdByUser(userId: string): string | null {
+export function getGameIdByUser(userId: string): string | null {
 	// Iterate through active games to find the one containing the userId
 	for (const [gameId, gameObj] of activeGames.entries()) {
 		if (gameObj.players.has(userId)) {

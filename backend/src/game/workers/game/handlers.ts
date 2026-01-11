@@ -71,7 +71,6 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 		if (gameStates.get(game.id) == "playing") {
 			gameStates.set(game.id, "stopped");
 		}
-		console.log("\n\n\n\n\n\n\n\n\n\n\n\nDEBUG: state = ", gameStates);
 		console.log("ID: ", game.id);
 		// if (game.players.length < 2)
 		// 	gameStates.set(payload.gameId, "paused");

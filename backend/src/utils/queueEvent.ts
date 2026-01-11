@@ -1,12 +1,11 @@
 import { FastifyReply } from "fastify";
-import { getConversationMember } from "../db/wrappers/chat/chatConversationMembers.js";
-import { isBlockedBy } from "../db/wrappers/chat/chatUserBlocks.js";
+import { waitingUsers, leaveQueue } from "../routes/game/finding.route.js"
 import { workerData } from "worker_threads";
 
 export type Session = { userId: string; user_id: string; [key: string]: any };
 
 const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_CONNECTIONS_PER_USER = 3;
+const MAX_CONNECTIONS_PER_USER = 25;
 const MAX_TOTAL_CONNECTIONS = 200;
 
 type Client = { userId: string; reply: FastifyReply; heartbeat: NodeJS.Timeout; timeout: NodeJS.Timeout };
@@ -64,6 +63,11 @@ export function addClient(userId: string, reply: FastifyReply, session: Session)
 
 	const cleanup = () => {
 		if (cleaned) return;
+
+		console.log("DEBUG: leaving nwkonwengw\n\n\n");
+
+		leaveQueue(client.userId);
+
 		cleaned = true;
 		clearInterval(client.heartbeat);
 		clearTimeout(client.timeout);
@@ -85,6 +89,23 @@ export function addClient(userId: string, reply: FastifyReply, session: Session)
 	return client;
 }
 
+export function closeClientById(userId: string) {
+	for (const set of clients.values()) {
+		for (const client of set) {
+			if (client.userId === userId) {
+				clearInterval(client.heartbeat);
+				clearTimeout(client.timeout);
+				try {
+					client.reply.raw.end();
+				} catch (err) {
+					console.error('Error closing client:', err);
+				}
+				return;
+			}
+		}
+	}
+}
+
 export function closeAll() {
 	for (const set of clients.values()) {
 		for (const client of set) {
@@ -98,38 +119,4 @@ export function closeAll() {
 		}
 	}
 	clients.clear();
-}
-
-export function broadcastTo(userId: string, event: string, payload: any) {
-	const set = clients.get(userId);
-	if (!set) return;
-	const data = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
-	for (const c of set) safeWrite(c.reply, data);
-}
-
-export function broadcastMessageToParticipants(
-	senderId: string,
-	recipients: string[],
-	payload: { conversationId: number; message: any })
-{
-	try {
-		const senderMember = getConversationMember(payload.conversationId, senderId);
-		if (!senderMember)
-			throw new Error('Unauthorized: Sender is not a member of this conversation');
-
-		for (const recipientId of recipients) {
-			const recipientMember = getConversationMember(payload.conversationId, recipientId);
-			if (!recipientMember)
-				throw new Error(`Unauthorized: Recipient ${recipientId} is not a member of this conversation`);
-			if (isBlockedBy(senderId, recipientId))
-				throw new Error(`Unauthorized: Sender is blocked by recipient ${recipientId}`);
-		}
-		
-		broadcastTo(senderId, "message", payload);
-		for (const r of recipients) broadcastTo(r, "message", payload);
-	} catch (err) {
-		if (err instanceof Error)
-			throw err;
-		throw new Error('Unauthorized: Membership or block verification failed');
-	}
 }

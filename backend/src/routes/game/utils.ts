@@ -50,6 +50,8 @@ export function getGameByCode(code: string) {
 	return null;
 }
 
+
+
 /**
  * Retrieves a public game.
  * @returns list of game is public.
@@ -168,8 +170,11 @@ const parseScoringSettings: Parser<game.ScoringSettings> = raw =>
  * @param raw - The raw configuration object to parse.
  * @returns [boolean, Partial<game.config> | string] - success flag and parsed config or error message
  */
-export function parseGameConfig(raw: unknown): [boolean, Partial<game.config> | string] {
-	if (typeof raw !== "object" || raw === null) return [false, "Invalid JSON body"];
+export function parseGameConfig(raw: unknown | null): [boolean, Partial<game.config> | string] {
+	if (raw === null)
+		return [true, getDefaultGameConfig()];
+
+	if (typeof raw !== "object") return [false, "Invalid JSON body"];
 	const data = raw as Record<string, any>;
 	const result: Partial<game.config> = {};
 
@@ -191,4 +196,47 @@ export function parseGameConfig(raw: unknown): [boolean, Partial<game.config> | 
 	}
 
 	return [true, result];
+}
+
+function getDefaultGameConfig(): Partial<game.config> {
+  return {
+    game: {
+      mode: "online",  // Par défaut mode "online"
+      maxPlayers: 2,  // Nombre maximum de joueurs
+      spectatorsAllowed: false,  // Spectateurs autorisés par défaut
+      code: Math.random().toString(36).substring(2, 6).toUpperCase(),
+	  visibility: false
+    },
+    world: {
+      width: 800,  // Largeur par défaut du monde
+      height: 600  // Hauteur par défaut du monde
+    },
+    field: {
+      wallBounce: true,  // Par défaut les murs rebondissent
+      wallThickness: 10  // Epaisseur par défaut des murs
+    },
+    ball: {
+      radius: 10,  // Rayon par défaut de la balle
+      initialSpeed: 400,  // Vitesse initiale de la balle
+      maxSpeed: 800,  // Vitesse maximale de la balle
+      speedIncrement: 20,  // Incrément de vitesse de la balle
+      initialAngleRange: 20,  // Plage d'angle initial de la balle
+      maxBounceAngle: 60,  // Angle maximal de rebond de la balle
+      allowSpin: true,  // Par défaut la balle peut tourner
+      spinFactor: 0.5,  // Facteur de spin par défaut
+      resetOnScore: true  // La balle se réinitialise après un score
+    },
+    paddles: {
+      width: 10,  // Largeur par défaut de la palette
+      height: 80,  // Hauteur par défaut de la palette
+      margin: 20,  // Marge par défaut de la palette
+      maxSpeed: 400,  // Vitesse maximale de la palette
+      acceleration: 1000,  // Accélération par défaut de la palette
+      friction: 0.9  // Frottement par défaut de la palette
+    },
+    scoring: {
+      firstTo: 5,  // Par défaut, c'est un match en "first to 5"
+      winBy: 0  // Par défaut, aucune condition de victoire supplémentaire
+    }
+  };
 }

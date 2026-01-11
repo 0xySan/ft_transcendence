@@ -6,7 +6,7 @@
 import { IncomingMessage } from "http";
 
 import * as socket from "../socket.types.js";
-import { activeGames, wsPendingConnections } from "../../../globals.js";
+import { activeGames, workers, wsPendingConnections } from "../../../globals.js";
 
 import { checkTokenValidity } from '../../../utils/session.js';
 import { addOrRemovePlayerGameWorker } from "../../workers/init.js";
@@ -19,7 +19,7 @@ import { getProfileByUserId } from "../../../db/index.js";
  */
 export function parseConnectPayload(payload: any): socket.payload | null {
 	if (!payload) return null;
-	if (typeof payload.token !== "string") return null;
+	if (typeof payload.token.token !== "string") return null;
 	return {
 		token: payload.token as socket.AuthToken, // ensure type
 	};
@@ -45,6 +45,23 @@ function getCookie(req: IncomingMessage, name: string): string | null {
 }
 
 /**
+ * Checks if the provided token is in the pending connections and hasn't expired.
+ * @param token - The authentication token to check.
+ * @returns true if the token is in pending connections and hasn't expired, false otherwise.
+ */
+function checkTokenInPendingConnections(token: string): [socket.AuthToken, socket.pendingConnection] | undefined {
+    // Parcours de toutes les connexions en attente dans la map
+    for (const [authToken, connection] of wsPendingConnections.entries()) {
+        // Vérification si le token correspond et si la connexion n'est pas expirée
+        if (authToken.token === token && connection.expiresAt > Date.now()) {
+            return [authToken, connection];
+        }
+    }
+
+    return undefined;
+}
+
+/**
  * Handle "connect" message
  * @brief Validates the connection token and establishes the WebSocket connection if valid. 
  * @param ws - WebSocket connection
@@ -60,11 +77,13 @@ export function handleConnectMessage(
 	onSuccess:	() => void
 ) {
 	// Check if the token exists in the pending connections map
-	const pending: socket.pendingConnection | undefined = wsPendingConnections.get(payload.token);
-	if (!pending) {
+	const tokenCheck = checkTokenInPendingConnections(payload.token.token);
+	if (!tokenCheck) {
 		ws.send(JSON.stringify({ type: "error", payload: "Invalid token" }));
 		return ws.close();
 	}
+
+	const [authToken, pending] = tokenCheck;
 
 	// Validate the token/session
 	const cookieSession = getCookie(req, "session");
@@ -84,7 +103,7 @@ export function handleConnectMessage(
 		return ws.close();
 	}
 
-	console.log(`Attemtping to connect user: ${pending.userId} to game: ${pending.gameId} with token: ${payload.token}`);
+	console.log(`Attemtping to connect user: ${pending.userId} to game: ${pending.gameId} with token: ${payload.token.token}`);
 
 	// Token valid -> remove from map
 	wsPendingConnections.delete(payload.token);
@@ -112,4 +131,21 @@ export function handleConnectMessage(
 	}
 	// Send acknowledgment to client
 	ws.send(JSON.stringify({ type: "connect", payload: "Connection established" }));
+
+	if (authToken.start)
+	{
+		const workerEntry = workers.find(w => w.activeGames.includes(ws.gameId));
+		if (!workerEntry) return;
+
+		// Notify the worker to start the game
+		workerEntry.worker.postMessage({
+			type: "game",
+			payload: {
+				userId: ws.id,
+				gameId: ws.gameId,
+				action: "start",
+				noOwnerCheck: true
+			} as socket.workerGamePayload
+		} as socket.message<socket.workerGamePayload>);
+	}
 }

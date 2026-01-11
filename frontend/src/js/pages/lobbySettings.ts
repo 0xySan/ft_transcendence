@@ -25,6 +25,29 @@ declare global {
 /*                                    Utils                                    */
 /* -------------------------------------------------------------------------- */
 
+// addListener(window, 'beforeunload', async function (event: BeforeUnloadEvent) {
+// 	const elem: HTMLElement | null = document.getElementById("lobby-multiplayer-button");
+// 	if (elem && elem.classList.contains("current-mode")) {
+// 		try {
+// 			const response = await fetch("/api/game/leave", {
+// 				method: "POST",
+// 				headers: {
+// 					"Content-Type": "application/json",
+// 				},
+// 				body: JSON.stringify({ settings: currentSettings }),
+// 			});
+	
+// 			if (!response.ok) {
+// 				throw new Error("Request failed");
+// 			}
+	
+// 			notify("You left the queue.", { type: "success" });
+// 		} catch (error) {
+// 			notify("Error leaving the queue.", { type: "error" });
+// 		}
+// 	}
+// });
+
 /** ### getEl
  * - get element by ID + typed
  * @param id - element ID
@@ -485,12 +508,35 @@ function deactivateCustomGameUI(): void {
  * - switching updates active tab + button
  */
 function setupModeSelection(): void {
-	Object.values(modes).forEach(mode => {
-		addListener(mode.button, "click", () => {
+	Object.values(modes).forEach((mode) => {
+		addListener(mode.button, "click", async () => {
+
+			const isMultiplayer: boolean = modes.multiplayer.tab.classList.contains("unloaded");
+
 			Object.values(modes).forEach(m => {
 				m.button.classList.toggle("current-mode", m === mode);
 				m.tab.classList.toggle("unloaded", m !== mode);
 			});
+
+			if (modes.multiplayer.tab.classList.contains("unloaded") && !isMultiplayer) {
+				try {
+					const response = await fetch("/api/game/leave", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ settings: currentSettings }),
+					});
+
+					if (!response.ok) {
+						throw new Error("Request failed");
+					}
+
+					notify("You left the queue.", { type: "success" });
+				} catch (error) {
+					notify("Error leaving the queue.", { type: "error" });
+				}
+			}
 		});
 	});
 }
@@ -656,6 +702,9 @@ function setupSubTabs(): void {
 					throw new Error("Request failed");
 				}
 
+				const data = await response.json();
+				window.dispatchEvent(new CustomEvent("joinQueue", { detail: { socketToken: data.authToken } }));
+
 				notify("You are added in a queue.", { type: "success" });
 			} catch (error) {
 				notify("Error adding in queue.", { type: "error" });
@@ -708,7 +757,7 @@ async function dynLoaderCleanPage() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                    Boot                                      */
+/*                                   Boot                                     */
 /* -------------------------------------------------------------------------- */
 
 window.setPartialLobbyConfig = setPartialLobbyConfig;

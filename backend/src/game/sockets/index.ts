@@ -41,7 +41,7 @@ export function setupWebSocketServer(wss: WebSocketServer) {
 
 		ws.on("close", () => {
 			clearTimeout(tokenTimeout); // clean up on close
-			console.log("DEBUG: player has disconnected !");
+			console.log("DEBUG: player has disconnected !: ", ws.id);
 			addOrRemovePlayerGameWorker(ws.id, ws.displayName, "leave");
 		});
 	});

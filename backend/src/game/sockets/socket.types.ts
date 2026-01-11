@@ -85,7 +85,10 @@ export interface dbPayload {
 /**
  * Authentication token sent by the client at connection.
  */
-export type AuthToken = string;
+export interface AuthToken {
+	token: string;
+	start?: boolean;
+}
 
 /**
  * Payload structure for "connect" message type.
@@ -196,6 +199,7 @@ export interface gamePayload {
 export interface workerGamePayload extends gamePayload {
 	userId:	string;
 	gameId: string;
+	noOwnerCheck?: boolean;
 }
 
 /**

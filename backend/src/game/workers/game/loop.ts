@@ -336,7 +336,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 				return;
 			}
 
-			if (payload.userId && !game.isOwner(payload.userId))
+			if (payload.userId && !game.isOwner(payload.userId) && !payload.noOwnerCheck)
 			{
 				console.log("CANT START GAME: User is not owner");
 				return;

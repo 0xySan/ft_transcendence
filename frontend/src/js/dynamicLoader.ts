@@ -125,14 +125,10 @@ function setupDynamicRouting(): void {
 	// Handle browser back/forward buttons
 	window.addEventListener('popstate', () => {
 		const url = new URL(window.location.href);
-		if (url.pathname === '/' && !url.searchParams.has('song')) {
-			if (contentDiv) contentDiv.innerHTML = '';
-		} else {
-			fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
-				.then(res => res.text())
-				.then(html => updatePage(url.href, html, 'replace'))
-				.catch(err => console.error('Fetch error on popstate:', err));
-		}
+		fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
+			.then(res => res.text())
+			.then(html => updatePage(url.href, html, 'replace'))
+			.catch(err => console.error('Fetch error on popstate:', err));
 	});
 
 	// Initialize forms already present in DOM

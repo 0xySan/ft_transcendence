@@ -46,7 +46,7 @@ export function joinGameRoute(fastify: FastifyInstance) {
 		// Generate a temporary auth token for the websocket connection
 		const authToken = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-		wsPendingConnections.set(authToken, {
+		wsPendingConnections.set({token: authToken}, {
 			userId,
 			gameId,
 			expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes

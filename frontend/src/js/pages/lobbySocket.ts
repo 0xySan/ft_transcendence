@@ -93,7 +93,9 @@ type SocketMessage<T> = {
 };
 
 type ConnectPayload = {
-	token: string;
+	token: {
+		token: string;
+	}
 };
 
 type PlayerSyncPayload = {
@@ -139,12 +141,17 @@ export interface gameStartAckPayload {
 /* -------------------------------------------------------------------------- */
 /* WebSocket                                                                  */
 /* -------------------------------------------------------------------------- */
+
+addListener(window, "joinQueue", (event: CustomEvent) => {
+	connectWebSocket(event.detail.socketToken);
+});
+
 function applyListener(socket: WebSocket, token: string) {
 	addListener(socket, "open", () => {
 		notify('Connected to the game lobby.', { type: 'success' });
 		const msg: SocketMessage<ConnectPayload> = {
 			type: "connect",
-			payload: { token },
+			payload: { token: {token: token} },
 		};
 		socket.send(JSON.stringify(msg));
 
@@ -196,8 +203,9 @@ function applyListener(socket: WebSocket, token: string) {
 }
 
 function connectWebSocket(token: string): void {
-	if (window.socket)
+	if (window.socket) {
 		window.socket.close();
+	}
 
 	const protocol = location.protocol === "https:" ? "wss" : "ws";
 	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
@@ -434,6 +442,9 @@ const lobbyOnline: any = document.getElementById("lobby-select-mode");
 /* Reset                                                                      */
 /* -------------------------------------------------------------------------- */
 function resetLobbyState(): void {
+	const elem = document.getElementById("lobby-multiplayer-tab");
+	if (elem) return;
+
 	if ((window as any).socketPingInterval) {
 		clearInterval((window as any).socketPingInterval);
 		(window as any).socketPingInterval = undefined;
