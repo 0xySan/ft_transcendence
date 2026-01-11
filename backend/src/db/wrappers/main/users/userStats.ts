@@ -4,17 +4,19 @@
  * Provides retrieval, creation, and update utilities for user statistics.
  */
 
+import { execArgv } from "node:process";
 import { db, insertRow, getRow } from "../../../index.js";
 
 // --- Types ---
 export interface UserStats {
 	stat_id: number;
-	user_id: number;
+	user_id: string;
 	elo_rating: number;
 	games_played: number;
 	games_won: number;
 	games_lost: number;
 	level: number;
+	earn_points: number;
 	rank: number;
 	total_play_time: number;
 }
@@ -40,6 +42,7 @@ export function createStats(userId: string): UserStats | undefined {
 		games_played: 0,
 		games_won: 0,
 		games_lost: 0,
+		earn_points: 0,
 		level: 1,
 		rank: 0,
 		total_play_time: 0,

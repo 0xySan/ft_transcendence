@@ -4,10 +4,11 @@
  */
 
 import { db, insertRow, getRow } from "../../../index.js";
+import { v7 as uuidv7 } from "uuid";
 
 // --- Types ---
 export interface Game {
-	game_id: number;
+	game_id: string;
 	created_at: string;
 	duration?: number;
 	mode: "local" | "online" | "tournament";
@@ -15,6 +16,7 @@ export interface Game {
 	score_limit: number;
 	winner_id?: string;
 	max_players: number;
+	points: string;
 }
 
 /**
@@ -22,7 +24,7 @@ export interface Game {
  * @param id - The primary key of the game
  * @returns The game object if found, otherwise undefined
  */
-export function getGameById(id: number): Game | undefined {
+export function getGameById(id: string): Game | undefined {
 	return getRow<Game>("games", "game_id", id);
 }
 
@@ -38,13 +40,26 @@ export function getGameById(id: number): Game | undefined {
 export function createGame(
 	mode: "local" | "online" | "tournament",
 	scoreLimit = 11,
-	maxPlayers = 2
+	maxPlayers = 2,
+	duration: number,
+	status: 'completed' | 'ongoing' | 'abandoned' | 'waiting',
+	winner_id: string | null,
+	points: string,
+	id?: string
 ): Game | undefined {
+
+	const game_id = id ? id : uuidv7();
 	// Insert the new game into the database
 	const game = insertRow<Game>("games", {
+		game_id,
 		mode,
 		score_limit: scoreLimit,
 		max_players: maxPlayers,
+		duration: duration,
+		status: status,
+		created_at: Date.now() - duration,
+		winner_id: winner_id,
+		points: points
 	});
 
 	if (!game) return undefined;
@@ -64,7 +79,7 @@ export function createGame(
  * @returns True if a row was updated, false otherwise
  */
 export function updateGame(
-	gameId: number,
+	gameId: string,
 	updates: Partial<Omit<Game, "game_id" | "created_at">>
 ): boolean {
 	const keys = Object.keys(updates);
@@ -90,4 +105,16 @@ export function getAllGames(): Game[] {
 		ORDER BY created_at DESC
 	`);
 	return stmt.all() as Game[];
+}
+
+export function getRecentGamesByPlayer(playerId: string, limit: number = 10): Game[] {
+	const stmt = db.prepare(`
+		SELECT g.*
+		FROM games g
+		JOIN game_participants gp ON g.game_id = gp.game_id
+		WHERE gp.user_id = @playerId
+		ORDER BY g.created_at DESC
+		LIMIT @limit
+	`);
+	return stmt.all({ playerId, limit }) as Game[];
 }

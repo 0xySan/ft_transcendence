@@ -109,6 +109,14 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 	}
 	return (await res.json()) as T;
 }
+
+function parseApiDate(raw: string): Date {
+	if (!raw) return new Date(NaN);
+	if (/Z$|[+-]\d{2}:\d{2}$/.test(raw)) return new Date(raw);
+	const normalized = raw.replace(' ', 'T');
+	return new Date(`${normalized}Z`);
+}
+
 const visibleStart: Record<string, number> = {};
 const scrollPositions: Record<string, number> = {};
 const loadingOlderMessages: Record<string, boolean> = {};
@@ -240,7 +248,7 @@ function mapApiMessage(
 	return {
 		sender: senderName,
 		text: msg.content,
-		timestamp: new Date(msg.created_at),
+		timestamp: parseApiDate(msg.created_at),
 		type: msg.message_type,
 		inviteState: msg.invite_state || undefined,
 		id: msg.message_id,
@@ -340,6 +348,11 @@ async function loadChatData(): Promise<void> {
 			renderChat();
 			// Keep user list selection state in sync
 			if (initialUser) reorderUserList(initialUser);
+			// Start streaming only if there are users
+			startChatStream();
+		} else {
+			// No users available - show empty state
+			renderEmptyState();
 		}
 	} catch (err) {
 		if (err instanceof Error && err.message.toLowerCase().includes('unauthorized')) {
@@ -1121,19 +1134,8 @@ function renderUserList(onSelectUser: () => void): void {
 
 				if (activeUser)
 					renderChat();
-				else {
-					const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
-					const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
-					const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
-					const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
-					const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
-					const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
-					profileImg.classList.add('hidden');
-					titleSpan.classList.add('hidden');
-					profileLink.classList.add('hidden');
-					headerBlockBtn.classList.add('hidden');
-					form.classList.add('hidden');
-				}
+				else
+					renderEmptyState();
 			});
 		}
 
@@ -1212,7 +1214,9 @@ function refreshInputForUser(user: string): void {
 	}
 }
 
-function updateChatHeader(user: string): void {
+function updateChatHeader(user: string | null): void {
+	if (!user) return;
+
 	const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
 	const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
 	const titleSpan = header.querySelector<HTMLSpanElement>('.chat-header-title')!;
@@ -1286,8 +1290,42 @@ function updateBlockedState(user: string): void {
 	updateChatHeader(user);
 }
 
+function renderEmptyState(): void {
+	// Hide user list UI
+	userListDiv.innerHTML = '';
+
+	// Update header to show no conversations message
+	const header = chatBlock.querySelector<HTMLDivElement>('.chat-header')!;
+	const profileImg = header.querySelector<HTMLImageElement>('.img_profile')!;
+	const titleSpan = document.createElement('span');
+	const profileLink = header.querySelector<HTMLAnchorElement>('.chat-header-profile-pic')!;
+	const headerBlockBtn = header.querySelector<HTMLButtonElement>("[block-button='true']")!;
+
+	profileImg.classList.add('nondisplayable');
+	profileLink.classList.add('nondisplayable');
+	headerBlockBtn.classList.add('nondisplayable');
+	titleSpan.textContent = 'No current available conversations';
+	titleSpan.className = 'chat-header-title';
+	header.appendChild(titleSpan);
+
+	const form = chatBlock.querySelector<HTMLFormElement>('.chat-input-form')!;
+	form.classList.add('hidden');
+
+	userListHidden = !userListHidden;
+	if (userListHidden) userListDiv.classList.add('hidden');
+	else userListDiv.classList.remove('hidden');
+	updateToggleBtnText();
+}
+
 function renderChat(): void {
-	if (!activeUser) return;
+	if (!activeUser) {
+		renderEmptyState();
+		return;
+	}
+
+	// Hide empty state if it was shown
+	const emptyStateDiv = chatBlock.querySelector<HTMLDivElement>('.chat-empty-state');
+	if (emptyStateDiv) emptyStateDiv.classList.add('hidden');
 
 	const currentSelector = `.chat-messages[user="${CSS.escape(activeUser)}"]`;
 	const oldMessagesDiv = chatBlock.querySelector<HTMLDivElement>(currentSelector);
@@ -1661,6 +1699,12 @@ function renderChat(): void {
 export {};
 
 function startChatStream() {
+	// Don't start stream if no users available
+	if (users.length === 0) {
+		console.log('No users available - skipping stream initialization');
+		return;
+	}
+
 	// Close existing connection if any (closing automatically removes all listeners)
 	if (currentEventSource) {
 		currentEventSource.close();
@@ -1840,27 +1884,6 @@ function startChatStream() {
 		// Prevent multiple simultaneous reconnection attempts
 		if (isReconnecting) return;
 		isReconnecting = true;
-		
-		// Check if this is an authentication error
-		try {
-			const response = await fetch('/api/users/me', {
-				method: 'GET',
-				credentials: 'include'
-			});
-			
-			if (response.status === 401) {
-				console.error('Authentication failed. Redirecting to login...');
-				// Stop reconnecting and redirect
-				if (currentEventSource) {
-					currentEventSource.close();
-					currentEventSource = null;
-				}
-				window.loadPage('/');
-				return;
-			}
-		} catch (checkError) {
-			console.warn('Auth check failed:', checkError);
-		}
 		
 		// Check if we've hit max attempts
 		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {

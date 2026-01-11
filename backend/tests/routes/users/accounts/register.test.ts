@@ -113,13 +113,13 @@ describe("POST /accounts/register", () => {
 		expect(body.message).toMatch(/missing authentication/i);
 	});
 
-	it("returns 202 if email already exists (no enumeration)", async () => {
+	it("returns 400 if email already registered", async () => {
 		(mocks.main.getUserByEmail as any).mockReturnValue({ user_id: 1 });
 		const payload = { username: "user123", email: "exists@example.com", password: "Aa1!aaaa" };
 		const res = await fastify.inject({ method: "POST", url: "/accounts/register", payload });
-		expect(res.statusCode).toBe(202);
+		expect(res.statusCode).toBe(400);
 		expect(res.json()).toHaveProperty("message");
-		expect(res.json().message).toMatch(/verification email/i);
+		expect(res.json().message).toMatch(/This email is already registered. Please use a different email./i);
 	});
 
 	it("returns 400 if username already taken (no enumeration)", async () => {

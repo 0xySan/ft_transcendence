@@ -13,10 +13,10 @@ const streamPipeline = promisify(pipeline);
 import { updateProfile, getProfileByUserId } from '../db/index.js';
 const USER_IMG_DIR = path.join(process.cwd(), 'userData', 'imgs');
 
-function updateUserAvatarInDb(userId: string | number, avatarUrl: string) {
+function updateUserImageInDb(userId: string | number, field: 'profile_picture' | 'background_picture', imageUrl: string) {
 	const profile = getProfileByUserId(String(userId));
 	if (!profile) throw new Error('Profile not found');
-	return updateProfile(profile.profile_id, { profile_picture: avatarUrl });
+	return updateProfile(profile.profile_id, { [field]: imageUrl });
 }
 
 /**
@@ -38,9 +38,13 @@ function isAllowedImage(buffer: Buffer): boolean {
 }
 
 /**
- * Save an avatar from a remote URL
+ * Save an image from a URL as avatar or background.
+ * @param userId - The user's ID
+ * @param imageUrl - The URL of the image to download
+ * @param type - 'avatar' or 'background'
+ * @returns The saved file name
  */
-export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
+export async function saveImageFromUrl(userId: string, imageUrl: string, type: 'avatar' | 'background') {
 	const res = await fetch(imageUrl);
 	if (!res.ok) {
 		throw new Error(`Failed to download image: ${res.statusText}`);
@@ -52,7 +56,7 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 	}
 
 	const ext = contentType.split('/')[1] || 'png';
-	const fileName = `avatar_${userId}.${ext}`;
+	const fileName = `${type}_${userId}.${ext}`;
 	const filePath = path.join(USER_IMG_DIR, fileName);
 
 	// Remove existing avatar if exists
@@ -82,16 +86,20 @@ export async function saveAvatarFromUrl(userId: string, imageUrl: string) {
 
 	await fs.promises.writeFile(filePath, buffer);
 
-	updateUserAvatarInDb(userId, fileName);
+	updateUserImageInDb(userId, type === 'avatar' ? 'profile_picture' : 'background_picture', fileName);
 	return fileName;
 }
 
 /**
- * Save an avatar from an uploaded file (e.g. multipart/form-data)
+ * Save an uploaded image file as avatar or background.
+ * @param userId - The user's ID
+ * @param file - The uploaded file object
+ * @param type - 'avatar' or 'background'
+ * @returns The saved file name
  */
-export async function saveAvatarFromFile(userId: string, file: any) {
+export async function saveImageFromFile(userId: string, file: any, type: 'avatar' | 'background') {
 	const fileExt = path.extname(file.filename) || '.png';
-	const fileName = `avatar_${userId}${fileExt}`;
+	const fileName = `${type}_${userId}${fileExt}`;
 	const filePath = path.join(USER_IMG_DIR, fileName);
 
 	// Remove existing avatar if exists
@@ -104,6 +112,6 @@ export async function saveAvatarFromFile(userId: string, file: any) {
 
 	await fs.promises.writeFile(filePath, buffer);
 
-	updateUserAvatarInDb(userId, fileName);
+	updateUserImageInDb(userId, type === 'avatar' ? 'profile_picture' : 'background_picture', fileName);
 	return fileName;
 }

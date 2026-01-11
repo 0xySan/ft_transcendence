@@ -10,7 +10,7 @@ import { v7 as uuidv7 } from "uuid";
 import { db } from "../../../../../src/db/index.js";
 import { createGame, getGameById, updateGame, getAllGames} from "../../../../../src/db/wrappers/main/games/games.js";
 
-let gameId: number;
+let gameId: string;
 let winnerId: string;
 
 beforeAll(() => {
@@ -21,29 +21,33 @@ beforeAll(() => {
 
 	winnerId = uuidv7();
 
-	const user = db.prepare(
+	db.prepare(
 		"INSERT INTO users (user_id, email, password_hash, role_id) VALUES (?, ?, ?, ?)"
 	).run(winnerId, "winner@example.local", "hash", 1);
 });
 
 describe("Games wrapper (DB operations)", () => {
 	it("should create a new game with default values", () => {
-		const game = createGame("local");
+		const game = createGame("local", 11, 2, 0, "waiting", winnerId, "");
 		expect(game).toBeDefined();
 		expect(game?.mode).toBe("local");
 		expect(game?.score_limit).toBe(11);
 		expect(game?.max_players).toBe(2);
 		expect(game?.status).toBe("waiting");
+		expect(game?.winner_id).toBe(winnerId);
+		expect(game?.points).toBe("");
 		if (game) gameId = game.game_id;
 	});
 
 	it("should create a new game with custom values", () => {
-		const game = createGame("online", 21, 4);
+		const game = createGame("online", 21, 4, 5, "waiting", winnerId, "1-0,0-1");
 		expect(game).toBeDefined();
 		expect(game?.mode).toBe("online");
 		expect(game?.score_limit).toBe(21);
 		expect(game?.max_players).toBe(4);
 		expect(game?.status).toBe("waiting");
+		expect(game?.winner_id).toBe(winnerId);
+		expect(game?.points).toBe("1-0,0-1");
 	});
 
 	it("should retrieve a game by its ID", () => {
@@ -54,7 +58,7 @@ describe("Games wrapper (DB operations)", () => {
 	});
 
 	it("should return undefined for non-existing game ID", () => {
-		const game = getGameById(999999);
+		const game = getGameById("999999");
 		expect(game).toBeUndefined();
 	});
 
@@ -115,7 +119,7 @@ describe("Games wrapper (DB operations)", () => {
 	});
 
 	it("should allow null winner_id", () => {
-		const game = createGame("tournament");
+		const game = createGame("tournament", 15, 2, 0, "waiting", null, "");
 		expect(game).toBeDefined();
 		expect(game?.winner_id).toBeUndefined();
 	});
@@ -128,18 +132,18 @@ describe("Games wrapper (DB operations)", () => {
 	});
 
 	it("should fail to create a game with negative score_limit", () => {
-		const game = createGame("local", -10);
+		const game = createGame("local", -10, 2, 0, "waiting", winnerId, "");
 		expect(game).toBeUndefined();
 	});
 
 	it("should fail to create a game with zero max_players", () => {
-		const game = createGame("online", 11, 0);
+		const game = createGame("online", 11, 0, 0, "waiting", winnerId, "");
 		expect(game).toBeUndefined();
 	});
 
 
 	it("should allow setting winner_id to an existing user", () => {
-		const game = createGame("tournament");
+		const game = createGame("tournament", 15, 2, 0, "waiting", winnerId, "");
 		if (game) {
 			const updated = updateGame(game.game_id, { winner_id: winnerId });
 			expect(updated).toBe(true);
