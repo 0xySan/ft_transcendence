@@ -132,6 +132,33 @@ type MatchSlot = {
 	globalId: number;	// unique global match id (1-based)
 };
 
+// ----------------------- Player drag interfaces --------------------------------
+
+/** ### PlayerDragState
+ * Interface representing the drag-and-drop state of the player list.
+ * Contains all runtime data required to manage a reorder interaction.
+ * - **isDragging**: `boolean` indicating if a drag operation is in progress.
+ * - **dragStarted**: `boolean` indicating if the drag has officially started (after threshold).
+ * - **draggedIndex**: `number` representing the index of the player being dragged.
+ * - **pointerId**: `number | null` representing the pointer ID for the drag operation.
+ * - **startY**: `number` representing the starting Y coordinate of the drag.
+ * - **offsetY**: `number` representing the Y offset between pointer and element top.
+ * - **lastPointerY**: `number` representing the last recorded Y coordinate of the pointer.
+ * - **ghostElem**: `HTMLLIElement | null` representing the floating ghost element during drag.
+ * - **placeholderElem**: `HTMLLIElement | null` representing the placeholder element in the list.
+ */
+interface PlayerDragState {
+	isDragging: boolean;
+	dragStarted: boolean;
+	draggedIndex: number;
+	pointerId: number | null;
+	startY: number;
+	offsetY: number;
+	lastPointerY: number;
+	ghostElem: HTMLLIElement | null;
+	placeholderElem: HTMLLIElement | null;
+}
+
 /* ==================================================================
 							PAN & ZOOM FUNCTIONS
    ================================================================== */
@@ -463,17 +490,23 @@ if (!playerListElem || !playerListTemplate)
  * @param players - An array of `tournamentPlayer` objects representing the players.
  */
 function updatePlayerList(players: tournamentPlayer[]): void {
-	playerListElem!.innerHTML = ""; // Clear existing list
+	playersState = players.slice();
+	playerListElem!.innerHTML = "";
 
-	players.forEach((player) => {
-		const listItem = playerListTemplate!.content.cloneNode(true) as HTMLElement;
-		const nameElem = listItem.querySelector(".player-name") as HTMLElement;
-		const rankElem = listItem.querySelector(".player-rank") as HTMLElement;
+	playersState.forEach((player, index) => {
+		const fragment = playerListTemplate!.content.cloneNode(true) as HTMLElement;
+		const item = fragment.querySelector(".player-list-item") as HTMLLIElement;
+
+		const nameElem = item.querySelector(".player-name") as HTMLElement;
+		const rankElem = item.querySelector(".player-rank") as HTMLElement;
 
 		nameElem.textContent = player.name;
 		rankElem.textContent = `Rank: ${player.rank}`;
 
-		playerListElem!.appendChild(listItem);
+		item.dataset.index = String(index);
+
+		addListener(item, "pointerdown", onPlayerPointerDown);
+		playerListElem!.appendChild(item);
 	});
 }
 
@@ -741,6 +774,234 @@ function InitializeBracket(players: tournamentPlayer[]): void {
 	setTimeout(drawConnectors, 0);
 }
 
+/* ==================================================================
+						PLAYER DRAG & DROP
+   ================================================================== */
+
+/** ### playersState
+ * Array holding the current state of players in the tournament.
+ */
+let playersState: tournamentPlayer[] = [];
+
+/** ### playerDragState
+ * Object holding the current drag state for the player list.
+ */
+const playerDragState: PlayerDragState = {
+	isDragging: false,
+	dragStarted: false,
+	draggedIndex: -1,
+	pointerId: null,
+	startY: 0,
+	offsetY: 0,
+	lastPointerY: 0,
+	ghostElem: null,
+	placeholderElem: null,
+};
+
+
+/** The minimum pointer movement (in pixels) required to start a drag operation for player reordering. */
+const DRAG_THRESHOLD = 6;
+
+/** The margin (in pixels) from the top/bottom of the player list to trigger auto-scrolling during drag. */
+const SCROLL_MARGIN = 40;
+
+/** The speed (in pixels per frame) at which the player list auto-scrolls during drag. */
+const SCROLL_SPEED = 16;
+
+
+/** ### getPlayerListItems
+ * Returns all player list items currently in the DOM.
+ */
+function getPlayerListItems(): HTMLLIElement[] {
+	return Array.from(
+		playerListElem!.querySelectorAll<HTMLLIElement>(
+			"li.player-list-item"
+		)
+	);
+}
+
+/** ### onPlayerPointerDown
+ * Initializes the drag state when a pointer is pressed on a player item.
+ * @param event - Pointer event triggered on a list item.
+ */
+function onPlayerPointerDown(event: Event): void {
+	const e = event as PointerEvent;
+	const target = e.currentTarget as HTMLLIElement;
+
+	e.preventDefault();
+
+	playerDragState.isDragging = true;
+	playerDragState.dragStarted = false;
+
+	playerDragState.startY = e.clientY;
+	playerDragState.lastPointerY = e.clientY;
+	playerDragState.draggedIndex = Number(target.dataset.index);
+	playerDragState.pointerId = e.pointerId;
+
+	target.setPointerCapture(e.pointerId);
+}
+
+/** ### startPlayerDrag
+ * Converts a list item into a draggable ghost element and inserts
+ * a placeholder in the list.
+ * @param target - The list item being dragged.
+ * @param event - The triggering pointer event.
+ */
+function startPlayerDrag(
+	target: HTMLLIElement,
+	event: PointerEvent
+): void {
+	playerDragState.dragStarted = true;
+
+	const rect = target.getBoundingClientRect();
+	playerDragState.offsetY = event.clientY - rect.top;
+
+	const ghost = target.cloneNode(true) as HTMLLIElement;
+	ghost.classList.add("drag-ghost");
+	document.body.appendChild(ghost);
+
+	ghost.style.width = `${rect.width}px`;
+	ghost.style.left = `${rect.left}px`;
+	ghost.style.top = `${rect.top}px`;
+
+	const placeholder = document.createElement("li");
+	placeholder.className = "player-placeholder";
+	placeholder.style.height = `${rect.height}px`;
+
+	playerListElem!.insertBefore(placeholder, target);
+	target.remove();
+
+	playerDragState.ghostElem = ghost;
+	playerDragState.placeholderElem = placeholder;
+}
+
+/** ### onPlayerPointerMove
+ * Handles pointer movement during a drag operation.
+ * @param event - Global pointer move event.
+ */
+function onPlayerPointerMove(event: Event): void {
+	if (!playerDragState.isDragging)
+		return;
+
+	const e = event as PointerEvent;
+	if (e.pointerId !== playerDragState.pointerId)
+		return;
+
+	const dy = Math.abs(e.clientY - playerDragState.startY);
+
+	if (!playerDragState.dragStarted) {
+		if (dy < DRAG_THRESHOLD)
+			return;
+
+		const target = getPlayerListItems()[playerDragState.draggedIndex];
+		if (!target)
+			return;
+
+		startPlayerDrag(target, e);
+	}
+
+	const ghost = playerDragState.ghostElem;
+	const placeholder = playerDragState.placeholderElem;
+	if (!ghost || !placeholder)
+		return;
+
+	e.preventDefault();
+	playerDragState.lastPointerY = e.clientY;
+
+	const listRect = playerListElem!.getBoundingClientRect();
+	const ghostHeight = ghost.offsetHeight;
+
+	const minY = listRect.top;
+	const maxY = listRect.bottom - ghostHeight;
+
+	const desiredY = e.clientY - playerDragState.offsetY;
+	const clampedY = Math.min(Math.max(desiredY, minY), maxY);
+
+	ghost.style.top = `${clampedY}px`;
+
+	const items = getPlayerListItems();
+	let inserted = false;
+
+	for (const item of items) {
+		const r = item.getBoundingClientRect();
+		const mid = r.top + r.height / 2;
+
+		if (e.clientY < mid) {
+			playerListElem!.insertBefore(placeholder, item);
+			inserted = true;
+			break;
+		}
+	}
+
+	if (!inserted)
+		playerListElem!.appendChild(placeholder);
+
+	handlePlayerAutoScroll();
+}
+
+/** ### handlePlayerAutoScroll
+ * Automatically scrolls the player list when dragging near its edges.
+ */
+function handlePlayerAutoScroll(): void {
+	const rect = playerListElem!.getBoundingClientRect();
+
+	if (playerDragState.lastPointerY < rect.top + SCROLL_MARGIN)
+		playerListElem!.scrollTop -= SCROLL_SPEED;
+	else if (playerDragState.lastPointerY > rect.bottom - SCROLL_MARGIN)
+		playerListElem!.scrollTop += SCROLL_SPEED;
+}
+
+/** ### onPlayerPointerUp
+ * Finalizes the drag operation and updates player order.
+ * @param event - Global pointer up or cancel event.
+ */
+function onPlayerPointerUp(event: Event): void {
+	const e = event as PointerEvent;
+	if (e.pointerId !== playerDragState.pointerId)
+		return;
+
+	playerDragState.isDragging = false;
+
+	if (!playerDragState.dragStarted) {
+		resetPlayerDrag();
+		return;
+	}
+
+	let toIndex = 0;
+
+	for (const child of Array.from(playerListElem!.children)) {
+		if (child === playerDragState.placeholderElem)
+			break;
+		if (child.classList.contains("player-list-item"))
+			toIndex++;
+	}
+
+	const moved = playersState.splice(playerDragState.draggedIndex, 1)[0];
+	playersState.splice(toIndex, 0, moved);
+
+	playersState.forEach((player, index) => {
+		player.rank = index + 1;
+	});
+
+	resetPlayerDrag();
+	updatePlayerList(playersState);
+}
+
+/** ### resetPlayerDrag
+ * Cleans up DOM elements and resets drag state.
+ */
+function resetPlayerDrag(): void {
+	if (playerDragState.ghostElem)
+		playerDragState.ghostElem.remove();
+	if (playerDragState.placeholderElem)
+		playerDragState.placeholderElem.remove();
+
+	playerDragState.ghostElem = null;
+	playerDragState.placeholderElem = null;
+	playerDragState.pointerId = null;
+	playerDragState.draggedIndex = -1;
+	playerDragState.dragStarted = false;
+}
 
 
 /* ==================================================================
@@ -761,6 +1022,11 @@ addListener(document, "touchcancel", onTouchCancel);
 // Add event listener for zooming
 addListener(mapContainer, "wheel", onZoom);
 
+// Add global event listeners for player drag & drop
+addListener(document, "pointermove", onPlayerPointerMove);
+addListener(document, "pointerup", onPlayerPointerUp);
+addListener(document, "pointercancel", onPlayerPointerUp);
+
 // Add event listener with timeout to redraw connectors on window resize
 let resizeTimeout: number | null = null;
 addListener(window, "resize", () => {
@@ -774,7 +1040,7 @@ addListener(window, "resize", () => {
 });
 
 // Example usage (this will be replaced with actual data fetching logic)
-const examplePlayers: tournamentPlayer[] = [
+let examplePlayers: tournamentPlayer[] = [
 	{ id: 1, name: "PlayerOne", rank: 1 },
 	{ id: 2, name: "PlayerTwo", rank: 2 },
 	{ id: 3, name: "PlayerThree", rank: 3 },

@@ -3493,6 +3493,13 @@ button:active {
 
 	display: flex;
 	justify-content: space-between;
+
+	cursor: grab;
+	user-select: none;
+}
+
+.player-list-item:active {
+	cursor: grabbing;
 }
 
 .player-list-item:hover {
@@ -3501,6 +3508,29 @@ button:active {
 
 .player-list-item:hover .player-rank {
 	border-left-color: rgb(var(--surface2));
+}
+
+.drag-ghost {
+	position: fixed;
+	z-index: 10000;
+
+	background-color: rgb(var(--crust));
+
+	border-radius: 4px;
+
+	pointer-events: none;
+	opacity: 0.95;
+
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.player-placeholder {
+	margin: 0.1rem 0.5rem;
+
+	background-color: rgba(255, 255, 255, 0.05);
+	border: 2px dashed rgb(var(--surface1));
+
+	border-radius: 4px;
 }
 
 .player-list-item .player-name {
@@ -3513,8 +3543,8 @@ button:active {
 }
 
 .player-list-item .player-rank {
-
 	width: 4rem;
+
 	margin-left: 0.2rem;
 	padding: 0 0.5rem;
 
