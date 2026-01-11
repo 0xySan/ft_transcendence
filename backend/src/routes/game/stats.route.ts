@@ -5,6 +5,7 @@ import {
 	createStats,
 	getParticipantsByGameId,
 	getStatsByUserId,
+    getProfileByUserId,
 } from "../../db/index.js";
 import { getRecentGamesByPlayer } from "../../db/wrappers/main/games/games.js";
 
@@ -37,7 +38,10 @@ export async function gameStatsRoutes(fastify: FastifyInstance) {
 					: 5;
 
 				const games = getRecentGamesByPlayer(userId, limit);
-				const recentGames = games.map(game => {
+				const requesterProfile = userId ? getProfileByUserId(userId) : undefined;
+				const recentGames = games
+					.filter(game => game.status !== 'ongoing' && game.status !== 'waiting')
+					.map(game => {
 					const participants = getParticipantsByGameId(game.game_id);
 					return {
 						id: game.game_id,
@@ -47,12 +51,19 @@ export async function gameStatsRoutes(fastify: FastifyInstance) {
 						status: game.status,
 						scoreLimit: game.score_limit,
 						winnerId: game.winner_id ?? null,
-						participants: participants.map(p => ({
-							userId: p.user_id,
-							team: p.team ?? null,
-							score: p.score,
-							result: p.result ?? null,
-						})),
+						participants: participants.map(p => {
+							const isRequester = userId && p.user_id === userId;
+							const profile = isRequester ? requesterProfile : getProfileByUserId(p.user_id);
+							return {
+								userId: p.user_id,
+								username: profile?.username ?? null,
+								displayName: profile?.display_name ?? null,
+								profilePicture: profile?.profile_picture ?? null,
+								team: p.team ?? null,
+								score: p.score,
+								result: p.result ?? null,
+							};
+						}),
 					};
 				});
 

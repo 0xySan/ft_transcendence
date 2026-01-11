@@ -65,6 +65,7 @@ function handleRegister(event: Event): void {
 				username: usernameInput!.value,
 				email: emailInput?.value,
 				password: passwordInput?.value,
+				display_name: displayNameInput?.value,
 			})
 		})
 		.then(async res => {
