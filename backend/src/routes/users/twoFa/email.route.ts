@@ -22,7 +22,7 @@ interface twoFaEmailBody {
 const MAX_EMAIL_OTP_ATTEMPTS = 5;
 
 const requestCount: Record<string, { count: number; lastReset: number }> = {};
-const RATE_LIMIT = 10;
+const RATE_LIMIT = 50;
 const RATE_WINDOW = 10 * 60 * 1000;
 
 async function checkEmailOtpRequest(

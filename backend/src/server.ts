@@ -3,6 +3,8 @@ import cookie from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import swaggerPlugin from "./plugins/swagger/index.js";
 import { closeAll,  } from "./utils/chatEvent.js";
+import { WebSocketServer } from 'ws';
+import { Worker } from 'worker_threads';
 
 // Initialize db
 import { db } from "./db/index.js";
@@ -12,8 +14,20 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length !== 64)) {
-  console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
-  process.exit(1);
+	console.error('FATAL: ENCRYPTION_KEY is not set in environment variables.');
+	process.exit(1);
+}
+
+import { setupWebSocketServer } from "./game/sockets/index.js";
+
+/**
+ * This interface with a worker (thread) and a list of players in this.
+ */
+export interface worker {
+	/* This is the worker (thread) with 'parties_per_core' */
+	worker: Worker;
+	/* This is a list with every user_id in game in this worker (thread). */
+	players: string[];
 }
 
 if (process.env.DOMAIN_NAME === undefined || process.env.DOMAIN_NAME.length === 0) {
@@ -31,7 +45,7 @@ async function buildServer() {
 
 	// Register cookie plugin
 	app.register(cookie, {
-		secret: process.env.COOKIE_SECRET, // for signing cookies
+		secret: process.env.COOKIE_SECRET,
 	});
 
 	// Register multipart plugin for file uploads
@@ -55,18 +69,25 @@ async function buildServer() {
 }
 
 async function start() {
-	const app = await buildServer();
+	try{
+		const app = await buildServer();
+		await app.ready();
 
-	try {
-		await app.listen({ port: SERVER_PORT, host: HOST });
-		app.log.info(`Backend listening on http://${HOST}:${SERVER_PORT}`);
+		const server = app.server;
+
+		const wss = new WebSocketServer({ server });
+		setupWebSocketServer(wss);
+
+		
+		server.listen(SERVER_PORT, HOST, () => {
+			console.log(`Server listening on http://${HOST}:${SERVER_PORT}`);
+		});
 	} catch (err) {
-		app.log.error(err);
+		console.error('Error starting server:', err);
 		process.exit(1);
 	}
 }
 
-// Graceful shutdown on signals
 process.on("SIGINT", async () => {
 	console.log("SIGINT received, shutting down");
 	try {

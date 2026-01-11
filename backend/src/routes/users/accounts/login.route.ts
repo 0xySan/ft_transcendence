@@ -146,10 +146,11 @@ export async function newUserLoginRoutes(fastify: FastifyInstance) {
 			if (!upgraded)
 				return reply.status(500).send({ message: "Failed to upgrade session." });
 
+			const isSecureReq = request.headers['x-forwarded-proto'] === 'https' || (request as any).protocol === 'https' || process.env.NODE_ENV === 'production';
 			reply.setCookie("session", cookieToken, {
 				path: "/",
 				httpOnly: true,
-				secure: process.env.NODE_ENV !== "test",
+				secure: isSecureReq,
 				sameSite: "strict",
 				maxAge: 60 * 60 * 2
 			});

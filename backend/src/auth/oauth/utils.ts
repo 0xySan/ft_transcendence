@@ -47,7 +47,7 @@ export async function createFullOrPartialSession(userId: string, request: Fastif
 	reply.setCookie('session', session.token, {
 		path: '/',
 		httpOnly: true,
-		secure: process.env.NODE_ENV !== 'test',
+		secure: (request.headers['x-forwarded-proto'] === 'https' || (request as any).protocol === 'https' || process.env.NODE_ENV === 'production'),
 		sameSite: 'lax',
 		// 2fa = 10 min else isPersistent ? 30 days : 2 hours
 		maxAge: twoFactorRequired ? 
