@@ -645,11 +645,6 @@ class Paddle {
 		this.y += this.vy * dt;
 
 		// clamp to field
-
-		// console.log("--- PADDLE UPDATE ---");
-		// console.log(this.y);
-		// console.log(this.height);
-		// console.log(this.x)
 		const field = window.lobbySettings!.field;
 		const top = field.wallThickness;
 		const bottom = window.lobbySettings!.world.height - field.wallThickness - this.height;
@@ -770,6 +765,16 @@ class Ball {
 		this.context.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
 		this.context.fill();
 	}
+	/** ### checkGoal
+     * - check if ball went past left or right edge
+     * @returns "left" if ball passed left edge, "right" if passed right edge, null otherwise
+     */
+    checkGoal(): "left" | "right" | null {
+        const world = window.lobbySettings!.world;
+        if (this.x - this.radius < 0) return "left";
+        if (this.x + this.radius > world.width) return "right";
+        return null;
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -814,6 +819,8 @@ class PongBoard {
 	private paddleByPlayerId = new Map<string, Paddle>();
 	/** The Ball instance representing the pong ball. */
 	private ball: Ball;
+    /** Scores for offline mode */
+    private scores = new Map<string, number>();
 
 	/** ### constructor of PongBoard
 	 * @param container - The HTMLDivElement to contain the pong board.
@@ -865,8 +872,57 @@ class PongBoard {
 		for (const p of this.paddles) p.update(dt);
 		if (this.ball) this.ball.update(dt);
 		for (const p of this.paddles) this.ball.checkPaddleCollision(p);
+
+		// Check for goals in offline mode
+		if (window.isGameOffline) {
+			const goal = this.ball.checkGoal();
+			if (goal) {
+				this.handleOfflineGoal(goal);
+			}
+		}
 	}
 
+	    /** ### handleOfflineGoal
+     * - handle goal scoring in offline mode
+     * @param side - which side was scored on ("left" or "right")
+     */
+    private handleOfflineGoal(side: "left" | "right") {
+        const playerSides = window.pendingGameStart!.playerSides;
+        
+        // Find the player who scored (opposite side of goal)
+        for (const [playerId, playerSide] of Object.entries(playerSides)) {
+            const isLeftPlayer = playerSide.includes("left");
+            const isRightPlayer = playerSide.includes("right");
+            
+            // If goal was on left, right player scored
+            if (side === "left" && isRightPlayer) {
+                this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
+            }
+            // If goal was on right, left player scored
+            else if (side === "right" && isLeftPlayer) {
+                this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
+            }
+        }
+        
+        // Update UI
+        const scoresArray = Array.from(this.scores.entries()).map(([playerId, score]) => ({
+            playerId,
+            score
+        }));
+        updateScores(scoresArray);
+        
+        // Reset ball
+        this.ball.reset();
+		// check for win condition
+		const winningScore = window.lobbySettings!.scoring.firstTo;
+		for (const score of this.scores.values()) {
+			if (score >= winningScore) {
+				notify("Game over! A player has reached the winning score.", { type: "success" });
+				stopTimer();
+			}
+			}
+		}
+    
 	/** ### draw
 	 * - draw the pong board and all paddles
 	 */
@@ -901,11 +957,6 @@ class PongBoard {
 			// optional: update width/height in case server changed config
 			(paddle as any).width = pUpdate.width;
 			(paddle as any).height = pUpdate.height;
-		}
-
-		// update scores
-		if (update.scores) {
-			updateScores(update.scores);
 		}
 	}
 	public destroy() {
