@@ -71,9 +71,6 @@ export function playerHandler(msg: msg.message<msg.playerPayload>, games: Map<st
 		if (gameStates.get(game.id) == "playing") {
 			gameStates.set(game.id, "stopped");
 		}
-		console.log("ID: ", game.id);
-		// if (game.players.length < 2)
-		// 	gameStates.set(payload.gameId, "paused");
 		if (game.ownerId === payload.playerId) { // Transfer ownership if the owner leaves
 			game.ownerId = game.players.length > 0 ? game.players[0].id : (game.spectators.length > 0 ? game.spectators[0].id : "");
 			const message : msg.playerSyncPayload = {

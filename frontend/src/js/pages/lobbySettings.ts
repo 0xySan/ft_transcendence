@@ -385,6 +385,11 @@ function wire(): void {
 	});
 
 	addListener(ui.actions.save, "click", () => {
+		if (window.isGameOffline) {
+			window.lobbySettings = structuredClone(currentSettings);
+			notify('Settings saved locally for offline game.', { type: "success" });
+			return;
+		}
 		fetch("/api/game/settings", {
 			method: "POST",
 			headers: {
@@ -407,11 +412,6 @@ function wire(): void {
 /* -------------------------------------------------------------------------- */
 /*                                  Initialization                             */
 /* -------------------------------------------------------------------------- */
-
-// if (window.lobbySettings) {
-// 	selectLobbyMode("online");
-// 	setPartialLobbyConfig(window.lobbySettings);
-// }
 
 /** ### initLobbySettings
  * - initialize lobby settings with optional initial partial settings
@@ -555,14 +555,14 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
 	const joinBtn = ui.actionButtons.joinBtn;
 	const leaveBtn = ui.actionButtons.leaveBtn;
-
+	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
 	let tabMode = document.querySelector("#lobby-mode-buttons");
 	tabMode?.classList.remove("grayed");
 	if (modeKey === "offline") {
 		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.add("unloaded");
 		leaveBtn.classList.remove("unloaded");
-
+		joinBox.classList.add("unloaded");
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
 		let tabMode = document.querySelector("#lobby-mode-buttons");
 		tabMode?.classList.add("grayed");

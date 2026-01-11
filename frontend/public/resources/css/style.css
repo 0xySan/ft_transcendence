@@ -2577,7 +2577,7 @@ button:active {
 }
 
 #digits path {
-	stroke: rgb(var(--blue));
+	stroke: rgb(var(--overlay2));
 	stroke-width: 0.07;
 	stroke-linecap: round;
 	stroke-linejoin: round;
@@ -2587,7 +2587,7 @@ button:active {
 
 #colon {
 	opacity: 0;
-	fill: rgb(var(--blue));
+	fill: rgb(var(--overlay2));
 }
 
 #colon.active {

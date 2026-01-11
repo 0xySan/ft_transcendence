@@ -498,6 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const selectedTheme = btn.getAttribute('data-theme');
 		if (selectedTheme)
 			document.documentElement.setAttribute('data-theme', selectedTheme);
+		window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: selectedTheme } }));
 	});
 
 	const observer = new MutationObserver(() => {
@@ -515,13 +516,14 @@ document.addEventListener('DOMContentLoaded', () => {
 				btn.setAttribute('aria-pressed', 'false');
 			}
 		});
+		window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: currentTheme } }));
 	});
 
 	observer.observe(switcher, { childList: true, subtree: true });
 });
 
 /* =========================================================
-						NOTIFICATIONS
+					NOTIFICATIONS
 ========================================================= */
 
 declare global {

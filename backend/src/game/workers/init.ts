@@ -65,8 +65,6 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				console.log("DEBUG: new participant !");
 			}
 
-			console.log("DEBUG: games = ", getAllGames());
-
 			return;
 		}
 

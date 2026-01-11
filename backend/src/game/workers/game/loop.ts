@@ -12,7 +12,8 @@ import {
 	playerHandler,
 	settingsHandler
 } from "./handlers.js";
-import { parseArgs } from "util";
+
+import { Player } from "./player.class.js";
 
 /* -------------------------------------------------------------------------- */
 /*                                   STATS                                    */
@@ -149,7 +150,7 @@ function stepGame(game: Game, dt: number): void {
 	);
 
 	orderedPlayers.forEach((player, index) => {
-		const p = player as any;
+		const p = player as Player;
 
 		const leftX = field.wallThickness + padCfg.margin;
 		const rightX =
@@ -157,12 +158,6 @@ function stepGame(game: Game, dt: number): void {
 			- field.wallThickness
 			- padCfg.margin
 			- padCfg.width;
-
-	    p.x = index % 2 === 0 ? leftX : rightX;
-		const topY = field.wallThickness + padCfg.margin;
-		const bottomY = world.height - field.wallThickness - padCfg.margin - padCfg.height;
-		if (p.y === undefined || p.y === 0)
-			p.y = index % 2 === 0 ? topY : bottomY;
 
 		if (p.vy === undefined)
 			p.vy = 0;

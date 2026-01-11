@@ -3,7 +3,7 @@ import type { BallSettings, PlayerPayload, Settings } from "../global";
 import type { gameStartAckPayload, PlayerSide, PlayerSideMap } from "./lobbySocket";
 
 /* -------------------------------------------------------------------------- */
-/*                               GLOBAL DECLARATIONS                          */
+/*							   GLOBAL DECLARATIONS						  */
 /* -------------------------------------------------------------------------- */
 
 declare global {
@@ -40,7 +40,7 @@ declare function loadPage(url: string): void;
 
 
 /* -------------------------------------------------------------------------- */
-/*                                   GLOBAL TYPES                             */
+/*								   GLOBAL TYPES							 */
 /* -------------------------------------------------------------------------- */
 
 /** ### KeyName
@@ -77,7 +77,7 @@ interface ClientInputPayload {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                     SANITY CHECKS                          */
+/*									 SANITY CHECKS						  */
 /* -------------------------------------------------------------------------- */
 
 /** ### assertElement
@@ -132,8 +132,35 @@ if (window.isGameOffline) // If we play online
 	if (!window.pendingGameStart) cancelLoading("No pending game start information found.");
 }
 
+function getThemeColors(): { [key: string]: string } {
+	const themeElement = document.documentElement; // Get current theme element
+	const computedStyles = getComputedStyle(themeElement);
+
+	const colors: { [key: string]: string } = {};
+
+	const colorVariables = [
+		'--flamingo', '--maroon', '--sky', '--blue', '--crust', '--mauve', '--red'
+	];
+
+	colorVariables.forEach((variable) => {
+		const colorValue = computedStyles.getPropertyValue(variable).trim();
+		const rgb = `rgb(${colorValue})`;
+		colors[variable] = rgb;
+	});
+
+	return colors;
+}
+
+let currentThemeColors = getThemeColors();
+
+addListener(window, 'themeChange', (event: CustomEvent) => {
+	currentThemeColors = getThemeColors();
+});
+
+
+
 /* -------------------------------------------------------------------------- */
-/*                                      TIMER                                 */
+/*									  TIMER								 */
 /* -------------------------------------------------------------------------- */
 
 // MM:SS morphing timer — uses colon squares and JS-controlled blink,
@@ -393,7 +420,7 @@ function stopTimer() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                   RENDERING                                */
+/*								   RENDERING								*/
 /* -------------------------------------------------------------------------- */
 
 /** ### PongBoardCanvas
@@ -447,7 +474,7 @@ class PongBoardCanvas {
 }
 
 /* -------------------------------------------------------------------------- */
-/*	                          INPUT BUFFER                                    */
+/*							  INPUT BUFFER									*/
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -561,7 +588,7 @@ export class InputBuffer {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 	                                PADDLE                                    */
+/* 									PADDLE									*/
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -581,7 +608,7 @@ class Paddle {
 	/** The CanvasRenderingContext2D for drawing the paddle. */
 	private context: CanvasRenderingContext2D;
 	/** Color of the paddle */
-	private color = "white";
+	private color = "--text";
 	/** InputBuffer instance for managing inputs */
 	public buffer: InputBuffer;
 	/** Up hold state */
@@ -597,7 +624,8 @@ class Paddle {
 	 * @param height - height
 	 * @param context - CanvasRenderingContext2D for drawing
 	 */
-	constructor(x: number, y: number, width: number, height: number, context: CanvasRenderingContext2D) {
+	constructor(x: number, y: number, width: number, height: number, context: CanvasRenderingContext2D, color = "--text") {
+		this.color = color;
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -656,13 +684,13 @@ class Paddle {
 	 * - draw the paddle on the canvas
 	 */
 	draw() {
-		this.context.fillStyle = this.color;
+		this.context.fillStyle = currentThemeColors[this.color] || 'white';
 		this.context.fillRect(this.x, this.y, this.width, this.height);
 	}
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                        BALL                                */
+/*										BALL								*/
 /* -------------------------------------------------------------------------- */
 
 /** ### Ball
@@ -760,25 +788,25 @@ class Ball {
 	 * - render the ball on the canvas
 	 */
 	draw() {
-		this.context.fillStyle = "white";
+		this.context.fillStyle = 'white';
 		this.context.beginPath();
 		this.context.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
 		this.context.fill();
 	}
 	/** ### checkGoal
-     * - check if ball went past left or right edge
-     * @returns "left" if ball passed left edge, "right" if passed right edge, null otherwise
-     */
-    checkGoal(): "left" | "right" | null {
-        const world = window.lobbySettings!.world;
-        if (this.x - this.radius < 0) return "left";
-        if (this.x + this.radius > world.width) return "right";
-        return null;
-    }
+	 * - check if ball went past left or right edge
+	 * @returns "left" if ball passed left edge, "right" if passed right edge, null otherwise
+	 */
+	checkGoal(): "left" | "right" | null {
+		const world = window.lobbySettings!.world;
+		if (this.x - this.radius < 0) return "left";
+		if (this.x + this.radius > world.width) return "right";
+		return null;
+	}
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                     BOARD                                  */
+/*									 BOARD								  */
 /* -------------------------------------------------------------------------- */
 
 interface PaddleUpdate {
@@ -819,8 +847,8 @@ class PongBoard {
 	private paddleByPlayerId = new Map<string, Paddle>();
 	/** The Ball instance representing the pong ball. */
 	private ball: Ball;
-    /** Scores for offline mode */
-    private scores = new Map<string, number>();
+	/** Scores for offline mode */
+	private scores = new Map<string, number>();
 
 	/** ### constructor of PongBoard
 	 * @param container - The HTMLDivElement to contain the pong board.
@@ -835,15 +863,19 @@ class PongBoard {
 			let x: number, y: number;
 			const padW = window.lobbySettings!.paddles.width;
 			const padH = window.lobbySettings!.paddles.height;
-
+			// let color;
 			if (side === "top-left" || side === "bottom-left" || side === "left") x = 50;
 			else x = this.canvas.canvas.width - 50 - padW;
 
 			if (side === "top-left" || side === "top-right") y = 50;
 			else if (side === "bottom-left" || side === "bottom-right") y = this.canvas.canvas.height - 50 - padH;
 			else y = (this.canvas.canvas.height - padH) / 2;
-
-			const paddle = new Paddle(x, y, padW, padH, context);
+			let playerColor;
+			if (side === "top-left" || side === "bottom-left" || side === "left")
+				playerColor = '--red';
+			else
+				playerColor = '--blue';
+			const paddle = new Paddle(x, y, padW, padH, context, playerColor);
 			this.paddles.push(paddle);
 			this.paddleByPlayerId.set(playerId, paddle);
 		}
@@ -882,47 +914,55 @@ class PongBoard {
 		}
 	}
 
-	    /** ### handleOfflineGoal
-     * - handle goal scoring in offline mode
-     * @param side - which side was scored on ("left" or "right")
-     */
-    private handleOfflineGoal(side: "left" | "right") {
-        const playerSides = window.pendingGameStart!.playerSides;
-        
-        // Find the player who scored (opposite side of goal)
-        for (const [playerId, playerSide] of Object.entries(playerSides)) {
-            const isLeftPlayer = playerSide.includes("left");
-            const isRightPlayer = playerSide.includes("right");
-            
-            // If goal was on left, right player scored
-            if (side === "left" && isRightPlayer) {
-                this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
-            }
-            // If goal was on right, left player scored
-            else if (side === "right" && isLeftPlayer) {
-                this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
-            }
-        }
-        
-        // Update UI
-        const scoresArray = Array.from(this.scores.entries()).map(([playerId, score]) => ({
-            playerId,
-            score
-        }));
-        updateScores(scoresArray);
-        
-        // Reset ball
-        this.ball.reset();
+		/** ### handleOfflineGoal
+	 * - handle goal scoring in offline mode
+	 * @param side - which side was scored on ("left" or "right")
+	 */
+	private handleOfflineGoal(side: "left" | "right") {
+		const playerSides = window.pendingGameStart!.playerSides;
+		
+		// Find the player who scored (opposite side of goal)
+		for (const [playerId, playerSide] of Object.entries(playerSides)) {
+			const isLeftPlayer = playerSide.includes("left");
+			const isRightPlayer = playerSide.includes("right");
+			
+			// If goal was on left, right player scored
+			if (side === "left" && isRightPlayer) {
+				this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
+			}
+			// If goal was on right, left player scored
+			else if (side === "right" && isLeftPlayer) {
+				this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
+			}
+		}
+		
+		// Update UI
+		const scoresArray = Array.from(this.scores.entries()).map(([playerId, score]) => ({
+			playerId,
+			score
+		}));
+		updateScores(scoresArray);
+		
+		// Reset ball
+		this.ball.reset();
 		// check for win condition
 		const winningScore = window.lobbySettings!.scoring.firstTo;
 		for (const score of this.scores.values()) {
 			if (score >= winningScore) {
 				notify("Game over! A player has reached the winning score.", { type: "success" });
 				stopTimer();
+				pongBoard.destroy();
+				loadPage("lobby");
+				setTimeout(() => {
+					// Simulate click on offline button to return to offline lobby
+					const offlineBtn = document.getElementById("lobby-offline");
+					if (offlineBtn)	offlineBtn.click();
+				}, 500); 
+				break;
 			}
 			}
 		}
-    
+	
 	/** ### draw
 	 * - draw the pong board and all paddles
 	 */
@@ -959,6 +999,7 @@ class PongBoard {
 			(paddle as any).height = pUpdate.height;
 		}
 	}
+
 	public destroy() {
 	this.canvas.canvas.remove();
 	this.paddles = [];
@@ -968,7 +1009,7 @@ class PongBoard {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 SOCKET / MESSAGES                          */
+/*								 SOCKET / MESSAGES						  */
 /* -------------------------------------------------------------------------- */
 
 /** ### updateScores
@@ -1003,14 +1044,14 @@ function updateScores(scores: { playerId: string; score: number }[]) {
 }
 
 function updatePlayerNames() {
-    const playerSides = window.pendingGameStart!.playerSides;
-    const leftEl = document.getElementById("player-left");
-    const leftBottomEl = document.getElementById("player-left-bottom");
-    const rightBottomEl = document.getElementById("player-right-bottom");
-    const rightEl = document.getElementById("player-right");
+	const playerSides = window.pendingGameStart!.playerSides;
+	const leftEl = document.getElementById("player-left");
+	const leftBottomEl = document.getElementById("player-left-bottom");
+	const rightBottomEl = document.getElementById("player-right-bottom");
+	const rightEl = document.getElementById("player-right");
 	const barBottom = document.getElementById("pong-bar-bottom");
 
-    if (!leftEl || !rightEl || !window.playerNames) return;
+	if (!leftEl || !rightEl || !window.playerNames) return;
 	const hasBottomLeft = Object.values(playerSides).includes("bottom-left");
 	const hasBottomRight = Object.values(playerSides).includes("bottom-right");
 	const hasBottom = hasBottomLeft || hasBottomRight;
@@ -1021,13 +1062,13 @@ function updatePlayerNames() {
 		barBottom?.classList.add("unloaded");
 	}
 
-    for (const [playerId, side] of Object.entries(playerSides)) {
-        const name = window.playerNames[playerId] || playerId;
+	for (const [playerId, side] of Object.entries(playerSides)) {
+		const name = window.playerNames[playerId] || playerId;
 		if (side.includes("bottom-left") && leftBottomEl) leftBottomEl.textContent = name;
 		else if (side.includes("bottom-right") && rightBottomEl) rightBottomEl.textContent = name;
 		else if (side.includes("left")) leftEl.textContent = name;
 		else if (side.includes("right")) rightEl.textContent = name;
-    }
+	}
 }
 
 function handlePlayer(payload: PlayerPayload) {
@@ -1097,7 +1138,7 @@ if (!window.isGameOffline) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 INPUT HANDLING                             */
+/*								 INPUT HANDLING							 */
 /* -------------------------------------------------------------------------- */
 
 addListener(window, "keydown", (event: KeyboardEvent) => handleKey(event, true));
@@ -1113,7 +1154,6 @@ function handleKey(event: KeyboardEvent, pressed: boolean) {
 	if (event.key === "ArrowUp" || event.key === "w") direction = "up";
 	else if (event.key === "ArrowDown" || event.key === "s") direction = "down";
 	if (!direction) return;
-
 	// prevent page scroll on arrow keys
 	event.preventDefault();
 
@@ -1146,7 +1186,7 @@ function handleKey(event: KeyboardEvent, pressed: boolean) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  GAME LOOP                                 */
+/*								  GAME LOOP								 */
 /* -------------------------------------------------------------------------- */
 
 /*### PongGame
@@ -1238,6 +1278,12 @@ class PongGame {
 				const localHold = this.board.playerPaddle.buffer.getCurrentHoldState();
 				this.board.playerPaddle.setHoldState(localHold.up, localHold.down);
 
+				// apply local inputs for player2 in offline mode
+				if (window.isGameOffline && this.board.player2Paddle) {
+					const player2Hold = this.board.player2Paddle.buffer.getCurrentHoldState();
+					this.board.player2Paddle.setHoldState(player2Hold.up, player2Hold.down);
+				}
+
 				// apply remote inputs for other paddles (snapshot or hold-state fallback)
 				for (const paddle of this.board.paddles) {
 					if (paddle === this.board.playerPaddle || (window.isGameOffline && paddle === this.board.player2Paddle)) continue;
@@ -1266,7 +1312,7 @@ class PongGame {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                   BOOTSTRAP                                */
+/*								   BOOTSTRAP								*/
 /* -------------------------------------------------------------------------- */
 
 const pongBoard = new PongBoard(board);
