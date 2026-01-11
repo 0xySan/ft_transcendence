@@ -16,7 +16,7 @@ import { decryptSecret, generateRandomToken, hashString } from '../../utils/cryp
 import { checkTokenValidity } from '../../utils/session.js';
 
 import { createFullOrPartialSession } from '../../auth/oauth/utils.js';
-import { saveAvatarFromUrl } from '../../utils/userData.js';
+import { saveImageFromUrl } from '../../utils/userData.js';
 import { sendMail } from '../../utils/mail/mail.js';
 
 
@@ -178,7 +178,7 @@ async function handleOauthUserCreation(
 	let avatarFileName: string | undefined;
 	if (userInfo.avatar) {
 		try {
-			avatarFileName = await saveAvatarFromUrl(user.user_id.toString(), userInfo.avatar);
+			avatarFileName = await saveImageFromUrl(user.user_id.toString(), userInfo.avatar, 'avatar');
 		} catch (err) {
 			console.error("Failed to save avatar:", err);
 		}
