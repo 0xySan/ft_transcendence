@@ -195,7 +195,26 @@
       "emailOtpError": "Code invalide. Veuillez réessayer.",
       "backupCodesPopupTitle": "Codes de secours",
       "backupCodesInfo": "Veuillez noter ces codes et les conserver en lieu sûr. Chaque code ne peut être utilisé qu'une seule fois.",
-      "closeBackupCodesButton": "Fermer"
+      "closeBackupCodesButton": "Fermer",
+      "invalidCode": "Code invalide",
+      "noTokenReturned": "Aucun jeton renvoyé",
+      "verificationFailed": "Échec de la vérification. Réessayez plus tard.",
+      "networkError": "Erreur réseau. Réessayez.",
+      "failedToSendEmail": "Échec de l'envoi de l'e-mail. Réessayez plus tard."
+    },
+    "alert": {
+      "avatarUploadFailed": "Échec du téléchargement de l'avatar.",
+      "avatarDownloadFailed": "Échec du téléchargement de l'avatar depuis l'URL.",
+      "avatarUploadGenericFailed": "Échec du téléchargement de l'avatar.",
+      "profileUpdated": "Profil mis à jour avec succès.",
+      "displayNameInvalid": "Le nom affiché est invalide.",
+      "profileUpdateFailed": "Échec de la mise à jour du profil.",
+      "newPasswordsMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "passwordUpdated": "Mot de passe mis à jour avec succès.",
+      "currentPasswordIncorrect": "Le mot de passe actuel est incorrect.",
+      "newPasswordInvalid": "Le nouveau mot de passe est invalide.",
+      "passwordUpdateFailed": "Échec de la mise à jour du mot de passe.",
+      "twofaConfigured": "L'authentification à deux facteurs a été configurée avec succès."
     },
     "oauth": {
       "title": "Comptes OAuth",

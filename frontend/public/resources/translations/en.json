@@ -182,6 +182,20 @@
       "Discordunlink": "Unlink Discord",
       "Googlelink": "Link Google",
       "Googleunlink": "Unlink Google"
+    },
+    "alert": {
+      "avatarUploadFailed": "Failed to upload avatar file.",
+      "avatarDownloadFailed": "Failed to download avatar from URL.",
+      "avatarUploadGenericFailed": "Avatar upload failed.",
+      "profileUpdated": "Profile updated successfully.",
+      "displayNameInvalid": "Display name is invalid.",
+      "profileUpdateFailed": "Failed to update profile.",
+      "newPasswordsMismatch": "New passwords do not match.",
+      "passwordUpdated": "Password updated successfully.",
+      "currentPasswordIncorrect": "Current password is incorrect.",
+      "newPasswordInvalid": "New password is invalid.",
+      "passwordUpdateFailed": "Failed to update password.",
+      "twofaConfigured": "Two-factor authentication configured successfully."
     }
   },
   "twofa": {
@@ -210,7 +224,12 @@
     "emailOtpError": "Invalid code. Please try again.",
     "backupCodesPopupTitle": "Backup Codes",
     "backupCodesInfo": "Please write these codes down and keep them safe. Each code can only be used once.",
-    "closeBackupCodesButton": "Close"
+    "closeBackupCodesButton": "Close",
+    "invalidCode": "Invalid code",
+    "noTokenReturned": "No token returned",
+    "verificationFailed": "Verification failed. Try again later.",
+    "networkError": "Network error. Try again.",
+    "failedToSendEmail": "Failed to send email. Try again later."
   },
   "chat": {
     "send": "Send",
