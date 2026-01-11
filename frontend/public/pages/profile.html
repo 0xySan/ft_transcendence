@@ -24,22 +24,8 @@
 			</div>
 		</div>
 		<div class="profile-recent-games nondisplayable">
-			<h2>Recent Games</h2>
+			<h2 class="profile-recent-games-title">Recent Games</h2>
 			<div class="profile-recent-games-content"></div>
-		</div>
-		<div class="profile-stats nondisplayable">
-			<div class="profile-stat">
-				<span class="profile-stat-number">42</span>
-				<span class="profile-stat-label">Games Played</span>
-			</div>
-			<div class="profile-stat">
-				<span class="profile-stat-number">27</span>
-				<span class="profile-stat-label">Wins</span>
-			</div>
-			<div class="profile-stat">
-				<span class="profile-stat-number">15</span>
-				<span class="profile-stat-label">Losses</span>
-			</div>
 		</div>
 	</div>
 </div>
@@ -49,4 +35,33 @@
 	<svg id="nav-pfp-fallback" class="profile-info-img" viewBox="-2 -2 6 8" alt="Default profile picture" role="img">
 		<path d="M 2 0 A 1 1 0 0 0 0 0 A 1 1 0 0 0 2 0 M 3 4 A 1 1 0 0 0 -1 4" fill="currentColor"></path>
 	</svg>
+</template>
+
+<template class="profile-game-item-temp">
+	<div class="profile-game-item">
+		<div class="profile-game-header">
+			<span class="profile-game-mode"></span>
+			<span class="profile-game-date"></span>
+			<span class="profile-game-status"></span>
+		</div>
+		<div class="profile-game-body">
+			<div class="profile-game-left">
+				<div class="profile-game-player-info">
+					<img class="profile-game-pic pic1" alt="Player 1" />
+					<div class="profile-game-name name1"></div>
+				</div>
+				<div class="profile-game-score score1"></div>
+			</div>
+			<div class="profile-game-center">
+				<span class="profile-game-result"></span>
+			</div>
+			<div class="profile-game-right">
+				<div class="profile-game-score score2"></div>
+				<div class="profile-game-player-info">
+					<img class="profile-game-pic pic2" alt="Player 2" />
+					<div class="profile-game-name name2"></div>
+				</div>
+			</div>
+		</div>
+	</div>
 </template>

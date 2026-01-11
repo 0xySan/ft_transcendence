@@ -1,5 +1,7 @@
 export {};
 
+declare function getUserLang(): string;
+
 const params = new URLSearchParams(window.location.search);
 let user: string | null = params.get("user");
 
@@ -118,14 +120,14 @@ function updateStatsUI(gameStats: GameStats): void {
 		if (wlrDiv) {
 			const wins = stats.gamesWon;
 			const losses = stats.gamesLost;
-			const wlr = losses === 0 ? wins : (wins / losses).toFixed(2);
+			const winRate = stats.winRate;
 			const winspan = wlrDiv.querySelector('.profile-stat-wins') as HTMLSpanElement;
 			const lossspan = wlrDiv.querySelector('.profile-stat-losses') as HTMLSpanElement;
 			const wlrspan = wlrDiv.querySelector('.profile-stat-winrate') as HTMLSpanElement;
 
 			if (winspan) winspan.textContent = `🏆 Wins ${wins.toString()} / `;
 			if (lossspan) lossspan.textContent = `💔 Losses ${losses.toString()}`;
-			if (wlrspan) wlrspan.textContent = `📊 Win Rate ${wlr.toString()} / `;
+			if (wlrspan) wlrspan.textContent = `📊 Win Rate ${winRate.toString()}% / `;
 		}
 	}
 
@@ -137,31 +139,108 @@ function updateStatsUI(gameStats: GameStats): void {
 
 	const gamesContent = document.querySelector('.profile-recent-games-content');
 	if (gamesContent) {
+		gamesContent.innerHTML = '';
 		if (recentGames.length === 0) {
-			gamesContent.innerHTML = '<div class="profile-no-games">There is no recent games :(</div>';
+			const gamesTitle = document.querySelector('.profile-recent-games-title');
+			if (gamesTitle) gamesTitle.textContent = 'There is no recent games :(';
 		} else {
-			gamesContent.innerHTML = recentGames.map(game => {
-				const date = new Date(game.createdAt).toLocaleDateString('en-US', {
+			const template = document.querySelector<HTMLTemplateElement>('.profile-game-item-temp');
+			if (!template) {
+				notify('Game item template not found', { type: 'error' });
+				return;
+			}
+			recentGames.forEach(game => {
+				const gameItem = template.content.cloneNode(true) as DocumentFragment;
+				const date = new Date(game.createdAt).toLocaleDateString(getUserLang(), {
 					year: 'numeric',
 					month: 'short',
-					day: 'numeric'
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
 				});
-				const participants = game.participants
-					.map(p => p.displayName || p.username || p.userId)
-					.join(' vs ');
-				return `
-					<div class="profile-game-item">
-						<div class="profile-game-header">
-							<span class="profile-game-mode">${game.mode.toUpperCase()}</span>
-							<span class="profile-game-date">${date}</span>
-						</div>
-						<div class="profile-game-participants">${participants}</div>
-						<div class="profile-game-scores">
-							${game.participants.map(p => `<span class="profile-game-score">${p.score}${p.result ? ' (' + p.result + ')' : ''}</span>`).join(' | ')}
-						</div>
-					</div>
-				`;
-			}).join('');
+				
+				const modeSpan = gameItem.querySelector('.profile-game-mode') as HTMLSpanElement;
+				const dateSpan = gameItem.querySelector('.profile-game-date') as HTMLSpanElement;
+				const statusSpan = gameItem.querySelector('.profile-game-status') as HTMLSpanElement;
+				const resultSpan = gameItem.querySelector('.profile-game-result') as HTMLSpanElement;
+				
+				if (modeSpan) modeSpan.textContent = game.mode.toUpperCase();
+				if (dateSpan) dateSpan.textContent = date;
+				if (statusSpan) statusSpan.textContent = game.status;
+				
+				// Populate left player (first participant)
+				if (game.participants[0]) {
+					const pic1 = gameItem.querySelector('.profile-game-pic.pic1') as HTMLImageElement;
+					const name1 = gameItem.querySelector('.profile-game-name.name1') as HTMLDivElement;
+					const score1 = gameItem.querySelector('.profile-game-score.score1') as HTMLDivElement;
+					
+					if (pic1) {
+						if (game.participants[0].profilePicture) {
+							pic1.src = `/api/users/data/imgs/${game.participants[0].profilePicture}`;
+							pic1.onerror = () => {
+								const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+								const svg = fallback.querySelector('svg');
+								if (svg) {
+									svg.classList.add('profile-game-pic', 'pic1');
+									svg.classList.remove('profile-info-img');
+								}
+								pic1.replaceWith(fallback);
+							};
+						} else {
+							const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+							const svg = fallback.querySelector('svg');
+							if (svg) {
+								svg.classList.add('profile-game-pic', 'pic1');
+								svg.classList.remove('profile-info-img');
+							}
+							pic1.replaceWith(fallback);
+						}
+					}
+					if (name1) name1.textContent = game.participants[0].displayName || game.participants[0].username || game.participants[0].userId;
+					if (score1) score1.textContent = `${game.participants[0].score}`;
+				}
+				
+				// Populate right player (second participant)
+				if (game.participants[1]) {
+					const pic2 = gameItem.querySelector('.profile-game-pic.pic2') as HTMLImageElement;
+					const name2 = gameItem.querySelector('.profile-game-name.name2') as HTMLDivElement;
+					const score2 = gameItem.querySelector('.profile-game-score.score2') as HTMLDivElement;
+					
+					if (pic2) {
+						if (game.participants[1].profilePicture) {
+							pic2.src = `/api/users/data/imgs/${game.participants[1].profilePicture}`;
+							pic2.onerror = () => {
+								const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+								const svg = fallback.querySelector('svg');
+								if (svg) {
+									svg.classList.add('profile-game-pic', 'pic2');
+									svg.classList.remove('profile-info-img');
+								}
+								pic2.replaceWith(fallback);
+							};
+						} else {
+							const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+							const svg = fallback.querySelector('svg');
+							if (svg) {
+								svg.classList.add('profile-game-pic', 'pic2');
+								svg.classList.remove('profile-info-img');
+							}
+							pic2.replaceWith(fallback);
+						}
+					}
+					if (name2) name2.textContent = game.participants[1].displayName || game.participants[1].username || game.participants[1].userId;
+					if (score2) score2.textContent = `${game.participants[1].score}`;
+				}
+				
+				const resultuser = game.participants.find(p => p.userId === viewedUserId);
+				if (resultuser && resultSpan) {
+					const result = resultuser.result || 'N/A';
+					resultSpan.textContent = result.toUpperCase();
+					resultSpan.className = `profile-game-result result-${result.toLowerCase()}`;
+				}
+				
+				gamesContent.appendChild(gameItem);
+			});
 		}
 	}
 }
