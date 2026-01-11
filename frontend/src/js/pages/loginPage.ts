@@ -6,6 +6,7 @@ declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
 declare function loadPage(url: string): void;
 declare function updateNavBar(userData: any): void;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 
 const loginForm = document.querySelector<HTMLFormElement>('.auth-form-container');
 const usernameInput = document.getElementById('username-text-input') as HTMLInputElement | null;
@@ -45,10 +46,10 @@ function refreshNavBarState() {
 /** Handles the login form submission
  * @param event the submit event
  */
-function handleLogin(event: Event): void {
+async function handleLogin(event: Event): Promise<void> {
 	event.preventDefault();
-	const isUsernameValid = verifyUsernameMailValidity();
-	const isPasswordValid = verifyPasswordValidity();
+	const isUsernameValid = await verifyUsernameMailValidity();
+	const isPasswordValid = await verifyPasswordValidity();
 	const checkboxElement: HTMLInputElement | null = document.getElementById('remember-me-checkbox') as HTMLInputElement | null;
 	const inputElement: HTMLInputElement | null = document.getElementById('username-text-input') as HTMLInputElement | null;
 	let errorTextElement: HTMLSpanElement | null = document.getElementById('login-form-error-text');
@@ -86,7 +87,7 @@ function handleLogin(event: Event): void {
 			else
 				throw new Error(data.message || `HTTP ${res.status}`);
 		})
-		.catch(err => {
+		.catch(async err => {
 			console.error('Login error:', err);
 			if (!errorTextElement) {
 				errorTextElement = document.createElement('span');
@@ -94,18 +95,21 @@ function handleLogin(event: Event): void {
 				errorTextElement.classList.add('error-message');
 				loginForm?.appendChild(errorTextElement);
 			}
-			showErrorMessage(errorTextElement,
-    `Login failed. Please try again later${err.message ? ` (${err.message})` : '.'}`);
+			const base = await getTranslatedTextByKey(getUserLang(), 'login.error.loginFailed');
+			const details = err && err.message ? ` (${err.message})` : '.';
+			showErrorMessage(errorTextElement, (base ?? 'Login failed. Please try again later') + details);
 
 		});
-	} else
-		showErrorMessage(errorTextElement!, 'Invalid form input. Please correct the errors and try again.');
+	} else {
+		const txt = await getTranslatedTextByKey(getUserLang(), 'login.error.invalidForm');
+		showErrorMessage(errorTextElement!, txt ?? 'Invalid form input. Please correct the errors and try again.');
+	}
 }
 
 /** Verifies the validity of the username or email input
  * @returns true if the username or email is valid, false otherwise
  */
-function verifyUsernameMailValidity(): boolean {
+async function verifyUsernameMailValidity(): Promise<boolean> {
 	const usernameRegex: RegExp = /^[a-zA-Z0-9_]{3,20}$/;
 	const emailRegex:	RegExp = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
 	const username = usernameInput?.value ?? '';
@@ -120,9 +124,11 @@ function verifyUsernameMailValidity(): boolean {
 	}
 
 	if (!isEmail && !usernameRegex.test(username)) {
-		showErrorMessage(errorTextElement, 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'login.error.usernameRequirements');
+		showErrorMessage(errorTextElement, txt ?? 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.');
 	} else if (isEmail && !emailRegex.test(username)) {
-		showErrorMessage(errorTextElement, 'Please enter a valid email address.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'login.error.invalidEmail');
+		showErrorMessage(errorTextElement, txt ?? 'Please enter a valid email address.');
 	} else {
 		hideErrorMessage(errorTextElement);
 		return (true);
@@ -133,7 +139,7 @@ function verifyUsernameMailValidity(): boolean {
 /** Verifies the validity of the password input
  * @returns true if the password is valid, false otherwise
  */
-function verifyPasswordValidity(): boolean {
+async function verifyPasswordValidity(): Promise<boolean> {
 	const passwordRegex: RegExp = /^.{8,64}$/;
 	const password: string = passwordInput?.value ?? '';
 	let errorTextElement: HTMLSpanElement | null = document.getElementById('login-password-error-text');
@@ -146,7 +152,8 @@ function verifyPasswordValidity(): boolean {
 	}
 
 	if (!passwordRegex.test(password)) {
-		showErrorMessage(errorTextElement, 'Password must be between 8 and 64 characters long.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'login.error.passwordRequirements');
+		showErrorMessage(errorTextElement, txt ?? 'Password must be between 8 and 64 characters long.');
 		return (false);
 	} else {
 		hideErrorMessage(errorTextElement);

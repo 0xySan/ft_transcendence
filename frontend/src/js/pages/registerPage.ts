@@ -3,6 +3,7 @@ export {};
 declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
 declare function getUserLang(): string;
 declare function loadPage(url: string): void;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 
 
 const registerForm = document.querySelector<HTMLFormElement>('.auth-form-container');
@@ -46,12 +47,12 @@ function hideErrorMessage(element: HTMLSpanElement): void {
 /** Handles the register form submission
  * @param event the submit event
  */
-function handleRegister(event: Event): void {
+async function handleRegister(event: Event): Promise<void> {
 	event.preventDefault();
-	const isUsernameValid = verifyUsernameValidity();
-	const isEmailValid = verifyEmailValidity();
-	const isPasswordValid = verifyPasswordValidity();
-	const isConfirmPasswordValid = verifyConfirmPasswordValidity();
+	const isUsernameValid = await verifyUsernameValidity();
+	const isEmailValid = await verifyEmailValidity();
+	const isPasswordValid = await verifyPasswordValidity();
+	const isConfirmPasswordValid = await verifyConfirmPasswordValidity();
 	let errorTextElement: HTMLSpanElement | null = document.getElementById('register-form-error-text');
 
 	if (isUsernameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid) {
@@ -81,7 +82,7 @@ function handleRegister(event: Event): void {
                 }
 			}
 		})
-		.catch(err => {
+		.catch(async err => {
 			console.error('Register error:', err);
 			if (!errorTextElement) {
 				errorTextElement = document.createElement('span');
@@ -89,16 +90,20 @@ function handleRegister(event: Event): void {
 				errorTextElement.classList.add('error-message');
 				registerForm?.appendChild(errorTextElement);
 			}
-			showErrorMessage(errorTextElement!, 'Register failed. Please try again later.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.registerFailed');
+			showErrorMessage(errorTextElement!, txt ?? 'Register failed. Please try again later.');
 		});
 	} else
-		showErrorMessage(errorTextElement!, 'Form is invalid. Please correct the errors and try again.');
+		{
+			const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.formInvalid');
+			showErrorMessage(errorTextElement!, txt ?? 'Form is invalid. Please correct the errors and try again.');
+		}
 }
 
 /** Verifies the validity of the username input
  * @returns true if the username is valid, false otherwise
  */
-function verifyUsernameValidity(): boolean {
+async function verifyUsernameValidity(): Promise<boolean> {
 	const usernameRegex: RegExp = /^[a-zA-Z0-9_]{3,20}$/;
 	const username: string = usernameInput?.value ?? '';
 	let errorTextElement: HTMLElement | null = document.getElementById('register-username-error-text');
@@ -111,7 +116,8 @@ function verifyUsernameValidity(): boolean {
 	}
 
 	if (!usernameRegex.test(username)) {
-		showErrorMessage(errorTextElement as HTMLSpanElement, 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.usernameInvalid');
+		showErrorMessage(errorTextElement as HTMLSpanElement, txt ?? 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.');
 	} else {
 		hideErrorMessage(errorTextElement as HTMLSpanElement);
 		return (true);
@@ -122,7 +128,7 @@ function verifyUsernameValidity(): boolean {
 /** Verifies the validity of the email input
  * @returns true if the email is valid, false otherwise
  */
-function verifyEmailValidity(): boolean {
+async function verifyEmailValidity(): Promise<boolean> {
 	const emailRegex: RegExp = /^[\p{L}\p{N}._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}$/u;
 	const email: string = emailInput?.value ?? '';
 	let errorTextElement: HTMLElement | null = document.getElementById('register-email-error-text');
@@ -135,7 +141,8 @@ function verifyEmailValidity(): boolean {
 	}
 
 	if (!emailRegex.test(email)) {
-		showErrorMessage(errorTextElement as HTMLSpanElement, 'Please enter a valid email address.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.emailInvalid');
+		showErrorMessage(errorTextElement as HTMLSpanElement, txt ?? 'Please enter a valid email address.');
 		return (false);
 	} else {
 		hideErrorMessage(errorTextElement as HTMLSpanElement);
@@ -146,7 +153,7 @@ function verifyEmailValidity(): boolean {
 /** Verifies the validity of the password input
  * @returns true if the password is valid, false otherwise
  */
-function verifyPasswordValidity(): boolean {
+async function verifyPasswordValidity(): Promise<boolean> {
 	const passwordRegex: RegExp = /^.{8,64}$/;
 	const password: string = passwordInput?.value ?? '';
 	let errorTextElement: HTMLElement | null = document.getElementById('register-password-error-text');
@@ -159,7 +166,8 @@ function verifyPasswordValidity(): boolean {
 	}
 
 	if (!passwordRegex.test(password)) {
-		showErrorMessage(errorTextElement as HTMLSpanElement, 'Password must be between 8 and 64 characters long.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.passwordInvalid');
+		showErrorMessage(errorTextElement as HTMLSpanElement, txt ?? 'Password must be between 8 and 64 characters long.');
 		return (false);
 	} else {
 		hideErrorMessage(errorTextElement as HTMLSpanElement);
@@ -170,7 +178,7 @@ function verifyPasswordValidity(): boolean {
 /** Verifies the validity of the confirm password input
  * @returns true if the confirm password matches the password, false otherwise
  */
-function verifyConfirmPasswordValidity(): boolean {
+async function verifyConfirmPasswordValidity(): Promise<boolean> {
 	const password: string = passwordInput?.value ?? '';
 	const confirmPassword: string = confirmPasswordInput?.value ?? '';
 	let errorTextElement: HTMLElement | null = document.getElementById('register-confirm-password-error-text');
@@ -182,8 +190,10 @@ function verifyConfirmPasswordValidity(): boolean {
 		confirmPasswordInput?.parentElement?.appendChild(errorTextElement);
 	}
 
-	if (password !== confirmPassword)
-		showErrorMessage(errorTextElement as HTMLSpanElement, 'Passwords do not match.');
+	if (password !== confirmPassword) {
+		const txt = await getTranslatedTextByKey(getUserLang(), 'register.error.passwordsMismatch');
+		showErrorMessage(errorTextElement as HTMLSpanElement, txt ?? 'Passwords do not match.');
+	}
 	else {
 		hideErrorMessage(errorTextElement as HTMLSpanElement);
 		return (true);

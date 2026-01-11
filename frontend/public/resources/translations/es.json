@@ -79,7 +79,24 @@
     "loginHereLink": "Login here",
     "passwordLabel": "Password:",
     "registerButton": "Register",
-    "usernameLabel": "Username:"
+    "usernameLabel": "Username:",
+    "error": {
+      "registerFailed": "Registro fallido. Por favor, inténtelo de nuevo más tarde.",
+      "formInvalid": "El formulario es inválido. Corregir los errores e inténtelo de nuevo.",
+      "usernameInvalid": "El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras, números y guiones bajos.",
+      "emailInvalid": "Por favor, introduzca una dirección de correo electrónico válida.",
+      "passwordInvalid": "La contraseña debe tener entre 8 y 64 caracteres.",
+      "passwordsMismatch": "Las contraseñas no coinciden."
+    }
+  },
+  "login": {
+    "error": {
+      "loginFailed": "Error de inicio de sesión. Por favor, inténtelo de nuevo más tarde",
+      "invalidForm": "Entrada de formulario inválida. Corrija los errores e inténtelo de nuevo.",
+      "usernameRequirements": "El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras, números y guiones bajos.",
+      "invalidEmail": "Por favor, introduzca una dirección de correo electrónico válida.",
+      "passwordRequirements": "La contraseña debe tener entre 8 y 64 caracteres."
+    }
   },
   "resetPassword": {
     "backToLoginLink": "Back to Login",
@@ -107,9 +124,24 @@
       "blockedPlaceholder": "Has bloqueado a @$user. Desbloquéalo para poder enviarle mensajes.",
       "loadHint": "Desplácese hacia arriba para cargar los mensajes anteriores"
     },
-	"loginPrompt": {
-		"text": "Por favor, inicie sesión para acceder a la función de chat.",
-		"loginButton": "Iniciar sesión"
-	}
+	  "loginPrompt": {
+	  	"text": "Por favor, inicie sesión para acceder a la función de chat.",
+	  	"loginButton": "Iniciar sesión"
+	  }
+  },
+  "notify": {
+    "failedToBlock": "No se pudo bloquear a {user}",
+    "failedToUnblock": "No se pudo desbloquear a {user}",
+    "rateLimit": "Por favor, espere un momento entre mensajes",
+    "messageTooLong": "El mensaje debe tener 4000 caracteres o menos",
+    "conversationEnded": "No puede enviar mensajes: esta conversación ha terminado.",
+    "cannotSendToUser": "No puede enviar mensajes a este usuario",
+    "invalidMessage": "Mensaje inválido: por favor verifique su entrada",
+    "failedToSend": "No se pudo enviar el mensaje: por favor inténtelo de nuevo",
+    "failedToNavigateLobby": "No se pudo navegar al lobby",
+    "cannotInviteUser": "No puede enviar invitaciones a este usuario",
+    "failedToSendInvite": "No se pudo enviar la invitación: por favor inténtelo de nuevo",
+    "failedToLoadConversation": "Error al cargar la conversación",
+    "connectionLost": "Conexión perdida. Por favor actualice la página."
   }
 }

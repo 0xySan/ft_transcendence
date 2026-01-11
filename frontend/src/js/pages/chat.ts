@@ -20,6 +20,7 @@ import { UserData } from "../global";
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getTranslatedElementText(language: string, element: HTMLElement) : Promise<string | null>;
 declare function getUserLang(): string;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -467,7 +468,9 @@ async function blockUserApi(user: string): Promise<boolean> {
 		blockedUsers.add(user);
 		return true;
 	} catch (err) {
-		notify(`Failed to block ${user}`, { type: 'error' });
+			const tplBlock = await getTranslatedTextByKey(LANG, 'notify.failedToBlock');
+			const msgBlock = tplBlock ? tplBlock.replace('{user}', user) : `Failed to block ${user}`;
+			notify(msgBlock, { type: 'error' });
 		console.error('Block user error:', err);
 		return false;
 	} finally {
@@ -494,7 +497,9 @@ async function unblockUserApi(user: string): Promise<boolean> {
 		blockedUsers.delete(user);
 		return true;
 	} catch (err) {
-		notify(`Failed to unblock ${user}`, { type: 'error' });
+		const tplUnblock = await getTranslatedTextByKey(LANG, 'notify.failedToUnblock');
+		const msgUnblock = tplUnblock ? tplUnblock.replace('{user}', user) : `Failed to unblock ${user}`;
+		notify(msgUnblock, { type: 'error' });
 		console.error('Unblock user error:', err);
 		return false;
 	} finally {
@@ -919,13 +924,15 @@ async function submitMessage(
 	// Rate limiting
 	const now = Date.now();
 	if (now - lastMessageTime < MESSAGE_COOLDOWN) {
-		notify('Please slow down - wait a moment between messages', { type: 'warning' });
+		const mRate = await getTranslatedTextByKey(LANG, 'notify.rateLimit');
+		notify(mRate ?? 'Please slow down - wait a moment between messages', { type: 'warning' });
 		return;
 	}
 
 	// Content length validation
 	if (text.length > 4000) {
-		notify('Message must be 4000 characters or less', { type: 'warning' });
+		const mLen = await getTranslatedTextByKey(LANG, 'notify.messageTooLong');
+		notify(mLen ?? 'Message must be 4000 characters or less', { type: 'warning' });
 		return;
 	}
 
@@ -981,15 +988,20 @@ async function submitMessage(
 					// Disable input for this conversation and notify user
 					input.contentEditable = 'false';
 					sendBtn.hidden = true;
-					notify('You cannot send messages: this conversation has ended.', { type: 'warning' });
+					const mConvEnd = await getTranslatedTextByKey(LANG, 'notify.conversationEnded');
+					notify(mConvEnd ?? 'You cannot send messages: this conversation has ended.', { type: 'warning' });
 				} else {
-					notify('You cannot send messages to this user', { type: 'warning' });
+					const mCannot = await getTranslatedTextByKey(LANG, 'notify.cannotSendToUser');
+					notify(mCannot ?? 'You cannot send messages to this user', { type: 'warning' });
 				}
 			}
-			else if (err.message.includes('400'))
-				notify('Invalid message - please check your input', { type: 'warning' });
+			else if (err.message.includes('400')) {
+				const mInvalid = await getTranslatedTextByKey(LANG, 'notify.invalidMessage');
+				notify(mInvalid ?? 'Invalid message - please check your input', { type: 'warning' });
+			}
 			else {
-				notify('Failed to send message - please try again', { type: 'error' });
+				const mFail = await getTranslatedTextByKey(LANG, 'notify.failedToSend');
+				notify(mFail ?? 'Failed to send message - please try again', { type: 'error' });
 				console.error('Send message error:', err);
 			}
 		}
@@ -1024,18 +1036,22 @@ async function sendInvite(user: string): Promise<void> {
 		const msgIndex = conversations[user].length - 1;
 		reorderUserList(user);
 		appendMessageToDOM(inviteMsg, msgIndex);
-		setTimeout(() => {
+		setTimeout(async () => {
 			if (window.loadPage)
 				window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
-			else
-				notify('Failed to navigate to lobby', { type: 'error' });
+			else {
+				const mNav = await getTranslatedTextByKey(LANG, 'notify.failedToNavigateLobby');
+				notify(mNav ?? 'Failed to navigate to lobby', { type: 'error' });
+			}
 		}, NAVIGATION_DELAY);
 	} catch (err) {
 		if (err instanceof Error) {
 			if (err.message.includes('403')) {
-				notify('You cannot send invites to this user', { type: 'warning' });
+				const mCantInvite = await getTranslatedTextByKey(LANG, 'notify.cannotInviteUser');
+				notify(mCantInvite ?? 'You cannot send invites to this user', { type: 'warning' });
 			} else {
-				notify('Failed to send invite - please try again', { type: 'error' });
+				const mFailInvite = await getTranslatedTextByKey(LANG, 'notify.failedToSendInvite');
+				notify(mFailInvite ?? 'Failed to send invite - please try again', { type: 'error' });
 				console.error('Send invite error:', err);
 			}
 		}
@@ -1149,7 +1165,8 @@ async function fetchSingleConversation(conversationId: number): Promise<string |
 
 		return peerName;
 	} catch (err) {
-		notify('Failed to load conversation', { type: 'error' });
+		const mLoadConv = await getTranslatedTextByKey(LANG, 'notify.failedToLoadConversation');
+		notify(mLoadConv ?? 'Failed to load conversation', { type: 'error' });
 		console.error('Failed to fetch conversation:', err);
 		return null;
 	} finally {
@@ -2084,7 +2101,8 @@ function startChatStream() {
 		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 			console.error('Max reconnection attempts reached. Please refresh the page.');
 			isReconnecting = false;
-			notify('Connection lost. Please refresh the page.', { type: 'error' });
+				const mConn = await getTranslatedTextByKey(LANG, 'notify.connectionLost');
+				notify(mConn ?? 'Connection lost. Please refresh the page.', { type: 'error' });
 			return;
 		}
 		

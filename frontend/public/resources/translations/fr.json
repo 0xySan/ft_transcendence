@@ -75,6 +75,13 @@
     "registerHereLink": "Inscrivez-vous ici",
     "rememberMeLabel": "Se souvenir de moi",
     "usernameLabel": "Nom d’utilisateur ou adresse email:"
+    ,"error": {
+      "loginFailed": "Échec de la connexion. Veuillez réessayer plus tard",
+      "invalidForm": "Saisie de formulaire invalide. Veuillez corriger les erreurs et réessayer.",
+      "usernameRequirements": "Le nom d'utilisateur doit comporter entre 3 et 20 caractères et ne peut contenir que des lettres, des chiffres et des underscores.",
+      "invalidEmail": "Veuillez saisir une adresse e-mail valide.",
+      "passwordRequirements": "Le mot de passe doit contenir entre 8 et 64 caractères."
+    }
   },
   "mailverification": {
     "changeEmail": "Changer d’email",
@@ -98,7 +105,15 @@
     "loginHereLink": "Connectez-vous ici",
     "passwordLabel": "Mot de passe :",
     "registerButton": "S’inscrire",
-    "usernameLabel": "Nom d’utilisateur :"
+    "usernameLabel": "Nom d’utilisateur :",
+    "error": {
+      "registerFailed": "Échec de l'inscription. Veuillez réessayer plus tard.",
+      "formInvalid": "Le formulaire est invalide. Veuillez corriger les erreurs et réessayer.",
+      "usernameInvalid": "Le nom d'utilisateur doit comporter entre 3 et 20 caractères et ne peut contenir que des lettres, des chiffres et des underscores.",
+      "emailInvalid": "Veuillez saisir une adresse email valide.",
+      "passwordInvalid": "Le mot de passe doit contenir entre 8 et 64 caractères.",
+      "passwordsMismatch": "Les mots de passe ne correspondent pas."
+    }
   },
   "resetPassword": {
     "backToLoginLink": "Retour à la connexion",
@@ -214,9 +229,24 @@
       "blockedPlaceholder": "Vous avez bloqué @$user. Débloquez-le pour envoyer des messages.",
       "loadHint": "Défiler vers le haut pour charger les messages précédents"
     },
-	"loginPrompt": {
-		"text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
-		"loginButton": "Connexion"
-	}
+	  "loginPrompt": {
+	  	"text": "Veuillez vous connecter pour accéder à la fonctionnalité de chat.",
+	  	"loginButton": "Connexion"
+	  }
+  },
+  "notify": {
+    "failedToBlock": "Impossible de bloquer {user}",
+    "failedToUnblock": "Impossible de débloquer {user}",
+    "rateLimit": "Veuillez patienter un instant entre les messages",
+    "messageTooLong": "Le message doit contenir au maximum 4000 caractères",
+    "conversationEnded": "Vous ne pouvez pas envoyer de messages : cette conversation est terminée.",
+    "cannotSendToUser": "Vous ne pouvez pas envoyer de messages à cet utilisateur",
+    "invalidMessage": "Message invalide : veuillez vérifier votre saisie",
+    "failedToSend": "Échec de l'envoi du message : veuillez réessayer",
+    "failedToNavigateLobby": "Impossible de naviguer vers le lobby",
+    "cannotInviteUser": "Vous ne pouvez pas envoyer d'invitations à cet utilisateur",
+    "failedToSendInvite": "Échec de l'envoi de l'invitation : veuillez réessayer",
+    "failedToLoadConversation": "Impossible de charger la conversation",
+    "connectionLost": "Connexion perdue. Veuillez actualiser la page."
   }
 }
