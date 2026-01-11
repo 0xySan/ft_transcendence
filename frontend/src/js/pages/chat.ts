@@ -2101,8 +2101,8 @@ function startChatStream() {
 		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 			console.error('Max reconnection attempts reached. Please refresh the page.');
 			isReconnecting = false;
-				const mConn = await getTranslatedTextByKey(LANG, 'notify.connectionLost');
-				notify(mConn ?? 'Connection lost. Please refresh the page.', { type: 'error' });
+			const mConn = await getTranslatedTextByKey(LANG, 'notify.connectionLost');
+			notify(mConn ?? 'Connection lost. Please refresh the page.', { type: 'error' });
 			return;
 		}
 		

@@ -74,8 +74,8 @@
     "passwordLabel": "Mot de passe :",
     "registerHereLink": "Inscrivez-vous ici",
     "rememberMeLabel": "Se souvenir de moi",
-    "usernameLabel": "Nom d’utilisateur ou adresse email:"
-    ,"error": {
+    "usernameLabel": "Nom d’utilisateur ou adresse email:",
+    "error": {
       "loginFailed": "Échec de la connexion. Veuillez réessayer plus tard",
       "invalidForm": "Saisie de formulaire invalide. Veuillez corriger les erreurs et réessayer.",
       "usernameRequirements": "Le nom d'utilisateur doit comporter entre 3 et 20 caractères et ne peut contenir que des lettres, des chiffres et des underscores.",

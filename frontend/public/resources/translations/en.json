@@ -76,8 +76,8 @@
     "passwordLabel": "Password:",
     "registerHereLink": "Register here",
     "rememberMeLabel": "Remember me",
-    "usernameLabel": "Username or email:"
-    ,"error": {
+    "usernameLabel": "Username or email:",
+    "error": {
       "loginFailed": "Login failed. Please try again later",
       "invalidForm": "Invalid form input. Please correct the errors and try again.",
       "usernameRequirements": "Username must be 3-20 characters long and can only contain letters, numbers, and underscores.",
@@ -109,12 +109,12 @@
     "registerButton": "Register",
     "usernameLabel": "Username:",
     "error": {
-    "registerFailed": "Register failed. Please try again later.",
-    "formInvalid": "Form is invalid. Please correct the errors and try again.",
-    "usernameInvalid": "Username must be 3-20 characters long and can only contain letters, numbers, and underscores.",
-    "emailInvalid": "Please enter a valid email address.",
-    "passwordInvalid": "Password must be between 8 and 64 characters long.",
-    "passwordsMismatch": "Passwords do not match."
+      "registerFailed": "Register failed. Please try again later.",
+      "formInvalid": "Form is invalid. Please correct the errors and try again.",
+      "usernameInvalid": "Username must be 3-20 characters long and can only contain letters, numbers, and underscores.",
+      "emailInvalid": "Please enter a valid email address.",
+      "passwordInvalid": "Password must be between 8 and 64 characters long.",
+      "passwordsMismatch": "Passwords do not match."
     }
   },
   "resetPassword": {
