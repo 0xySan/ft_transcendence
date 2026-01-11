@@ -3470,11 +3470,58 @@ button:active {
 
 #tournament-player-list {
 	width: 20%;
+	min-width: 20%;
+
+	padding-top: 0.5rem;
 
 	background-color: rgb(var(--crust));
 
 	border: 2px solid rgb(var(--surface0));
 	border-radius: 8px;
+
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.player-list-item {
+	margin-top: 0.1rem;
+	margin-right: 0.5rem;
+	margin-left: 0.5rem;
+	padding: 0.3rem;
+
+	border-radius: 4px;
+
+	display: flex;
+	justify-content: space-between;
+}
+
+.player-list-item:hover {
+	background-color: rgb(var(--base));
+}
+
+.player-list-item:hover .player-rank {
+	border-left-color: rgb(var(--surface2));
+}
+
+.player-list-item .player-name {
+	width: 7rem;
+	min-width: 7rem;
+	max-width: 6rem;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.player-list-item .player-rank {
+
+	width: 4rem;
+	margin-left: 0.2rem;
+	padding: 0 0.5rem;
+
+	font-size: 0.9rem;
+
+	align-self: flex-end;
+	border-left: solid 2px rgb(var(--surface0));
 }
 
 #tournament-map-container {
@@ -3600,6 +3647,26 @@ button:active {
 
 .bracket-end-circle {
 	fill: rgb(var(--maroon));
+}
+
+@media (max-width: 1050px) {
+	#tournament-container {
+		flex-direction: column;
+	}
+	#tournament-player-list {
+		width: 100%;
+		height: 25%;
+	}
+	#tournament-map-container {
+		width: 100%;
+		height: 75%;
+	}
+}
+
+@media (max-width: 450px) {
+	#tournament-container {
+		height: calc(100vh - 9rem);
+	}
 }
 
 /* ==========================================================================
