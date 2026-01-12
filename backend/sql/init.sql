@@ -30,6 +30,18 @@ CREATE TABLE users (
     role_id INTEGER NOT NULL REFERENCES user_roles(role_id)   -- Role/status reference
 );
 
+-- Table: friends
+-- Stores all request for add or reject a friend.
+CREATE TABLE friends (
+    sender_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,       -- Sender of request or first friend
+    target_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,       -- Target of request or second friend
+    status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')),     -- Status of request
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,                                  -- Date of creation
+
+    PRIMARY KEY (sender_user_id, target_user_id),                                   -- Unique identifier
+    CHECK (sender_user_id <> target_user_id)                                        -- Check doublon
+);
+
 -- Table: user_profiles
 -- Stores additional optional profile information for each user.
 CREATE TABLE user_profiles (
