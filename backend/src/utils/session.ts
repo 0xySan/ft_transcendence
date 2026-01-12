@@ -38,6 +38,7 @@ export function createNewSession(userId: string, opts?: {
 		ip: opts?.ip || undefined,
 		user_agent: opts?.userAgent || undefined,
 		last_used_at: Math.floor(Date.now() / 1000),
+		last_request_at: Math.floor(Date.now() / 1000),
 		is_persistent: opts?.isPersistent || false,
 	});
 
