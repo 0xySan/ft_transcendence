@@ -125,9 +125,9 @@ function updateStatsUI(gameStats: GameStats): void {
 			const lossspan = wlrDiv.querySelector('.profile-stat-losses') as HTMLSpanElement;
 			const wlrspan = wlrDiv.querySelector('.profile-stat-winrate') as HTMLSpanElement;
 
-			if (winspan) winspan.textContent = `🏆 Wins ${wins.toString()} / `;
-			if (lossspan) lossspan.textContent = `💔 Losses ${losses.toString()}`;
-			if (wlrspan) wlrspan.textContent = `📊 Win Rate ${winRate.toString()}% / `;
+			if (winspan) winspan.textContent = `Wins ${wins.toString()}`;
+			if (lossspan) lossspan.textContent = `Losses ${losses.toString()}`;
+			if (wlrspan) wlrspan.textContent = `Win Rate ${winRate.toString()}%`;
 		}
 	}
 
@@ -144,12 +144,15 @@ function updateStatsUI(gameStats: GameStats): void {
 			const gamesTitle = document.querySelector('.profile-recent-games-title');
 			if (gamesTitle) gamesTitle.textContent = 'There is no recent games :(';
 		} else {
-			const template = document.querySelector<HTMLTemplateElement>('.profile-game-item-temp');
-			if (!template) {
+			const template2p = document.querySelector<HTMLTemplateElement>('.profile-game-item-temp');
+			const template4p = document.querySelector<HTMLTemplateElement>('.profile-game-item-4p-temp');
+			if (!template2p || !template4p) {
 				notify('Game item template not found', { type: 'error' });
 				return;
 			}
 			recentGames.forEach(game => {
+				const playerCount = game.participants.length;
+				const template = playerCount <= 2 ? template2p : template4p;
 				const gameItem = template.content.cloneNode(true) as DocumentFragment;
 				const date = new Date(game.createdAt).toLocaleDateString(getUserLang(), {
 					year: 'numeric',
@@ -168,68 +171,105 @@ function updateStatsUI(gameStats: GameStats): void {
 				if (dateSpan) dateSpan.textContent = date;
 				if (statusSpan) statusSpan.textContent = game.status;
 				
-				// Populate left player (first participant)
-				if (game.participants[0]) {
-					const pic1 = gameItem.querySelector('.profile-game-pic.pic1') as HTMLImageElement;
-					const name1 = gameItem.querySelector('.profile-game-name.name1') as HTMLDivElement;
-					const score1 = gameItem.querySelector('.profile-game-score.score1') as HTMLDivElement;
-					
-					if (pic1) {
-						if (game.participants[0].profilePicture) {
-							pic1.src = `/api/users/data/imgs/${game.participants[0].profilePicture}`;
-							pic1.onerror = () => {
+				if (playerCount <= 2) {
+					// 2-player game: populate individual players
+					const populatePlayer = (index: number) => {
+						if (!game.participants[index]) return;
+						
+						const participant = game.participants[index];
+						const picClass = `pic${index + 1}`;
+						const nameClass = `name${index + 1}`;
+						const scoreClass = `score${index + 1}`;
+						
+						const pic = gameItem.querySelector(`.profile-game-pic.${picClass}`) as HTMLImageElement;
+						const name = gameItem.querySelector(`.profile-game-name.${nameClass}`) as HTMLDivElement;
+						const score = gameItem.querySelector(`.profile-game-score.${scoreClass}`) as HTMLDivElement;
+						
+						if (pic) {
+							if (participant.profilePicture) {
+								pic.src = `/api/users/data/imgs/${participant.profilePicture}`;
+								pic.onerror = () => {
+									const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+									const svg = fallback.querySelector('svg');
+									if (svg) {
+										svg.classList.add('profile-game-pic', picClass);
+										svg.classList.remove('profile-info-img');
+									}
+									pic.replaceWith(fallback);
+								};
+							} else {
 								const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
 								const svg = fallback.querySelector('svg');
 								if (svg) {
-									svg.classList.add('profile-game-pic', 'pic1');
+									svg.classList.add('profile-game-pic', picClass);
 									svg.classList.remove('profile-info-img');
 								}
-								pic1.replaceWith(fallback);
-							};
-						} else {
-							const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
-							const svg = fallback.querySelector('svg');
-							if (svg) {
-								svg.classList.add('profile-game-pic', 'pic1');
-								svg.classList.remove('profile-info-img');
+								pic.replaceWith(fallback);
 							}
-							pic1.replaceWith(fallback);
 						}
-					}
-					if (name1) name1.textContent = game.participants[0].displayName || game.participants[0].username || game.participants[0].userId;
-					if (score1) score1.textContent = `${game.participants[0].score}`;
-				}
-				
-				// Populate right player (second participant)
-				if (game.participants[1]) {
-					const pic2 = gameItem.querySelector('.profile-game-pic.pic2') as HTMLImageElement;
-					const name2 = gameItem.querySelector('.profile-game-name.name2') as HTMLDivElement;
-					const score2 = gameItem.querySelector('.profile-game-score.score2') as HTMLDivElement;
+						if (name) name.textContent = participant.displayName || participant.username || participant.userId;
+						if (score) score.textContent = `${participant.score}`;
+					};
 					
-					if (pic2) {
-						if (game.participants[1].profilePicture) {
-							pic2.src = `/api/users/data/imgs/${game.participants[1].profilePicture}`;
-							pic2.onerror = () => {
+					for (let i = 0; i < Math.min(playerCount, 2); i++) {
+						populatePlayer(i);
+					}
+				} else {
+					// 4-player game: populate mini players and team scores
+					const populatePlayerMini = (index: number) => {
+						if (!game.participants[index]) return;
+						
+						const participant = game.participants[index];
+						const picClass = `pic${index + 1}`;
+						const nameClass = `name${index + 1}`;
+						
+						const pic = gameItem.querySelector(`.profile-game-pic-mini.${picClass}`) as HTMLImageElement;
+						const name = gameItem.querySelector(`.profile-game-name-mini.${nameClass}`) as HTMLDivElement;
+						
+						if (pic) {
+							if (participant.profilePicture) {
+								pic.src = `/api/users/data/imgs/${participant.profilePicture}`;
+								pic.onerror = () => {
+									const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
+									const svg = fallback.querySelector('svg');
+									if (svg) {
+										svg.classList.add('profile-game-pic-mini', picClass);
+										svg.classList.remove('profile-info-img');
+									}
+									pic.replaceWith(fallback);
+								};
+							} else {
 								const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
 								const svg = fallback.querySelector('svg');
 								if (svg) {
-									svg.classList.add('profile-game-pic', 'pic2');
+									svg.classList.add('profile-game-pic-mini', picClass);
 									svg.classList.remove('profile-info-img');
 								}
-								pic2.replaceWith(fallback);
-							};
-						} else {
-							const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
-							const svg = fallback.querySelector('svg');
-							if (svg) {
-								svg.classList.add('profile-game-pic', 'pic2');
-								svg.classList.remove('profile-info-img');
+								pic.replaceWith(fallback);
 							}
-							pic2.replaceWith(fallback);
 						}
+						if (name) name.textContent = participant.displayName || participant.username || participant.userId;
+					};
+					
+					// Populate all 4 players
+					for (let i = 0; i < Math.min(playerCount, 4); i++) {
+						populatePlayerMini(i);
 					}
-					if (name2) name2.textContent = game.participants[1].displayName || game.participants[1].username || game.participants[1].userId;
-					if (score2) score2.textContent = `${game.participants[1].score}`;
+					
+					// Calculate team scores (team 1: players 1&3, team 2: players 2&4)
+					let leftScore = 0;
+					let rightScore = 0;
+					
+					if (game.participants[0]) leftScore += game.participants[0].score;
+					if (game.participants[1]) leftScore += game.participants[1].score;
+					if (game.participants[2]) rightScore += game.participants[2].score;
+					if (game.participants[3]) rightScore += game.participants[3].score;
+					
+					const scoreLeftSpan = gameItem.querySelector('.profile-game-team-score.score-left') as HTMLSpanElement;
+					const scoreRightSpan = gameItem.querySelector('.profile-game-team-score.score-right') as HTMLSpanElement;
+					
+					if (scoreLeftSpan) scoreLeftSpan.textContent = `${leftScore}`;
+					if (scoreRightSpan) scoreRightSpan.textContent = `${rightScore}`;
 				}
 				
 				const resultuser = game.participants.find(p => p.userId === viewedUserId);
