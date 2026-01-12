@@ -22,6 +22,112 @@ declare global {
 	): void;
 }
 
+/** ### Ball Settings
+ * - settings related to the ball
+ * - Contains:
+ * 		- **radius**: number - ball radius
+ * 		- **initialSpeed**: number - initial speed
+ * 		- **maxSpeed**: number - maximum speed
+ * 		- **speedIncrement**: number - speed increment on hit
+ * 		- **initialAngleRange**: number - initial angle range
+ * 		- **maxBounceAngle**: number - maximum bounce angle
+ * 		- **allowSpin**: boolean - is spin allowed
+ * 		- **spinFactor**: number - spin factor
+ * 		- **resetOnScore**: boolean - reset ball on score
+ */
+export interface BallSettings {
+	radius: number;
+	initialSpeed: number;
+	maxSpeed: number;
+	speedIncrement: number;
+	initialAngleRange: number;
+	maxBounceAngle: number;
+	allowSpin: boolean;
+	spinFactor: number;
+	resetOnScore: boolean;
+}
+
+/** ### Paddle Settings
+ * - settings related to paddles
+ * - Contains:
+ * 		- **width**: number - paddle width
+ * 		- **height**: number - paddle height
+ * 		- **margin**: number - distance from wall
+ * 		- **maxSpeed**: number - maximum speed
+ * 		- **acceleration**: number - acceleration rate
+ * 		- **friction**: number - friction factor
+ */
+export interface PaddleSettings {
+	width: number;
+	height: number;
+	margin: number;
+	maxSpeed: number;
+	acceleration: number;
+	friction: number;
+}
+
+/** ### Field Settings
+ * - settings related to the game field
+ * - Contains:
+ * 		- **wallThickness**: number - thickness of the walls
+ */
+export interface FieldSettings {
+	wallThickness: number;
+}
+
+/** ### World Settings
+ * - settings related to the game world dimensions
+ * - Contains:
+ * 		- **width**: number - world width
+ * 		- **height**: number - world height
+ */
+export interface WorldSettings {
+	width: number;
+	height: number;
+}
+
+/** ### Game Settings
+ * - settings related to game mode and spectators
+ * - Contains:
+ * 		- **mode**: string - game mode
+ * 		- **spectatorsAllowed**: boolean - are spectators allowed
+ */
+export interface GameSettings {
+	mode: string;
+	spectatorsAllowed: boolean;
+	playerCount: 2 | 4;
+}
+
+/** ### Scoring Settings
+ * - settings related to scoring
+ * - Contains:
+ * 		- **firstTo**: number - points to win
+ * 		- **winBy**: number - points difference to win
+ */
+export interface ScoringSettings {
+	firstTo: number;
+	winBy: number;
+}
+
+/** ### Settings
+ * - comprehensive settings interface
+ * - Contains:
+ * 		- **game**: GameSettings
+ * 		- **scoring**: ScoringSettings
+ * 		- **ball**: BallSettings
+ * 		- **paddles**: PaddleSettings
+ * 		- **field**: FieldSettings
+ * 		- **world**: WorldSettings
+ */
+export interface Settings {
+	game: GameSettings;
+	scoring: ScoringSettings;
+	ball: BallSettings;
+	paddles: PaddleSettings;
+	field: FieldSettings;
+	world: WorldSettings;
+}
+
 /* -------------------------------------------------------------------------- */
 /*  							Global   User                                 */
 /* -------------------------------------------------------------------------- */
@@ -72,3 +178,19 @@ export interface UserData {
 	createdAt: string; // ISO date string
 	profile: UserProfile | null;
 }
+
+
+/** ### Player Payload
+ * - type for player join/leave events
+ * - Contains:
+ * 		- **playerId**: string - player ID
+ * 		- **displayName**: string - player display name
+ * 		- **status**: "player" | "spectator" - player status
+ * 		- **action**: "join" | "leave" - action performed
+ */
+export type PlayerPayload = {
+	playerId: string;
+	displayName: string;
+	status: "player" | "spectator";
+	action: "join" | "leave";
+};

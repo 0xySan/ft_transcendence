@@ -8,7 +8,7 @@ import { db, getRow } from "../../../index.js";
 // --- Types ---
 export interface GameParticipant {
 	participant_id: number;
-	game_id: number;
+	game_id: string;
 	user_id: string;
 	team?: number;
 	score: number;
@@ -29,7 +29,7 @@ export function getParticipantById(id: number): GameParticipant | undefined {
  * @param gameId - The game's ID
  * @returns Array of participants for the given game
  */
-export function getParticipantsByGameId(gameId: number): GameParticipant[] {
+export function getParticipantsByGameId(gameId: string): GameParticipant[] {
 	const stmt = db.prepare(`
 		SELECT * FROM game_participants
 		WHERE game_id = ?
@@ -47,17 +47,20 @@ export function getParticipantsByGameId(gameId: number): GameParticipant[] {
  * @returns The created GameParticipant, or undefined if failed
  */
 export function addParticipant(
-	gameId: number,
+	gameId: string,
 	userId: string,
+	score: number,
+	result: 'win' | 'loss' | 'draw',
 	team?: number
 ): GameParticipant | undefined {
 	try {
 		// Insert or ignore to respect UNIQUE(game_id, user_id)
 		const stmt = db.prepare(`
-			INSERT OR IGNORE INTO game_participants (game_id, user_id, team)
-			VALUES (?, ?, ?)
+			INSERT OR IGNORE INTO game_participants (game_id, user_id, team, score, result)
+			VALUES (?, ?, ?, ?, ?)
 		`);
-		const info = stmt.run(gameId, userId, team);
+		const info = stmt.run(gameId, userId, team, score, result);
+		console.log("INSERT changes:", info.changes);
 
 		// If nothing was inserted (duplicate), return undefined
 		if (info.changes === 0) return undefined;
@@ -72,7 +75,6 @@ export function addParticipant(
 		return undefined;
 	}
 }
-
 
 /**
  * Update a participant (score, team, result).

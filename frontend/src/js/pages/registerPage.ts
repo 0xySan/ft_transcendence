@@ -72,8 +72,13 @@ function handleRegister(event: Event): void {
 			if (res.ok) {
 				localStorage.setItem('userEmailForVerification', emailInput?.value || '');
 				loadPage('/mail-verification');
-			} else
-				throw new Error(data.message || `HTTP ${res.status}`);
+			} else {
+                if (data.message && data.message.includes('This email is already registered. Please use a different email.')) {
+                    showErrorMessage(errorTextElement!, 'This email is already registered. Please use a different email.');
+                } else {
+                    throw new Error(data.message || `HTTP ${res.status}`);
+                }
+			}
 		})
 		.catch(err => {
 			console.error('Register error:', err);

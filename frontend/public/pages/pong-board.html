@@ -1,33 +1,63 @@
-<div id="pong-board-page">
-    <div class="info-bar-pong-board">
-        <div class="left-side-username-info">
-            <p style="margin: 0;">USERNAME 1</p>
-        </div>
-        <div id="score-counters">
-            <p id="left-score"  style="margin: 0; font-size: 36px;">9999</p>
-            <p id="score-separator"  style="margin: 0; font-size: 36px;">:</p>
-            <p id="right-score"  style="margin: 0; font-size: 36px;">9999</p>
-        </div>
-        <div class="right-side-username-info">
-            <p style="margin: 0;">USERNAME 2</p>
-        </div>
-    </div>
-    <div class="border-gradient-customizable">
-        <div id="pong-board">
-            <span id="player1"></span>
-            <span id="player2"></span>
-            <span id="player3"></span>
-            <span id="player4"></span>
-            <span id="center-line"></span>
-            <span id="ball"></span>
-        </div>
-    </div>
-    <div class="info-bar-pong-board">
-        <div class="left-side-username-info">
-            <p style="margin: 0;">USERNAME 3</p>
-        </div>
-        <div class="right-side-username-info">
-            <p style="margin: 0;">USERNAME 4</p>
-        </div>
-    </div>
+<div id="pong-page">
+	<!-- Game area -->
+	<main id="pong-board-container">
+		<div class="match-container">
+			<!-- Top bars for players 1 and 2 -->
+			<div class="pong-bars-top">
+				<div class="pong-bar player-bar">
+					<div class="player left">
+						<span id="player-left">PLAYER 1</span>
+					</div>
+					<div>
+						<span id="score-left" class="score-left">0</span>
+					</div>
+				</div>
+				<!-- Center info with timer -->
+				<div class="center-info-top">
+					<div id="match-timer">
+						<svg id="display" viewBox="0 0 14 4" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+							<g id="digits"></g>
+							<g id="colon" transform="translate(7 1)">
+								<!-- we'll place two squares centered at y=0 and y=1.4 -->
+								<rect class="colon-dot" x="-0.12" y="-0.12" width="0.24" height="0.24" rx="0.03"></rect>
+								<rect class="colon-dot" x="-0.12" y="1.28" width="0.24" height="0.24" rx="0.03"></rect>
+							</g>
+						</svg>
+					</div>
+				</div>
+				<div class="pong-bar player-bar">
+					<div>
+						<span id="score-right" class="score-right">0</span>
+					</div>
+					<div class="player right">
+						<span id="player-right">PLAYER 2</span>
+					</div>
+				</div>
+			</div>
+			
+			
+			<!-- Game -->
+			<div id="pong-board"></div>
+			
+			<!-- Bottom bar for players 3 and 4 -->
+			<div class="pong-bars-bottom" id="pong-bar-bottom">
+				<div class="pong-bar player-bar">
+					<div id="player-left-bottom" class="player left">
+						<span>PLAYER 3</span>
+					</div>
+				</div>
+				<div class="pong-bar player-bar">
+					<div id="player-right-bottom" class="player right">
+						<span>PLAYER 4</span>
+					</div>
+				</div>
+			</div>
+			
+			<div class="countdown-overlay" aria-hidden="true">
+				<span class="countdown-value">3</span>
+			</div>
+		</div>
+	</main>
 </div>
+
+<script type="module" src="/js/pages/pongBoard.js" defer></script>

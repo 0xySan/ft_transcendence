@@ -1841,27 +1841,6 @@ function startChatStream() {
 		if (isReconnecting) return;
 		isReconnecting = true;
 		
-		// Check if this is an authentication error
-		try {
-			const response = await fetch('/api/users/me', {
-				method: 'GET',
-				credentials: 'include'
-			});
-			
-			if (response.status === 401) {
-				console.error('Authentication failed. Redirecting to login...');
-				// Stop reconnecting and redirect
-				if (currentEventSource) {
-					currentEventSource.close();
-					currentEventSource = null;
-				}
-				window.loadPage('/');
-				return;
-			}
-		} catch (checkError) {
-			console.warn('Auth check failed:', checkError);
-		}
-		
 		// Check if we've hit max attempts
 		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 			console.error('Max reconnection attempts reached. Please refresh the page.');

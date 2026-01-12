@@ -8,7 +8,7 @@ import * as OAuth from '../../auth/oauth/types.js';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { oauthCallbackSchema } from '../../plugins/swagger/schemas/callback.schema.js'
 import geoip from 'geoip-lite';
-import {	createOauthAccount, createProfile, createUser,
+import {	createEmailVerification, createOauthAccount, createProfile, createUser,
 			getCountryByCode, getOauthAccountByProviderAndProviderUserId,
 			getOauthProviderByName, getProfileByUsername,
 			getRoleByName, getUserByEmail, OauthProvider } from '../../db/index.js';
@@ -17,6 +17,7 @@ import { checkTokenValidity } from '../../utils/session.js';
 
 import { createFullOrPartialSession } from '../../auth/oauth/utils.js';
 import { saveAvatarFromUrl } from '../../utils/userData.js';
+import { sendMail } from '../../utils/mail/mail.js';
 
 
 // ======================================
@@ -125,6 +126,29 @@ function handleLoggedInUser(
 	return reply.send('OAuth account linked successfully');
 }
 
+function sanitizeUsername(inputUsername: string, email: string): string {
+	let username = inputUsername.toLowerCase(); // Only lowercase
+
+	// Only keep alphanumeric and underscores
+	username = username.replace(/[^a-z0-9_]/g, '');
+
+	// Check length validity
+	if (username.length < 3 || username.length > 20) {
+		// Not valid -> try to keep part before '@' in email
+		username = email.split('@')[0].toLowerCase();
+		username = username.replace(/[^a-z0-9_]/g, '');
+	}
+
+	// Adjust length
+	if (username.length < 3)
+		username += generateRandomToken(3).slice(0, 3 - username.length); // pad if too short
+
+	if (username.length > 20)
+		username = username.slice(0, 20); // trim if too long
+
+	return username;
+}
+
 async function handleOauthUserCreation(
 	userInfo:	OAuth.NormalizedUserInfo,
 	tokenData:	OAuth.Token,
@@ -148,9 +172,8 @@ async function handleOauthUserCreation(
 		return reply.status(500).send('Failed to create account');
 
 	const existingProfile = getProfileByUsername(userInfo.username);
-	let username = userInfo.email.split('@')[0];
-	if (!existingProfile)
-		username = userInfo.username;
+		let username = existingProfile ? userInfo.username : userInfo.username;
+		username = sanitizeUsername(username, userInfo.email);
 
 	let avatarFileName: string | undefined;
 	if (userInfo.avatar) {
@@ -194,6 +217,24 @@ async function handleOauthUserCreation(
 	if (!oauthAcc)
 		return reply.status(500).send('Failed to create account');
 	
+	const verificationToken = generateRandomToken(32);
+	const encryptedToken = await hashString(verificationToken);
+	createEmailVerification({
+		user_id: user.user_id,
+			token: encryptedToken,
+			expires_at: Date.now() + 60 * 60 * 1000,
+		});
+		sendMail(
+			user.email,
+			"Welcome to ft_transcendence!",
+			"accountVerification.html",
+			{
+				HEADER: "Welcome to ft_transcendence!",
+				VERIFICATION_LINK: `https://${process.env.DOMAIN_NAME}/verify?user=${user.user_id}&token=${encodeURIComponent(verificationToken)}`,
+			},
+			`verify@${process.env.MAIL_DOMAIN || 'example.com'}`
+		).catch(err => console.error("Failed to send email:", err));
+
 	const queryParams = request.query as Record<string, string>;
 	const requestId = queryParams.state;
 

@@ -2,12 +2,34 @@ export {};
 
 import { getUserLang } from "./translationModule.js";
 
+type CleanupFn = () => void | Promise<void>;
+
 // Global listeners array to track dynamically added event listeners
 declare global {
 	var listeners: Listener[];
 	interface Window {
 		loadPage: typeof loadPage;
 	}
+
+	var dynamicCleanups: CleanupFn[];
+	var registerDynamicCleanup: (fn: CleanupFn) => void;
+}
+
+window.dynamicCleanups = [];
+
+window.registerDynamicCleanup = (fn: CleanupFn): void => {
+	window.dynamicCleanups.push(fn);
+};
+
+async function runDynamicCleanups(): Promise<void> {
+	for (const cleanup of window.dynamicCleanups) {
+		try {
+			await cleanup();
+		} catch (err) {
+			console.error('Cleanup error:', err);
+		}
+	}
+	window.dynamicCleanups.length = 0;
 }
 
 const contentDiv = document.getElementById('content') as HTMLElement;
@@ -103,14 +125,10 @@ function setupDynamicRouting(): void {
 	// Handle browser back/forward buttons
 	window.addEventListener('popstate', () => {
 		const url = new URL(window.location.href);
-		if (url.pathname === '/' && !url.searchParams.has('song')) {
-			if (contentDiv) contentDiv.innerHTML = '';
-		} else {
-			fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
-				.then(res => res.text())
-				.then(html => updatePage(url.href, html, 'replace'))
-				.catch(err => console.error('Fetch error on popstate:', err));
-		}
+		fetch(url.href, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'accept-language': getUserLang() } })
+			.then(res => res.text())
+			.then(html => updatePage(url.href, html, 'replace'))
+			.catch(err => console.error('Fetch error on popstate:', err));
 	});
 
 	// Initialize forms already present in DOM
@@ -122,6 +140,8 @@ function setupDynamicRouting(): void {
 async function updatePage(url: string, html: string, mode: 'push' | 'replace'): Promise<void> {
 	if (!contentDiv) return;
 
+	await runDynamicCleanups(); // Run registered cleanup functions
+
 	clearAllListeners(); // Remove old listeners
 
 	// Clear old scripts from previous load
@@ -132,12 +152,16 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 
 	currentUrl = document.getElementById('currentUrl')?.textContent || url;
 
-	// Update browser history
-	if (mode === 'replace') {
-		history.replaceState(null, '', currentUrl);
-	} else {
-		history.pushState(null, '', currentUrl);
+	const targetUrl = window.location.pathname;
+	if ((targetUrl == '/lobby' || targetUrl == '/pong-board') && (!currentUrl.includes('lobby') && !currentUrl.includes('pong-board'))) {
+		resetLobby();
 	}
+
+	// Update browser history
+	if (mode === 'replace')
+		history.replaceState(null, '', currentUrl);
+	else
+		history.pushState(null, '', currentUrl);
 
 	// Execute new scripts
 	await executeScripts(contentDiv);
@@ -150,6 +174,26 @@ export function loadPage(url: string): void {
 			updatePage(url, html, 'push');
 		})
 		.catch(err => console.error('Fetch error:', err));
+}
+
+function resetLobby() {
+	if (window.socket) {
+		window.socket.close();
+	}
+	window.socket = undefined;
+
+	window.localPlayerId = undefined;
+	window.lobbyGameId = undefined;
+	window.pendingGameStart = undefined;
+	window.lobbySettings = undefined;
+
+	window.token = "";
+	window.playerSyncData = null;
+
+	window.currentUserReady = Promise.resolve();
+
+	window.joinLobby = async () => {};
+	window.selectLobbyMode = () => {};
 }
 
 // --- Start routing after DOM is loaded ---

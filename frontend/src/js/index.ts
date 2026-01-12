@@ -2,6 +2,12 @@ export {};
 
 // ---- Types ----
 
+declare global {
+	interface Window {
+		notify: (message: string, options?: NotifOptions) => void;
+	}
+}
+
 /**
  * Animation path definitions
  * @contains :
@@ -482,12 +488,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (!btn) return;
 
 		const buttons = switcher.querySelectorAll<HTMLElement>('.theme-btn');
-		buttons.forEach((b) => b.classList.remove('active'));
+		buttons.forEach((b) => {
+			b.classList.remove('active');
+			b.setAttribute('aria-pressed', 'false'); // Accessibility
+		});
 
 		btn.classList.add('active');
+		btn.setAttribute('aria-pressed', 'true');
 		const selectedTheme = btn.getAttribute('data-theme');
 		if (selectedTheme)
 			document.documentElement.setAttribute('data-theme', selectedTheme);
+		window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: selectedTheme } }));
 	});
 
 	const observer = new MutationObserver(() => {
@@ -495,17 +506,24 @@ document.addEventListener('DOMContentLoaded', () => {
 		const buttons = switcher.querySelectorAll<HTMLElement>('.theme-btn');
 		buttons.forEach((btn) => {
 			if (btn.getAttribute('data-theme') === currentTheme)
+			{
 				btn.classList.add('active');
+				btn.setAttribute('aria-pressed', 'true');
+			}
 			else
+			{
 				btn.classList.remove('active');
+				btn.setAttribute('aria-pressed', 'false');
+			}
 		});
+		window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: currentTheme } }));
 	});
 
 	observer.observe(switcher, { childList: true, subtree: true });
 });
 
 /* =========================================================
-						NOTIFICATIONS
+					NOTIFICATIONS
 ========================================================= */
 
 declare global {

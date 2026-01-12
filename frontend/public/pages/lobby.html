@@ -8,43 +8,202 @@
 				</div>
 			</div>
 			<div id="lobby-player-list">
-				<!-- TODO Player List -->
 			</div>
 		</div>
 		<div id="lobby-mode-setting">
 			<div id="lobby-mode-buttons">
 				<button id="lobby-multiplayer-button" data-translate-key="lobby.multiplayerButton">MULTIPLAYER</button>
-				<button class="current-mode" id="lobby-custom-game-button" data-translate-key="lobby.customGameButton">CUSTOM GAME</button>
+				<button id="lobby-custom-game-button" data-translate-key="lobby.customGameButton">CUSTOM GAME</button>
 				<button id="lobby-tournament-button" data-translate-key="lobby.tournamentButton">TOURNAMENT</button>
 			</div>
-			<div id="lobby-multiplayer-tab" class="lobby-multiplayer-box unloaded">
+				<div id="lobby-select-mode" class="current-mode">
+					<div id="lobby-online">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -10 20 20" width="100" height="50">
+								<path 
+									d="M -3 4 
+									A 1 1 0 0 0 -5 -2 
+									A 1 1 0 0 0 -15 -2 
+									A 1 1 0 0 0 -17 4 
+									L -3 4" 
+									fill="currentColor" 
+									stroke="currentColor" 
+									stroke-width="1.5"/>
+							</svg>
+						<p data-translate-key="lobby.onlineMode">Play online</p>
+					</div>
+					<div id="lobby-offline">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" width="64" height="64">
+							<!-- Rounded screen -->
+							<rect x="0" y="0" width="5" height="3" rx="0.3" ry="0.3" fill="currentColor" stroke="currentColor" stroke-width="0.05"/>
 
-			</div>
-			<div id="lobby-custom-game-tab" class="lobby-setting-box">
-				<div class="lobby-setting-box-title">
-					<span data-translate-key="lobby.settingsTitle">Settings</span>
-					<div class="lobby-private-checkbox">
-						<label for="lobby-private-checkbox-custom-game" data-translate-key="lobby.privateLabel">Private</label>
-						<input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-custom-game">
+							<!-- Screen stand -->
+							<rect x="2" y="3" width="1" height="1" fill="currentColor" stroke="currentColor" stroke-width="0.05"/>
+
+							<!-- Keyboard -->
+							<rect x="1" y="4" width="3" height="1" fill="currentColor" stroke="currentColor" stroke-width="0.05"/>
+
+							<!-- Computer case -->
+							<rect x="0" y="6" width="5" height="2" rx="0.2" ry="0.2" fill="currentColor" stroke="currentColor" stroke-width="0.05"/>
+
+							<!-- Mouse -->
+							<path d="M4.5 3 C4.5 6 6.5 4 6.5 6" fill="none" stroke="currentColor" stroke-width="0.15"/>
+							<path d="M6 7 C6 6 7 6 7 7 S6 8 6 7" fill="currentColor" stroke="currentColor" stroke-width="0.05"/>
+							<path d="M6.5 6 V7" fill="none" stroke="currentColor" stroke-width="0.15"/>
+						</svg>
+						<p data-translate-key="lobby.offlineMode">Play offline</p>
 					</div>
 				</div>
-				<div class="lobby-setting-type">
-					<button class="lobby-rocker-switch lobby-btn-active" id="lobby-custom-game-basic-settings-button" data-translate-key="lobby.roomSettingsButton">Room settings</button>
-					<button class="lobby-rocker-switch" id="lobby-custom-game-advanced-settings-button" data-translate-key="lobby.advancedSettingsButton">Advanced settings</button>
-				</div>
-				<div class="lobby-setting-list" id="lobby-custom-game-basic-settings">
+				<div id="lobby-custom-game-tab" class="lobby-setting-box unloaded">
+					<div class="lobby-setting-box-title">
+						<span data-translate-key="lobby.settingsTitle">Settings</span>
+						<div class="lobby-private-checkbox">
+							<label for="lobby-private-checkbox-custom-game" data-translate-key="lobby.privateLabel">Private</label>
+							<input type="checkbox" checked name="private-checkbox" id="lobby-private-checkbox-custom-game">
+						</div>
+					</div>
+					<div class="lobby-setting-type">
+						<button class="lobby-rocker-switch lobby-btn-active" id="lobby-custom-game-basic-settings-button" data-translate-key="lobby.roomSettingsButton">Room settings</button>
+						<button class="lobby-rocker-switch" id="lobby-custom-game-advanced-settings-button" data-translate-key="lobby.advancedSettingsButton">Advanced settings</button>
+					</div>
+					<div class="lobby-setting-list grayed" id="lobby-custom-game-basic-settings">
+						<div class="lobby-setting-container">
+							<label for="lobby-allow-spectators" data-translate-key="lobby.allowSpectatorsLabel">Allow Spectators</label>
+							<input type="checkbox" id="lobby-allow-spectators" class="lobby-checkbox">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="lobby-game-code" data-translate-key="lobby.gameCodeLabel">Custom Game Code</label>
+							<input type="text" id="lobby-game-code" class="lobby-textbox" maxlength="4" placeholder="Enter code">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="lobby-num-players" data-translate-key="lobby.numPlayersLabel">Number of Players</label>
+							<select id="lobby-num-players" class="lobby-select">
+								<option value="2">2</option>
+								<option value="4">4</option>
+							</select>
+						</div>
+						<div class="lobby-setting-container">
+							<label for="lobby-first-to" data-translate-key="lobby.firstToLabel">First To</label>
+							<span id="lobby-first-to-value">5</span>
+							<input type="range" id="lobby-first-to" class="lobby-slider" min="1" max="10" value="5">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="lobby-win-by" data-translate-key="lobby.winByLabel">Win By</label>
+							<span id="lobby-win-by-value">0</span>
+							<input type="range" id="lobby-win-by" class="lobby-slider" min="0" max="5" value="0">
+						</div>
+						<div id="lobby-basic-settings-buttons">
+							<button id="lobby-reset-settings-button" data-translate-key="lobby.resetSettingsButton">RESET TO DEFAULTS</button>
+							<button id="lobby-save-settings-button" data-translate-key="lobby.saveSettingsButton">SAVE SETTINGS</button>
+						</div>
+					</div>
+					<div class="lobby-setting-list unloaded grayed" id="lobby-custom-game-advanced-settings">
+						<!-- ================= BALL SETTINGS ================= -->
+						<div class="lobby-setting-category">
+							<h3>Ball</h3>
+							<div class="lobby-setting-container">
+								<label for="ball-radius" data-translate-key="lobby.ballRadius">Radius</label>
+								<input type="number" id="ball-radius" min="2" max="50" step="1" value="10">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-initial-speed" data-translate-key="lobby.ballSpeed">Initial Speed</label>
+								<input type="number" id="ball-initial-speed" min="50" max="1000" step="10" value="400">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-max-speed" data-translate-key="lobby.ballMaxspeed">Max Speed</label>
+								<input type="number" id="ball-max-speed" min="100" max="2000" step="10" value="800">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-speed-increment" data-translate-key="lobby.incrementBall">Speed Increment</label>
+								<input type="number" id="ball-speed-increment" min="0" max="100" step="1" value="20">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-initial-angle-range" data-translate-key="lobby.rangeAngle">Initial Angle Range</label>
+								<span id="ball-initial-angle-range-value">20</span>°
+								<input type="range" id="ball-initial-angle-range" min="0" max="90" step="1" value="20">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-max-bounce-angle" data-translate-key="lobby.maxBounceAngle">Max Bounce Angle</label>
+								<span id="ball-max-bounce-angle-value">60</span>°
+								<input type="range" id="ball-max-bounce-angle" min="0" max="90" step="1" value="60">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-allow-spin" data-translate-key="lobby.ballAllowSpin">Allow Spin</label>
+								<input type="checkbox" id="ball-allow-spin">
+							</div>
+							<div class="lobby-setting-container" >
+								<label for="ball-spin-factor" data-translate-key="lobby.spinFactor">Spin Factor</label>
+								<input type="number" id="ball-spin-factor" min="0" max="5" step="0.1" value="0.5">
+							</div>
+							<div class="lobby-setting-container">
+								<label for="ball-reset-on-score" data-translate-key="lobby.resetScore">Reset On Score</label>
+								<input type="checkbox" id="ball-reset-on-score" checked>
+							</div>
+						</div>
 
-				</div>
-				<div class="lobby-setting-list" id="lobby-custom-game-advanced-settings">
+						<!-- ================= PADDLE SETTINGS ================= -->
+						<div class="lobby-setting-category">
+						<h3>Paddles</h3>
+						<div class="lobby-setting-container">
+							<label for="paddle-width" data-translate-key="lobby.paddleWidth">Width</label>
+							<input type="number" id="paddle-width" min="5" max="50" step="1" value="10">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="paddle-height" data-translate-key="lobby.paddleHeight">Height</label>
+							<input type="number" id="paddle-height" min="20" max="300" step="5" value="80">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="paddle-margin" data-translate-key="lobby.paddleMargin">Margin</label>
+							<input type="number" id="paddle-margin" min="0" max="100" step="1" value="20">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="paddle-max-speed" data-translate-key="lobby.paddleMaxSpeed">Max Speed</label>
+							<input type="number" id="paddle-max-speed" min="50" max="2000" step="10" value="400">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="paddle-acceleration" data-translate-key="lobby.paddleAcceleration">Acceleration</label>
+							<input type="number" id="paddle-acceleration" min="50" max="5000" step="50" value="1000">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="paddle-friction" data-translate-key="lobby.paddleFriction">Friction</label>
+							<input type="number" id="paddle-friction" min="0" max="1" step="0.01" value="0.9">
+						</div>
+						</div>
 
+						<!-- ================= WORLD SETTINGS ================= -->
+						<div class="lobby-setting-category">
+						<h3>World</h3>
+						<div class="lobby-setting-container">
+							<label for="world-width" data-translate-key="lobby.worldWidth">Width</label>
+							<input type="number" id="world-width" min="400" max="4000" step="50" value="800">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="world-height" data-translate-key="lobby.worldHeight">Height</label>
+							<input type="number" id="world-height" min="300" max="3000" step="50" value="600">
+						</div>
+						<div class="lobby-setting-container">
+							<label for="field-wall-thickness" data-translate-key="lobby.fieldWallThickness">Wall Thickness</label>
+								<input type="number" id="field-wall-thickness" min="0" max="50" step="1" value="10">
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			<div id="lobby-multiplayer-tab" class="lobby-setting-box unloaded">
+				<div class="lobby-setting-box-title">
+					<span data-translate-key="lobby.waitingTitle">Find an Opponent</span>
+				</div>
+				<div class="lobby-multiplayer-div">
+					<button class="lobby-leave-button" id="lobby-wating-find-player" data-translate-key="lobby.findPlayerButton">Find Player</button>
+					<button class="lobby-leave-button" id="lobby-leave-queue">⨉</button>
 				</div>
 			</div>
+
 			<div id="lobby-tournament-tab" class="lobby-setting-box unloaded">
 				<div class="lobby-setting-box-title">
 					<span data-translate-key="lobby.settingsTitle">Settings</span>
 					<div class="lobby-private-checkbox">
 						<label for="lobby-private-checkbox-custom-tournament" data-translate-key="lobby.privateLabel">Private</label>
-						<input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-custom-tournament" class="lobby-checkbox">
+						<input type="checkbox" checked name="private-checkbox" id="lobby-private-checkbox-custom-tournament" class="lobby-checkbox">
 					</div>
 				</div>
 				<div class="lobby-setting-type">
@@ -60,13 +219,14 @@
 			</div>
 		</div>
 	</div>
-	<div id="lobby-action-buttons">
+	<div id="lobby-action-buttons" class="unloaded">
 		<div id="lobby-join-box">
-			<input type="text" placeholder="Enter code" class="font-poppins-semibold" />
-			<button data-translate-key="lobby.joinButton">JOIN</button>
+			<input type="text" placeholder="Enter code" id="lobby-input" class="font-poppins-semibold" />
+			<button data-translate-key="lobby.joinButton" id="lobby-btn-join">JOIN</button>
 		</div>
-		<button data-translate-key="lobby.leaveButton">LEAVE</button>
-		<button data-translate-key="lobby.launchButton">LAUNCH</button>
+		<button id="lobby-btn-leave" data-translate-key="lobby.leaveButton">LEAVE</button>
+		<button id="lobby-btn-launch" data-translate-key="lobby.launchButton">LAUNCH</button>
 	</div>
 </div>
-<script src="/js/pages/lobby.js" type="module" defer></script>
+<script src="/js/pages/lobbySocket.js" type="module" defer></script>
+<script src="/js/pages/lobbySettings.js" type="module" defer></script>

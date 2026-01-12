@@ -8,10 +8,12 @@ import { oauthRoutes } from "./oauth/index.js";
 import { userRoutes } from "./users/index.js";
 import { healthRoute } from "./health.route.js";
 import { chatRoutes } from "./chat/index.js";
+import { gameRoutes } from "./game/index.js";
 
 export async function registerRoutes(app: Fastify.FastifyInstance) {
-  app.register(oauthRoutes, { prefix: '/api/oauth' });
-  app.register(userRoutes, { prefix: '/api/users' });
-  app.register(chatRoutes, { prefix: '/api/chat' });
-  app.register(healthRoute);
+	app.register(oauthRoutes, { prefix: '/api/oauth' });
+	app.register(userRoutes, { prefix: '/api/users' });
+	app.register(chatRoutes, { prefix: '/api/chat' });
+	app.register(gameRoutes, { prefix: '/api/game' });
+	app.register(healthRoute);
 }
