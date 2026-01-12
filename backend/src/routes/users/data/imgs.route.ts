@@ -86,7 +86,7 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			const fileName = await saveImageFromUrl(userId, url, 'avatar');
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {
-			return reply.status(400).send({ error: err.message || 'Failed to upload avatar from URL' });
+			return reply.status(500).send({ error: err.message || 'Failed to upload avatar from URL' });
 		}
 	});
 
@@ -110,7 +110,7 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			const fileName = await saveImageFromFile(userId, file, 'avatar');
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {
-			return reply.status(400).send({ error: err.message || 'Failed to upload avatar' });
+			return reply.status(500).send({ error: err.message || 'Failed to upload avatar' });
 		}
 	});
 
@@ -129,7 +129,7 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			const fileName = await saveImageFromUrl(userId, url, 'background');
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {
-			return reply.status(400).send({ error: err.message || 'Failed to upload background from URL' });
+			return reply.status(500).send({ error: err.message || 'Failed to upload background from URL' });
 		}
 	});
 
@@ -153,7 +153,7 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			const fileName = await saveImageFromFile(userId, file, 'background');
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {
-			return reply.status(400).send({ error: err.message || 'Failed to upload background' });
+			return reply.status(500).send({ error: err.message || 'Failed to upload background' });
 		}
 	});
 }

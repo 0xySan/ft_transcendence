@@ -1,7 +1,19 @@
 // ============================================================================
 // Chat Application - All-in-One File
 // ============================================================================
-// Complete chat system with messaging, user list, layout, and invite handling
+/**
+ * Complete chat system with the following features:
+ * - Direct messaging between users
+ * - Real-time message streaming via EventSource
+ * - User blocking/unblocking
+ * - Game invitations (Pong)
+ * - Message grouping by sender and time window
+ * - Infinite scroll with older message loading
+ * - Draft message persistence
+ * - Session-based state management
+ * - Multi-language support
+ * - Reconnection with exponential backoff
+ */
 
 import { UserData } from "../global";
 
@@ -88,6 +100,16 @@ const loadingStates = {
 	fetchingConversation: false,
 };
 
+/**
+ * Wrapper for fetch() with automatic error handling and authentication
+ * Automatically includes credentials and sets Content-Type header
+ * Redirects to home on 401 Unauthorized
+ * @template T - Response data type
+ * @param {string} path - API endpoint path
+ * @param {RequestInit} options - Fetch options (headers, method, body, etc.)
+ * @returns {Promise<T>} Parsed JSON response
+ * @throws {Error} On non-ok response status
+ */
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const headers: HeadersInit = { ...(options.headers || {}) };
 	if (options.body !== undefined && !(headers as Record<string, string>)['Content-Type']) {
@@ -110,6 +132,13 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 	return (await res.json()) as T;
 }
 
+/**
+ * Parses date strings from API responses
+ * Handles ISO 8601 format with timezone info
+ * Falls back to treating as UTC if no timezone specified
+ * @param {string} raw - Raw date string from API
+ * @returns {Date} Parsed Date object
+ */
 function parseApiDate(raw: string): Date {
 	if (!raw) return new Date(NaN);
 	if (/Z$|[+-]\d{2}:\d{2}$/.test(raw)) return new Date(raw);
@@ -148,6 +177,13 @@ let userListHidden = false;
 // HELPER FUNCTIONS
 // ============================================================================
 
+/**
+ * Sets an avatar image or fallback SVG to an HTML image element
+ * Handles both string URLs and DocumentFragment fallback avatars
+ * @param {HTMLImageElement} imgElement - The image element to update
+ * @param {string | DocumentFragment} avatar - Avatar URL or SVG fragment
+ * @returns {void}
+ */
 function setAvatarToElement(imgElement: HTMLImageElement, avatar: string | DocumentFragment): void {
 	if (typeof avatar === 'string')
 		imgElement.src = avatar;
@@ -161,6 +197,11 @@ function setAvatarToElement(imgElement: HTMLImageElement, avatar: string | Docum
 	}
 }
 
+/**
+ * Sets the active user for the chat session and persists to sessionStorage
+ * @param {string | null} user - Username of the active user, or null to clear
+ * @returns {void}
+ */
 function setActiveUser(user: string | null): void {
 	activeUser = user;
 	try {
@@ -171,6 +212,12 @@ function setActiveUser(user: string | null): void {
 	}
 }
 
+/**
+ * Saves a draft message for a user to sessionStorage
+ * @param {string | null} user - Username to save draft for
+ * @param {string} text - Draft message text
+ * @returns {void}
+ */
 function saveDraft(user: string | null, text: string): void {
 	if (!user) return;
 	drafts[user] = text;
@@ -181,6 +228,11 @@ function saveDraft(user: string | null, text: string): void {
 	}
 }
 
+/**
+ * Clears a draft message for a user from sessionStorage
+ * @param {string | null} user - Username to clear draft for
+ * @returns {void}
+ */
 function clearDraft(user: string | null): void {
 	if (!user) return;
 	delete drafts[user];
@@ -191,6 +243,12 @@ function clearDraft(user: string | null): void {
 	}
 }
 
+/**
+ * Converts a timestamp to a human-readable format
+ * Returns relative format (HH:MM for today, "yesterday at HH:MM", or YYYY-MM-DD HH:MM)
+ * @param {Date} ts - Timestamp to convert
+ * @returns {string} Formatted timestamp string
+ */
 function convertTimestampToReadable(ts: Date): string {
 	const now = new Date();
 	const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -212,12 +270,24 @@ function convertTimestampToReadable(ts: Date): string {
 	return time;
 }
 
+/**
+ * Gets the timestamp of the most recent message in a conversation
+ * @param {string} name - Username/conversation key
+ * @returns {number} Timestamp in milliseconds, or 0 if no messages
+ */
 function getLastTimestamp(name: string): number {
 	const msgs = conversations[name] || [];
 	if (msgs.length === 0) return 0;
 	return Math.max(...msgs.map((m) => m.timestamp.getTime()));
 }
 
+/**
+ * Appends text with preserved line breaks to a DOM element
+ * Replaces \n characters with <br> elements
+ * @param {HTMLElement} parent - Parent element to append text to
+ * @param {string} text - Text with line breaks to append
+ * @returns {void}
+ */
 function appendTextWithLineBreaks(parent: HTMLElement, text: string): void {
 	const parts = text.split('\n');
 	parts.forEach((part, idx) => {
@@ -232,6 +302,13 @@ function appendTextWithLineBreaks(parent: HTMLElement, text: string): void {
 // DATA LOADING (API)
 // ============================================================================
 
+/**
+ * Maps API message response to internal Message interface
+ * Converts sender IDs to display names and parses date strings
+ * @param {Object} msg - Raw message from API
+ * @param {Record<string, string>} membersById - Map of user IDs to display names
+ * @returns {Message} Formatted message object
+ */
 function mapApiMessage(
 	msg: {
 		message_id: number;
@@ -256,6 +333,14 @@ function mapApiMessage(
 	};
 }
 
+/**
+ * Loads all conversations from the backend and initializes global chat state
+ * Fetches initial message batch for each direct conversation
+ * Populates conversations, users, blockedUsers, and user mapping objects
+ * Marks conversations as fully loaded if less than MESSAGES_PAGE are returned
+ * @returns {Promise<void>}
+ * @throws {Error} If API request fails
+ */
 async function loadChatData(): Promise<void> {
 	try {
 		Object.keys(conversations).forEach((key) => delete conversations[key]);
@@ -362,7 +447,12 @@ async function loadChatData(): Promise<void> {
 		console.error('Failed to load chat data:', err);
 	}
 }
-
+/**
+ * Sends a block request to the API for a specific user
+ * Updates blockedUsers set on success and handles loading state
+ * @param {string} user - Username to block
+ * @returns {Promise<boolean>} True if block was successful
+ */
 async function blockUserApi(user: string): Promise<boolean> {
 	if (loadingStates.blockingUser) return false;
 	const targetId = conversationMeta[user]?.userId || userNameToUserId[user];
@@ -385,6 +475,11 @@ async function blockUserApi(user: string): Promise<boolean> {
 	}
 }
 
+/**
+ * Sends an unblock request to the API for a specific user
+ * @param {string} user - Username to unblock
+ * @returns {Promise<boolean>} True if unblock was successful
+ */
 async function unblockUserApi(user: string): Promise<boolean> {
 	if (loadingStates.blockingUser) return false;
 	const targetId = conversationMeta[user]?.userId || userNameToUserId[user];
@@ -411,6 +506,11 @@ async function unblockUserApi(user: string): Promise<boolean> {
 // LAYOUT MANAGEMENT
 // ============================================================================
 
+/**
+ * Updates the toggle button accessibility attributes and title based on user list visibility
+ * Sets aria-pressed and title for screen readers and tooltips
+ * @returns {void}
+ */
 function updateToggleBtnText(): void {
 	headerToggleBtn.setAttribute('aria-pressed', String(userListHidden));
 	headerToggleBtn.title = userListHidden ? 'Show users' : 'Hide users';
@@ -420,6 +520,12 @@ function updateVh(): void {
 	document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
 }
 
+/**
+ * Global click handler to close open invite menus when clicking outside
+ * Hides the invite menu if click target is outside the menu and button
+ * @param {MouseEvent} event - Click event
+ * @returns {void}
+ */
 function globalHideInviteMenu(event: MouseEvent): void {
 	const inviteMenu = document.querySelector<HTMLDivElement>('.invite-menu');
 	const inviteBtn = document.querySelector<HTMLButtonElement>('.chat-invite-btn');
@@ -431,6 +537,11 @@ function globalHideInviteMenu(event: MouseEvent): void {
 	}
 }
 
+/**
+ * Initializes the chat interface layout and event listeners
+ * Sets up header toggle button, viewport height, and global event handlers
+ * @returns {void}
+ */
 function initLayout(): void {
 	updateVh();
 	updateToggleBtnText();
@@ -459,6 +570,15 @@ function initLayout(): void {
 // MESSAGE RENDERING
 // ============================================================================
 
+/**
+ * Renders appropriate invite buttons based on invite state and user role
+ * Shows cancel button for senders, accept/decline for receivers, go button when accepted
+ * @param {HTMLDivElement} container - Container to append buttons to
+ * @param {string} state - Invite state (pending, accepted, declined, cancelled)
+ * @param {number} globalFirstIdx - Message index for data attribute
+ * @param {string} user_type - Either 'sender' or 'receiver'
+ * @returns {void}
+ */
 function renderInviteButtons(
 	container: HTMLDivElement,
 	state: string,
@@ -494,6 +614,15 @@ function renderInviteButtons(
 		container.classList.add(state);
 }
 
+/**
+ * Renders a blocked message group with toggle to show/hide blocked content
+ * Displays count of blocked messages and time, allows user to reveal them
+ * @param {DocumentFragment} fragment - Fragment being appended to
+ * @param {Message[]} group - Array of blocked messages in this group
+ * @param {string} time - Formatted timestamp for the group
+ * @param {number} globalFirstIdx - Index of first message in group
+ * @returns {void}
+ */
 function renderBlockedMessage(
 	fragment: DocumentFragment,
 	group: Message[],
@@ -541,6 +670,15 @@ function renderBlockedMessage(
 	fragment.appendChild(container);
 }
 
+/**
+ * Loads a range of messages and generates DOM fragment with proper grouping
+ * Groups messages by sender within a time window and handles special message types
+ * Handles invite messages, blocked messages, and regular text messages separately
+ * @param {number} startIndex - Starting index in messages array
+ * @param {Message[]} msgs - Array of messages to load from
+ * @param {number} baseIndexOverride - Optional base index override for external indexing
+ * @returns {DocumentFragment} Fragment containing rendered messages
+ */
 function loadMessages(
 	startIndex: number,
 	msgs: Message[],
@@ -645,6 +783,14 @@ function loadMessages(
 	return fragment;
 }
 
+/**
+ * Appends a single message to the DOM for the active conversation
+ * Groups message with previous message if from same sender and within time window
+ * Otherwise creates a new message container
+ * @param {Message} msg - Message to append
+ * @param {number} index - Index of message in conversation array
+ * @returns {void}
+ */
 function appendMessageToDOM(msg: Message, index: number): void {
 	if (!activeUser) return;
 
@@ -700,6 +846,16 @@ function appendMessageToDOM(msg: Message, index: number): void {
 	});
 }
 
+/**
+ * Updates the state of an invite message (accepted, declined, cancelled)
+ * Updates UI buttons based on new state and calls API if not skipped
+ * @param {HTMLElement} container - Message container element
+ * @param {Message} msg - Message object to update
+ * @param {'accepted' | 'declined' | 'cancelled'} newState - New invite state
+ * @param {number} msgIndex - Index of message in conversation
+ * @param {boolean} skipApi - If true, skip API call (already handled)
+ * @returns {void}
+ */
 function updateInviteState(
 	container: HTMLElement,
 	msg: Message,
@@ -738,7 +894,17 @@ function updateInviteState(
 // ACTIONS
 // ============================================================================
 
-
+/**
+ * Submits a message to the active conversation
+ * Validates message content, enforces rate limiting and length constraints
+ * Updates conversation state, DOM, and user list ordering
+ * Handles blocking, conversation termination, and error cases
+ * @param {HTMLDivElement} input - Message input element
+ * @param {HTMLButtonElement} sendBtn - Send button element
+ * @param {HTMLDivElement} messagesDiv - Messages container element
+ * @returns {Promise<void>}
+ * @throws {Error} If message submission fails (logged, not thrown)
+ */
 async function submitMessage(
 	input: HTMLDivElement,
 	sendBtn: HTMLButtonElement,
@@ -834,6 +1000,12 @@ async function submitMessage(
 	}
 }
 
+/**
+ * Sends a game invite (Pong) to the specified user
+ * Creates an invite message and navigates to lobby on success
+ * @param {string} user - Username to send invite to
+ * @returns {Promise<void>}
+ */
 async function sendInvite(user: string): Promise<void> {
 	if (!user) return;
 	if (blockedUsers.has(user)) return;
@@ -874,6 +1046,13 @@ async function sendInvite(user: string): Promise<void> {
 // USER LIST
 // ============================================================================
 
+/**
+ * Reorders user in the user list based on last message timestamp
+ * Updates selection state and blocked status appearance
+ * Moves user higher in list if they have more recent messages
+ * @param {string} movedUser - Username to reorder
+ * @returns {void}
+ */
 function reorderUserList(movedUser: string): void {
 	const selector = `.user-item[data-username="${CSS.escape(movedUser)}"]`;
 	const item = userListDiv.querySelector<HTMLDivElement>(selector);
@@ -904,6 +1083,13 @@ function reorderUserList(movedUser: string): void {
 	if (!inserted) userListDiv.appendChild(item);
 }
 
+/**
+ * Fetches a single conversation from the backend by ID
+ * Used when joining a conversation via direct link
+ * Creates new conversation entry and renders updated user list
+ * @param {number} conversationId - ID of conversation to fetch
+ * @returns {Promise<string | null>} Peer username or null if failed
+ */
 async function fetchSingleConversation(conversationId: number): Promise<string | null> {
 	if (loadingStates.fetchingConversation) return null;
 	
@@ -971,6 +1157,15 @@ async function fetchSingleConversation(conversationId: number): Promise<string |
 	}
 }
 
+/**
+ * Adds a new user to the conversation if not already present
+ * Called when receiving first message from a new user
+ * Initializes conversation entry and user mappings
+ * @param {number} conversationId - Conversation ID
+ * @param {string} senderId - ID of sender
+ * @param {Object} senderInfo - Sender profile information
+ * @returns {string | null} Username added, or null if failed
+ */
 function addNewUserToConversation(conversationId: number, senderId: string, senderInfo: { displayName?: string; username?: string; profilePicture?: string; userId?: string }): string | null {
 	// Check if user already exists
 	const existingEntry = Object.entries(conversationMeta).find(([_, meta]) => meta.conversationId === conversationId);

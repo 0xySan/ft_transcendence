@@ -27,6 +27,11 @@ export const uploadAvatarUrlSchema = {
 			description: "Unauthorized",
 			type: "object",
 			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
 		}
 	}
 };
@@ -61,6 +66,11 @@ export const uploadAvatarFileSchema = {
 			description: "Unauthorized",
 			type: "object",
 			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
 		}
 	}
 };
@@ -94,6 +104,11 @@ export const uploadBackgroundUrlSchema = {
 			description: "Unauthorized",
 			type: "object",
 			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
 		}
 	}
 };
@@ -128,6 +143,11 @@ export const uploadBackgroundFileSchema = {
 			description: "Unauthorized",
 			type: "object",
 			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
 		}
 	}
 };

@@ -1,11 +1,21 @@
+/**
+ * @file profile.ts
+ * @description Handles the user profile page functionality including:
+ * - Fetching and displaying user profile information
+ * - Displaying user game statistics and recent games
+ * - Managing profile image and background display
+ * - Handling direct chat initialization
+ */
 export {};
 
 declare function getUserLang(): string;
 
+// Extract username from URL query parameters
 const params = new URLSearchParams(window.location.search);
 let user: string | null = params.get("user");
 
 // Default avatar template
+// Clones a pre-defined SVG template to use as a fallback when profile pictures are unavailable
 const DEFAULT_AVATAR = (() => {
 	const template = document.querySelector<HTMLTemplateElement>('.profile-default-pfp-temp');
 	return template
@@ -13,6 +23,9 @@ const DEFAULT_AVATAR = (() => {
 		: document.createDocumentFragment();
 })();
 
+/**
+ * Interface for complete user profile data including user metadata and profile details
+ */
 interface ProfileData {
 	user: {
 		id: string;
@@ -33,6 +46,10 @@ interface ProfileData {
 	}
 }
 
+/**
+ * Interface for game statistics and recent game data
+ * Contains overall stats and an array of recent games with participant details
+ */
 interface GameStats {
 	stats: {
 		gamesPlayed: number;
@@ -64,9 +81,15 @@ interface GameStats {
 	}>;
 }
 
+// Global variables to track the currently logged-in user and the user being viewed
 let currentUserId: string | null = null;
 let viewedUserId: string | null = null;
 
+/**
+ * Fetches the current logged-in user's data
+ * Sets currentUserId and initializes the user parameter if not already set
+ * @returns {Promise<ProfileData | null>} The current user's profile data or null on error
+ */
 async function fetchCurrentUser(): Promise<ProfileData | null> {
 	try {
 		const res = await fetch('/api/users/me', {
@@ -87,6 +110,12 @@ async function fetchCurrentUser(): Promise<ProfileData | null> {
 	}
 }
 
+/**
+ * Fetches game statistics for a specific user from the backend
+ * Retrieves the last 10 games and overall statistics
+ * @param {string} userId - The ID of the user to fetch stats for
+ * @returns {Promise<void>}
+ */
 async function updateGameStats(userId: string): Promise<void> {
 	try {
 		if (!currentUserId)
@@ -110,10 +139,16 @@ async function updateGameStats(userId: string): Promise<void> {
 	}
 }
 
+/**
+ * Updates the UI with game statistics and recent games
+ * Populates the stats display and renders game cards for 2-player and 4-player modes
+ * @param {GameStats} gameStats - The game statistics and recent games data
+ * @returns {void}
+ */
 function updateStatsUI(gameStats: GameStats): void {
 	const { stats, recentGames } = gameStats;
 
-	// Update stats display
+	// Update stats display with wins, losses, and win rate
 	const statsContainer = document.querySelector('.profile-info-stats') as HTMLDivElement;
 	if (statsContainer) {
 		const wlrDiv = statsContainer.querySelector('.profile-stats-wlr') as HTMLDivElement;
@@ -131,12 +166,13 @@ function updateStatsUI(gameStats: GameStats): void {
 		}
 	}
 
-	// Show and update recent games
+	// Show and display recent games section
 	const gamesContainer = document.querySelector('.profile-recent-games');
 	if (gamesContainer) {
 		gamesContainer.classList.remove('nondisplayable');
 	}
 
+	// Render recent games with appropriate templates based on player count
 	const gamesContent = document.querySelector('.profile-recent-games-content');
 	if (gamesContent) {
 		gamesContent.innerHTML = '';
@@ -154,6 +190,8 @@ function updateStatsUI(gameStats: GameStats): void {
 				const playerCount = game.participants.length;
 				const template = playerCount <= 2 ? template2p : template4p;
 				const gameItem = template.content.cloneNode(true) as DocumentFragment;
+				
+				// Format the game date/time according to user's language preference
 				const date = new Date(game.createdAt).toLocaleDateString(getUserLang(), {
 					year: 'numeric',
 					month: 'short',
@@ -171,6 +209,7 @@ function updateStatsUI(gameStats: GameStats): void {
 				if (dateSpan) dateSpan.textContent = date;
 				if (statusSpan) statusSpan.textContent = game.status;
 				
+				// Populate game item based on player count (2-player vs 4-player modes)
 				if (playerCount <= 2) {
 					// 2-player game: populate individual players
 					const populatePlayer = (index: number) => {
@@ -215,7 +254,8 @@ function updateStatsUI(gameStats: GameStats): void {
 						populatePlayer(i);
 					}
 				} else {
-					// 4-player game: populate mini players and team scores
+					// 4-player game: populate mini player cards and calculate team scores
+					// Teams: Left (players 0+1), Right (players 2+3)
 					const populatePlayerMini = (index: number) => {
 						if (!game.participants[index]) return;
 						
@@ -256,7 +296,7 @@ function updateStatsUI(gameStats: GameStats): void {
 						populatePlayerMini(i);
 					}
 					
-					// Calculate team scores (team 1: players 1&3, team 2: players 2&4)
+					// Calculate team scores (team 1: players 1&2, team 2: players 3&4)
 					let leftScore = 0;
 					let rightScore = 0;
 					
@@ -285,6 +325,13 @@ function updateStatsUI(gameStats: GameStats): void {
 	}
 }
 
+/**
+ * Updates the main profile UI with user information
+ * Loads profile image, display name, bio, country flag, and background image
+ * Handles "Add to Chat" button visibility based on user context
+ * @param {ProfileData} profileData - The user's profile data
+ * @returns {void}
+ */
 function updateProfileUI(profileData: ProfileData): void {
 	const profile = profileData.user?.profile;
 
@@ -379,7 +426,7 @@ function updateProfileUI(profileData: ProfileData): void {
 	// Update "Add to chat" button visibility
 	const chatButton = document.querySelector('.profile-chat-button') as HTMLButtonElement;
 	if (chatButton) {
-		// Show button only if viewing someone else's profile
+		// Show button only if viewing someone else's profile and not your own
 		if (currentUserId && viewedUserId && currentUserId !== viewedUserId) {
 			chatButton.classList.remove('nondisplayable');
 			
@@ -387,7 +434,7 @@ function updateProfileUI(profileData: ProfileData): void {
 			const newButton = chatButton.cloneNode(true) as HTMLButtonElement;
 			chatButton.parentNode?.replaceChild(newButton, chatButton);
 			
-			// Add click handler to create direct conversation
+			// Add click handler to create direct conversation with the viewed user
 			newButton.addEventListener('click', async () => {
 				try {
 					const res = await fetch('/api/chat/direct', {
@@ -413,6 +460,13 @@ function updateProfileUI(profileData: ProfileData): void {
 	}
 }
 
+/**
+ * Fetches profile data for a specific username from the backend
+ * Updates the viewedUserId and renders the profile UI
+ * Displays error message if user is not found (404)
+ * @param {string} username - The username to fetch profile data for
+ * @returns {Promise<void>}
+ */
 async function fetchProfileData(username: string): Promise<void> {
 	try {
 		const res = await fetch(`/api/users/username?username=${encodeURIComponent(username)}`, {
@@ -442,14 +496,22 @@ async function fetchProfileData(username: string): Promise<void> {
 	}
 }
 
+/**
+ * Initializes the profile page on load
+ * Fetches current user data first, then loads the requested user's profile
+ * Redirects to home if no user is specified
+ * @returns {Promise<void>}
+ */
 async function initializeProfilePage(): Promise<void> {
-	// Always fetch current user data first
+	// Always fetch current user data first to establish authentication context
 	await fetchCurrentUser();
 	
+	// Load the requested user's profile or redirect to home if none specified
 	if (user)
 		await fetchProfileData(user);
 	else
 		window.loadPage('/');
 }
 
+// Execute profile page initialization on script load
 initializeProfilePage();
