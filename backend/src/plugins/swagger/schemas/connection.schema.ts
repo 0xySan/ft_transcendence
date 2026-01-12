@@ -5,7 +5,7 @@ export const connectionSchema = {
     params: {
         type: 'object',
         properties: {
-            userId: { type: 'string', description: 'Target user id' }
+            userId: { type: 'string', description: 'Target user id (UUID v7)' }
         },
         required: ['userId']
     },
@@ -28,6 +28,11 @@ export const connectionSchema = {
             description: "Unauthorized - missing or invalid session",
             type: "object",
             properties: { message: { type: "string", example: "Unauthorized" } }
+        },
+        429: {
+            description: "Too many requests - rate limit exceeded",
+            type: "object",
+            properties: { message: { type: "string", example: "Too many requests. Try again later." } }
         },
         500: {
             description: "Internal server error",

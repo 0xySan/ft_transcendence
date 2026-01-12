@@ -7,10 +7,17 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { isUserInGame } from "../game/utils.js";
 import { isValidUUIDv7 } from "../../utils/crypto.js";
+import { checkRateLimit } from "../../utils/security.js";
 import { getActiveSessionsByUserId } from "../../db/wrappers/auth/sessions.js";
 import { connectionSchema } from "../../plugins/swagger/schemas/connection.schema.js";
 
 export function userConnectionRoutes(fastify: FastifyInstance) {
+
+    const requestCount_ip: Record<string, { count: number; lastReset: number }> = {};
+    const requestCount_user: Record<string, { count: number; lastReset: number }> = {};
+    const RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
+    const RATE_LIMIT = 25;
+
     fastify.get(
         '/:userId/connection',
         {
@@ -32,6 +39,14 @@ export function userConnectionRoutes(fastify: FastifyInstance) {
                 if (!isValidUUIDv7(targetUserId)) {
                     return reply.status(400).send({ message: 'Invalid user id' });
                 }
+
+                const clientIp = request.ip || request.headers["x-forwarded-for"]?.toString() || "unknown";
+
+                // Rate limit by IP and by caller user id for this endpoint
+                if (!checkRateLimit(requestCount_ip, clientIp, reply, RATE_LIMIT, RATE_WINDOW))
+                    return reply.status(429).send({ message: 'Too many requests. Please try again later.' });
+                if (!checkRateLimit(requestCount_user, callerSession.user_id, reply, RATE_LIMIT, RATE_WINDOW))
+                    return reply.status(429).send({ message: 'Too many requests. Please try again later.' });
 
                 // If target user is in an active game -> online and in a game
                 if (isUserInGame(targetUserId)) {
