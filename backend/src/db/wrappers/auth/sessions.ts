@@ -12,6 +12,7 @@ export interface session {
 	created_at:				number;
 	expires_at:				number;
 	last_used_at:			number;
+	last_request_at:		number;
 	ip:					 string;
 	user_agent:				string;
 	is_persistent:		  boolean;
@@ -105,6 +106,7 @@ export function createSession(options: Partial<session>): session | undefined {
 		created_at: created_at,
 		expires_at: expires_at,
 		last_used_at: last_used_at,
+		last_request_at: last_used_at,
 		ip: ip,
 		user_agent: user_agent,
 		is_persistent: is_persistent ? 1 : 0
