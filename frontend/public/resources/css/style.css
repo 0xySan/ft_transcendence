@@ -1605,20 +1605,75 @@ button:active {
 	white-space: nowrap;
 }
 
-.profile-chat-button {
+.profile-button {
+	padding: 0.25rem 0.75rem;
+	width: 2rem;
+	height: 2rem;
+
+	border-radius: 18px;
+
 	margin-left: auto;
-	padding: 0.6rem 1.5rem;
-
-	background: rgba(var(--sapphire), 0.6);
-
-	border: none;
-	border-radius: 6px;
-
-	font-size: 1rem;
-	color: rgb(var(--text));
-
 	cursor: pointer;
-	margin-top: -1rem;
+}
+
+.add-chat-button {
+	background: rgba(var(--sapphire), 0.1);
+	border: 1px solid rgba(var(--sapphire), 0.4);
+	fill: rgb(var(--sapphire));
+}
+
+.add-chat-button:hover {
+	background: rgba(var(--sapphire), 0.2);
+}
+
+.friend-request {
+	background: rgba(var(--green), 0.1);
+	border: 1px solid rgba(var(--green), 0.4);
+	fill: rgb(var(--green));
+}
+
+.friend-request:hover {
+	background: rgba(var(--green), 0.2);
+}
+
+.friend-waiting {
+	background: rgba(var(--yellow), 0.1);
+	border: 1px solid rgba(var(--yellow), 0.4);
+	fill: rgb(var(--yellow));
+}
+
+.waiting-fill {
+	fill: rgb(var(--yellow));
+}
+
+.friend-waiting:hover {
+	background: rgba(var(--yellow), 0.2);
+}
+
+.friend-remove {
+	background: rgba(var(--red), 0.1);
+	border: 1px solid rgba(var(--red), 0.4);
+	fill: rgb(var(--red));
+}
+
+.friend-remove:hover {
+	background: rgba(var(--red), 0.2);
+}
+
+.friend-accept {
+	background: rgba(var(--green), 0.1);
+	border: 1px solid rgba(var(--green), 0.4);
+	fill: rgb(var(--green));
+	margin-right: 0.5rem;
+}
+
+.friend-accept:hover {
+	background: rgba(var(--green), 0.2);
+}
+
+.cls-1 { 
+	fill: rgb(var(--green));
+	fill-rule: evenodd;
 }
 
 .profile-error-message {
@@ -1971,9 +2026,6 @@ button:active {
 		margin-top: 0.5rem;
 		height: 1.25rem;
 	}
-	.profile-chat-button {
-		margin-top: -2.25rem;
-	}
 
 	/* 4-player mobile adjustments */
 	.profile-game-body-4p {
@@ -2059,6 +2111,19 @@ button:active {
 	.profile-game-team-score {
 		font-size: 1.25rem;
 	}
+
+	.profile-button {
+		margin-top: -2.8rem;
+		margin-right: 4rem;
+	}
+
+	.add-chat-button {
+		margin-right: 0;
+	}
+
+	.friend-accept {
+		margin-right: 12.5rem;
+	}
 }
 
 /* Mobile Landscape - prioritize horizontal space */
@@ -2115,11 +2180,6 @@ button:active {
 	.profile-info-flag {
 		height: 1rem;
 		margin-left: 0.5rem;
-	}
-
-	.profile-chat-button {
-		margin-left: auto;
-		margin-top: 0;
 	}
 
 	/* 4-player landscape adjustments */
@@ -2183,11 +2243,6 @@ button:active {
 		height: 1rem;
 	}
 
-	.profile-chat-button {
-		padding: 0.5rem 1rem;
-		font-size: 0.9rem;
-	}
-
 	/* 4-player small mobile */
 	.profile-game-pic-mini {
 		width: 26px;
@@ -2235,11 +2290,6 @@ button:active {
 
 	.profile-info-flag {
 		height: 0.9rem;
-	}
-
-	.profile-chat-button {
-		padding: 0.4rem 0.8rem;
-		font-size: 0.8rem;
 	}
 
 	/* 4-player very small landscape */

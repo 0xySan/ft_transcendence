@@ -325,6 +325,163 @@ function updateStatsUI(gameStats: GameStats): void {
 	}
 }
 
+async function updateFriendButton(): Promise<void> {
+	if (!currentUserId || !viewedUserId || currentUserId === viewedUserId) {
+		return;
+	}
+
+	try {
+		// Get current user's friends list
+		const friendsRes = await fetch('/api/friends', {
+			method: 'GET',
+			credentials: 'include'
+		});
+		if (!friendsRes.ok) throw new Error('Failed to fetch friends');
+		const friends: Array<{ sender_user_id: string; target_user_id: string; status: string }> = await friendsRes.json();
+		const isFriend = friends.some(f => 
+			(f.sender_user_id === viewedUserId || f.target_user_id === viewedUserId) && f.status === 'accepted'
+		);
+		console.log('Is friend:', isFriend);
+
+		// Get pending friend requests (received by current user)
+		const pendingRes = await fetch('/api/friends/pending', {
+			method: 'GET',
+			credentials: 'include'
+		});
+		if (!pendingRes.ok) throw new Error('Failed to fetch pending requests');
+		const receivedRequests: Array<{ sender_user_id: string; target_user_id: string }> = await pendingRes.json();
+		const receivedRequest = receivedRequests.some(r => r.sender_user_id === viewedUserId);
+
+		// Get sent friend requests
+		const sentRes = await fetch('/api/friends/sent', {
+			method: 'GET',
+			credentials: 'include'
+		});
+		if (!sentRes.ok) throw new Error('Failed to fetch sent requests');
+		const sentRequests: Array<{ sender_user_id: string; target_user_id: string }> = await sentRes.json();
+		const sentRequest = sentRequests.some(r => r.target_user_id === viewedUserId);
+
+		const friendRequestBtn = document.querySelector('.friend-request') as SVGElement;
+		const friendWaitingBtn = document.querySelector('.friend-waiting') as SVGElement;
+		const friendRemoveBtn = document.querySelector('.friend-remove') as SVGElement;
+		const friendAcceptBtn = document.querySelector('.friend-accept') as SVGElement;
+
+		// Reset all buttons
+		if (friendRequestBtn) friendRequestBtn.classList.add('nondisplayable');
+		if (friendWaitingBtn) friendWaitingBtn.classList.add('nondisplayable');
+		if (friendRemoveBtn) friendRemoveBtn.classList.add('nondisplayable');
+		if (friendAcceptBtn) friendAcceptBtn.classList.add('nondisplayable');
+
+		if (isFriend) {
+			// Show remove button
+			if (friendRemoveBtn) {
+				friendRemoveBtn.classList.remove('nondisplayable');
+				const newBtn = friendRemoveBtn.cloneNode(true) as SVGElement;
+				friendRemoveBtn.parentNode?.replaceChild(newBtn, friendRemoveBtn);
+				newBtn.addEventListener('click', async () => {
+					try {
+						const res = await fetch(`/api/friends/${viewedUserId}`, {
+							method: 'DELETE',
+							credentials: 'include'
+						});
+						if (!res.ok) throw new Error('Failed to remove friend');
+						notify('Friend removed', { type: 'success' });
+						await updateFriendButton();
+					} catch (err) {
+						notify(`${err}`, { type: 'error' });
+					}
+				});
+			}
+		} else if (sentRequest) {
+			// Show waiting button (request pending that we sent)
+			if (friendWaitingBtn) {
+				friendWaitingBtn.classList.remove('nondisplayable');
+				const newBtn = friendWaitingBtn.cloneNode(true) as SVGElement;
+				friendWaitingBtn.parentNode?.replaceChild(newBtn, friendWaitingBtn);
+				newBtn.addEventListener('click', async () => {
+					try {
+						const res = await fetch(`/api/friends/${viewedUserId}`, {
+							method: 'DELETE',
+							credentials: 'include'
+						});
+						if (!res.ok) throw new Error('Failed to cancel request');
+						notify('Friend request cancelled', { type: 'success' });
+						await updateFriendButton();
+					} catch (err) {
+						notify(`${err}`, { type: 'error' });
+					}
+				});
+			}
+		} else if (receivedRequest) {
+			// Show remove button (for received request, can reject/remove)
+			if (friendRemoveBtn) {
+				friendRemoveBtn.classList.remove('nondisplayable');
+				const newBtn = friendRemoveBtn.cloneNode(true) as SVGElement;
+				friendRemoveBtn.parentNode?.replaceChild(newBtn, friendRemoveBtn);
+				newBtn.addEventListener('click', async () => {
+					try {
+						const res = await fetch('/api/friends/reject', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'include',
+							body: JSON.stringify({ senderUserId: viewedUserId })
+						});
+						if (!res.ok) throw new Error('Failed to reject request');
+						notify('Friend request rejected', { type: 'success' });
+						await updateFriendButton();
+					} catch (err) {
+						notify(`${err}`, { type: 'error' });
+					}
+				});
+			}
+			if (friendAcceptBtn) {
+				friendAcceptBtn.classList.remove('nondisplayable');
+				const newBtn = friendAcceptBtn.cloneNode(true) as SVGElement;
+				friendAcceptBtn.parentNode?.replaceChild(newBtn, friendAcceptBtn);
+				newBtn.addEventListener('click', async () => {
+					try {
+						const res = await fetch('/api/friends/accept', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'include',
+							body: JSON.stringify({ senderUserId: viewedUserId })
+						});
+						if (!res.ok) throw new Error('Failed to accept request');
+						notify('Friend request accepted', { type: 'success' });
+						await updateFriendButton();
+					} catch (err) {
+						notify(`${err}`, { type: 'error' });
+					}
+				});
+			}
+		} else {
+			// Show request button
+			if (friendRequestBtn) {
+				friendRequestBtn.classList.remove('nondisplayable');
+				const newBtn = friendRequestBtn.cloneNode(true) as SVGElement;
+				friendRequestBtn.parentNode?.replaceChild(newBtn, friendRequestBtn);
+				newBtn.addEventListener('click', async () => {
+					try {
+						const res = await fetch('/api/friends/request', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							credentials: 'include',
+							body: JSON.stringify({ targetUserId: viewedUserId })
+						});
+						if (!res.ok) throw new Error('Failed to send friend request');
+						notify('Friend request sent', { type: 'success' });
+						await updateFriendButton();
+					} catch (err) {
+						notify(`${err}`, { type: 'error' });
+					}
+				});
+			}
+		}
+	} catch (err) {
+		console.error('Error updating friend button:', err);
+	}
+}
+
 /**
  * Updates the main profile UI with user information
  * Loads profile image, display name, bio, country flag, and background image
@@ -409,7 +566,9 @@ function updateProfileUI(profileData: ProfileData): void {
 	if (viewedUserId)
 		updateGameStats(viewedUserId);
 
-	// Update background image
+	// Update friend button
+	if (viewedUserId && currentUserId && currentUserId !== viewedUserId)
+		updateFriendButton();
 	const backgroundImg = document.querySelector('#profile-div') as HTMLImageElement;
 	if (backgroundImg) {
 		if (profile.backgroundPicture) {
@@ -424,7 +583,7 @@ function updateProfileUI(profileData: ProfileData): void {
 	}
 
 	// Update "Add to chat" button visibility
-	const chatButton = document.querySelector('.profile-chat-button') as HTMLButtonElement;
+	const chatButton = document.querySelector('.add-chat-button') as HTMLButtonElement;
 	if (chatButton) {
 		// Show button only if viewing someone else's profile and not your own
 		if (currentUserId && viewedUserId && currentUserId !== viewedUserId) {
@@ -445,11 +604,8 @@ function updateProfileUI(profileData: ProfileData): void {
 						credentials: 'include',
 						body: JSON.stringify({ targetUserId: viewedUserId })
 					});
-
 					if (!res.ok)
 						throw new Error('Failed to create conversation');
-
-					window.loadPage('/chat');
 				} catch (err) {
 					notify('Failed to create chat. Please try again.', { type: 'error' });
 				}

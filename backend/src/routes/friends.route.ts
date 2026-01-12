@@ -14,6 +14,7 @@ import {
 	rejectFriendRequest,
 	getFriends,
 	getPendingFriendRequests,
+	getSentFriendRequests,
 	deleteFriendRelation
 } from "../db/wrappers/main/users/userFriends.js";
 
@@ -45,9 +46,24 @@ export function friendsRoutes(fastify: FastifyInstance) {
 				return reply.status(400).send({ error: "Target user doesn't exist." });
 			}
 
+			// Check if we already sent a request to them
 			const existing = getFriendRequest(userId, body.targetUserId);
 			if (existing) {
 				return reply.status(409).send({ error: "Friend request already exists." });
+			}
+
+			// Check if they already sent a request to us - if so, accept it automatically
+			const reverseRequest = getFriendRequest(body.targetUserId, userId);
+			if (reverseRequest && reverseRequest.status === 'pending') {
+				const success = acceptFriendRequest(body.targetUserId, userId);
+				if (!success) {
+					return reply.status(400).send({ error: "Failed to accept friend request." });
+				}
+				return reply.status(200).send({ 
+					...reverseRequest,
+					status: 'accepted',
+					message: 'Friend request automatically accepted'
+				});
 			}
 
 			const friend = sendFriendRequest(userId, body.targetUserId);
@@ -125,7 +141,7 @@ export function friendsRoutes(fastify: FastifyInstance) {
 	);
 
 	/**
-	 * Get pending friend requests
+	 * Get pending friend requests (received)
 	 * GET /friends/pending
 	 */
 	fastify.get(
@@ -134,6 +150,19 @@ export function friendsRoutes(fastify: FastifyInstance) {
 		async (request) => {
 			const userId = (request as any).session.user_id;
 			return getPendingFriendRequests(userId);
+		}
+	);
+
+	/**
+	 * Get sent friend requests
+	 * GET /friends/sent
+	 */
+	fastify.get(
+		"/sent",
+		{ preHandler: requireAuth },
+		async (request) => {
+			const userId = (request as any).session.user_id;
+			return getSentFriendRequests(userId);
 		}
 	);
 
