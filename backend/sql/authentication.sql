@@ -150,6 +150,7 @@ CREATE TABLE sessions (
 	created_at				DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of created session
 	expires_at				DATETIME	NOT NULL,												--- timestamp of expired session
 	last_used_at			DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the last used session
+	last_request_at			DATETIME	NOT NULL DEFAULT CURRENT_TIMESTAMP,						--- timestamp of the last request
 	ip						TEXT		NOT NULL,												--- the device public ip
 	user_agent				TEXT,																--- store more informations
 	is_persistent			BOOLEAN		DEFAULT 0,												--- is persistent ?

@@ -7,6 +7,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { checkTokenValidity } from '../utils/session.js';
 import * as crypto from '../utils/crypto.js';
 import { getSessionByTokenHash } from '../db/wrappers/auth/index.js';
+import { touchSessionLastRequest } from './utils.js';
 /**
  * Middleware to require authentication via session token.
  * @param request The Fastify request object.
@@ -24,10 +25,12 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 		return reply.status(401).send({ message: 'Unauthorized: Invalid or expired session' });
 	}
 
+	touchSessionLastRequest((session.session as any).session_id);
+
 	// Attach session to request for downstream handlers
 	(request as any).session = session.session;
 }
-
+	
 export async function requirePartialAuth(request: FastifyRequest, reply: FastifyReply) {
 	const token = request.cookies.session || request.headers['authorization']?.split(' ')[1];
 
@@ -44,6 +47,8 @@ export async function requirePartialAuth(request: FastifyRequest, reply: Fastify
 	if (session.expires_at <= currentTime || session.stage === 'expired') {
 		return reply.status(401).send({ message: 'Unauthorized: Invalid or expired partial session' });
 	}
+
+	touchSessionLastRequest((session as any).session_id);
 
 	(request as any).session = session;
 }
