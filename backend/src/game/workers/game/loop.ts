@@ -4,7 +4,7 @@
  */
 
 import { parentPort } from "worker_threads";
-import { Game, pointsInterface } from "./game.class.js";
+import { Game, userStatsInterface, pointsInterface } from "./game.class.js";
 import type * as msg from "../../sockets/socket.types.js";
 import {
 	createHandler,
@@ -19,7 +19,7 @@ import { Player } from "./player.class.js";
 /*                                   STATS                                    */
 /* -------------------------------------------------------------------------- */
 
-let		userStats: msg.statsPayload[] = [];
+let		userStats: userStatsInterface[] = [];
 let		lastHit: string = "";
 let		pointsTime: pointsInterface[] = [];
 
@@ -158,9 +158,11 @@ function stepGame(game: Game, dt: number): void {
 			- field.wallThickness
 			- padCfg.margin
 			- padCfg.width;
-
-		if (p.vy === undefined)
-			p.vy = 0;
+			
+		const sides = game.getPlayerSidesMap();
+		if( sides[player.id] === "left") (p as any).x = leftX;
+		else if( sides[player.id] === "right") (p as any).x = rightX;
+		if (p.vy === undefined) p.vy = 0;
 
 		const inputUp = p.activeInputs?.up ?? false;
 		const inputDown = p.activeInputs?.down ?? false;

@@ -12,7 +12,6 @@ declare global {
 		localPlayerId?: string;
 		pendingGameStart?: gameStartAckPayload;
 		lobbySettings?: Settings;
-		playerNames?: Record<string, string>;
 	}
 }
 
@@ -998,6 +997,11 @@ class PongBoard {
 			(paddle as any).width = pUpdate.width;
 			(paddle as any).height = pUpdate.height;
 		}
+		
+		// update scores
+		if (update.scores) {
+			updateScores(update.scores);
+		}
 	}
 
 	public destroy() {
@@ -1061,6 +1065,7 @@ function updatePlayerNames() {
 		rightBottomEl?.classList.add("unloaded");
 		barBottom?.classList.add("unloaded");
 	}
+  const side = window.pendingGameStart?.playerSides;
 
 	for (const [playerId, side] of Object.entries(playerSides)) {
 		const name = window.playerNames[playerId] || playerId;
