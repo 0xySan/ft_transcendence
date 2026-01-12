@@ -1,6 +1,7 @@
 // reorganized-pong.ts
 import type { BallSettings, PlayerPayload, Settings } from "../global";
-import type { gameStartAckPayload, PlayerSide, PlayerSideMap } from "./lobbySocket";
+import type { gameStartAckPayload } from "./lobbySocket";
+import { PongTimer } from "./pongBoardUtils";
 
 /* -------------------------------------------------------------------------- */
 /*							   GLOBAL DECLARATIONS						  */
@@ -12,10 +13,9 @@ declare global {
 		localPlayerId?: string;
 		pendingGameStart?: gameStartAckPayload;
 		lobbySettings?: Settings;
+		pongTimer: PongTimer;
 	}
 }
-
-export {};
 
 /** ### addListener
  * - Adds an event listener to the specified target.
@@ -36,7 +36,6 @@ declare function addListener(
  * @param url - The URL of the page to load.
  */
 declare function loadPage(url: string): void;
-
 
 /* -------------------------------------------------------------------------- */
 /*								   GLOBAL TYPES							 */
@@ -91,15 +90,6 @@ function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement 
 	return (element as T);
 }
 
-/**
- * The main pong board container.
- */
-const board = assertElement<HTMLDivElement>(document.getElementById("pong-board"), "Pong board not found");
-/**
- * The countdown overlay element.
- */
-const countdownDiv = assertElement<HTMLDivElement>(document.querySelector(".countdown-overlay"), "Countdown overlay not found");
-
 /** ### cancelLoading
  * - display error message on board and notify user
  * @param message - The error message to display.
@@ -110,6 +100,16 @@ function cancelLoading(message: string): void {
 	window.notify(message, { type: "error" });
 	throw new Error(message);
 }
+
+/**
+ * The main pong board container.
+ */
+const board = assertElement<HTMLDivElement>(document.getElementById("pong-board"), "Pong board not found");
+
+/**
+ * The countdown overlay element.
+ */
+const countdownDiv = assertElement<HTMLDivElement>(document.querySelector(".countdown-overlay"), "Countdown overlay not found");
 
 // check required globals for game operation
 if (!window.lobbySettings) cancelLoading("Lobby settings are not available.");
@@ -156,290 +156,31 @@ addListener(window, 'themeChange', (event: CustomEvent) => {
 	currentThemeColors = getThemeColors();
 });
 
+function endGame() {
+	notify("Game has ended.", { type: "info" });
+	window.pongTimer.stopTimer();
+	const navBar = document.getElementById("nav-bar");
+	if (navBar) navBar.classList.remove("unloaded");
 
-
-/* -------------------------------------------------------------------------- */
-/*									  TIMER								 */
-/* -------------------------------------------------------------------------- */
-
-// MM:SS morphing timer — uses colon squares and JS-controlled blink,
-
-const digitSegments: { [key: number]: number[][][] } = {
-	0: [
-		[[0, 0], [1, 0]],
-		[[1, 0], [1, 1]],
-		[[1, 1], [1, 2]],
-		[[1, 2], [0, 2]],
-		[[0, 2], [0, 1]],
-		[[0, 1], [0, 0]],
-		[[0, 0], [1, 0]]
-	],
-
-	1: [
-		[[1, 0], [1, 0]],
-		[[1, 0], [1, 1]],
-		[[1, 1], [1, 2]],
-		[[1, 2], [1, 2]],
-		[[1, 2], [1, 1]],
-		[[1, 1], [1, 0]],
-		[[1, 0], [1, 0]]
-	],
-
-	2: [
-		[[1, 0], [0, 0]],
-		[[1, 0], [1, 1]],
-		[[0, 1], [1, 1]],
-		[[1, 2], [0, 2]],
-		[[0, 2], [0, 1]],
-		[[1, 1], [1, 0]],
-		[[1, 0], [0, 0]]
-	],
-
-	3: [
-		[[1, 0], [0, 0]],
-		[[1, 0], [1, 1]],
-		[[1, 1], [0, 1]],
-		[[0, 2], [1, 2]],
-		[[1, 2], [1, 1]],
-		[[1, 1], [1, 0]],
-		[[1, 0], [0, 0]]
-	],
-
-	4: [
-		[[1, 0], [1, 0]],
-		[[0, 0], [0, 1]],
-		[[1, 1], [0, 1]],
-		[[1, 2], [1, 2]],
-		[[1, 2], [1, 1]],
-		[[1, 1], [1, 0]],
-		[[1, 0], [1, 0]]
-	],
-
-	5: [
-		[[1, 0], [0, 0]],
-		[[0, 0], [0, 1]],
-		[[1, 1], [0, 1]],
-		[[0, 2], [1, 2]],
-		[[1, 2], [1, 1]],
-		[[1, 0], [1, 0]],
-		[[1, 0], [0, 0]]
-	],
-
-	6: [
-		[[1, 0], [0, 0]],
-		[[0, 0], [0, 2]],
-		[[1, 1], [0, 1]],
-		[[0, 2], [1, 2]],
-		[[1, 2], [1, 1]],
-		[[0, 0], [0, 0]],
-		[[1, 0], [0, 0]]
-	],
-
-	7: [
-		[[0, 0], [1, 0]],
-		[[1, 0], [1, 1]],
-		[[1, 1], [1, 1]],
-		[[1, 2], [1, 2]],
-		[[1, 2], [1, 1]],
-		[[0, 0], [0, 0]],
-		[[0, 0], [1, 0]]
-	],
-
-	8: [
-		[[0, 0], [1, 0]],
-		[[1, 0], [1, 2]],
-		[[1, 1], [0, 1]],
-		[[1, 2], [0, 2]],
-		[[0, 2], [0, 1]],
-		[[0, 1], [0, 0]],
-		[[0, 0], [0, 0]]
-	],
-
-	9: [
-		[[0, 0], [1, 0]],
-		[[1, 0], [1, 2]],
-		[[1, 1], [0, 1]],
-		[[1, 2], [0, 2]],
-		[[0, 1], [0, 1]],
-		[[0, 1], [0, 0]],
-		[[0, 0], [0, 0]]
-	]
-};
-
-/* configuration */
-const NUM_DIGITS = 4; // MMSS
-const COLON_X = 6.2; // colon translate x
-const COLON_MID_Y = 0.9; // center between top/bottom colon dots (dots at 0 and 1.4)
-const DIGIT_VERTICAL_CENTER = 0.5; // digits internal center (their coordinate mid)
-const VERTICAL_ADJUST = COLON_MID_Y - DIGIT_VERTICAL_CENTER; // shift to center digits on colon
-const DIGIT_OFFSETS = [-4, -2, 2, 4]; // horizontal offsets relative to colon X
-const DISPLAY_SCALE = 1.6; // scale each digit group
-
-/* DOM refs */
-const digitsContainer = assertElement<SVGGElement>(document.getElementById("digits"), "Digits container not found");
-const colon = assertElement<SVGElement>(document.getElementById("colon"), "Colon element not found");
-
-/** ### createDigits
- * - initializes the 4-digit SVG display structure
- * - creates groups and segment paths for each digit
- * - sets initial segment shapes to "0"
- */
-function createDigits() {
-	digitsContainer.innerHTML = "";
-
-	for (let i = 0; i < NUM_DIGITS; i++) {
-		// Create a group (<g>) for this digit
-		const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-		g.classList.add("digit");
-
-		// Compute the horizontal offset using pre-calculated spacing
-		const offsetX = COLON_X + DIGIT_OFFSETS[i];
-
-		// Vertically align the digit relative to the colon
-		g.setAttribute(
-			"transform",
-			`translate(${offsetX} ${VERTICAL_ADJUST}) scale(${DISPLAY_SCALE})`
-		);
-
-		// Create the 7 path segments for the digit
-		for (let s = 0; s < 7; s++) {
-			const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-			p.classList.add("seg" + s); // For debugging / color distinction
-
-			// Initialize each segment to the "0" digit shape
-			const init =
-				digitSegments[0] && digitSegments[0][s]
-					? digitSegments[0][s]
-					: [
-							[0, 0],
-							[0, 0]
-						];
-
-			p.setAttribute(
-				"d",
-				`M${init[0][0]} ${init[0][1]} L${init[1][0]} ${init[1][1]}`
-			);
-			g.appendChild(p);
-		}
-
-		// Add the digit group to the main container
-		digitsContainer.appendChild(g);
-	}
-}
-
-
-/** ### secondsToMMSS
- * - converts a total number of seconds into a "MMSS" string format
- * @param sec total seconds to convert
- * @returns string in "MMSS" format representing minutes and seconds
- */
-function secondsToMMSS(sec: number): string {
-	const minutes = Math.floor(sec / 60);
-	const seconds = sec % 60;
-	return String(minutes).padStart(2, "0") + String(seconds).padStart(2, "0");
-}
-
-/** ### updateDisplayFromSeconds
- * - updates the 4-digit SVG display based on a total seconds value
- * @param totalSeconds total seconds to display (0–5999)
- */
-function updateDisplayFromSeconds(totalSeconds: number) {
-	const mmss = secondsToMMSS(totalSeconds);
-
-	const groups = digitsContainer.querySelectorAll("g.digit");
-	// Update each group (each digit)
-	groups.forEach((g, idx) => {
-		// Get the numeric value of this digit
-		const ch = Number(mmss[idx]);
-
-		// Get segment definitions for this digit, fallback to "0"
-		const segDefs = digitSegments[ch] || digitSegments[0];
-
-		// Select all segment <path> elements in the group
-		const paths = g.querySelectorAll("path");
-
-		// Update each segment line according to the target digit
-		paths.forEach((p, sIdx) => {
-			const seg = segDefs[sIdx] || [
-				[0, 0],
-				[0, 0]
-			];
-			const d = `M${seg[0][0]} ${seg[0][1]} L${seg[1][0]} ${seg[1][1]}`;
-			p.setAttribute("d", d);
-		});
-	});
-}
-
-/** ### colonTimeout
- * - timeout ID for colon blink removal
- */
-let colonTimeout: number | null = null;
-
-/** ### blinkColon
- * - blinks the colon element by toggling its "active" class
- * @param ms duration in milliseconds for the blink @default 600
- */
-function blinkColon(ms = 600) {
-	if (!colon) return;
-	colon.classList.add("active");
-	if (colonTimeout) clearTimeout(colonTimeout);
-	colonTimeout = setTimeout(() => colon.classList.remove("active"), ms);
-}
-
-// timer state
-/** total seconds elapsed for the timer */
-let seconds = 0;
-/** interval ID for the timer */
-let timerId: number | null = null;
-/** whether the timer is currently paused */
-let paused = false;
-
-/** ### startTimer
- * - starts the timer interval and marks it as running
- */
-function startTimer() {
-	if (timerId) return;
-	timerId = setInterval(() => {
-		seconds = (seconds + 1) % 6000;
-		updateDisplayFromSeconds(seconds);
-		blinkColon();
+	setTimeout(() => { 
+		pongBoard.destroy();
+		window.pongTimer.stopTimer();
+		loadPage("lobby"); 
 	}, 1000);
-	paused = false;
 }
 
-/** ### stopTimer
- * - stops the timer interval and marks it as paused
- */
-function stopTimer() {
-	if (timerId) {
-		clearInterval(timerId);
-		timerId = null;
-	}
-	paused = true;
-}
 
 /* -------------------------------------------------------------------------- */
 /*								   RENDERING								*/
 /* -------------------------------------------------------------------------- */
 
-/** ### PongBoardCanvas
- * - creates and manages a canvas sized to the game world
- * - scales with container while keeping internal resolution
- */
 class PongBoardCanvas {
-	/** The **HTMLCanvasElement** used for rendering the pong board. */
 	canvas: HTMLCanvasElement;
-	/** The **CanvasRenderingContext2D** for drawing on the canvas. */
 	context: CanvasRenderingContext2D;
-	/** The width of the game world in pixels. */
 	private worldWidth: number;
-	/** The height of the game world in pixels. */
 	private worldHeight: number;
+	private enforceLandscape?: () => void;
 
-	/**
-	 * Constructor for PongBoardCanvas.
-	 * @param container - The HTMLDivElement to which the canvas will be appended.
-	 */
 	constructor(container: HTMLDivElement) {
 		this.canvas = document.createElement("canvas");
 		this.context = this.canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -452,25 +193,104 @@ class PongBoardCanvas {
 		this.canvas.width = this.worldWidth;
 		this.canvas.height = this.worldHeight;
 
-		container.appendChild(this.canvas);
+		// append to body directly for fullscreen overlay
+		document.body.appendChild(this.canvas);
 
+		this.applyMobileFullscreen();
 		this.resize();
-		addListener(window, "resize", () => this.resize());
+		window.addEventListener("resize", () => this.resize());
 	}
 
-	/** ### resize
-	 * - Resizes the canvas to fit its container while maintaining aspect ratio.
-	 */
 	private resize() {
-		const parent = this.canvas.parentElement!;
-		const availW = parent.clientWidth;
-		const availH = parent.clientHeight;
+		// Full viewport dimensions
+		const availW = window.innerWidth;
+		const availH = window.innerHeight;
+
+		// Scale while keeping aspect ratio
 		const scale = Math.min(availW / this.worldWidth, availH / this.worldHeight);
-		// use CSS scaling to keep canvas internal resolution intact
 		this.canvas.style.width = `${this.worldWidth * scale}px`;
 		this.canvas.style.height = `${this.worldHeight * scale}px`;
+
+		// Center horizontally and vertically
+		this.canvas.style.position = "fixed";
+		this.canvas.style.top = "50%";
+		this.canvas.style.left = "50%";
+		this.canvas.style.transform = "translate(-50%, -50%)";
+		this.canvas.style.display = "block";
+		this.canvas.style.zIndex = "9999";
 	}
+
+	private applyMobileFullscreen() {
+		const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+		if (!isMobile) return;
+
+		// Fullscreen styles
+		document.body.style.margin = "0";
+		document.body.style.overflow = "hidden";
+		document.body.style.background = "black";
+
+		// Define the function once
+		this.enforceLandscape = () => {
+			if (window.innerWidth < window.innerHeight) {
+				const navBar = document.getElementById("nav-bar");
+				if (navBar) navBar.classList.add("unloaded");
+				if (!document.getElementById("rotate-msg")) {
+					const msg = document.createElement("div");
+					msg.id = "rotate-msg";
+					msg.innerText = "Rotate your device to landscape";
+					Object.assign(msg.style, {
+						position: "fixed",
+						top: "0",
+						left: "0",
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						background: "black",
+						color: "white",
+						fontSize: "2rem",
+						zIndex: "10000",
+						textAlign: "center",
+					});
+					document.body.appendChild(msg);
+				}
+				this.canvas.style.display = "none";
+			} else {
+				const msg = document.getElementById("rotate-msg");
+				if (msg) msg.remove();
+				this.canvas.style.display = "block";
+			}
+			this.resize();
+		};
+
+		window.addEventListener("resize", this.enforceLandscape);
+		this.enforceLandscape();
+	}
+
+	public destroy() {
+		// remove canvas
+		this.canvas.remove();
+
+		// remove rotate message
+		const msg = document.getElementById("rotate-msg");
+		if (msg) msg.remove();
+
+		// restore body
+		document.body.style.margin = "";
+		document.body.style.overflow = "";
+		document.body.style.background = "";
+
+		// remove listener
+		if (this.enforceLandscape) {
+			window.removeEventListener("resize", this.enforceLandscape);
+			this.enforceLandscape = undefined;
+		}
+	}
+
 }
+
+
 
 /* -------------------------------------------------------------------------- */
 /*							  INPUT BUFFER									*/
@@ -857,34 +677,42 @@ class PongBoard {
 		const context = this.canvas.context;
 
 		const playerSides = window.pendingGameStart!.playerSides;
+		const padCfg = window.lobbySettings!.paddles;
 
-		for (const [playerId, side] of Object.entries(playerSides)) {
+		const getPaddlePosition = (side: string) => {
 			let x: number, y: number;
-			const padW = window.lobbySettings!.paddles.width;
-			const padH = window.lobbySettings!.paddles.height;
-			// let color;
-			if (side === "top-left" || side === "bottom-left" || side === "left") x = 50;
-			else x = this.canvas.canvas.width - 50 - padW;
+			const margin = 50;
 
-			if (side === "top-left" || side === "top-right") y = 50;
-			else if (side === "bottom-left" || side === "bottom-right") y = this.canvas.canvas.height - 50 - padH;
-			else y = (this.canvas.canvas.height - padH) / 2;
-			let playerColor;
-			if (side === "top-left" || side === "bottom-left" || side === "left")
-				playerColor = '--red';
-			else
-				playerColor = '--blue';
-			const paddle = new Paddle(x, y, padW, padH, context, playerColor);
+			// horizontal
+			if (side.includes("left")) x = margin;
+			else x = this.canvas.canvas.width - margin - padCfg.width;
+
+			// vertical
+			if (side.includes("top")) y = margin;
+			else if (side.includes("bottom")) y = this.canvas.canvas.height - margin - padCfg.height;
+			else y = (this.canvas.canvas.height - padCfg.height) / 2;
+
+			return { x, y };
+		};
+
+		const getPaddleColor = (side: string) => (side.includes("left") ? "--red" : "--blue");
+
+		// create paddles for each player
+		for (const [playerId, side] of Object.entries(playerSides)) {
+			const { x, y } = getPaddlePosition(side);
+			const color = getPaddleColor(side);
+
+			const paddle = new Paddle(x, y, padCfg.width, padCfg.height, context, color);
 			this.paddles.push(paddle);
 			this.paddleByPlayerId.set(playerId, paddle);
 		}
 
 		this.playerPaddle = this.paddleByPlayerId.get(window.localPlayerId!)!;
+		if (window.isGameOffline) this.player2Paddle = this.paddleByPlayerId.get("user2");
 
-		if (window.isGameOffline)
-			this.player2Paddle = this.paddleByPlayerId.get("user2");
 		this.ball = new Ball(context, window.lobbySettings!.ball);
 	}
+
 
 	/** ### getPaddleByPlayerId
 	 * - retrieve the Paddle instance for a given player ID
@@ -913,7 +741,7 @@ class PongBoard {
 		}
 	}
 
-		/** ### handleOfflineGoal
+	/** ### handleOfflineGoal
 	 * - handle goal scoring in offline mode
 	 * @param side - which side was scored on ("left" or "right")
 	 */
@@ -948,15 +776,13 @@ class PongBoard {
 		const winningScore = window.lobbySettings!.scoring.firstTo;
 		for (const score of this.scores.values()) {
 			if (score >= winningScore) {
-				notify("Game over! A player has reached the winning score.", { type: "success" });
-				stopTimer();
-				pongBoard.destroy();
-				loadPage("lobby");
-				setTimeout(() => {
-					// Simulate click on offline button to return to offline lobby
-					const offlineBtn = document.getElementById("lobby-offline");
-					if (offlineBtn)	offlineBtn.click();
-				}, 500); 
+				// Reset window for lobby
+				window.isGameOffline = false;
+				window.pendingGameStart = undefined;
+				window.localPlayerId = undefined;
+				window.lobbySettings = undefined;
+				// End game
+				endGame();
 				break;
 			}
 			}
@@ -967,7 +793,7 @@ class PongBoard {
 	 */
 	public draw() {
 		const ctx = (this.canvas as any).context as CanvasRenderingContext2D;
-		ctx.fillStyle = "black";
+		ctx.fillStyle = currentThemeColors["--crust"] || 'black';
 		ctx.fillRect(0, 0, (this.canvas as any).canvas.width, (this.canvas as any).canvas.height);
 		if (this.ball) this.ball.draw();
 		for (const p of this.paddles) p.draw();
@@ -1005,12 +831,15 @@ class PongBoard {
 	}
 
 	public destroy() {
-	this.canvas.canvas.remove();
-	this.paddles = [];
-	this.paddleByPlayerId.clear();
-	this.ball = null as any;
+		this.canvas.canvas.remove();
+		this.paddles = [];
+		this.paddleByPlayerId.clear();
+		this.ball = null as any;
+		this.scores.clear();
+		this.canvas.destroy();
 	}
 }
+
 
 /* -------------------------------------------------------------------------- */
 /*								 SOCKET / MESSAGES						  */
@@ -1036,11 +865,10 @@ function updateScores(scores: { playerId: string; score: number }[]) {
 		const side = playerSides[playerId];
 		if (!side) continue;
 
-		if (side === "left" || side === "top-left" || side === "bottom-left") {
+		if (side === "left" || side === "top-left" || side === "bottom-left")
 			leftScore = leftScore === null ? score : Math.max(leftScore, score);
-		} else if (side === "right" || side === "top-right" || side === "bottom-right") {
+		else if (side === "right" || side === "top-right" || side === "bottom-right")
 			rightScore = rightScore === null ? score : Math.max(rightScore, score);
-		}
 	}
 
 	if (leftScore !== null) scoreLeftEl.textContent = String(leftScore);
@@ -1090,10 +918,9 @@ function handlePlayer(payload: PlayerPayload) {
 		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
 		if (index !== -1) window.playerSyncData.players.splice(index, 1);
 
-		// TODO owner verif here
 		if (isOwner && window.playerSyncData.players.length > 0) window.playerSyncData.ownerId = window.playerSyncData.players[0].playerId;
 
-		loadPage('/lobby');
+		endGame();
 	}
 }
 
@@ -1113,13 +940,7 @@ if (!window.isGameOffline) {
 			if (last) paddle.applyInputs(last.inputs);
 		} else if (msg.type === "game") {
 			if (msg.payload.action === "stopped") {
-				notify("Game has ended.", { type: "info" });
-				stopTimer();
-				setTimeout(() => { 
-					pongBoard.destroy();
-					stopTimer();
-					loadPage("lobby"); 
-				}, 1000);
+				endGame();
 			} else {
 				const payload = msg.payload as GameStateUpdate;
 				pongBoard.applyUpdate(payload);
@@ -1135,15 +956,11 @@ if (!window.isGameOffline) {
 		}
 	});
 
-	addListener(window.socket!, "close", () => {
-		notify("Connection lost.", { type: "warning" });
-		stopTimer();
-		setTimeout(() => { loadPage("lobby"); }, 3000);
-	});
+	endGame();
 }
 
 /* -------------------------------------------------------------------------- */
-/*								 INPUT HANDLING							 */
+/*								 INPUT HANDLING								  */
 /* -------------------------------------------------------------------------- */
 
 addListener(window, "keydown", (event: KeyboardEvent) => handleKey(event, true));
@@ -1189,6 +1006,64 @@ function handleKey(event: KeyboardEvent, pressed: boolean) {
 		}));
 	}
 }
+
+/* -------------------------------------------------------------------------- */
+/*                               TOUCH INPUT HANDLING                          */
+/* -------------------------------------------------------------------------- */
+
+// add touch listeners
+addListener(window, "touchstart", handleTouch);
+addListener(window, "touchmove", handleTouch);
+addListener(window, "touchend", handleTouchEnd);
+
+/** handleTouch
+ * Convert touch position to paddle inputs
+ */
+function handleTouch(event: TouchEvent) {
+	event.preventDefault(); // prevent scrolling
+
+	const width = window.innerWidth;
+	const height = window.innerHeight;
+
+	for (const touch of Array.from(event.touches)) {
+		const x = touch.clientX;
+		const y = touch.clientY;
+
+		let direction: KeyName | null = null;
+		let buffer: InputBuffer;
+
+		// left half = local player paddle, right half = second paddle (offline)
+		const isLeftSide = x < width / 2;
+		if (isLeftSide) buffer = pongBoard.playerPaddle.buffer;
+		else if (window.isGameOffline) buffer = pongBoard.player2Paddle!.buffer;
+		else continue;
+
+		// determine vertical zone
+		if (y < height / 2) direction = "up";
+		else direction = "down";
+
+		// determine frame
+		const frameId = pongGame.getCurrentFrame();
+		buffer.setKeyAndBuildFrame(direction, true, frameId);
+	}
+}
+
+/** handleTouchEnd
+ * Release all touches
+ */
+function handleTouchEnd(event: TouchEvent) {
+	event.preventDefault();
+	const buffers = [pongBoard.playerPaddle.buffer];
+	if (window.isGameOffline && pongBoard.player2Paddle)
+		buffers.push(pongBoard.player2Paddle.buffer);
+
+	for (const buffer of buffers) {
+		const frameId = pongGame.getCurrentFrame();
+		buffer.setKeyAndBuildFrame("up", false, frameId);
+		buffer.setKeyAndBuildFrame("down", false, frameId);
+	}
+}
+
 
 /* -------------------------------------------------------------------------- */
 /*								  GAME LOOP								 */
@@ -1263,7 +1138,7 @@ class PongGame {
 	 */
 	private startLoop() {
 		if (this.running) return;
-		startTimer();
+		window.pongTimer.startTimer();
 		this.running = true;
 		this.lastTime = performance.now();
 
@@ -1325,9 +1200,9 @@ const pongGame = new PongGame(pongBoard);
 
 updatePlayerNames();
 
-createDigits();
-updateDisplayFromSeconds(seconds);
+window.pongTimer.updateDisplayFromSeconds(window.pongTimer.seconds);
 countdownDiv.style.fontSize = "12vh";
 
 // start the game using the server-provided startTime
 pongGame.startAt(window.pendingGameStart!.startTime);
+registerDynamicCleanup(endGame);
