@@ -6,6 +6,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { isUserInGame } from "../game/utils.js";
+import { isValidUUIDv7 } from "../../utils/crypto.js";
 import { getActiveSessionsByUserId } from "../../db/wrappers/auth/sessions.js";
 import { connectionSchema } from "../../plugins/swagger/schemas/connection.schema.js";
 
@@ -28,6 +29,10 @@ export function userConnectionRoutes(fastify: FastifyInstance) {
                     return reply.status(400).send({ message: 'Invalid user id' });
                 }
 
+                if (!isValidUUIDv7(targetUserId)) {
+                    return reply.status(400).send({ message: 'Invalid user id' });
+                }
+
                 // If target user is in an active game -> online and in a game
                 if (isUserInGame(targetUserId)) {
                     return reply.status(200).send({ status: 'online', detail: 'in_game' });
@@ -35,7 +40,11 @@ export function userConnectionRoutes(fastify: FastifyInstance) {
 
                 // Otherwise check target user's sessions last_request_at
                 const sessions = getActiveSessionsByUserId(targetUserId);
-                if (sessions && sessions.length > 0) {
+                if (!Array.isArray(sessions)) {
+                    console.error('getActiveSessionsByUserId returned a non-array value for userId:', targetUserId);
+                    return reply.status(500).send({ message: 'Internal Server Error' });
+                }
+                if (sessions.length > 0) {
                     let latest = 0;
                     for (const s of sessions) {
                         if (typeof s.last_request_at === 'number' && s.last_request_at > latest) latest = s.last_request_at;

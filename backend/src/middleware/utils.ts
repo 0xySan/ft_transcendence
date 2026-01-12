@@ -10,5 +10,5 @@ export function touchSessionLastRequest(session_id: number): boolean {
     const currentTime = Math.floor(Date.now() / 1000);
     const result = updateSession(session_id, { last_request_at: currentTime });
 
-    return (result);
+    return result;
 }
