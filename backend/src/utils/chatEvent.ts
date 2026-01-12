@@ -1,7 +1,6 @@
 import { FastifyReply } from "fastify";
 import { getConversationMember } from "../db/wrappers/chat/chatConversationMembers.js";
 import { isBlockedBy } from "../db/wrappers/chat/chatUserBlocks.js";
-import { workerData } from "worker_threads";
 
 export type Session = { userId: string; user_id: string; [key: string]: any };
 

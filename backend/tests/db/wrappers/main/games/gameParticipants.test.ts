@@ -50,7 +50,7 @@ describe("GameParticipants wrapper (DB constraints + cascade)", () => {
 			`INSERT INTO games (game_id, mode, status) VALUES (?, ?, ?)`
 		);
 		
-		const g = insertGameStmt.run(gameId, "online", "waiting");
+		insertGameStmt.run(gameId, "online", "waiting");
 		
 	});
 
@@ -174,7 +174,7 @@ describe("GameParticipants wrapper (DB constraints + cascade)", () => {
 	it("should cascade delete participants when game is deleted (ON DELETE CASCADE)", () => {
 		// create a new game to isolate this test
 		const newGameId = uuidv7();
-		const g = db.prepare("INSERT INTO games(game_id, mode, status) VALUES (?, ?, ?)").run(newGameId, "online", "waiting");
+		db.prepare("INSERT INTO games(game_id, mode, status) VALUES (?, ?, ?)").run(newGameId, "online", "waiting");
 
 		addParticipant(newGameId, userId1, 10, "win", 1);
 		addParticipant(newGameId, userId2, 20, "loss", 2);
@@ -188,7 +188,7 @@ describe("GameParticipants wrapper (DB constraints + cascade)", () => {
 	it("should cascade delete participants when a user is deleted (ON DELETE CASCADE)", () => {
 		// create a new game for this test
 		const newGameId = uuidv7();
-		const g = db.prepare("INSERT INTO games(game_id, mode, status) VALUES (?, ?, ?)").run(newGameId, "online", "waiting");
+		db.prepare("INSERT INTO games(game_id, mode, status) VALUES (?, ?, ?)").run(newGameId, "online", "waiting");
 
 		addParticipant(newGameId, userId1, 10, "win", 1);
 		addParticipant(newGameId, userId2, 20, "loss", 2);

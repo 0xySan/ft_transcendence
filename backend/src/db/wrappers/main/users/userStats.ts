@@ -4,7 +4,6 @@
  * Provides retrieval, creation, and update utilities for user statistics.
  */
 
-import { execArgv } from "node:process";
 import { db, insertRow, getRow } from "../../../index.js";
 
 // --- Types ---

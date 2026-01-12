@@ -48,7 +48,7 @@ export function handleInputMessage(
 	ws:			msg.gameSocket,
 	payload:	msg.inputPayload
 ): void {
-	// Currently, input handling is done in the worker thread.
+	// Input handling is done in the worker thread.
 	// Find the worker responsible for this game and forward the inputs.
 	const workerEntry = workers.find(w => w.activeGames.includes(ws.gameId));
 	if (!workerEntry) return;

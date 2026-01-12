@@ -124,7 +124,7 @@ if (window.isGameOffline) // If we play online
 			user2: "right",
 		},
 		startTime: Date.now() + 3000
-	}
+	};
 	window.localPlayerId = "user1";
 } else {
 	if (!window.socket || window.socket.readyState !== WebSocket.OPEN) cancelLoading("WebSocket connection is not established.");
@@ -883,7 +883,7 @@ class PongBoard {
 		this.playerPaddle = this.paddleByPlayerId.get(window.localPlayerId!)!;
 
 		if (window.isGameOffline)
-			this.player2Paddle = this.paddleByPlayerId.get("user2")
+			this.player2Paddle = this.paddleByPlayerId.get("user2");
 		this.ball = new Ball(context, window.lobbySettings!.ball);
 	}
 

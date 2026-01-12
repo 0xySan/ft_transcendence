@@ -20,16 +20,6 @@ if (process.env.NODE_ENV !== 'test' && (!process.env.ENCRYPTION_KEY || process.e
 
 import { setupWebSocketServer } from "./game/sockets/index.js";
 
-/**
- * This interface with a worker (thread) and a list of players in this.
- */
-export interface worker {
-	/* This is the worker (thread) with 'parties_per_core' */
-	worker: Worker;
-	/* This is a list with every user_id in game in this worker (thread). */
-	players: string[];
-}
-
 if (process.env.DOMAIN_NAME === undefined || process.env.DOMAIN_NAME.length === 0) {
 	process.env.DOMAIN_NAME = 'localhost';
 }

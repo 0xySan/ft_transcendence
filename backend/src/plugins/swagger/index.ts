@@ -17,7 +17,7 @@ export default async function swaggerPlugin(app: FastifyInstance) {
 			},
 			servers: [
 				{
-					url: "http://localhost:3000/api",
+					url: "https://pong.moutig.sh/api",
 					description: "Production server",
 				},
 			],

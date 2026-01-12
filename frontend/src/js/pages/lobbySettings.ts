@@ -25,29 +25,6 @@ declare global {
 /*                                    Utils                                    */
 /* -------------------------------------------------------------------------- */
 
-// addListener(window, 'beforeunload', async function (event: BeforeUnloadEvent) {
-// 	const elem: HTMLElement | null = document.getElementById("lobby-multiplayer-button");
-// 	if (elem && elem.classList.contains("current-mode")) {
-// 		try {
-// 			const response = await fetch("/api/game/leave", {
-// 				method: "POST",
-// 				headers: {
-// 					"Content-Type": "application/json",
-// 				},
-// 				body: JSON.stringify({ settings: currentSettings }),
-// 			});
-	
-// 			if (!response.ok) {
-// 				throw new Error("Request failed");
-// 			}
-	
-// 			notify("You left the queue.", { type: "success" });
-// 		} catch (error) {
-// 			notify("Error leaving the queue.", { type: "error" });
-// 		}
-// 	}
-// });
-
 /** ### getEl
  * - get element by ID + typed
  * @param id - element ID

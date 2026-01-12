@@ -315,4 +315,5 @@ export type payload =
 	| inputPayload
 	| workerInputPayload
 	| clientInputPayload
-	| gameStatePayload;
+	| gameStatePayload
+	| dbPayload;

@@ -9,8 +9,8 @@ import path from "path";
 import os from "os";
 
 import { getStatsByUserId, createStats, updateStats, incrementGamesWon, incrementGamesLost } from "../../db/wrappers/main/users/userStats.js"
-import { createGame, getAllGames } from "../../db/wrappers/main/games/games.js"
-import { addParticipant, getAllParticipants } from "../../db/wrappers/main/games/gameParticipants.js"
+import { createGame } from "../../db/wrappers/main/games/games.js"
+import { addParticipant } from "../../db/wrappers/main/games/gameParticipants.js"
 
 import type * as msg from "../sockets/socket.types.js";
 import * as game from "../workers/game/game.types.js";
@@ -60,9 +60,7 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 			for (const stat of msg.payload.users) {
 				if (stat.state == "null") stat.state = "draw";
 				else if (stat.state == "lose") stat.state = "loss";
-				console.log("DEBUG: user_id = " + stat.userId);
 				addParticipant(msg.payload.gameId, stat.userId, stat.score, stat.state, msg.payload.users.length > 2 ? 2 : 1);
-				console.log("DEBUG: new participant !");
 			}
 
 			return;

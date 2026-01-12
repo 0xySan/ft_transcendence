@@ -46,7 +46,6 @@ function parsePayload(type: socket.msgType, payload: any): socket.payload | null
 		case "connect": return parseConnectPayload(payload);
 		case "game": return parseGamePayload(payload);
 		case "input": return parseInputPayload(payload);
-		case "send": return payload as any;
 		default: return null;
 	}
 }

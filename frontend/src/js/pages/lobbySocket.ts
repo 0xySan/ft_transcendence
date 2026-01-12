@@ -80,7 +80,7 @@ const htmlSettings = {
 	advanced: {
 		div: getEl<HTMLDivElement>("lobby-custom-game-advanced-settings"),
 	}
-}
+};
 
 /* -------------------------------------------------------------------------- */
 /* WebSocket types                                                            */
@@ -253,7 +253,7 @@ function handlePlayer(payload: PlayerPayload): void {
 				playerId: payload.playerId,
 				displayName: payload.displayName,
 				status: "player"
-			})
+			});
 		}
 		addPlayer(
 			payload.playerId,
@@ -435,8 +435,6 @@ addListener(launchBtn, "click", () => {
 
 	window.socket.send(JSON.stringify(msg));
 });
-
-const lobbyOnline: any = document.getElementById("lobby-select-mode");
 
 /* -------------------------------------------------------------------------- */
 /* Reset                                                                      */

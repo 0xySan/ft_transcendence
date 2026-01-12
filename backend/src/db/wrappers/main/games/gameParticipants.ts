@@ -53,7 +53,6 @@ export function addParticipant(
 	result: 'win' | 'loss' | 'draw',
 	team?: number
 ): GameParticipant | undefined {
-	// console.log("\n\n\n\n\n\nDEBUG: user_id = " + userId);
 	try {
 		// Insert or ignore to respect UNIQUE(game_id, user_id)
 		const stmt = db.prepare(`

@@ -42,7 +42,7 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 
 			return reply.status(202).send({
 				message: 'Settings accepted for processing.',
-			})
+			});
 		}
 	);
 }

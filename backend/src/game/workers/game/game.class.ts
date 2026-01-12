@@ -11,18 +11,10 @@ import {
 	state
 } from "./game.types.js";
 import { parentPort } from "worker_threads";
-import { parseArgs } from "util";
 
 export interface pointsInterface {
 	time: number;
 	who: string;
-}
-
-export interface userStatsInterface {
-	userId:			string;
-	earnPoints:		number;
-	score:			number;
-	state:			"lose" | "win" | "null";
 }
 
 /**
@@ -136,7 +128,7 @@ export class Game {
 		};
 	}
 
-	endGame(stats: userStatsInterface[], startTime: number | undefined, scoreLimit: number, gameId: string, pointsTime: pointsInterface[]) {
+	endGame(stats: socket.statsPayload[], startTime: number | undefined, scoreLimit: number, gameId: string, pointsTime: pointsInterface[]) {
 		let time: number = 0;
 		if (startTime) time = Date.now() - startTime;
 
@@ -148,7 +140,7 @@ export class Game {
 				scoreLimit: scoreLimit,
 				gameId: gameId,
 				pointsTime: pointsTime
-			},
+			} as socket.dbPayload,
 			userIds: this.players.map(p => p.id)
 		};
 

@@ -6,15 +6,13 @@
 import { FastifyInstance } from "fastify";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 
-import { addClient, closeClientById } from "../../utils/queueEvent.js"
-import { addUserToGame, getGameByCode, isUserInGame, parseGameConfig } from "./utils.js";
-import { assignGameToWorker, getGameIdByUser } from "../../game/workers/init.js"
-import { activeGames, wsPendingConnections } from "../../globals.js";
-import { handleGameMessage } from "../../game/sockets/handlers/startGame.js"
+import { addUserToGame, getGameByCode, parseGameConfig } from "./utils.js";
+import { addOrRemovePlayerGameWorker, assignGameToWorker, getGameIdByUser } from "../../game/workers/init.js"
+import { wsPendingConnections } from "../../globals.js";
 import { v7 as uuidv7 } from "uuid";
 import { generateRandomToken } from "../../utils/crypto.js";
 import { config } from "../../game/workers/game/game.types.js";
-import { start } from "repl";
+import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
 export const waitingUsers: string[] = [];
 
 export function leaveQueue(userId: string): boolean {
@@ -33,7 +31,6 @@ export function findingGameRoute(fastify: FastifyInstance) {
         },
     async (request, reply) => {
         const userId = (request as any).session.user_id;
-        const session = (request as any).session;
 
         if (!userId) return reply.status(400).send({ error: 'User ID is required to join a game.' });
     
@@ -87,18 +84,19 @@ export function findingGameRoute(fastify: FastifyInstance) {
     });
 
     fastify.post(
-        '/leave',
-        {
-            preHandler: requireAuth,
-        },
-    async (request, reply) => {
-        const userId = (request as any).session.user_id;
-
+		'/leave',
+		{
+			preHandler: requireAuth,
+		},
+	async (request, reply) => {
+		const userId = (request as any).session.user_id;
 		if (!userId) return reply.status(400).send({ error: "User ID is required." });
-
 		if (!leaveQueue(userId)) return reply.status(400).send({ error: "User not in queue." });
-        closeClientById(userId);
-
+		const profile = getProfileByUserId(userId);
+		if (!profile) return reply.status(400).send({ error: "Profile not found." });
+		// Remove user from pending game and lobby (will delete if empty)
+		const leave = addOrRemovePlayerGameWorker(userId, profile.display_name || "Player", "leave", "player");
+		if (!leave) return reply.status(500).send({ error: "Failed to leave the game." });
 		return reply.status(200).send({ action: "removed_from_queue" });
-    });
+	});
 }

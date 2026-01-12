@@ -201,42 +201,42 @@ export function parseGameConfig(raw: unknown | null): [boolean, Partial<game.con
 function getDefaultGameConfig(): Partial<game.config> {
   return {
     game: {
-      mode: "online",  // Par défaut mode "online"
-      maxPlayers: 2,  // Nombre maximum de joueurs
-      spectatorsAllowed: false,  // Spectateurs autorisés par défaut
+      mode: "online",
+      maxPlayers: 2,
+      spectatorsAllowed: false,
       code: Math.random().toString(36).substring(2, 6).toUpperCase(),
 	  visibility: false
     },
     world: {
-      width: 800,  // Largeur par défaut du monde
-      height: 600  // Hauteur par défaut du monde
+      width: 800,
+      height: 600
     },
     field: {
-      wallBounce: true,  // Par défaut les murs rebondissent
-      wallThickness: 10  // Epaisseur par défaut des murs
+      wallBounce: true,
+      wallThickness: 10
     },
     ball: {
-      radius: 10,  // Rayon par défaut de la balle
-      initialSpeed: 400,  // Vitesse initiale de la balle
-      maxSpeed: 800,  // Vitesse maximale de la balle
-      speedIncrement: 20,  // Incrément de vitesse de la balle
-      initialAngleRange: 20,  // Plage d'angle initial de la balle
-      maxBounceAngle: 60,  // Angle maximal de rebond de la balle
-      allowSpin: true,  // Par défaut la balle peut tourner
-      spinFactor: 0.5,  // Facteur de spin par défaut
-      resetOnScore: true  // La balle se réinitialise après un score
+      radius: 10,
+      initialSpeed: 400,
+      maxSpeed: 800,
+      speedIncrement: 20,
+      initialAngleRange: 20,
+      maxBounceAngle: 60,
+      allowSpin: true,
+      spinFactor: 0.5,
+      resetOnScore: true
     },
     paddles: {
-      width: 10,  // Largeur par défaut de la palette
-      height: 80,  // Hauteur par défaut de la palette
-      margin: 20,  // Marge par défaut de la palette
-      maxSpeed: 400,  // Vitesse maximale de la palette
-      acceleration: 1000,  // Accélération par défaut de la palette
-      friction: 0.9  // Frottement par défaut de la palette
+      width: 10,
+      height: 80,
+      margin: 20,
+      maxSpeed: 400,
+      acceleration: 1000,
+      friction: 0.9
     },
     scoring: {
-      firstTo: 5,  // Par défaut, c'est un match en "first to 5"
-      winBy: 0  // Par défaut, aucune condition de victoire supplémentaire
+      firstTo: 5,
+      winBy: 0
     }
   };
 }
