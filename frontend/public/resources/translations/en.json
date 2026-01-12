@@ -126,7 +126,9 @@
         "url": "URL"
       },
       "currentAvatarLabel": "Current Avatar:",
-      "updateButton": "Update Profile"
+      "updateButton": "Update Profile",
+      "currentBackgroundLabel": "Current Background:",
+      "backgroundLabel": "Background:"
     },
     "securityTitle": "Security Settings",
     "security": {
@@ -214,9 +216,9 @@
       "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
       "loadHint": "Scroll up to load previous messages"
     },
-	"loginPrompt": {
-		"text": "Please log in to access the chat feature.",
-		"loginButton": "Login"
-	}
+	  "loginPrompt": {
+		  "text": "Please log in to access the chat feature.",
+		  "loginButton": "Login"
+	  }
   }
 }
