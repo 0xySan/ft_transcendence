@@ -4,7 +4,7 @@
  */
 
 import { parentPort } from "worker_threads";
-import { Game, userStatsInterface, pointsInterface } from "./game.class.js";
+import { Game, pointsInterface } from "./game.class.js";
 import type * as msg from "../../sockets/socket.types.js";
 import {
 	createHandler,
@@ -19,7 +19,7 @@ import { Player } from "./player.class.js";
 /*                                   STATS                                    */
 /* -------------------------------------------------------------------------- */
 
-let		userStats: userStatsInterface[] = [];
+let		userStats: msg.statsPayload[] = [];
 let		lastHit: string = "";
 let		pointsTime: pointsInterface[] = [];
 
