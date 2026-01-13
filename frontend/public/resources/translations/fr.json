@@ -29,6 +29,7 @@
     "offlineMode": "Mode hors ligne",
     "onlineMode": "Mode en ligne",
     "customGameButton": "PARTIE PERSONNALISÉE",
+    "findPlayerButton": "Trouver un joueur",
     "multiplayerButton": "MULTIJOUEUR",
     "players": "Joueurs",
     "tournamentButton": "TOURNOI",
@@ -292,7 +293,8 @@
       "failedToJoinGame": "Échec de la jonction à la partie : {error}",
       "failedToJoinGameStatus": "Échec de la jonction à la partie : {status} - {error}",
       "playerJoined": "{name} a rejoint le lobby.",
-      "playerLeft": "{name} a quitté le lobby."
+      "playerLeft": "{name} a quitté le lobby.",
+      "loginRequired": "Veuillez vous connecter pour rejoindre un lobby via un lien."
     }
   },
   "pongBoard": {

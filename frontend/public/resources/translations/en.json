@@ -28,7 +28,6 @@
   "lobby": {
     "offlineMode": "Play offline",
     "onlineMode": "Play online",
-    "leaveQueuPlayerButton": "Leave Queue",
     "customGameButton": "CUSTOM GAME",
     "findPlayerButton": "Find Player",
     "multiplayerButton": "MULTIPLAYER",
@@ -318,10 +317,10 @@
       "leftQueue": "You left the queue.",
       "leaveQueueError": "Error leaving the queue.",
       "addedQueue": "You are added in a queue.",
-      "addQueueError": "Error adding in queue."
+      "addQueueError": "Error adding in queue.",
+      "loginRequired": "Please log in to join a lobby from a link."
     }
-  }
-  ,
+  },
   "publicLobbies": {
     "title": "Public Lobbies",
     "summary": "Summary",

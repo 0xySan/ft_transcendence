@@ -9,6 +9,18 @@ declare function addListener(
 	event: string,
 	handler: EventListener
 ): void;
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translated strings used in this module
+const LOBBYSETTINGS_TXT_SAVED_OFFLINE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.savedOffline');
+const LOBBYSETTINGS_TXT_SAVED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saved');
+const LOBBYSETTINGS_TXT_SAVE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saveError');
+const LOBBYSETTINGS_TXT_LEFT_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leftQueue');
+const LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leaveQueueError');
+const LOBBYSETTINGS_TXT_ADDED_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addedQueue');
+const LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addQueueError');
+const LOBBYSETTINGS_TXT_LOGIN_REQUIRED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.loginRequired');
 
 declare global {
 	interface Window {
@@ -91,7 +103,7 @@ const defaultSettings: Settings = {
 		mode: "online",
 		spectatorsAllowed: true,
 		maxPlayers: 2,
-		code: '',
+		code: ''
 	},
 	scoring: {
 		firstTo: 5,
@@ -137,7 +149,6 @@ const ui = {
 		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
 		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
 		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
-		allowSpectators: getEl<HTMLInputElement>("lobby-allow-spectators"),
 		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code")
 	},
 	ball: {
@@ -371,8 +382,14 @@ function wire(): void {
 	addListener(ui.actions.save, "click", async () => {
 		if (window.isGameOffline) {
 			window.lobbySettings = structuredClone(currentSettings);
-			notify('Settings saved locally for offline game.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED_OFFLINE || 'Settings saved locally for offline game.', { type: "success" });
 			return;
+		}
+
+		// avoid sending an empty `code` field (server will reject with "Invalid code")
+		const payloadSettings: any = structuredClone(currentSettings);
+		if (payloadSettings?.game && typeof payloadSettings.game.code === 'string' && payloadSettings.game.code.trim() === '') {
+			delete payloadSettings.game.code;
 		}
 
 		try {
@@ -381,7 +398,7 @@ function wire(): void {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ settings: currentSettings }),
+				body: JSON.stringify({ settings: payloadSettings }),
 			});
 
 			if (!res.ok) {
@@ -401,6 +418,8 @@ export function changeLobbyCodeInput(newCode: string): void {
 	ui.base.customGameCodeInput.value = newCode;
 	currentSettings.game.code = newCode;
 }
+
+window.changeLobbyCodeInput = changeLobbyCodeInput;
 
 /* -------------------------------------------------------------------------- */
 /*                                 UI – Modes                                  */
@@ -739,7 +758,7 @@ else if (window.isGameOffline && window.lobbySettings) {
 
 		const isLogged = await window.currentUserReady.then(() => Boolean(window.currentUser)).catch(() => false);
 		if (!isLogged) {
-			notify?.('Please log in to join a lobby from a link.', { type: 'warning' });
+			notify(LOBBYSETTINGS_TXT_LOGIN_REQUIRED || 'Please log in to join a lobby from a link.', { type: 'warning' });
 			return;
 		}
 
