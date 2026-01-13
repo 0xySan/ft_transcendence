@@ -39,6 +39,8 @@ export function tournamentStatusRoute(fastify: FastifyInstance) {
 
 			return reply.status(200).send({
 				tournamentId,
+				code: tournament.code,
+				visibility: tournament.visibility,
 				status: tournament.status,
 				maxPlayers: tournament.maxPlayers,
 				playersJoined: tournament.players.size,

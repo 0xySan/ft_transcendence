@@ -52,6 +52,11 @@ export function joinTournamentRoute(fastify: FastifyInstance) {
 			if (!tournament)
 				return reply.status(404).send({ error: 'Tournament not found.' });
 
+			// For private tournaments, require code if joining via tournamentId
+			if (tournament.visibility === "private" && body.tournamentId && !body.code) {
+				return reply.status(403).send({ error: 'This is a private tournament. A code is required to join.' });
+			}
+
 			if (tournament.status !== 'waiting')
 				return reply.status(400).send({ error: 'Tournament is not accepting new players.' });
 
@@ -70,6 +75,7 @@ export function joinTournamentRoute(fastify: FastifyInstance) {
 			return reply.status(200).send({
 				tournamentId,
 				code: tournament.code,
+				visibility: tournament.visibility,
 				playersJoined: tournament.players.size,
 				maxPlayers: tournament.maxPlayers,
 				status: tournament.status,

@@ -13,6 +13,7 @@ import { joinTournamentRoute } from "./tournament-join.route.js";
 import { tournamentReadyRoute } from "./tournament-ready.route.js";
 import { tournamentStatusRoute } from "./tournament-status.route.js";
 import { tournamentResultRoute } from "./tournament-result.route.js";
+import { listPublicTournamentsRoute } from "./tournament-list.route.js";
 import { findingGameRoute } from "./finding.route.js";
 import { gameStatsRoutes } from "./stats.route.js";
 
@@ -29,6 +30,7 @@ export function gameRoutes(fastify: FastifyInstance) {
 	tournamentReadyRoute(fastify);
 	tournamentStatusRoute(fastify);
 	tournamentResultRoute(fastify);
+	listPublicTournamentsRoute(fastify);
 	findingGameRoute(fastify);
 	gameStatsRoutes(fastify);
 }

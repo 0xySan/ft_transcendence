@@ -24,7 +24,7 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 		},
 		async (request, reply) => {
 			const userId = (request as any).session.user_id;
-			const body = request.body as { maxPlayers?: number; config?: any };
+			const body = request.body as { maxPlayers?: number; config?: any; visibility?: "public" | "private" };
 
 			if (!userId)
 				return reply.status(400).send({ error: 'User ID is required to create a tournament.' });
@@ -36,6 +36,7 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 				return reply.status(400).send({ error: 'User is already in a tournament.' });
 
 			const maxPlayers = body.maxPlayers || 4;
+			const visibility = body.visibility || "private";
 
 			// Validate tournament size (must be power of 2)
 			if (!isValidTournamentSize(maxPlayers)) {
@@ -51,11 +52,14 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 			}
 
 			const tournamentId = uuidv7();
-			const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+			const code = visibility === "private" 
+				? Math.random().toString(36).substring(2, 6).toUpperCase()
+				: null;
 
 			const tournament: Tournament = {
 				tournamentId,
 				code,
+				visibility,
 				ownerId: userId,
 				maxPlayers,
 				players: new Set([userId]),
@@ -72,6 +76,7 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 			return reply.status(201).send({
 				tournamentId,
 				code,
+				visibility,
 				maxPlayers,
 				playersJoined: 1,
 				status: 'waiting',

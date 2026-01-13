@@ -58,7 +58,8 @@ export interface TournamentMatch {
 
 export interface Tournament {
 	tournamentId: string;
-	code: string;
+	code: string | null;
+	visibility: "public" | "private";
 	ownerId: string;
 	maxPlayers: number;
 	players: Set<string>;
