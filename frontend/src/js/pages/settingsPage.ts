@@ -18,6 +18,7 @@ K extends keyof EventMapFor<T>
 ): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 declare function updateNavBar(userData: any): void;
 declare function loadPage(url: string): void;
 
@@ -423,7 +424,8 @@ addListener(
 				});
 				const upData = await upRes.json().catch(() => ({}));
 				if (!upRes.ok) {
-					alert(upData.error || 'Failed to upload avatar file.');
+					const txt = upData.error ?? await getTranslatedTextByKey(getUserLang(), 'settings.alert.avatarUploadFailed');
+					notify(txt || 'Failed to upload avatar file.', { type: 'error' });
 					return;
 				}
 				if (upData.fileName) body.profilePicture = upData.fileName;
@@ -440,7 +442,8 @@ addListener(
 					const urlData = await urlRes.json().catch(() => ({}));
 					
 					if (!urlRes.ok) {
-						alert(urlData.error || 'Failed to download avatar from URL.');
+						const txt = urlData.error ?? await getTranslatedTextByKey(getUserLang(), 'settings.alert.avatarDownloadFailed');
+						notify(txt || 'Failed to download avatar from URL.', { type: 'error' });
 						return;
 					}
 					if (urlData.fileName) body.profilePicture = urlData.fileName;
@@ -449,7 +452,8 @@ addListener(
 				}
 			}
 		} catch (err) {
-			alert('Avatar upload failed.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.avatarUploadGenericFailed');
+			notify(txt || 'Avatar upload failed.', { type: 'error' });
 			return;
 		}
 
@@ -549,19 +553,23 @@ addListener(
 				} catch (err) {
 					console.error('Failed to update navbar after profile update:', err);
 				}
-				alert('Profile updated successfully.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.profileUpdated');
+				notify(txt || 'Profile updated successfully.', { type: 'success' });
 				return;
 			}
 			
 			const data = await res.json().catch(() => ({}));
 			if (data.message === 'Invalid displayName (must be string, ≤50 chars)') {
-				alert('Display name is invalid.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.displayNameInvalid');
+				notify(txt || 'Display name is invalid.', { type: 'warning' });
 				return;
 			}
-			alert('Failed to update profile.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.profileUpdateFailed');
+			notify(txt || 'Failed to update profile.', { type: 'error' });
 		} catch (err) {
 			console.error('Profile update error:', err);
-			alert('Failed to update profile.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.profileUpdateFailed');
+			notify(txt || 'Failed to update profile.', { type: 'error' });
 		}
 	}
 );
@@ -595,7 +603,8 @@ addListener(
 		const repeatPassword = repeatPasswordInput.value;
 		
 		if (newPassword !== repeatPassword) {
-			alert('New passwords do not match.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.newPasswordsMismatch');
+			notify(txt || 'New passwords do not match.', { type: 'warning' });
 			return;
 		}
 		
@@ -623,22 +632,26 @@ addListener(
 		})
 		.then(async (res) => {
 			if (res.ok) {
-				alert('Password updated successfully.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.passwordUpdated');
+				notify(txt || 'Password updated successfully.', { type: 'success' });
 				return;
 			}
 			
 			const data = await res.json();
 			if (data.message === 'Old password incorrect') {
-				alert('Current password is incorrect.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.currentPasswordIncorrect');
+				notify(txt || 'Current password is incorrect.', { type: 'warning' });
 				return;
 			}
-			
+
 			if (data.message === 'New password invalid') {
-				alert('New password is invalid.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.newPasswordInvalid');
+				notify(txt || 'New password is invalid.', { type: 'warning' });
 				return;
 			}
-			
-			alert('Failed to update password.');
+
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.passwordUpdateFailed');
+			notify(txt || 'Failed to update password.', { type: 'error' });
 		});
 	}
 );
@@ -849,11 +862,12 @@ addListener(window, "message", (e) => {
 });
 
 // Listen for TOTP/creation completion from popups to refresh UI
-addListener(window, 'message', (e) => {
+addListener(window, 'message', async (e) => {
 	if (e.origin !== window.location.origin) return;
 	if (!e.data || e.data.type !== 'TWOFA_CREATION_SUCCESS') return;
 	try {
-		alert('Two-factor authentication configured successfully.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.twofaConfigured');
+		notify(txt || 'Two-factor authentication configured successfully.', { type: 'success' });
 	} catch {}
 	try {
 		updateTwoFaButtons();
