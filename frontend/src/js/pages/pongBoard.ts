@@ -436,13 +436,13 @@ export class InputBuffer {
  */
 class Paddle {
 	/** Position x of the paddle */
-	private x: number;
+	x: number;
 	/** Position y of the paddle */
-	private y: number;
+	y: number;
 	/** Width of the paddle */
-	private width: number;
+	width: number;
 	/** Height of the paddle */
-	private height: number;
+	height: number;
 	/** The CanvasRenderingContext2D for drawing the paddle. */
 	private context: CanvasRenderingContext2D;
 	/** Color of the paddle */
@@ -536,6 +536,7 @@ class Paddle {
  * - handles movement, collision with walls and paddles
  */
 class Ball {
+	public paddle: Paddle | undefined = undefined;
 	public x: number = 0;
 	public y: number = 0;
 	public vx: number = 0;
@@ -605,12 +606,26 @@ class Ball {
 			this.x + this.radius >= paddle["x"] &&
 			this.x - this.radius <= paddle["x"] + paddle["width"] &&
 			this.y >= paddle["y"] &&
-			this.y <= paddle["y"] + paddle["height"]
+			this.y <= paddle["y"] + paddle["height"] && this.paddle !== paddle
 		) {
-			this.vx = -this.vx;
+			this.paddle = paddle;
+			const paddleCenter = paddle.y + padCfg.height / 2;
+			let rel = (this.y - paddleCenter) / (padCfg.height / 2);
 
-			const rel = (this.y - paddle["y"]) / paddle["height"] - 0.5;
-			this.vy += rel * this.settings.speedIncrement;
+			rel = Math.max(-1, Math.min(1, rel));
+
+			let speedBall = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+			speedBall = Math.min(
+				speedBall + this.settings.speedIncrement,
+				this.settings.maxSpeed
+			);
+
+			this.vy = rel * speedBall;
+
+			const vxSign = this.vx > 0 ? -1 : 1;
+			this.vx = vxSign * Math.sqrt(
+				Math.max(0, speedBall * speedBall - this.vy * this.vy)
+			);
 
 			// clamp speed
 			const speed = Math.hypot(this.vx, this.vy);
@@ -755,6 +770,7 @@ class PongBoard {
 		if (window.isGameOffline) {
 			const goal = this.ball.checkGoal();
 			if (goal) {
+				this.ball.paddle = undefined;
 				this.handleOfflineGoal(goal);
 			}
 		}

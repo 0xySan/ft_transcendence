@@ -41,6 +41,8 @@ export class Game {
 	currentFrameId: number;
 	/** Ball state */
 	ball: {
+		starting: boolean,
+		paddle: Player | undefined,
 		x: number;
 		y: number;
 		vx: number;
@@ -64,6 +66,8 @@ export class Game {
 		this.currentFrameId = 0;
 
 		this.ball = {
+			starting: false,
+			paddle: undefined,
 			x: 0,
 			y: 0,
 			vx: 0,
@@ -298,6 +302,8 @@ export class Game {
 
 	resetGame() {
 		this.ball = {
+			starting: false,
+			paddle: undefined,
 			x: 0,
 			y: 0,
 			vx: 0,

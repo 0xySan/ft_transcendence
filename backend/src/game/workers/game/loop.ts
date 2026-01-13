@@ -196,16 +196,23 @@ function stepGame(game: Game, dt: number): void {
 
 	/* ------------------------------ BALL ----------------------------------- */
 
-	if (!game.ball || game.ball.vx === 0) {
-		const dir = Math.random() < 0.5 ? -1 : 1;
+	function resetBall() {
+		if (!game.ball || game.ball.vx === 0) {
+			console.log("DEBUG: reset !");
+			const dir = Math.random() < 0.5 ? -1 : 1;
 
-		game.ball = {
-			x: world.width / 2,
-			y: world.height / 2,
-			vx: game.config.ball.initialSpeed * dir,
-			vy: 0
-		};
+			game.ball = {
+				starting: true,
+				paddle: undefined,
+				x: world.width / 2,
+				y: world.height / 2,
+				vx: game.config.ball.initialSpeed * dir,
+				vy: 0
+			};
+		}
 	}
+
+	if (!game.ball.starting) resetBall();
 
 	const ball = game.ball;
 
@@ -228,13 +235,26 @@ function stepGame(game: Game, dt: number): void {
 			ball.x + game.config.ball.radius >= p.x &&
 			ball.x - game.config.ball.radius <= p.x + padCfg.width &&
 			ball.y >= p.y &&
-			ball.y <= p.y + padCfg.height
+			ball.y <= p.y + padCfg.height && ball.paddle !== p
 		) {
-			ball.vx = -ball.vx;
+			ball.paddle = p;
+			const paddleCenter = p.y + padCfg.height / 2;
+			let rel = (ball.y - paddleCenter) / (padCfg.height / 2);
 
-			const rel =
-				(ball.y - p.y) / padCfg.height - 0.5;
-			ball.vy += rel * game.config.ball.speedIncrement;
+			rel = Math.max(-1, Math.min(1, rel));
+
+			let speedBall = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+			speedBall = Math.min(
+				speedBall + game.config.ball.speedIncrement,
+				game.config.ball.maxSpeed
+			);
+
+			ball.vy = rel * speedBall;
+
+			const vxSign = ball.vx > 0 ? -1 : 1;
+			ball.vx = vxSign * Math.sqrt(
+				Math.max(0, speedBall * speedBall - ball.vy * ball.vy)
+			);
 			lastHit = player.id;
 			break;
 		}
@@ -246,6 +266,7 @@ function stepGame(game: Game, dt: number): void {
 
 		if (scorer) {
 			scorer.score = (scorer.score ?? 0) + 1;
+			resetBall();
 			const startTime = gameStartTimes.get(game.id);
 			if (startTime !== undefined) pointsTime.push({ time: Date.now() - startTime, who: lastHit });
 			if (lastHit != "") {
