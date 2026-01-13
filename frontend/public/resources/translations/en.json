@@ -41,7 +41,6 @@
     "joinButton": "JOIN",
     "leaveButton": "LEAVE",
     "launchButton": "LAUNCH",
-    "allowSpectatorsLabel": "Allow Spectators",
     "gameCodeLabel": "Custom Game Code",
     "numPlayersLabel": "Number of Players",
     "firstToLabel": "First to",

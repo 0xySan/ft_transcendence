@@ -135,7 +135,6 @@ const ui = {
 		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
 		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
 		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
-		allowSpectators: getEl<HTMLInputElement>("lobby-allow-spectators"),
 	},
 	ball: {
 		radius: getEl<HTMLInputElement>("ball-radius"),
@@ -195,7 +194,6 @@ function populateUi(): void {
 	setSpan(ui.base.firstToSpan, s.scoring.firstTo);
 	ui.base.winByInput.value = String(s.scoring.winBy);
 	setSpan(ui.base.winBySpan, s.scoring.winBy);
-	ui.base.allowSpectators.checked = s.game.spectatorsAllowed;
 	// lobby player count
 	ui.lobby.numPlayersSelect.value = String(s.game.playerCount);
 	setSpan(ui.lobby.maxPlayersSpan, s.game.playerCount);
@@ -307,7 +305,6 @@ function wire(): void {
 		currentSettings.scoring.winBy = v;
 		setSpan(ui.base.winBySpan, v);
 	});
-	bindCheckbox(ui.base.allowSpectators, (v) => (currentSettings.game.spectatorsAllowed = v));
 
 	// lobby player count
 	addListener(ui.lobby.numPlayersSelect, "change", () => {
