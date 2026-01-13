@@ -301,8 +301,8 @@ function handlePlayer(payload: PlayerPayload): void {
 	}
 
 	if (payload.action === "leave") {
-		const index = window.playerSyncData.players.findIndex(player => player.playerId === payload.playerId);
-		window.playerSyncData.players.splice(index, 1);
+		const index = window.playerSyncData!.players.findIndex(player => player.playerId === payload.playerId);
+		window.playerSyncData!.players.splice(index, 1);
 		delete window.playerNames![payload.playerId];
 		removePlayer(payload.playerId);
 		const tpl = LOBBYSOCKET_TXT_PLAYER_LEFT || '{name} has left the lobby.';

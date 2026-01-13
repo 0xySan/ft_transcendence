@@ -69,13 +69,13 @@ export function tournamentReadyRoute(fastify: FastifyInstance) {
 			const authToken2 = generateRandomToken(32);
 
 			// Store pending connections for both players
-			wsPendingConnections.set(authToken1, {
+			wsPendingConnections.set({token: authToken1}, {
 				userId: match.player1Id,
 				gameId: gameId,
 				expiresAt: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes
 			});
 
-			wsPendingConnections.set(authToken2, {
+			wsPendingConnections.set({token: authToken2}, {
 				userId: match.player2Id,
 				gameId: gameId,
 				expiresAt: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes

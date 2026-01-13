@@ -1,8 +1,10 @@
+
 /**
  * ### Tournament Page Script
  * This script handles the interactive map functionality for the tournament page,
  * including panning and zooming features.
  */
+
 
 /** ### addListener
  * Adds an event listener to a target element if the target is not null.
@@ -11,6 +13,14 @@
  * @param handler - The event handler function.
  */
 declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
+
+declare global {
+	interface Window {
+		tournamentMode: "online" | "offline";
+	}
+}
+
+export {};
 
 /**
  * ### Element Selection
@@ -1040,19 +1050,26 @@ addListener(window, "resize", () => {
 });
 
 // Example usage (this will be replaced with actual data fetching logic)
-let examplePlayers: tournamentPlayer[] = [
-	{ id: 1, name: "PlayerOne", rank: 1 },
-	{ id: 2, name: "PlayerTwo", rank: 2 },
-	{ id: 3, name: "PlayerThree", rank: 3 },
-	{ id: 4, name: "PlayerFour", rank: 4 },
-	{ id: 5, name: "PlayerFive", rank: 5 },
-	{ id: 6, name: "PlayerSix", rank: 6 },
-	{ id: 7, name: "PlayerSeven", rank: 7 },
-	{ id: 8, name: "PlayerEight", rank: 8 },
-];
+let players: tournamentPlayer[];
+
+if (window.tournamentMode === "offline") {
+	console.log("Initializing offline tournament with example players.");
+	players = [
+		{ id: 1, name: "PlayerOne", rank: 1 },
+		{ id: 2, name: "PlayerTwo", rank: 2 },
+		{ id: 3, name: "PlayerThree", rank: 3 },
+		{ id: 4, name: "PlayerFour", rank: 4 },
+		{ id: 5, name: "PlayerFive", rank: 5 },
+		{ id: 6, name: "PlayerSix", rank: 6 },
+		{ id: 7, name: "PlayerSeven", rank: 7 },
+		{ id: 8, name: "PlayerEight", rank: 8 },
+	];
+} else
+	players = [];
+
 
 // Initialize player list (with example data)
-updatePlayerList(examplePlayers);
+updatePlayerList(players);
 
 // Initialize bracket (with example data)
-InitializeBracket(examplePlayers);
+InitializeBracket(players);
