@@ -163,7 +163,7 @@ function endGame() {
 	if (navBar) navBar.classList.remove("unloaded");
 
 	setTimeout(() => { 
-		pongBoard.destroy();
+		pongGame.destroy();
 		window.pongTimer.stopTimer();
 		loadPage("lobby"); 
 	}, 1000);
@@ -174,6 +174,10 @@ function endGame() {
 /*								   RENDERING								*/
 /* -------------------------------------------------------------------------- */
 
+/** ### PongBoardCanvas
+ * - manages the canvas element for rendering the pong board
+ * - handles resizing for desktop and mobile
+ */
 class PongBoardCanvas {
 	canvas: HTMLCanvasElement;
 	context: CanvasRenderingContext2D;
@@ -193,47 +197,67 @@ class PongBoardCanvas {
 		this.canvas.width = this.worldWidth;
 		this.canvas.height = this.worldHeight;
 
-		// append to body directly for fullscreen overlay
-		document.body.appendChild(this.canvas);
+		const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+		if (isMobile) {
+			// mobile fullscreen
+			document.body.appendChild(this.canvas);
+			this.applyMobileFullscreen();
+		} else {
+			// desktop: append to container and keep original style
+			container.appendChild(this.canvas);
+		}
 
-		this.applyMobileFullscreen();
 		this.resize();
 		window.addEventListener("resize", () => this.resize());
 	}
 
 	private resize() {
-		// Full viewport dimensions
-		const availW = window.innerWidth;
-		const availH = window.innerHeight;
+		const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-		// Scale while keeping aspect ratio
-		const scale = Math.min(availW / this.worldWidth, availH / this.worldHeight);
-		this.canvas.style.width = `${this.worldWidth * scale}px`;
-		this.canvas.style.height = `${this.worldHeight * scale}px`;
+		if (isMobile) {
+			// Full viewport scaling for mobile
+			const availW = window.innerWidth;
+			const availH = window.innerHeight;
+			const scale = Math.min(availW / this.worldWidth, availH / this.worldHeight);
 
-		// Center horizontally and vertically
-		this.canvas.style.position = "fixed";
-		this.canvas.style.top = "50%";
-		this.canvas.style.left = "50%";
-		this.canvas.style.transform = "translate(-50%, -50%)";
-		this.canvas.style.display = "block";
-		this.canvas.style.zIndex = "9999";
+			this.canvas.style.width = `${this.worldWidth * scale}px`;
+			this.canvas.style.height = `${this.worldHeight * scale}px`;
+
+			this.canvas.style.position = "fixed";
+			this.canvas.style.top = "50%";
+			this.canvas.style.left = "50%";
+			this.canvas.style.transform = "translate(-50%, -50%)";
+			this.canvas.style.display = "block";
+			this.canvas.style.zIndex = "9999";
+		} else {
+			// desktop: scale relative to parent
+			const parent = this.canvas.parentElement!;
+			const availW = parent.clientWidth;
+			const availH = parent.clientHeight;
+			const scale = Math.min(availW / this.worldWidth, availH / this.worldHeight);
+
+			this.canvas.style.width = `${this.worldWidth * scale}px`;
+			this.canvas.style.height = `${this.worldHeight * scale}px`;
+			this.canvas.style.position = "";
+			this.canvas.style.top = "";
+			this.canvas.style.left = "";
+			this.canvas.style.transform = "";
+			this.canvas.style.zIndex = "";
+		}
 	}
 
 	private applyMobileFullscreen() {
-		const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-		if (!isMobile) return;
-
 		// Fullscreen styles
 		document.body.style.margin = "0";
 		document.body.style.overflow = "hidden";
 		document.body.style.background = "black";
 
-		// Define the function once
+		// enforce landscape on mobile
 		this.enforceLandscape = () => {
 			if (window.innerWidth < window.innerHeight) {
 				const navBar = document.getElementById("nav-bar");
 				if (navBar) navBar.classList.add("unloaded");
+
 				if (!document.getElementById("rotate-msg")) {
 					const msg = document.createElement("div");
 					msg.id = "rotate-msg";
@@ -269,26 +293,21 @@ class PongBoardCanvas {
 	}
 
 	public destroy() {
-		// remove canvas
 		this.canvas.remove();
-
-		// remove rotate message
 		const msg = document.getElementById("rotate-msg");
 		if (msg) msg.remove();
 
-		// restore body
 		document.body.style.margin = "";
 		document.body.style.overflow = "";
 		document.body.style.background = "";
 
-		// remove listener
 		if (this.enforceLandscape) {
 			window.removeEventListener("resize", this.enforceLandscape);
 			this.enforceLandscape = undefined;
 		}
 	}
-
 }
+
 
 
 
