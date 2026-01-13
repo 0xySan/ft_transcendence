@@ -296,13 +296,13 @@ function updateStatsUI(gameStats: GameStats): void {
 						populatePlayerMini(i);
 					}
 					
-					// Calculate team scores (team 1: players 1&2, team 2: players 3&4)
+					// Calculate team scores (team 1: players 1&3, team 2: players 2&4)
 					let leftScore = 0;
 					let rightScore = 0;
 					
 					if (game.participants[0]) leftScore += game.participants[0].score;
-					if (game.participants[1]) leftScore += game.participants[1].score;
-					if (game.participants[2]) rightScore += game.participants[2].score;
+					if (game.participants[2]) leftScore += game.participants[2].score;
+					if (game.participants[1]) rightScore += game.participants[1].score;
 					if (game.participants[3]) rightScore += game.participants[3].score;
 					
 					const scoreLeftSpan = gameItem.querySelector('.profile-game-team-score.score-left') as HTMLSpanElement;
@@ -661,7 +661,7 @@ async function fetchProfileData(username: string): Promise<void> {
 async function initializeProfilePage(): Promise<void> {
 	// Always fetch current user data first to establish authentication context
 	await fetchCurrentUser();
-	
+
 	if (user)
 		await fetchProfileData(user);
 	else
