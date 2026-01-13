@@ -113,6 +113,23 @@ export function getPendingFriendRequests(
 	}
 }
 
+export function getSentFriendRequests(
+	userId: string
+): Friend[] {
+	try {
+		return db
+			.prepare(
+				`SELECT * FROM friends
+				 WHERE sender_user_id = ?
+				   AND status = 'pending'`
+			)
+			.all(userId) as Friend[];
+	} catch (err) {
+		console.error("Failed to get sent requests:", (err as Error).message);
+		return [];
+	}
+}
+
 export function deleteFriendRelation(
 	userA: string,
 	userB: string

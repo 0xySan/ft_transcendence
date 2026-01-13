@@ -1604,20 +1604,76 @@ button:active {
 	white-space: nowrap;
 }
 
-.profile-chat-button {
+.profile-button {
+	padding: 0.25rem 0.75rem;
+	width: 2rem;
+	height: 2rem;
+
+	border-radius: 18px;
+
 	margin-left: auto;
-	padding: 0.6rem 1.5rem;
-
-	background: rgba(var(--sapphire), 0.6);
-
-	border: none;
-	border-radius: 6px;
-
-	font-size: 1rem;
-	color: rgb(var(--text));
-
 	cursor: pointer;
-	margin-top: -1rem;
+	margin-top: -1.5rem;
+}
+
+.add-chat-button {
+	background: rgba(var(--sapphire), 0.1);
+	border: 1px solid rgba(var(--sapphire), 0.4);
+	fill: rgb(var(--sapphire));
+}
+
+.add-chat-button:hover {
+	background: rgba(var(--sapphire), 0.2);
+}
+
+.friend-request {
+	background: rgba(var(--green), 0.1);
+	border: 1px solid rgba(var(--green), 0.4);
+	fill: rgb(var(--green));
+}
+
+.friend-request:hover {
+	background: rgba(var(--green), 0.2);
+}
+
+.friend-waiting {
+	background: rgba(var(--yellow), 0.1);
+	border: 1px solid rgba(var(--yellow), 0.4);
+	fill: rgb(var(--yellow));
+}
+
+.waiting-fill {
+	fill: rgb(var(--yellow));
+}
+
+.friend-waiting:hover {
+	background: rgba(var(--yellow), 0.2);
+}
+
+.friend-remove {
+	background: rgba(var(--red), 0.1);
+	border: 1px solid rgba(var(--red), 0.4);
+	fill: rgb(var(--red));
+}
+
+.friend-remove:hover {
+	background: rgba(var(--red), 0.2);
+}
+
+.friend-accept {
+	background: rgba(var(--green), 0.1);
+	border: 1px solid rgba(var(--green), 0.4);
+	fill: rgb(var(--green));
+	margin-right: 0.5rem;
+}
+
+.friend-accept:hover {
+	background: rgba(var(--green), 0.2);
+}
+
+.cls-1 { 
+	fill: rgb(var(--green));
+	fill-rule: evenodd;
 }
 
 .profile-error-message {
@@ -1894,6 +1950,32 @@ button:active {
 	text-align: center;
 }
 
+.profile-status-bubble {
+	width: 1.2rem;
+	height: 1.2rem;
+	border-radius: 100%;
+	position: absolute;
+	margin-left: 4.5rem;
+}
+
+.online-bubble {
+	background-color: rgb(var(--green));
+	fill: rgb(var(--green));
+	border: 2px solid rgb(var(--base));
+}
+
+.offline-bubble {
+	background-color: rgb(var(--red));
+	fill: rgb(var(--red));
+	border: 2px solid rgb(var(--base));
+}
+
+.ingame-bubble {
+	background-color: rgb(var(--blue));
+	fill: rgb(var(--blue));
+	border: 2px solid rgb(var(--base));
+}
+
 @media (max-width: 768px) {
 	.profile-game-body {
 		flex-direction: column;
@@ -1969,9 +2051,6 @@ button:active {
 	.profile-info-flag {
 		margin-top: 0.5rem;
 		height: 1.25rem;
-	}
-	.profile-chat-button {
-		margin-top: -2.25rem;
 	}
 
 	/* 4-player mobile adjustments */
@@ -2058,6 +2137,24 @@ button:active {
 	.profile-game-team-score {
 		font-size: 1.25rem;
 	}
+
+	.profile-button {
+		margin-top: -2.8rem;
+		margin-right: 4rem;
+	}
+
+	.add-chat-button {
+		margin-right: 0;
+	}
+
+	.friend-accept {
+		margin-right: 12.5rem;
+	}
+
+	.profile-status-bubble {
+		margin-top: -3rem;
+		margin-left: 3.5rem;
+	}
 }
 
 /* Mobile Landscape - prioritize horizontal space */
@@ -2116,11 +2213,6 @@ button:active {
 		margin-left: 0.5rem;
 	}
 
-	.profile-chat-button {
-		margin-left: auto;
-		margin-top: 0;
-	}
-
 	/* 4-player landscape adjustments */
 	.profile-game-body-4p {
 		padding: 0.5rem;
@@ -2147,6 +2239,15 @@ button:active {
 
 	.profile-game-team-score {
 		font-size: 1.1rem;
+	}
+
+	.profile-status-bubble {
+		margin-left: -2.2rem;
+		margin-top: 3.2rem;
+	}
+
+	.profile-button {
+		margin-top: -0.5rem;
 	}
 }
 
@@ -2180,11 +2281,6 @@ button:active {
 
 	.profile-info-flag {
 		height: 1rem;
-	}
-
-	.profile-chat-button {
-		padding: 0.5rem 1rem;
-		font-size: 0.9rem;
 	}
 
 	/* 4-player small mobile */
@@ -2234,11 +2330,6 @@ button:active {
 
 	.profile-info-flag {
 		height: 0.9rem;
-	}
-
-	.profile-chat-button {
-		padding: 0.4rem 0.8rem;
-		font-size: 0.8rem;
 	}
 
 	/* 4-player very small landscape */
