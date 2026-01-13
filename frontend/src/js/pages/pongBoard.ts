@@ -973,7 +973,7 @@ if (!window.isGameOffline) {
 				updatePlayerNames();
 			}
 		} else {
-			endGame();
+			console.warn("Unknown message type:", msg.type);
 		}
 	});
 }

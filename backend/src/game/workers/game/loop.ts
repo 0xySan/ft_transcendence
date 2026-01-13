@@ -107,7 +107,7 @@ function gameLoop(): void {
 		accumulators.set(gameId, accumulator);
 	});
 
-	setInterval(gameLoop, 1000 / 120); // Run at twice the frame rate for smoother timing
+	setTimeout(gameLoop, 1000 / 120); // Run at twice the frame rate for smoother timing
 }
 
 gameLoop();
