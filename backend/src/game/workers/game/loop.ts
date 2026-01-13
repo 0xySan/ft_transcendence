@@ -197,19 +197,16 @@ function stepGame(game: Game, dt: number): void {
 	/* ------------------------------ BALL ----------------------------------- */
 
 	function resetBall() {
-		if (!game.ball || game.ball.vx === 0) {
-			console.log("DEBUG: reset !");
-			const dir = Math.random() < 0.5 ? -1 : 1;
+		const dir = Math.random() < 0.5 ? -1 : 1;
 
-			game.ball = {
-				starting: true,
-				paddle: undefined,
-				x: world.width / 2,
-				y: world.height / 2,
-				vx: game.config.ball.initialSpeed * dir,
-				vy: 0
-			};
-		}
+		game.ball = {
+			starting: true,
+			paddle: undefined,
+			x: world.width / 2,
+			y: world.height / 2,
+			vx: game.config.ball.initialSpeed * dir,
+			vy: 0
+		};
 	}
 
 	if (!game.ball.starting) resetBall();
@@ -265,8 +262,8 @@ function stepGame(game: Game, dt: number): void {
 			ball.x < 0 ? orderedPlayers[1] : orderedPlayers[0];
 
 		if (scorer) {
-			scorer.score = (scorer.score ?? 0) + 1;
 			resetBall();
+			scorer.score = (scorer.score ?? 0) + 1;
 			const startTime = gameStartTimes.get(game.id);
 			if (startTime !== undefined) pointsTime.push({ time: Date.now() - startTime, who: lastHit });
 			if (lastHit != "") {
