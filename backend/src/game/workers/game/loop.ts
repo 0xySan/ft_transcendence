@@ -207,8 +207,14 @@ function stepGame(game: Game, dt: number): void {
 			vx: game.config.ball.initialSpeed * dir,
 			vy: 0
 		};
+
+		game.goalUpdate(500);
 	}
 
+	if (game.goal) return;
+	if (!game.goal) {
+
+	}
 	if (!game.ball.starting) resetBall();
 
 	const ball = game.ball;

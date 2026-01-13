@@ -688,6 +688,8 @@ interface GameStateUpdate {
  * - creates paddles for players and manages drawing / updates
  */
 class PongBoard {
+	/** Goal state (true = yes | false = no) */
+	public goal: boolean = false;
 	/** The PongBoardCanvas used for rendering the pong board. */
 	private canvas: PongBoardCanvas;
 	/** Array of Paddle instances representing the players' paddles. */
@@ -757,13 +759,20 @@ class PongBoard {
 		return this.paddleByPlayerId.get(playerId);
 	}
 
+	public goalUpdate(ms: number) {
+		this.goal = true;
+		setTimeout(() => {
+            this.goal = false;
+        }, ms);
+	}
+
 	/** ### update
 	 * - update all paddles on the board
 	 * @param dt - delta time since last update
 	 */
 	public update(dt: number) {
 		for (const p of this.paddles) p.update(dt);
-		if (this.ball) this.ball.update(dt);
+		if (this.ball && !this.goal) this.ball.update(dt);
 		for (const p of this.paddles) this.ball.checkPaddleCollision(p);
 
 		// Check for goals in offline mode
@@ -772,6 +781,7 @@ class PongBoard {
 			if (goal) {
 				this.ball.paddle = undefined;
 				this.handleOfflineGoal(goal);
+				this.goalUpdate(500);
 			}
 		}
 	}

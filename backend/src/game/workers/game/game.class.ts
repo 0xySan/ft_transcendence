@@ -21,6 +21,8 @@ export interface pointsInterface {
  * Game class representing a game instance.
  */
 export class Game {
+	/** Goal state (true = yes | false = no) */
+	public goal: boolean = false;
 	/** Game unique identifier */
 	id: string;
 	/** Game is private or no */
@@ -130,6 +132,13 @@ export class Game {
 				...(configOverrides?.network ?? {}),
 			}
 		};
+	}
+
+	public goalUpdate(ms: number) {
+		this.goal = true;
+		setTimeout(() => {
+            this.goal = false;
+        }, ms);
 	}
 
 	endGame(stats: socket.statsPayload[], startTime: number | undefined, scoreLimit: number, gameId: string, pointsTime: pointsInterface[]) {
