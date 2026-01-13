@@ -443,6 +443,9 @@ async function joinGameWithCode(code: string): Promise<void> {
 	const payload = /^[A-Z0-9]{4}$/.test(code.toUpperCase())
 		? { code: code.toUpperCase() }
 		: { gameId: code };
+
+	if (window.socket) window.socket.close();
+
 	const res = await fetch("/api/game/join", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -468,6 +471,7 @@ async function joinGameWithCode(code: string): Promise<void> {
 		notify(LOBBYSOCKET_TXT_INVALID_GAME || "invalid game", { type: "error" });
 		return;
 	}
+
 	gameId = data.gameId;
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
@@ -622,6 +626,10 @@ function clearTournamentContext(): void {
  * and resetting UI elements to their default state.
  */
 function resetLobbyState(): void {
+	// Reset UI player list and counts
+	playerListEl.innerHTML = "";
+	updateCounts(0);
+
 	// Prevent resetting if the multiplayer tab exists
 	const elem = document.getElementById("lobby-multiplayer-tab");
 	if (elem) return;
@@ -633,13 +641,7 @@ function resetLobbyState(): void {
 	}
 
 	// Close WebSocket if exists
-	if (window.socket) {
-		window.socket.close();
-	}
-
-	// Reset UI player list and counts
-	playerListEl.innerHTML = "";
-	updateCounts(0);
+	if (window.socket) window.socket.close();
 
 	// Reset game state variables
 	gameId = null;

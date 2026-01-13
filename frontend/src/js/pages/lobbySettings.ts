@@ -731,29 +731,33 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	updateCustomGameUi();
 
 	// update action buttons / join box
-	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
 	const joinBtn = ui.actionButtons.joinBtn;
+	const launchBtn = ui.actionButtons.launchBtn;
 	const leaveBtn = ui.actionButtons.leaveBtn;
 	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
 	const tabMode = document.querySelector("#lobby-mode-buttons");
 
 	// ensure actions visible when appropriate
 	if (customGameSelection === "offline") {
-		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.add("unloaded");
 		leaveBtn.classList.remove("unloaded");
 		joinBox.classList.add("unloaded");
 		tabMode?.classList.add("grayed");
+		launchBtn.classList.remove("unloaded");
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
 	} else if (customGameSelection === "online") {
-		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.remove("unloaded");
 		leaveBtn.classList.remove("unloaded");
 		joinBox.classList.remove("unloaded");
 		tabMode?.classList.remove("grayed");
+		leaveBtn.classList.remove("unloaded");
+		launchBtn.classList.remove("unloaded");
 	} else {
 		// reset state
-		lobbyActionButtons.classList.add("unloaded");
+		leaveBtn.classList.add("unloaded");
+		launchBtn.classList.add("unloaded");
+		joinBox.classList.remove("unloaded");
+		joinBtn.classList.remove("unloaded");
 		tabMode?.classList.remove("grayed");
 	}
 }
@@ -787,7 +791,7 @@ async function setupLobbyModeHandlers(): Promise<void> {
 	} else {
 		userConnected.classList.add("unclickable");
 		lobbyJoin.classList.add("unclickable");
-		getElQS<HTMLDivElement>("#lobby-join-box")?.classList.add("unloaded");
+		getElQS<HTMLDivElement>("#lobby-join-box")?.classList.add("grayed");
 	}
 
 	addListener(offlineBtn, "click", () => {
