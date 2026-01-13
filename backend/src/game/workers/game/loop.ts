@@ -110,6 +110,8 @@ function gameLoop(): void {
 	setInterval(gameLoop, 1000 / 120); // Run at twice the frame rate for smoother timing
 }
 
+gameLoop();
+
 /* -------------------------------------------------------------------------- */
 /*                               GAME STEP                                    */
 /* -------------------------------------------------------------------------- */
@@ -344,7 +346,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			}
 
 			if (payload.action === "start") {
-				if (game.players.length < 2)
+				if (game.players.length === game.config.game.maxPlayers && (game.players.length == 4 || game.players.length === 4)) 
 				{
 					console.log("CANT START GAME: Not enough player");
 					return;
