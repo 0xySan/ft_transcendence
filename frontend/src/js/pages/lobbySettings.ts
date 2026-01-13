@@ -606,6 +606,8 @@ function setupSubTabs(): void {
 	// Setup game finding on multiplayer tab
 	addListener(subTabsMultiplayer.multiplayer.findBtn, "click", async () => {
 		try {
+			if (window.socket) window.socket.close();
+
 			const response = await fetch("/api/game/finding", {
 				method: "POST",
 				headers: {
