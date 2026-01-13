@@ -843,7 +843,7 @@ class PongBoard {
 			for (const [playerId, score] of this.scores) {
 				if (maxScore >= winningScore && scoreDiff >= winBy) {
 					notify("Game over! A player has won.", { type: "success" });
-					stopTimer();
+					window.pongTimer.stopTimer();
 					let message: string = "";
 					if (!window.socket) message = playerId + " has Win";
 
