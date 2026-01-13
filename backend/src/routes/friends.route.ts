@@ -52,14 +52,6 @@ export function friendsRoutes(fastify: FastifyInstance) {
 				return reply.status(409).send({ error: "Friend request already exists." });
 			}
 
-			const areFriends = getFriends(userId).some(friend => 
-				(friend.target_user_id === body.targetUserId || friend.sender_user_id === body.targetUserId) 
-				&& friend.status === 'accepted'
-			);
-			if (areFriends) {
-				return reply.status(400).send({ error: "You are already friends with this user." });
-			}
-
 			// Check if they already sent a request to us - if so, accept it automatically
 			const reverseRequest = getFriendRequest(body.targetUserId, userId);
 			if (reverseRequest && reverseRequest.status === 'pending') {
