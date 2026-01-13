@@ -268,7 +268,10 @@
     "cannotInviteUser": "You cannot send invites to this user",
     "failedToSendInvite": "Failed to send invite - please try again",
     "failedToLoadConversation": "Failed to load conversation",
-    "connectionLost": "Connection lost. Please refresh the page."
+    "connectionLost": "Connection lost. Please refresh the page.",
+    "mustBeInLobby": "Cannot invite: must be in a lobby to send game invites",
+    "inviteNoCode": "Invite does not have a valid game code",
+    "inviteSent": "Invite sent!"
   },
   "lobbySocket": {
     "notify": {

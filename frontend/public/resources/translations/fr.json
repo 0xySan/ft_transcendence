@@ -277,7 +277,10 @@
     "cannotInviteUser": "Vous ne pouvez pas envoyer d'invitations à cet utilisateur",
     "failedToSendInvite": "Échec de l'envoi de l'invitation : veuillez réessayer",
     "failedToLoadConversation": "Impossible de charger la conversation",
-    "connectionLost": "Connexion perdue. Veuillez actualiser la page."
+    "connectionLost": "Connexion perdue. Veuillez actualiser la page.",
+    "mustBeInLobby": "Invitation impossible : vous devez être dans un lobby pour envoyer des invitations de jeu",
+    "inviteNoCode": "L'invitation ne contient pas de code de jeu valide",
+    "inviteSent": "Invitation envoyée !"
   },
   "lobbySocket": {
     "notify": {
