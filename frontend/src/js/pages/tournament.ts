@@ -39,6 +39,17 @@ const tournamentMap: HTMLDivElement | null = document.getElementById("tournament
 if (!mapContainer || !tournamentMap)
 	throw new Error("Missing element for tournament page");
 
+/** ### debounce
+ * Returns a debounced version of the function.
+ */
+function debounce<F extends (...args: any[]) => void>(fn: F, delay: number): F {
+	let timeout: number | null = null;
+	return function(this: any, ...args: any[]) {
+		if (timeout !== null) clearTimeout(timeout);
+		timeout = window.setTimeout(() => fn.apply(this, args), delay);
+	} as F;
+}
+
 /* ==================================================================
 								Interfaces
    ================================================================== */
@@ -495,8 +506,21 @@ const playerListTemplate: HTMLTemplateElement | null = document.getElementById("
 if (!playerListElem || !playerListTemplate)
 	throw new Error("Missing player list element for tournament page");
 
+/** ### updatePlayerName
+ * Updates the player name in the state and re-renders the bracket.
+ */
+const updatePlayerName = debounce((index: number, newName: string) => {
+	playersState[index].name = newName;
+
+	// Re-render bracket with updated names
+	InitializeBracket(playersState);
+}, 200);
+
 /** ### updatePlayerList
- * Updates the player list in the tournament page.
+ * Updates the player list depending on tournament mode.
+ * - Offline: uses input fields to allow name editing.
+ * - Online: uses spans to display names.
+ * 
  * @param players - An array of `tournamentPlayer` objects representing the players.
  */
 function updatePlayerList(players: tournamentPlayer[]): void {
@@ -504,19 +528,44 @@ function updatePlayerList(players: tournamentPlayer[]): void {
 	playerListElem!.innerHTML = "";
 
 	playersState.forEach((player, index) => {
-		const fragment = playerListTemplate!.content.cloneNode(true) as HTMLElement;
-		const item = fragment.querySelector(".player-list-item") as HTMLLIElement;
+		const li = document.createElement("li");
+		li.className = "player-list-item";
+		li.dataset.index = String(index);
 
-		const nameElem = item.querySelector(".player-name") as HTMLElement;
-		const rankElem = item.querySelector(".player-rank") as HTMLElement;
+		if (window.tournamentMode === "offline") {
+			// Offline: editable input
+			const input = document.createElement("input");
+			input.type = "text";
+			input.className = "player-name-input";
+			input.value = player.name;
 
-		nameElem.textContent = player.name;
-		rankElem.textContent = `Rank: ${player.rank}`;
+			// debounce name updates
+			input.addEventListener("input", () => {
+				updatePlayerName(index, input.value);
+			});
 
-		item.dataset.index = String(index);
+			li.appendChild(input);
 
-		addListener(item, "pointerdown", onPlayerPointerDown);
-		playerListElem!.appendChild(item);
+			// optional: allow drag even in offline
+			addListener(li, "pointerdown", onPlayerPointerDown);
+		} else {
+			// Online: plain span
+			const nameSpan = document.createElement("span");
+			nameSpan.className = "player-name";
+			nameSpan.textContent = player.name;
+
+			const rankSpan = document.createElement("span");
+			rankSpan.className = "player-rank";
+			rankSpan.textContent = `Rank: ${player.rank}`;
+
+			li.appendChild(nameSpan);
+			li.appendChild(rankSpan);
+
+			// optional: still allow drag in online mode if needed
+			addListener(li, "pointerdown", onPlayerPointerDown);
+		}
+
+		playerListElem!.appendChild(li);
 	});
 }
 
@@ -837,8 +886,10 @@ function getPlayerListItems(): HTMLLIElement[] {
 function onPlayerPointerDown(event: Event): void {
 	const e = event as PointerEvent;
 	const target = e.currentTarget as HTMLLIElement;
+	const isInput = (event.target as HTMLElement).tagName === "INPUT";
 
-	e.preventDefault();
+	if (!isInput)
+		e.preventDefault();
 
 	playerDragState.isDragging = true;
 	playerDragState.dragStarted = false;

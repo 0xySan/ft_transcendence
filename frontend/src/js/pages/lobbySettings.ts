@@ -806,6 +806,8 @@ function setupModeSelection(): void {
 			if (mode === modes.custom)
 				updateCustomGameUi();
 			if(mode === modes.tournament){
+				const galungaDiv = getElQS<HTMLDivElement>("#galunga");
+				galungaDiv.classList.add("unloaded");
 				uiTournament.launchOnlineBtn.classList.remove("unloaded");
 				uiTournament.launchOfflineBtn.classList.remove("unloaded");
 				lobbySelectMode.classList.add("unloaded");
