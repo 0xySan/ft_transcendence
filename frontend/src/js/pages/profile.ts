@@ -9,6 +9,15 @@
 export {};
 
 declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translations used in this module
+const PROFILE_TXT_GAME_ITEM_TEMPLATE_NOT_FOUND = await getTranslatedTextByKey(getUserLang(), 'profile.notify.gameItemTemplateNotFound');
+const PROFILE_TXT_PROFILE_INFO_NOT_FOUND = await getTranslatedTextByKey(getUserLang(), 'profile.notify.profileInfoNotFound');
+const PROFILE_TXT_NO_PROFILE_DATA = await getTranslatedTextByKey(getUserLang(), 'profile.notify.noProfileData');
+const PROFILE_TXT_FAILED_LOAD_PFP = await getTranslatedTextByKey(getUserLang(), 'profile.notify.failedToLoadProfilePicture');
+const PROFILE_TXT_FAILED_LOAD_BG = await getTranslatedTextByKey(getUserLang(), 'profile.notify.failedToLoadBackgroundImage');
+const PROFILE_TXT_FAILED_CREATE_CHAT = await getTranslatedTextByKey(getUserLang(), 'profile.notify.failedToCreateChat');
 
 // Extract username from URL query parameters
 const params = new URLSearchParams(window.location.search);
@@ -209,7 +218,7 @@ function updateStatsUI(gameStats: GameStats): void {
 			const template2p = document.querySelector<HTMLTemplateElement>('.profile-game-item-temp');
 			const template4p = document.querySelector<HTMLTemplateElement>('.profile-game-item-4p-temp');
 			if (!template2p || !template4p) {
-				notify('Game item template not found', { type: 'error' });
+				notify(PROFILE_TXT_GAME_ITEM_TEMPLATE_NOT_FOUND || 'Game item template not found', { type: 'error' });
 				return;
 			}
 			recentGames.forEach(game => {
@@ -520,14 +529,14 @@ function updateProfileUI(profileData: ProfileData): void {
 
 	const profileInfoDiv = document.querySelector('.profile-info') as HTMLDivElement;
 	if (!profileInfoDiv) {
-		notify('Profile info div not found', { type: 'error' });
+		notify(PROFILE_TXT_PROFILE_INFO_NOT_FOUND || 'Profile info div not found', { type: 'error' });
 		return;
 	}
 
 	profileInfoDiv.classList.remove('nondisplayable');
 
 	if (!profile) {
-		notify('No profile data available', { type: 'error' });
+		notify(PROFILE_TXT_NO_PROFILE_DATA || 'No profile data available', { type: 'error' });
 		return;
 	}
 
@@ -540,7 +549,7 @@ function updateProfileUI(profileData: ProfileData): void {
 				// Replace img with SVG fallback on error
 				const fallback = DEFAULT_AVATAR.cloneNode(true) as DocumentFragment;
 				profileImg.replaceWith(fallback);
-				notify('Failed to load profile picture', { type: 'error' });
+				notify(PROFILE_TXT_FAILED_LOAD_PFP || 'Failed to load profile picture', { type: 'error' });
 			};
 		}
 		else {
@@ -604,7 +613,7 @@ function updateProfileUI(profileData: ProfileData): void {
 			backgroundImg.style.backgroundImage = `url(/api/users/data/imgs/${profile.backgroundPicture})`;
 			backgroundImg.onerror = () => {
 				backgroundImg.style.backgroundImage = 'none';
-				notify('Failed to load background image', { type: 'error' });
+				notify(PROFILE_TXT_FAILED_LOAD_BG || 'Failed to load background image', { type: 'error' });
 			};
 		} else {
 			backgroundImg.style.backgroundImage = 'none';
@@ -636,7 +645,7 @@ function updateProfileUI(profileData: ProfileData): void {
 					if (!res.ok)
 						throw new Error('Failed to create conversation');
 				} catch (err) {
-					notify('Failed to create chat. Please try again.', { type: 'error' });
+					notify(PROFILE_TXT_FAILED_CREATE_CHAT || 'Failed to create chat. Please try again.', { type: 'error' });
 				}
 			});
 		}

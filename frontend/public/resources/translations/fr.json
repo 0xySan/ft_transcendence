@@ -267,5 +267,53 @@
     "failedToSendInvite": "Échec de l'envoi de l'invitation : veuillez réessayer",
     "failedToLoadConversation": "Impossible de charger la conversation",
     "connectionLost": "Connexion perdue. Veuillez actualiser la page."
+  },
+  "lobbySocket": {
+    "notify": {
+      "connected": "Connecté au lobby de jeu.",
+      "gameStarting": "La partie va commencer !",
+      "settingsUpdated": "Les paramètres du jeu ont été mis à jour.",
+      "disconnected": "Déconnecté du lobby de jeu.",
+      "invalidGame": "Jeu invalide",
+      "failedToJoinGame": "Échec de la jonction à la partie : {error}",
+      "failedToJoinGameStatus": "Échec de la jonction à la partie : {status} - {error}",
+      "playerJoined": "{name} a rejoint le lobby.",
+      "playerLeft": "{name} a quitté le lobby."
+    }
+  },
+  "pongBoard": {
+    "notify": {
+      "elementNotFound": "Élément introuvable",
+      "lobbySettingsMissing": "Les paramètres du lobby ne sont pas disponibles.",
+      "socketNotEstablished": "La connexion WebSocket n'est pas établie.",
+      "localPlayerIdNotSet": "L'identifiant du joueur local n'est pas défini.",
+      "pendingGameStartMissing": "Aucune information de démarrage de partie en attente trouvée.",
+      "gameOver": "Fin du jeu ! Un joueur a atteint le score gagnant.",
+      "gameEnded": "La partie est terminée.",
+      "connectionLost": "Connexion perdue.",
+      "playerJoined": "{name} a rejoint la partie.",
+      "playerLeft": "{name} a quitté la partie."
+    }
+  },
+  "profile": {
+    "notify": {
+      "gameItemTemplateNotFound": "Modèle d'élément de jeu introuvable",
+      "profileInfoNotFound": "Division d'information du profil introuvable",
+      "noProfileData": "Aucune donnée de profil disponible",
+      "failedToLoadProfilePicture": "Échec du chargement de la photo de profil",
+      "failedToLoadBackgroundImage": "Échec du chargement de l'image de fond",
+      "failedToCreateChat": "Échec de la création du chat. Veuillez réessayer."
+    }
+  },
+  "lobbySettings": {
+    "notify": {
+      "savedOffline": "Paramètres enregistrés localement pour une partie hors ligne.",
+      "saved": "Paramètres enregistrés avec succès.",
+      "saveError": "Erreur lors de l'enregistrement des paramètres : {error}",
+      "leftQueue": "Vous avez quitté la file d'attente.",
+      "leaveQueueError": "Erreur lors de la sortie de la file d'attente.",
+      "addedQueue": "Vous avez été ajouté à la file d'attente.",
+      "addQueueError": "Erreur lors de l'ajout à la file d'attente."
+    }
   }
 }

@@ -16,6 +16,21 @@ declare global {
 	}
 }
 
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translated strings used in this module
+const PONGBOARD_TXT_ELEMENT_NOT_FOUND = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.elementNotFound');
+const PONGBOARD_TXT_LOBBY_SETTINGS_MISSING = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.lobbySettingsMissing');
+const PONGBOARD_TXT_SOCKET_NOT_ESTABLISHED = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.socketNotEstablished');
+const PONGBOARD_TXT_LOCAL_PLAYER_ID_NOT_SET = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.localPlayerIdNotSet');
+const PONGBOARD_TXT_PENDING_GAME_START_MISSING = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.pendingGameStartMissing');
+const PONGBOARD_TXT_GAME_OVER = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.gameOver');
+const PONGBOARD_TXT_GAME_ENDED = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.gameEnded');
+const PONGBOARD_TXT_CONNECTION_LOST = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.connectionLost');
+const PONGBOARD_TXT_PLAYER_JOINED = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.playerJoined');
+const PONGBOARD_TXT_PLAYER_LEFT = await getTranslatedTextByKey(getUserLang(), 'pongBoard.notify.playerLeft');
+
 export {};
 
 /** ### addListener
@@ -86,7 +101,7 @@ interface ClientInputPayload {
  */
 function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement | null, message?: string): T {
 	if (!element) {
-		window.notify(message || "Element not found", { type: "error" });
+		window.notify(message || (PONGBOARD_TXT_ELEMENT_NOT_FOUND || "Element not found"), { type: "error" });
 		throw new Error(message || "Element not found");
 	}
 	return (element as T);
@@ -113,7 +128,7 @@ function cancelLoading(message: string): void {
 }
 
 // check required globals for game operation
-if (!window.lobbySettings) cancelLoading("Lobby settings are not available.");
+if (!window.lobbySettings) cancelLoading(PONGBOARD_TXT_LOBBY_SETTINGS_MISSING || "Lobby settings are not available.");
 
 if (window.isGameOffline) // If we play online
 {
@@ -127,9 +142,9 @@ if (window.isGameOffline) // If we play online
 	};
 	window.localPlayerId = "user1";
 } else {
-	if (!window.socket || window.socket.readyState !== WebSocket.OPEN) cancelLoading("WebSocket connection is not established.");
-	if (!window.localPlayerId) cancelLoading("Local player ID is not set.");
-	if (!window.pendingGameStart) cancelLoading("No pending game start information found.");
+	if (!window.socket || window.socket.readyState !== WebSocket.OPEN) cancelLoading(PONGBOARD_TXT_SOCKET_NOT_ESTABLISHED || "WebSocket connection is not established.");
+	if (!window.localPlayerId) cancelLoading(PONGBOARD_TXT_LOCAL_PLAYER_ID_NOT_SET || "Local player ID is not set.");
+	if (!window.pendingGameStart) cancelLoading(PONGBOARD_TXT_PENDING_GAME_START_MISSING || "No pending game start information found.");
 }
 
 function getThemeColors(): { [key: string]: string } {
@@ -949,7 +964,7 @@ class PongBoard {
 		const winningScore = window.lobbySettings!.scoring.firstTo;
 		for (const score of this.scores.values()) {
 			if (score >= winningScore) {
-				notify("Game over! A player has reached the winning score.", { type: "success" });
+				notify(PONGBOARD_TXT_GAME_OVER || "Game over! A player has reached the winning score.", { type: "success" });
 				stopTimer();
 				pongBoard.destroy();
 				loadPage("lobby");
@@ -1072,10 +1087,13 @@ function updatePlayerNames() {
 }
 
 function handlePlayer(payload: PlayerPayload) {
-	if (payload.action === "join")
-		notify(`${payload.displayName} joined the game.`, { type: "info" });
+	if (payload.action === "join") {
+		const tpl = PONGBOARD_TXT_PLAYER_JOINED || '{name} joined the game.';
+		notify(tpl.replace('{name}', payload.displayName), { type: "info" });
+	}
 	else if (payload.action === "leave") {
-		notify(`${payload.displayName} left the game.`, { type: "warning" });
+		const tpl = PONGBOARD_TXT_PLAYER_LEFT || '{name} left the game.';
+		notify(tpl.replace('{name}', payload.displayName), { type: "warning" });
 		
 		if (!window.playerSyncData) return;
 
@@ -1108,7 +1126,7 @@ if (!window.isGameOffline) {
 			if (last) paddle.applyInputs(last.inputs);
 		} else if (msg.type === "game") {
 			if (msg.payload.action === "stopped") {
-				notify("Game has ended.", { type: "info" });
+				notify(PONGBOARD_TXT_GAME_ENDED || "Game has ended.", { type: "info" });
 				stopTimer();
 				setTimeout(() => { 
 					pongBoard.destroy();
@@ -1131,7 +1149,7 @@ if (!window.isGameOffline) {
 	});
 
 	addListener(window.socket!, "close", () => {
-		notify("Connection lost.", { type: "warning" });
+		notify(PONGBOARD_TXT_CONNECTION_LOST || "Connection lost.", { type: "warning" });
 		stopTimer();
 		setTimeout(() => { loadPage("lobby"); }, 3000);
 	});

@@ -21,6 +21,18 @@ declare global {
 	}
 }
 
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translated strings used in this module
+const LOBBYSETTINGS_TXT_SAVED_OFFLINE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.savedOffline');
+const LOBBYSETTINGS_TXT_SAVED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saved');
+const LOBBYSETTINGS_TXT_SAVE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saveError');
+const LOBBYSETTINGS_TXT_LEFT_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leftQueue');
+const LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leaveQueueError');
+const LOBBYSETTINGS_TXT_ADDED_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addedQueue');
+const LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addQueueError');
+
 /* -------------------------------------------------------------------------- */
 /*                                    Utils                                    */
 /* -------------------------------------------------------------------------- */
@@ -364,7 +376,7 @@ function wire(): void {
 	addListener(ui.actions.save, "click", () => {
 		if (window.isGameOffline) {
 			window.lobbySettings = structuredClone(currentSettings);
-			notify('Settings saved locally for offline game.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED_OFFLINE || 'Settings saved locally for offline game.', { type: "success" });
 			return;
 		}
 		fetch("/api/game/settings", {
@@ -379,9 +391,10 @@ function wire(): void {
 				throw new Error(data.error || 'Failed to save settings.');
 			}
 		}).then(() => {
-			notify('Settings saved successfully.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED || 'Settings saved successfully.', { type: "success" });
 		}).catch((error) => {
-			notify(`Error saving settings: ${error.message}`, { type: "error" });
+			const msg = LOBBYSETTINGS_TXT_SAVE_ERROR ? LOBBYSETTINGS_TXT_SAVE_ERROR.replace('{error}', error.message) : `Error saving settings: ${error.message}`;
+			notify(msg, { type: "error" });
 		});
 	});
 }
@@ -509,9 +522,9 @@ function setupModeSelection(): void {
 						throw new Error("Request failed");
 					}
 
-					notify("You left the queue.", { type: "success" });
+					notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || "You left the queue.", { type: "success" });
 				} catch (error) {
-					notify("Error leaving the queue.", { type: "error" });
+					notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || "Error leaving the queue.", { type: "error" });
 				}
 			}
 		});
@@ -682,9 +695,9 @@ function setupSubTabs(): void {
 				const data = await response.json();
 				window.dispatchEvent(new CustomEvent("joinQueue", { detail: { socketToken: data.authToken } }));
 
-				notify("You are added in a queue.", { type: "success" });
+				notify(LOBBYSETTINGS_TXT_ADDED_QUEUE || "You are added in a queue.", { type: "success" });
 			} catch (error) {
-				notify("Error adding in queue.", { type: "error" });
+				notify(LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR || "Error adding in queue.", { type: "error" });
 			}
 		});
 
@@ -702,9 +715,9 @@ function setupSubTabs(): void {
 					throw new Error("Request failed");
 				}
 
-				notify("You left the queue.", { type: "success" });
+				notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || "You left the queue.", { type: "success" });
 			} catch (error) {
-				notify("Error leaving the queue.", { type: "error" });
+				notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || "Error leaving the queue.", { type: "error" });
 			}
 		});
 	})
@@ -726,9 +739,9 @@ async function dynLoaderCleanPage() {
 				throw new Error("Request failed");
 			}
 
-			notify("You left the queue.", { type: "success" });
+			notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || "You left the queue.", { type: "success" });
 		} catch (error) {
-			notify("Error leaving the queue.", { type: "error" });
+			notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || "Error leaving the queue.", { type: "error" });
 		}
 	}
 }

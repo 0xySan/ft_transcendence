@@ -269,5 +269,53 @@
     "failedToSendInvite": "Failed to send invite - please try again",
     "failedToLoadConversation": "Failed to load conversation",
     "connectionLost": "Connection lost. Please refresh the page."
+  },
+  "lobbySocket": {
+    "notify": {
+      "connected": "Connected to the game lobby.",
+      "gameStarting": "The game is starting!",
+      "settingsUpdated": "Game settings have been updated.",
+      "disconnected": "Disconnected from the game lobby.",
+      "invalidGame": "Invalid game",
+      "failedToJoinGame": "Failed to join game: {error}",
+      "failedToJoinGameStatus": "Failed to join game: {status} - {error}",
+      "playerJoined": "{name} has joined the lobby.",
+      "playerLeft": "{name} has left the lobby."
+    }
+  },
+  "pongBoard": {
+    "notify": {
+      "elementNotFound": "Element not found",
+      "lobbySettingsMissing": "Lobby settings are not available.",
+      "socketNotEstablished": "WebSocket connection is not established.",
+      "localPlayerIdNotSet": "Local player ID is not set.",
+      "pendingGameStartMissing": "No pending game start information found.",
+      "gameOver": "Game over! A player has reached the winning score.",
+      "gameEnded": "Game has ended.",
+      "connectionLost": "Connection lost.",
+      "playerJoined": "{name} joined the game.",
+      "playerLeft": "{name} left the game."
+    }
+  },
+  "profile": {
+    "notify": {
+      "gameItemTemplateNotFound": "Game item template not found",
+      "profileInfoNotFound": "Profile info div not found",
+      "noProfileData": "No profile data available",
+      "failedToLoadProfilePicture": "Failed to load profile picture",
+      "failedToLoadBackgroundImage": "Failed to load background image",
+      "failedToCreateChat": "Failed to create chat. Please try again."
+    }
+  },
+  "lobbySettings": {
+    "notify": {
+      "savedOffline": "Settings saved locally for offline game.",
+      "saved": "Settings saved successfully.",
+      "saveError": "Error saving settings: {error}",
+      "leftQueue": "You left the queue.",
+      "leaveQueueError": "Error leaving the queue.",
+      "addedQueue": "You are added in a queue.",
+      "addQueueError": "Error adding in queue."
+    }
   }
 }
