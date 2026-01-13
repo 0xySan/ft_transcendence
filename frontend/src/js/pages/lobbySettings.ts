@@ -452,7 +452,7 @@ type SubTabsMultiplayer = {
  */
 const subTabsMultiplayer: Record<string, SubTabsMultiplayer> = {
 	multiplayer: {
-		findBtn: getEl("lobby-wating-find-player"),
+		findBtn: getEl("lobby-waiting-find-player"),
 		leaveBtn: getEl("lobby-leave-queue")
 	}
 };

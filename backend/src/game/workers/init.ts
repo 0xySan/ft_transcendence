@@ -66,8 +66,6 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				addParticipant(newGameId, stat.userId, stat.score, stat.state, msg.payload.users.length > 2 ? 2 : 1);
 			}
 
-			console.log("DEBUG: get all games = ", getAllGames());
-
 			return;
 		}
 

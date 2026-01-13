@@ -208,7 +208,7 @@ class PongBoardCanvas {
 		}
 
 		this.resize();
-		window.addEventListener("resize", () => this.resize());
+		addListener(window, "resize", () => this.resize());
 	}
 
 	private resize() {
@@ -912,7 +912,6 @@ function updatePlayerNames() {
 		rightBottomEl?.classList.add("unloaded");
 		barBottom?.classList.add("unloaded");
 	}
-  const side = window.pendingGameStart?.playerSides;
 
 	for (const [playerId, side] of Object.entries(playerSides)) {
 		const name = window.playerNames[playerId] || playerId;
