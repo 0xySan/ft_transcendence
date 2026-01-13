@@ -110,6 +110,32 @@ async function fetchCurrentUser(): Promise<ProfileData | null> {
 	}
 }
 
+async function updateStatusBubble(): Promise<void> {
+	try {
+		if (!viewedUserId)
+			return ;
+		const res = await fetch(`/api/users/${encodeURIComponent(viewedUserId)}/connection`, {
+			method: 'GET',
+			credentials: 'include'
+		});
+
+		if (!res.ok)
+			throw new Error('Failed to fetch user status');
+
+		const data: { status: string, detail: string } = await res.json();
+		const statusBubble = document.querySelector('.profile-status-bubble') as SVGElement;
+		if (statusBubble) {
+			statusBubble.classList.remove('online-bubble', 'offline-bubble', 'ingame-bubble', 'nondisplayable');
+			if (data.status === 'online' && data.detail === 'in_game')
+				statusBubble.classList.add('ingame-bubble');
+			else
+				statusBubble.classList.add(`${data.status}-bubble`);
+		}
+	} catch (err) {
+		notify(`${err}`, { type: 'error' });
+	}
+}
+
 /**
  * Fetches game statistics for a specific user from the backend
  * Retrieves the last 10 games and overall statistics
@@ -341,7 +367,6 @@ async function updateFriendButton(): Promise<void> {
 		const isFriend = friends.some(f => 
 			(f.sender_user_id === viewedUserId || f.target_user_id === viewedUserId) && f.status === 'accepted'
 		);
-		console.log('Is friend:', isFriend);
 
 		// Get pending friend requests (received by current user)
 		const pendingRes = await fetch('/api/friends/pending', {
@@ -392,6 +417,7 @@ async function updateFriendButton(): Promise<void> {
 					}
 				});
 			}
+			updateStatusBubble();
 		} else if (sentRequest) {
 			// Show waiting button (request pending that we sent)
 			if (friendWaitingBtn) {
@@ -564,11 +590,14 @@ function updateProfileUI(profileData: ProfileData): void {
 
 	// Fetch and update game stats
 	if (viewedUserId)
-		updateGameStats(viewedUserId);
-
+		updateGameStats(viewedUserId)
 	// Update friend button
 	if (viewedUserId && currentUserId && currentUserId !== viewedUserId)
 		updateFriendButton();
+	if (currentUserId && viewedUserId && currentUserId === viewedUserId)
+		updateStatusBubble();
+	
+	// Update background image
 	const backgroundImg = document.querySelector('#profile-div') as HTMLImageElement;
 	if (backgroundImg) {
 		if (profile.backgroundPicture) {
