@@ -21,18 +21,6 @@ declare global {
 	}
 }
 
-declare function getUserLang(): string;
-declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
-
-// Translated strings used in this module
-const LOBBYSETTINGS_TXT_SAVED_OFFLINE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.savedOffline');
-const LOBBYSETTINGS_TXT_SAVED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saved');
-const LOBBYSETTINGS_TXT_SAVE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saveError');
-const LOBBYSETTINGS_TXT_LEFT_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leftQueue');
-const LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leaveQueueError');
-const LOBBYSETTINGS_TXT_ADDED_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addedQueue');
-const LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addQueueError');
-
 /* -------------------------------------------------------------------------- */
 /*                                    Utils                                    */
 /* -------------------------------------------------------------------------- */
@@ -288,7 +276,7 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
  * @param onChange - callback to invoke on change
  */
 function bindNumber(input: HTMLInputElement, onChange: (v: number) => void): void {
-	addListener(input, "input", () => onChange(readNumber(input)));
+	addListener(input, "input", (_ev) => onChange(readNumber(input)));
 }
 
 /** ### bindCheckbox
@@ -297,7 +285,7 @@ function bindNumber(input: HTMLInputElement, onChange: (v: number) => void): voi
  * @param onChange - callback to invoke on change
  */
 function bindCheckbox(input: HTMLInputElement, onChange: (v: boolean) => void): void {
-	addListener(input, "change", () => onChange(input.checked));
+	addListener(input, "change", (_ev) => onChange(input.checked));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -373,55 +361,34 @@ function wire(): void {
 		populateUi();
 	});
 
-	addListener(ui.actions.save, "click", () => {
+	addListener(ui.actions.save, "click", async () => {
 		if (window.isGameOffline) {
 			window.lobbySettings = structuredClone(currentSettings);
-			notify(LOBBYSETTINGS_TXT_SAVED_OFFLINE || 'Settings saved locally for offline game.', { type: "success" });
+			notify('Settings saved locally for offline game.', { type: "success" });
 			return;
 		}
-		fetch("/api/game/settings", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ settings: currentSettings }),
-		}).then(async (res) => {
+
+		try {
+			const res = await fetch("/api/game/settings", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ settings: currentSettings }),
+			});
+
 			if (!res.ok) {
 				const data = await res.json();
 				throw new Error(data.error || 'Failed to save settings.');
 			}
-		}).then(() => {
-			notify(LOBBYSETTINGS_TXT_SAVED || 'Settings saved successfully.', { type: "success" });
-		}).catch((error) => {
-			const msg = LOBBYSETTINGS_TXT_SAVE_ERROR ? LOBBYSETTINGS_TXT_SAVE_ERROR.replace('{error}', error.message) : `Error saving settings: ${error.message}`;
-			notify(msg, { type: "error" });
-		});
+
+			notify('Settings saved successfully.', { type: "success" });
+		} catch (err: any) {
+			notify(`Error saving settings: ${err?.message ?? String(err)}`, { type: "error" });
+		}
 	});
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                  Initialization                             */
-/* -------------------------------------------------------------------------- */
-
-/** ### initLobbySettings
- * - initialize lobby settings with optional initial partial settings
- * @param initial - optional initial partial settings
- */
-export function initLobbySettings(initial?: Partial<Settings>): void {
-	currentSettings = window.lobbySettings ? window.lobbySettings : structuredClone(defaultSettings);
-	// TODO 
-	if (window.lobbySettings) {
-		selectLobbyMode("online");
-		setPartialLobbyConfig(window.lobbySettings);
-	}
-	if (initial) setPartialLobbyConfig(initial);
-	populateUi();
-	window.lobbySettings = structuredClone(currentSettings);
-	wire();
-}
-
-/* auto-init */
-initLobbySettings();
 
 
 /* -------------------------------------------------------------------------- */
@@ -458,161 +425,6 @@ const modes: Record<string, Mode> = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                         Mode selection & Join handlers                      */
-/* -------------------------------------------------------------------------- */
-
-/**
- * ### activateCustomGameUI
- * - show the custom-game UI and hide the select-mode panel
- */
-function activateCustomGameUI(): void {
-	const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
-	lobbySelectMode.classList.remove("current-mode");
-	lobbySelectMode.classList.add("unloaded");
-
-	getEl<HTMLButtonElement>("lobby-custom-game-button").classList.add("current-mode");
-
-	const lobbySettingBox = getElQS<HTMLDivElement>(".lobby-setting-box");
-	lobbySettingBox.classList.add("current-mode");
-	lobbySettingBox.classList.remove("unloaded");
-}
-
-/** ### deactivateCustomGameUI
- * - hide the custom-game UI and show the select-mode panel
- */
-function deactivateCustomGameUI(): void {
-	const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
-	lobbySelectMode.classList.add("current-mode");
-	lobbySelectMode.classList.remove("unloaded");
-
-	getEl<HTMLButtonElement>("lobby-custom-game-button").classList.remove("current-mode");
-
-	const lobbySettingBox = getElQS<HTMLDivElement>(".lobby-setting-box");
-	lobbySettingBox.classList.remove("current-mode");
-	lobbySettingBox.classList.add("unloaded");
-}
-
-/**
- * ### setupModeSelection
- * - add click listeners to the top-mode buttons (multiplayer/custom/tournament)
- * - switching updates active tab + button
- */
-function setupModeSelection(): void {
-	Object.values(modes).forEach((mode) => {
-		addListener(mode.button, "click", async () => {
-
-			const isMultiplayer: boolean = modes.multiplayer.tab.classList.contains("unloaded");
-
-			Object.values(modes).forEach(m => {
-				m.button.classList.toggle("current-mode", m === mode);
-				m.tab.classList.toggle("unloaded", m !== mode);
-			});
-
-			if (modes.multiplayer.tab.classList.contains("unloaded") && !isMultiplayer) {
-				try {
-					const response = await fetch("/api/game/leave", {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({ settings: currentSettings }),
-					});
-
-					if (!response.ok) {
-						throw new Error("Request failed");
-					}
-
-					notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || "You left the queue.", { type: "success" });
-				} catch (error) {
-					notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || "Error leaving the queue.", { type: "error" });
-				}
-			}
-		});
-	});
-}
-
-/**
- * ### selectLobbyMode
- * - centralised behaviour when the user picks online/offline/join
- * - updates the action buttons & custom UI accordingly
- * @param modeKey - 'online' | 'offline' | 'join'
- */
-function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void {
-	if (modeKey === "offline")
-		window.isGameOffline = true;
-	else
-		window.isGameOffline = false;
-	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
-	const joinBtn = ui.actionButtons.joinBtn;
-	const leaveBtn = ui.actionButtons.leaveBtn;
-	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
-	let tabMode = document.querySelector("#lobby-mode-buttons");
-	tabMode?.classList.remove("grayed");
-	if (modeKey === "offline") {
-		lobbyActionButtons.classList.remove("unloaded");
-		joinBtn.classList.add("unloaded");
-		leaveBtn.classList.remove("unloaded");
-		joinBox.classList.add("unloaded");
-		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
-		let tabMode = document.querySelector("#lobby-mode-buttons");
-		tabMode?.classList.add("grayed");
-	} else {
-		// online or join (online-like UI)
-		joinBtn.classList.remove("unloaded");
-		leaveBtn.classList.remove("unloaded");
-	}
-
-	if (modeKey !== "reset")
-		activateCustomGameUI();
-	else
-		deactivateCustomGameUI();
-}
-
-window.selectLobbyMode = selectLobbyMode;
-
-/** ### setupLobbyModeHandlers
- * - attach listeners to offline/online/join UI elements
- * - exported so other modules can call it after DOM changes if necessary
- */
-async function setupLobbyModeHandlers(): Promise<void> {
-	let readyCheck = false;
-
-	const userConnected = getElQS<HTMLDivElement>("#lobby-select-mode div:first-child");
-	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
-
-	// offline button handler
-	const offlineBtn = getEl<HTMLButtonElement>("lobby-offline");
-	const onlineBtn = getEl<HTMLButtonElement>("lobby-online");
-
-	const isUserLogged = await window.currentUserReady.then(() => {
-		return (window.currentUser !== null);
-	});
-
-	// enable/disable join area depending on login presence
-	if (isUserLogged) {
-		getElQS<HTMLDivElement>("#lobby-action-buttons").classList.remove("unloaded");
-		userConnected.classList.remove("unclickable");
-		lobbyJoin.classList.remove("unclickable");
-	} else {
-		userConnected.classList.add("unclickable");
-		lobbyJoin.classList.add("unclickable");
-	}
-
-	addListener(offlineBtn, "click", () => {
-		readyCheck = true;
-		selectLobbyMode("offline");
-		subTabs.custom.basicTab.classList.remove("grayed");
-		ui.actionButtons.launchBtn.classList.remove("unloaded");
-	});
-
-	// online button handler
-	addListener(onlineBtn, "click", () => {
-		readyCheck = true;
-		selectLobbyMode("online");
-	});
-}
-
-/* -------------------------------------------------------------------------- */
 /*                                   Sub-tabs                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -640,7 +452,7 @@ type SubTabsMultiplayer = {
  */
 const subTabsMultiplayer: Record<string, SubTabsMultiplayer> = {
 	multiplayer: {
-		findBtn: getEl("lobby-wating-find-player"),
+		findBtn: getEl("lobby-waiting-find-player"),
 		leaveBtn: getEl("lobby-leave-queue")
 	}
 };
@@ -660,6 +472,10 @@ const subTabs: Record<string, SubTabs> = {
 	}
 };
 
+/** ### setupSubTabs
+ * - add click listeners to sub-tab buttons (basic/advanced)
+ * - also sets up the game finding button on the multiplayer tab
+ */
 function setupSubTabs(): void {
 	Object.values(subTabs).forEach((tab) => {
 		addListener(tab.basicBtn, "click", () => {
@@ -677,83 +493,212 @@ function setupSubTabs(): void {
 		});
 	});
 
-	Object.values(subTabsMultiplayer).forEach((tab) => {
-		addListener(tab.findBtn, "click", async () => {
-			try {
-				const response = await fetch("/api/game/finding", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({ settings: currentSettings }),
-				});
-
-				if (!response.ok) {
-					throw new Error("Request failed");
-				}
-
-				const data = await response.json();
-				window.dispatchEvent(new CustomEvent("joinQueue", { detail: { socketToken: data.authToken } }));
-
-				notify(LOBBYSETTINGS_TXT_ADDED_QUEUE || "You are added in a queue.", { type: "success" });
-			} catch (error) {
-				notify(LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR || "Error adding in queue.", { type: "error" });
-			}
-		});
-
-		addListener(tab.leaveBtn, "click", async () => {
-			try {
-				const response = await fetch("/api/game/leave", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({ settings: currentSettings }),
-				});
-
-				if (!response.ok) {
-					throw new Error("Request failed");
-				}
-
-				notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || "You left the queue.", { type: "success" });
-			} catch (error) {
-				notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || "Error leaving the queue.", { type: "error" });
-			}
-		});
-	})
-}
-
-async function dynLoaderCleanPage() {
-	const elem: HTMLElement | null = document.getElementById("lobby-multiplayer-button");
-	if (elem && elem.classList.contains("current-mode")) {
+	// Setup game finding on multiplayer tab
+	addListener(subTabsMultiplayer.multiplayer.findBtn, "click", async () => {
 		try {
-			const response = await fetch("/api/game/leave", {
+			const response = await fetch("/api/game/finding", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ settings: "null" }),
+				body: JSON.stringify({ settings: currentSettings }),
 			});
 
 			if (!response.ok) {
 				throw new Error("Request failed");
 			}
 
-			notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || "You left the queue.", { type: "success" });
+			const data = await response.json();
+			window.dispatchEvent(new CustomEvent("joinQueue", { detail: { socketToken: data.authToken } }));
+
+			notify("You are added in a queue.", { type: "success" });
 		} catch (error) {
-			notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || "Error leaving the queue.", { type: "error" });
+			notify("Error adding in queue.", { type: "error" });
 		}
-	}
+	});
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                   Boot                                     */
+/*                         Mode selection & Join handlers                      */
 /* -------------------------------------------------------------------------- */
 
-window.setPartialLobbyConfig = setPartialLobbyConfig;
+/**
+ * Custom-game selection state
+ * - "none" => show online/offline choice
+ * - "online" | "offline" => show settings for chosen mode
+ */
+type CustomGameSelection = "none" | "online" | "offline";
+let customGameSelection: CustomGameSelection = "none";
 
-setupModeSelection();
+/** ### updateCustomGameUi
+ * - synchronise Custom Game area (either choice panel or settings tab)
+ */
+function updateCustomGameUi(): void {
+	const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+	const customTab = modes.custom.tab;
+
+	if (customGameSelection === "none") {
+		// show the online/offline choice
+		lobbySelectMode.classList.remove("unloaded");
+		lobbySelectMode.classList.add("current-mode");
+
+		customTab.classList.add("unloaded");
+		customTab.classList.remove("current-mode");
+	} else {
+		// show custom settings
+		lobbySelectMode.classList.add("unloaded");
+		lobbySelectMode.classList.remove("current-mode");
+
+		customTab.classList.remove("unloaded");
+		customTab.classList.add("current-mode");
+	}
+}
+
+/**
+ * ### setupModeSelection
+ * - add click listeners to the top-mode buttons (multiplayer/custom/tournament)
+ * - switching updates active tab + button
+ */
+function setupModeSelection(): void {
+	Object.values(modes).forEach((mode) => {
+		addListener(mode.button, "click", () => {
+			Object.values(modes).forEach(m => {
+				const isActive = m === mode;
+
+				m.button.classList.toggle("current-mode", isActive);
+				m.tab.classList.toggle("unloaded", !isActive);
+				m.tab.classList.toggle("current-mode", isActive);
+			});
+
+			// when switching to custom tab, decide what to show based on state
+			if (mode === modes.custom) {
+				updateCustomGameUi();
+			} else {
+				// hide the online/offline selector if we're not on custom
+				const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+				lobbySelectMode.classList.add("unloaded");
+			}
+		});
+	});
+}
+
+/**
+ * ### selectLobbyMode
+ * - centralised behaviour when the user picks online/offline/join
+ * - updates the action buttons & custom UI accordingly
+ * @param modeKey - 'online' | 'offline' | 'join' | 'reset'
+ */
+function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void {
+	// update internal state
+	if (modeKey === "reset")
+		customGameSelection = "none";
+	else if (modeKey === "offline") {
+		customGameSelection = "offline";
+		window.isGameOffline = true;
+		subTabs.custom.basicTab.classList.remove("grayed");
+	} else {
+		// online or join
+		customGameSelection = "online";
+		window.isGameOffline = false;
+	}
+
+	// update UI for custom game area
+	updateCustomGameUi();
+
+	// update action buttons / join box
+	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
+	const joinBtn = ui.actionButtons.joinBtn;
+	const leaveBtn = ui.actionButtons.leaveBtn;
+	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
+	const tabMode = document.querySelector("#lobby-mode-buttons");
+
+	// ensure actions visible when appropriate
+	if (customGameSelection === "offline") {
+		lobbyActionButtons.classList.remove("unloaded");
+		joinBtn.classList.add("unloaded");
+		leaveBtn.classList.remove("unloaded");
+		joinBox.classList.add("unloaded");
+		tabMode?.classList.add("grayed");
+		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
+	} else if (customGameSelection === "online") {
+		lobbyActionButtons.classList.remove("unloaded");
+		joinBtn.classList.remove("unloaded");
+		leaveBtn.classList.remove("unloaded");
+		joinBox.classList.remove("unloaded");
+		tabMode?.classList.remove("grayed");
+	} else {
+		// reset state
+		lobbyActionButtons.classList.add("unloaded");
+		tabMode?.classList.remove("grayed");
+	}
+}
+
+// expose function to window for external use
+window.selectLobbyMode = selectLobbyMode;
+
+/** ### setupLobbyModeHandlers
+ * - attach listeners to offline/online/join UI elements
+ * - exported so other modules can call it after DOM changes if necessary
+ */
+async function setupLobbyModeHandlers(): Promise<void> {
+	let readyCheck = false;
+
+	const userConnected = getElQS<HTMLDivElement>("#lobby-select-mode div:first-child");
+	const lobbyJoin = getElQS<HTMLDivElement>("#lobby-join-box");
+
+	// offline/online elements are DIVs in markup — use the correct type
+	const offlineBtn = getEl<HTMLDivElement>("lobby-offline");
+	const onlineBtn = getEl<HTMLDivElement>("lobby-online");
+
+	const isUserLogged = await window.currentUserReady.then(() => {
+		return (window.currentUser !== null);
+	});
+
+	// enable/disable join area depending on login presence
+	if (isUserLogged) {
+		getElQS<HTMLDivElement>("#lobby-action-buttons").classList.remove("unloaded");
+		userConnected.classList.remove("unclickable");
+		lobbyJoin.classList.remove("unclickable");
+	} else {
+		userConnected.classList.add("unclickable");
+		lobbyJoin.classList.add("unclickable");
+		getElQS<HTMLDivElement>("#lobby-join-box")?.classList.add("unloaded");
+	}
+
+	addListener(offlineBtn, "click", () => {
+		readyCheck = true;
+		selectLobbyMode("offline");
+		// show basic tab for custom offline immediately
+		subTabs.custom.basicTab.classList.remove("grayed");
+		ui.actionButtons.launchBtn.classList.remove("unloaded");
+	});
+
+	// online button handler
+	addListener(onlineBtn, "click", () => {
+		readyCheck = true;
+		selectLobbyMode("online");
+	});
+
+	addListener(ui.actionButtons.leaveBtn, "click", () => {
+		selectLobbyMode("reset");
+	});
+}
+
 setupSubTabs();
-await setupLobbyModeHandlers();
+setupModeSelection();
+wire();
 
-registerDynamicCleanup(dynLoaderCleanPage);
+if (window.lobbySettings)
+	setPartialLobbyConfig(window.lobbySettings);
+
+if (window.socket && window.lobbySettings) {
+	selectLobbyMode("online");
+	setPartialLobbyConfig(window.lobbySettings);
+}
+else if (window.isGameOffline && window.lobbySettings) {
+	selectLobbyMode("offline");
+	setPartialLobbyConfig(window.lobbySettings);
+} else {
+	window.lobbySettings = structuredClone(currentSettings);
+	setupLobbyModeHandlers();
+}

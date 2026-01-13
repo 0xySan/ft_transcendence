@@ -1344,8 +1344,8 @@ button:active {
 
 #chat-index-container {
 	position: absolute;
-	right: 0.5rem;
-	bottom: 0.5rem;
+	right: 0rem;
+	bottom: calc(-50vh + 40px);
 	z-index: 100;
 
 	width: 25vw;

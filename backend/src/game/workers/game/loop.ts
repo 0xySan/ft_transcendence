@@ -107,7 +107,7 @@ function gameLoop(): void {
 		accumulators.set(gameId, accumulator);
 	});
 
-	setImmediate(gameLoop);
+	setTimeout(gameLoop, 1000 / 120); // Run at twice the frame rate for smoother timing
 }
 
 gameLoop();
@@ -158,9 +158,11 @@ function stepGame(game: Game, dt: number): void {
 			- field.wallThickness
 			- padCfg.margin
 			- padCfg.width;
-
-		if (p.vy === undefined)
-			p.vy = 0;
+			
+		const sides = game.getPlayerSidesMap();
+		if( sides[player.id] === "left") (p as any).x = leftX;
+		else if( sides[player.id] === "right") (p as any).x = rightX;
+		if (p.vy === undefined) p.vy = 0;
 
 		const inputUp = p.activeInputs?.up ?? false;
 		const inputDown = p.activeInputs?.down ?? false;
@@ -344,7 +346,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			}
 
 			if (payload.action === "start") {
-				if (game.players.length < 2)
+				if (game.players.length === game.config.game.maxPlayers && (game.players.length == 2 || game.players.length === 4)) 
 				{
 					console.log("CANT START GAME: Not enough player");
 					return;
