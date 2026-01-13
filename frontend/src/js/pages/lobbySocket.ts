@@ -3,22 +3,22 @@ import type { PlayerPayload, Settings, UserData } from "../global";
 declare global {
 	interface Window {
 		socket?: WebSocket;
-		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
+		
+		pendingGameStart?: gameStartAckPayload;
+		playerSyncData: PlayerSyncPayload | null;
+		playerNames?: Record<string, string>;
 		localPlayerId?: string;
 		lobbyGameId?: string;
-		token: string;
-		playerSyncData: PlayerSyncPayload | null;
-		pendingGameStart?: gameStartAckPayload;
+
+		__resolveCurrentUser: (user?: any) => void;
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
-		__resolveCurrentUser: (user?: any) => void;
-		joinLobby: () => Promise<void>;
+
 		lobbySettings?: Settings;
+		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
 	}
 }
-
-export {};
 
 declare function loadPage(url: string): void;
 declare function addListener(
@@ -27,14 +27,10 @@ declare function addListener(
 	handler: any,
 ): void;
 
-declare global {
-    interface Window {
-        playerNames?: Record<string, string>;
-    }
-}
 window.playerNames = {};
+
 /* -------------------------------------------------------------------------- */
-/* Utils                                                                      */
+/* 								Utils										  */
 /* -------------------------------------------------------------------------- */
 function getEl<T extends HTMLElement>(id: string): T {
 	const el = document.getElementById(id);
@@ -47,7 +43,7 @@ function generateCode(): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/* State                                                                      */
+/* State																	  */
 /* -------------------------------------------------------------------------- */
 let gameId: string | null = null;
 let authToken: string | null = null;
@@ -55,7 +51,7 @@ let myPlayerId: string | null = null;
 let ownerId: string | null = null;
 
 /* -------------------------------------------------------------------------- */
-/* Elements                                                                   */
+/* Elements																   */
 /* -------------------------------------------------------------------------- */
 const joinInput = getEl<HTMLInputElement>("lobby-input");
 const joinBtn = getEl<HTMLButtonElement>("lobby-btn-join");
@@ -83,7 +79,7 @@ const htmlSettings = {
 };
 
 /* -------------------------------------------------------------------------- */
-/* WebSocket types                                                            */
+/* WebSocket types															*/
 /* -------------------------------------------------------------------------- */
 type MsgType = "connect" | "player" | "playerSync" | "game" | "settings";
 
@@ -139,28 +135,41 @@ export interface gameStartAckPayload {
 }
 
 /* -------------------------------------------------------------------------- */
-/* WebSocket                                                                  */
+/*									WebSocket								  */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Try to connect to the lobby WebSocket using the provided socket token.
+ * The event is sent from the lobbySettings module when the user joins the queue.
+ */
 addListener(window, "joinQueue", (event: CustomEvent) => {
 	connectWebSocket(event.detail.socketToken);
 });
 
-function applyListener(socket: WebSocket, token: string) {
-	addListener(socket, "open", () => {
-		notify('Connected to the game lobby.', { type: 'success' });
-		const msg: SocketMessage<ConnectPayload> = {
-			type: "connect",
-			payload: { token: {token: token} },
-		};
-		socket.send(JSON.stringify(msg));
+/** ### applyListener
+ * Apply WebSocket event listeners for open, message, and close events.
+ * Handles connection setup, incoming messages, and disconnection logic.
+ * 
+ * @param socket - The WebSocket instance to apply listeners to.
+ * @param token - Optional authentication token for connecting to the lobby.
+ */
+function applyListener(socket: WebSocket, token?: string) {
+	if (token) {
+		addListener(socket, "open", () => {
+			notify('Connected to the game lobby.', { type: 'success' });
+			const msg: SocketMessage<ConnectPayload> = {
+				type: "connect",
+				payload: { token: {token: token} },
+			};
+			socket.send(JSON.stringify(msg));
 
-		// start client keepalive: send a small "send" message every 20s
-		(window as any).socketPingInterval = window.setInterval(() => {
-			if (socket.readyState === WebSocket.OPEN)
-				socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
-		}, 20_000);
-	});
+			// start client keepalive: send a small "send" message every 20s
+			(window as any).socketPingInterval = window.setInterval(() => {
+				if (socket.readyState === WebSocket.OPEN)
+					socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
+			}, 20_000);
+		});
+	}
 
 	addListener(socket, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
@@ -218,8 +227,15 @@ function connectWebSocket(token: string): void {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Players handling                                                           */
+/* 									Players handling						  */
 /* -------------------------------------------------------------------------- */
+
+/** ### handlePlayerSync
+ * Handle player synchronization by updating the player list and UI elements.
+ * Clears the existing player list and repopulates it based on the provided payload.
+ * 
+ * @param payload - The player synchronization payload containing owner ID and player details.
+ */
 function handlePlayerSync(payload: PlayerSyncPayload): void {
 	playerListEl.innerHTML = "";
 	ownerId = payload.ownerId;
@@ -245,6 +261,12 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 	updateLaunchVisibility("lobby-online", Math.max(payload.players.length, playerListEl.children.length));
 }
 
+/** ### handlePlayer
+ * Handle player join and leave events by updating the player list and UI elements.
+ * Adds or removes players from the list based on the action specified in the payload.
+ * 
+ * @param payload - The player payload containing action, player ID, and display name.
+ */
 function handlePlayer(payload: PlayerPayload): void {
 	if (payload.action === "join" && window.playerSyncData) {
 		const exist: boolean = window.playerSyncData.players.some(player => player.playerId === payload.playerId);
@@ -276,8 +298,16 @@ function handlePlayer(payload: PlayerPayload): void {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Players UI                                                                 */
+/* 									Players UI								  */
 /* -------------------------------------------------------------------------- */
+
+/** ### addPlayer
+ * Add a player to the player list UI.
+ * 
+ * @param id - The player's unique identifier.
+ * @param name - The display name of the player.
+ * @param isOwner - Boolean indicating if the player is the owner.
+ */
 function addPlayer(
 	id: string,
 	name: string,
@@ -300,6 +330,11 @@ function addPlayer(
 	updateCounts(playerListEl.children.length);
 }
 
+/** ### removePlayer
+ * Remove a player from the player list UI.
+ * 
+ * @param id - The player's unique identifier.
+ */
 function removePlayer(id: string): void {
 	const el = playerListEl.querySelector(`#player-${id}`);
 	if (!el) return;
@@ -308,6 +343,11 @@ function removePlayer(id: string): void {
 	updateCounts(playerListEl.children.length);
 }
 
+/** ### updateCounts
+ * Update the player count display in the lobby UI.
+ * 
+ * @param current - The current number of players in the lobby.
+ */
 function updateCounts(current: number): void {
 	playerCurrentCountEl.textContent = String(current);
 	if (window.lobbySettings && window.lobbySettings.game) {
@@ -316,8 +356,15 @@ function updateCounts(current: number): void {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Owner / Launch logic                                                       */
+/* 									Owner / Launch logic					  */
 /* -------------------------------------------------------------------------- */
+
+/** ### updateLaunchVisibility
+ * Update the visibility and state of the launch button based on the lobby mode and player count.
+ * 
+ * @param mode - The current lobby mode ("lobby-online" or "lobby-offline").
+ * @param playerCount - The current number of players in the lobby.
+ */
 export function updateLaunchVisibility(mode:string, playerCount:number): void {
 
 	const isOwner =
@@ -342,8 +389,16 @@ export function updateLaunchVisibility(mode:string, playerCount:number): void {
 }
 
 /* -------------------------------------------------------------------------- */
-/* API – Game creation / join                                                 */
+/* 							API – Game creation / join						  */
 /* -------------------------------------------------------------------------- */
+
+/** ### joinGame
+ * Attempt to join a game using the provided code or game ID.
+ * Validates the input and sends a request to the server to join the game.
+ * On success, connects to the lobby WebSocket with the received auth token.
+ * 
+ * @param code - The game code or game ID to join.
+ */
 async function joinGame(code: string): Promise<void> {
 	const payload = /^[A-Z0-9]{4}$/.test(code.toUpperCase())
 		? { code: code.toUpperCase() }
@@ -369,13 +424,17 @@ async function joinGame(code: string): Promise<void> {
 	gameId = data.gameId;
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
-	window.token = data.authToken;
 
 	if (!authToken) throw new Error("Missing auth token");
 	window.selectLobbyMode("join");
 	connectWebSocket(authToken);
 }
 
+/** ### createGame
+ * Create a new online game with default settings.
+ * Sends a request to the server to create the game and retrieves the game ID and auth token.
+ * On success, connects to the lobby WebSocket with the received auth token.
+ */
 async function createGame(): Promise<void> {
 	const res = await fetch("/api/game/new", {
 		method: "POST",
@@ -402,8 +461,9 @@ async function createGame(): Promise<void> {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Events                                                                     */
+/* 									Events									  */
 /* -------------------------------------------------------------------------- */
+
 addListener(joinBtn, "click", () => joinGame(joinInput.value));
 
 addListener(createBtn, "click", () => createGame());
@@ -437,39 +497,71 @@ addListener(launchBtn, "click", () => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* Reset                                                                      */
+/* Reset																	  */
 /* -------------------------------------------------------------------------- */
+
+/** ### resetLobbyState
+ * Reset the lobby state by clearing player lists, closing WebSocket connections,
+ * and resetting UI elements to their default state.
+ */
 function resetLobbyState(): void {
+	// Prevent resetting if the multiplayer tab exists
 	const elem = document.getElementById("lobby-multiplayer-tab");
 	if (elem) return;
 
+	// Clear socket keepalive interval
 	if ((window as any).socketPingInterval) {
 		clearInterval((window as any).socketPingInterval);
 		(window as any).socketPingInterval = undefined;
 	}
-	if (window.socket)
+
+	// Close WebSocket if exists
+	if (window.socket) {
 		window.socket.close();
+	}
+
+	// Reset UI player list and counts
 	playerListEl.innerHTML = "";
 	updateCounts(0);
+
+	// Reset game state variables
 	gameId = null;
 	authToken = null;
 	ownerId = null;
+
+	// Hide launch and leave buttons
 	launchBtn.classList.add("unloaded");
-	updateLaunchVisibility("lobby-offline", 0);
-	window.selectLobbyMode("reset");
 	leaveBtn.classList.add("unloaded");
-	let tabMode = document.querySelector("#lobby-mode-buttons");
+
+	// Update launch button visibility
+	updateLaunchVisibility("lobby-offline", 0);
+
+	// Reset lobby mode
+	window.selectLobbyMode("reset");
+
+	// Gray out lobby mode buttons tab
+	const tabMode = document.querySelector("#lobby-mode-buttons");
 	tabMode?.classList.add("grayed");
+
+	// Clear join input
+	joinInput.value = "";
+
+	// Gray out settings panels
+	htmlSettings.basic.div.classList.add("grayed");
+	htmlSettings.advanced.div.classList.add("grayed");
 }
 
+
 /* -------------------------------------------------------------------------- */
-/* Init                                                                       */
+/* Init																	   */
 /* -------------------------------------------------------------------------- */
 
 launchBtn.classList.add("unloaded");
 leaveBtn.classList.add("unloaded");
 
-if (window.playerSyncData) {
+if (window.socket) {
+	applyListener(window.socket)
+	if (!window.playerSyncData) throw new Error("Missing player sync data on reload");
 	handlePlayerSync(window.playerSyncData);
 	if (window.localPlayerId == window.playerSyncData.ownerId) {
 		launchBtn.classList.remove("unloaded");
@@ -477,7 +569,6 @@ if (window.playerSyncData) {
 		htmlSettings.basic.div.classList.remove("grayed");
 		htmlSettings.advanced.div.classList.remove("grayed");
 	}
-	if (window.socket) applyListener(window.socket, window.token);
 }
 
 myPlayerId = await window.currentUserReady.then(() => {

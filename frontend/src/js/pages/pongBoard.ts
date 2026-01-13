@@ -946,6 +946,7 @@ function handlePlayer(payload: PlayerPayload) {
 if (!window.isGameOffline) {
 	addListener(window.socket!, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data);
+		console.log("Received message:", msg);
 		if (msg.type === "input") {
 			const payload = msg.payload as ClientInputPayload;
 			const paddle = pongBoard.getPaddleByPlayerId(payload.userId);
@@ -972,10 +973,10 @@ if (!window.isGameOffline) {
 				handlePlayer(payload);
 				updatePlayerNames();
 			}
+		} else {
+			endGame();
 		}
 	});
-
-	endGame();
 }
 
 /* -------------------------------------------------------------------------- */

@@ -187,12 +187,10 @@ function resetLobby() {
 	window.pendingGameStart = undefined;
 	window.lobbySettings = undefined;
 
-	window.token = "";
 	window.playerSyncData = null;
 
 	window.currentUserReady = Promise.resolve();
 
-	window.joinLobby = async () => {};
 	window.selectLobbyMode = () => {};
 }
 
