@@ -285,6 +285,7 @@ function stepGame(game: Game, dt: number): void {
 
 		if (scorer.score >= game.config.scoring.firstTo) {
 			gameStates.set(game.id, "stopped");
+
 			const message: msg.gamePayload = {
 				action: "stopped"
 			};

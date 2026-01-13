@@ -699,11 +699,11 @@ class PongBoard {
 	/** Optional paddle for the second player in offline games */
 	public player2Paddle?: Paddle;
 	/** Map of player IDs to their corresponding Paddle instances. */
-	private paddleByPlayerId = new Map<string, Paddle>();
+	public paddleByPlayerId = new Map<string, Paddle>();
 	/** The Ball instance representing the pong ball. */
 	private ball: Ball;
 	/** Scores for offline mode */
-	private scores = new Map<string, number>();
+	public scores = new Map<string, number>();
 
 	/** ### constructor of PongBoard
 	 * @param container - The HTMLDivElement to contain the pong board.
@@ -819,8 +819,16 @@ class PongBoard {
 		this.ball.reset();
 		// check for win condition
 		const winningScore = window.lobbySettings!.scoring.firstTo;
-		for (const score of this.scores.values()) {
+		for (const [playerId, score] of this.scores) {
 			if (score >= winningScore) {
+				let message: string = "";
+				if (!window.socket) message = playerId + " has Win";
+
+				countdownDiv.setAttribute('aria-hidden', 'false');
+				countdownDiv.textContent = "";
+				countdownDiv.style.display = "flex";
+				countdownDiv.textContent = String(message);
+
 				// Reset window for lobby
 				window.isGameOffline = false;
 				window.pendingGameStart = undefined;
@@ -829,7 +837,7 @@ class PongBoard {
 				// End game
 				endGame();
 				break;
-			}
+				}
 			}
 		}
 	
@@ -984,6 +992,11 @@ if (!window.isGameOffline) {
 			if (last) paddle.applyInputs(last.inputs);
 		} else if (msg.type === "game") {
 			if (msg.payload.action === "stopped") {
+				countdownDiv.setAttribute('aria-hidden', 'false');
+				countdownDiv.textContent = "";
+				countdownDiv.style.display = "flex";
+				countdownDiv.textContent = String("Game is Finished");
+
 				endGame();
 			} else {
 				const payload = msg.payload as GameStateUpdate;

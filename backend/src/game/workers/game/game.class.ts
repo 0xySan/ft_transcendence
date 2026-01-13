@@ -157,6 +157,8 @@ export class Game {
 			userIds: this.players.map(p => p.id)
 		};
 
+		
+
 		parentPort!.postMessage(message);
 	}
 
