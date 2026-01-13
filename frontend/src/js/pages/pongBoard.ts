@@ -7,6 +7,8 @@ import { PongTimer } from "./pongBoardUtils";
 /*							   GLOBAL DECLARATIONS						  */
 /* -------------------------------------------------------------------------- */
 
+let		direction: boolean = false;
+
 declare global {
 	interface Window {
 		socket?: WebSocket;
@@ -565,10 +567,12 @@ class Ball {
 		this.x = world.width / 2;
 		this.y = world.height / 2;
 
-		const dir = Math.random() < 0.5 ? -1 : 1;
-		const angle = (Math.random() - 0.5) * this.settings.initialAngleRange;
-		this.vx = this.settings.initialSpeed * dir * Math.cos(angle);
-		this.vy = this.settings.initialSpeed * Math.sin(angle);
+		let vx: number = this.settings.initialSpeed;
+		if (!direction) { vx *= -1; direction = true; }
+		else direction = false;
+
+		this.vx = vx;
+		this.vy = 0;
 	}
 
 	/** ### update

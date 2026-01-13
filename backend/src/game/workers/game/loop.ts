@@ -22,6 +22,7 @@ import { Player } from "./player.class.js";
 let		userStats: msg.statsPayload[] = [];
 let		lastHit: string = "";
 let		pointsTime: pointsInterface[] = [];
+let		direction: boolean = false;
 
 /* -------------------------------------------------------------------------- */
 /*                                   STATE                                    */
@@ -88,6 +89,7 @@ function gameLoop(): void {
 			game.endGame(userStats, gameStartTimes.get(gameId), game.config.scoring.firstTo, gameId, pointsTime);
 			userStats = [];
 			pointsTime = [];
+			direction = false;
 			gameStates.delete(game.id);
 			gameStartTimes.delete(game.id);
 			accumulators.delete(game.id);
@@ -197,14 +199,17 @@ function stepGame(game: Game, dt: number): void {
 	/* ------------------------------ BALL ----------------------------------- */
 
 	function resetBall() {
-		const dir = Math.random() < 0.5 ? -1 : 1;
+
+		let vx: number = game.config.ball.initialSpeed;
+		if (!direction) { vx *= -1; direction = true; }
+		else direction = false;
 
 		game.ball = {
 			starting: true,
 			paddle: undefined,
 			x: world.width / 2,
 			y: world.height / 2,
-			vx: game.config.ball.initialSpeed * dir,
+			vx: vx,
 			vy: 0
 		};
 
