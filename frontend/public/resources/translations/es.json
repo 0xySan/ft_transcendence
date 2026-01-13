@@ -39,7 +39,6 @@
     "joinButton": "UNIRSE",
     "leaveButton": "SALIR",
     "launchButton": "INICIAR",
-    "allowSpectatorsLabel": "Permitir espectadores",
     "gameCodeLabel": "Código de juego personalizado",
     "numPlayersLabel": "Número de jugadores",
     "firstToLabel": "El primero en alcanzar",

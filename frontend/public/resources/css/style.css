@@ -461,20 +461,15 @@ button:active {
 	-webkit-text-fill-color: transparent;
 }
 
-.border-gradient-customizable {
-	padding: 4px;
-
-	background: linear-gradient(
-		90deg,
-		var(--custom-team-color1),
-		var(--custom-team-color2)
-	);
-
-	border-radius: 12px;
-
-	display: flex;
-	align-items: center;
-	justify-content: center;
+#pong-canvas {
+  --custom-gradient-color1: rgb(var(--red));
+  --custom-gradient-color2: rgb(var(--blue));
+  /* keep a solid transparent border so layout/width is correct */
+  border: 6px solid transparent;
+  /* use border-image with a gradient */
+  border-image: linear-gradient(90deg, var(--custom-gradient-color1), var(--custom-gradient-color2)) 1;
+  /* optional */
+   border-radius: 4px;
 }
 
 /* ==========================================================================
@@ -2297,6 +2292,18 @@ button:active {
 	.profile-game-team-score {
 		font-size: 1.15rem;
 	}
+
+	#lobby-basic-settings-buttons {
+		gap: 2rem;
+	}
+	
+	#lobby-info-boxes {
+    	height: 84rem !important;
+    	flex-direction: column;
+  	}
+	#lobby-reset-settings-button {
+		margin-bottom: 1rem;
+	}
 }
 
 /* Very small landscape phones */
@@ -2359,6 +2366,12 @@ button:active {
 
 	.profile-game-team-score {
 		font-size: 1rem;
+	}
+	.lobby-setting-box {
+		margin-top: 2.5rem;
+	}
+	#lobby-info-boxes {
+		height: 84rem;
 	}
 }
 
@@ -2674,7 +2687,7 @@ button:active {
 	}
 
 	#lobby-info-boxes {
-		min-height: 80rem;
+		height: 80rem !important;
 
 		flex-direction: column;
 	}
@@ -2683,6 +2696,7 @@ button:active {
 	#lobby-mode-setting {
 		width: 100% !important;
 		min-height: 40rem;
+		padding: 2rem;
 	}
 
 	#lobby-mode-setting {
@@ -2806,13 +2820,15 @@ button:active {
 	#lobby-page {
 		min-height: 105rem;
 	}
-	#lobby-info-boxes {
-		height: 90rem;
-	}
+
 	#lobby-mode-buttons {
 		width: 100%;
 
 		flex-direction: column;
+		padding-bottom: 2.5rem;
+	}
+	#lobby-basic-settings-buttons {
+		gap: 2 rem;
 	}
 
 	#lobby-mode-buttons > button {
@@ -3236,7 +3252,7 @@ button:active {
 /* Root layout */
 #pong-page {
 	width: 100%;
-	height: 100dvh;
+	/* height: 100dvh; */
 
 	padding: 8px;
 	gap: 8px;
@@ -3981,7 +3997,12 @@ footer {
 	font-size: 0.875rem;
 	color: rgb(var(--text));
 }
-
+@media (max-width: 666px) {
+  #lobby-action-buttons {
+    flex-direction: column !important;
+    margin-top: 3rem;
+  }
+}
 @media (max-width: 450px) {
 	footer {
 		height: 2rem;

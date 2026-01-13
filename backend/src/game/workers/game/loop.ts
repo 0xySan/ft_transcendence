@@ -22,6 +22,7 @@ import { Player } from "./player.class.js";
 let		userStats: msg.statsPayload[] = [];
 let		lastHit: string = "";
 let		pointsTime: pointsInterface[] = [];
+let		direction: boolean = false;
 
 /* -------------------------------------------------------------------------- */
 /*                                   STATE                                    */
@@ -88,6 +89,7 @@ function gameLoop(): void {
 			game.endGame(userStats, gameStartTimes.get(gameId), game.config.scoring.firstTo, gameId, pointsTime);
 			userStats = [];
 			pointsTime = [];
+			direction = false;
 			gameStates.delete(game.id);
 			gameStartTimes.delete(game.id);
 			accumulators.delete(game.id);
@@ -196,16 +198,29 @@ function stepGame(game: Game, dt: number): void {
 
 	/* ------------------------------ BALL ----------------------------------- */
 
-	if (!game.ball || game.ball.vx === 0) {
-		const dir = Math.random() < 0.5 ? -1 : 1;
+	function resetBall() {
+
+		let vx: number = game.config.ball.initialSpeed;
+		if (!direction) { vx *= -1; direction = true; }
+		else direction = false;
 
 		game.ball = {
+			starting: true,
+			paddle: undefined,
 			x: world.width / 2,
 			y: world.height / 2,
-			vx: game.config.ball.initialSpeed * dir,
+			vx: vx,
 			vy: 0
 		};
+
+		game.goalUpdate(500);
 	}
+
+	if (game.goal) return;
+	if (!game.goal) {
+
+	}
+	if (!game.ball.starting) resetBall();
 
 	const ball = game.ball;
 
@@ -228,13 +243,26 @@ function stepGame(game: Game, dt: number): void {
 			ball.x + game.config.ball.radius >= p.x &&
 			ball.x - game.config.ball.radius <= p.x + padCfg.width &&
 			ball.y >= p.y &&
-			ball.y <= p.y + padCfg.height
+			ball.y <= p.y + padCfg.height && ball.paddle !== p
 		) {
-			ball.vx = -ball.vx;
+			ball.paddle = p;
+			const paddleCenter = p.y + padCfg.height / 2;
+			let rel = (ball.y - paddleCenter) / (padCfg.height / 2);
 
-			const rel =
-				(ball.y - p.y) / padCfg.height - 0.5;
-			ball.vy += rel * game.config.ball.speedIncrement;
+			rel = Math.max(-1, Math.min(1, rel));
+
+			let speedBall = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+			speedBall = Math.min(
+				speedBall + game.config.ball.speedIncrement,
+				game.config.ball.maxSpeed
+			);
+
+			ball.vy = rel * speedBall;
+
+			const vxSign = ball.vx > 0 ? -1 : 1;
+			ball.vx = vxSign * Math.sqrt(
+				Math.max(0, speedBall * speedBall - ball.vy * ball.vy)
+			);
 			lastHit = player.id;
 			break;
 		}
@@ -245,6 +273,7 @@ function stepGame(game: Game, dt: number): void {
 			ball.x < 0 ? orderedPlayers[1] : orderedPlayers[0];
 
 		if (scorer) {
+			resetBall();
 			scorer.score = (scorer.score ?? 0) + 1;
 			const startTime = gameStartTimes.get(game.id);
 			if (startTime !== undefined) pointsTime.push({ time: Date.now() - startTime, who: lastHit });
@@ -258,9 +287,13 @@ function stepGame(game: Game, dt: number): void {
 			}
 			lastHit = "";
 		}
-
-		if (scorer.score >= game.config.scoring.firstTo) {
+		// Check win conditions: firstTo score + winBy margin
+		const winBy = game.config.scoring.winBy;
+		const scoreDiff = Math.abs(orderedPlayers[0].score - orderedPlayers[1].score);
+	
+		if (scorer.score >= game.config.scoring.firstTo && scoreDiff >= winBy) {
 			gameStates.set(game.id, "stopped");
+
 			const message: msg.gamePayload = {
 				action: "stopped"
 			};

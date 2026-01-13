@@ -41,7 +41,6 @@
     "launchButton": "LANCER",
     "numPlayersLabel": "Nombre de joueurs",
     "gameCodeLabel": "Code de jeu personnalisé",
-    "allowSpectatorsLabel": "Autoriser les spectateurs",
     "winByLabel": "points d'écart",
     "resetSettingsButton": "Réinitialiser par défaut",
     "saveSettingsButton": "Enregistrer les paramètres",

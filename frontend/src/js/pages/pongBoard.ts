@@ -7,6 +7,8 @@ import { PongTimer } from "./pongBoardUtils";
 /*							   GLOBAL DECLARATIONS						  */
 /* -------------------------------------------------------------------------- */
 
+let		direction: boolean = false;
+
 declare global {
 	interface Window {
 		socket?: WebSocket;
@@ -436,13 +438,13 @@ export class InputBuffer {
  */
 class Paddle {
 	/** Position x of the paddle */
-	private x: number;
+	x: number;
 	/** Position y of the paddle */
-	private y: number;
+	y: number;
 	/** Width of the paddle */
-	private width: number;
+	width: number;
 	/** Height of the paddle */
-	private height: number;
+	height: number;
 	/** The CanvasRenderingContext2D for drawing the paddle. */
 	private context: CanvasRenderingContext2D;
 	/** Color of the paddle */
@@ -536,6 +538,7 @@ class Paddle {
  * - handles movement, collision with walls and paddles
  */
 class Ball {
+	public paddle: Paddle | undefined = undefined;
 	public x: number = 0;
 	public y: number = 0;
 	public vx: number = 0;
@@ -564,10 +567,12 @@ class Ball {
 		this.x = world.width / 2;
 		this.y = world.height / 2;
 
-		const dir = Math.random() < 0.5 ? -1 : 1;
-		const angle = (Math.random() - 0.5) * this.settings.initialAngleRange;
-		this.vx = this.settings.initialSpeed * dir * Math.cos(angle);
-		this.vy = this.settings.initialSpeed * Math.sin(angle);
+		let vx: number = this.settings.initialSpeed;
+		if (!direction) { vx *= -1; direction = true; }
+		else direction = false;
+
+		this.vx = vx;
+		this.vy = 0;
 	}
 
 	/** ### update
@@ -605,12 +610,26 @@ class Ball {
 			this.x + this.radius >= paddle["x"] &&
 			this.x - this.radius <= paddle["x"] + paddle["width"] &&
 			this.y >= paddle["y"] &&
-			this.y <= paddle["y"] + paddle["height"]
+			this.y <= paddle["y"] + paddle["height"] && this.paddle !== paddle
 		) {
-			this.vx = -this.vx;
+			this.paddle = paddle;
+			const paddleCenter = paddle.y + padCfg.height / 2;
+			let rel = (this.y - paddleCenter) / (padCfg.height / 2);
 
-			const rel = (this.y - paddle["y"]) / paddle["height"] - 0.5;
-			this.vy += rel * this.settings.speedIncrement;
+			rel = Math.max(-1, Math.min(1, rel));
+
+			let speedBall = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+			speedBall = Math.min(
+				speedBall + this.settings.speedIncrement,
+				this.settings.maxSpeed
+			);
+
+			this.vy = rel * speedBall;
+
+			const vxSign = this.vx > 0 ? -1 : 1;
+			this.vx = vxSign * Math.sqrt(
+				Math.max(0, speedBall * speedBall - this.vy * this.vy)
+			);
 
 			// clamp speed
 			const speed = Math.hypot(this.vx, this.vy);
@@ -673,6 +692,8 @@ interface GameStateUpdate {
  * - creates paddles for players and manages drawing / updates
  */
 class PongBoard {
+	/** Goal state (true = yes | false = no) */
+	public goal: boolean = false;
 	/** The PongBoardCanvas used for rendering the pong board. */
 	private canvas: PongBoardCanvas;
 	/** Array of Paddle instances representing the players' paddles. */
@@ -682,11 +703,11 @@ class PongBoard {
 	/** Optional paddle for the second player in offline games */
 	public player2Paddle?: Paddle;
 	/** Map of player IDs to their corresponding Paddle instances. */
-	private paddleByPlayerId = new Map<string, Paddle>();
+	public paddleByPlayerId = new Map<string, Paddle>();
 	/** The Ball instance representing the pong ball. */
 	private ball: Ball;
 	/** Scores for offline mode */
-	private scores = new Map<string, number>();
+	public scores = new Map<string, number>();
 
 	/** ### constructor of PongBoard
 	 * @param container - The HTMLDivElement to contain the pong board.
@@ -729,6 +750,12 @@ class PongBoard {
 		this.playerPaddle = this.paddleByPlayerId.get(window.localPlayerId!)!;
 		if (window.isGameOffline) this.player2Paddle = this.paddleByPlayerId.get("user2");
 
+		if (window.isGameOffline) {
+			this.player2Paddle = this.paddleByPlayerId.get("user2");
+			// Initialize scores for both players
+			this.scores.set("user1", 0);
+			this.scores.set("user2", 0);
+		}
 		this.ball = new Ball(context, window.lobbySettings!.ball);
 	}
 
@@ -742,20 +769,29 @@ class PongBoard {
 		return this.paddleByPlayerId.get(playerId);
 	}
 
+	public goalUpdate(ms: number) {
+		this.goal = true;
+		setTimeout(() => {
+            this.goal = false;
+        }, ms);
+	}
+
 	/** ### update
 	 * - update all paddles on the board
 	 * @param dt - delta time since last update
 	 */
 	public update(dt: number) {
 		for (const p of this.paddles) p.update(dt);
-		if (this.ball) this.ball.update(dt);
+		if (this.ball && !this.goal) this.ball.update(dt);
 		for (const p of this.paddles) this.ball.checkPaddleCollision(p);
 
 		// Check for goals in offline mode
 		if (window.isGameOffline) {
 			const goal = this.ball.checkGoal();
 			if (goal) {
+				this.ball.paddle = undefined;
 				this.handleOfflineGoal(goal);
+				this.goalUpdate(500);
 			}
 		}
 	}
@@ -791,21 +827,42 @@ class PongBoard {
 		
 		// Reset ball
 		this.ball.reset();
-		// check for win condition
+	
+		// Check for win condition: firstTo score + winBy margin
 		const winningScore = window.lobbySettings!.scoring.firstTo;
-		for (const score of this.scores.values()) {
-			if (score >= winningScore) {
-				// Reset window for lobby
-				window.isGameOffline = false;
-				window.pendingGameStart = undefined;
-				window.localPlayerId = undefined;
-				window.lobbySettings = undefined;
-				// End game
-				endGame();
-				break;
+		const winBy = window.lobbySettings!.scoring.winBy;
+	
+		// Get scores as array and ensure we have exactly 2 players
+		const scores = Array.from(this.scores.values());
+		
+		const maxScore = Math.max(...scores);
+		const minScore = Math.min(...scores);
+		const scoreDiff = maxScore - minScore;
+			
+			// Win if player reached firstTo AND has winBy margin
+			for (const [playerId, score] of this.scores) {
+				if (maxScore >= winningScore && scoreDiff >= winBy) {
+					notify("Game over! A player has won.", { type: "success" });
+					window.pongTimer.stopTimer();
+					let message: string = "";
+					if (!window.socket) message = playerId + " has Win";
+
+					countdownDiv.setAttribute('aria-hidden', 'false');
+					countdownDiv.textContent = "";
+					countdownDiv.style.display = "flex";
+					countdownDiv.textContent = String(message);
+					
+					// Reset window for lobby
+					window.isGameOffline = false;
+					window.pendingGameStart = undefined;
+					window.localPlayerId = undefined;
+					window.lobbySettings = undefined;
+					// End game
+					endGame();
+					break;
+				}
 			}
-			}
-		}
+	}
 	
 	/** ### draw
 	 * - draw the pong board and all paddles
@@ -958,6 +1015,11 @@ if (!window.isGameOffline) {
 			if (last) paddle.applyInputs(last.inputs);
 		} else if (msg.type === "game") {
 			if (msg.payload.action === "stopped") {
+				countdownDiv.setAttribute('aria-hidden', 'false');
+				countdownDiv.textContent = "";
+				countdownDiv.style.display = "flex";
+				countdownDiv.textContent = String("Game is Finished");
+
 				endGame();
 			} else {
 				const payload = msg.payload as GameStateUpdate;

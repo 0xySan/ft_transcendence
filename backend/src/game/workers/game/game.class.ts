@@ -21,6 +21,8 @@ export interface pointsInterface {
  * Game class representing a game instance.
  */
 export class Game {
+	/** Goal state (true = yes | false = no) */
+	public goal: boolean = false;
 	/** Game unique identifier */
 	id: string;
 	/** Game is private or no */
@@ -41,6 +43,8 @@ export class Game {
 	currentFrameId: number;
 	/** Ball state */
 	ball: {
+		starting: boolean,
+		paddle: Player | undefined,
 		x: number;
 		y: number;
 		vx: number;
@@ -64,6 +68,8 @@ export class Game {
 		this.currentFrameId = 0;
 
 		this.ball = {
+			starting: false,
+			paddle: undefined,
 			x: 0,
 			y: 0,
 			vx: 0,
@@ -128,6 +134,13 @@ export class Game {
 		};
 	}
 
+	public goalUpdate(ms: number) {
+		this.goal = true;
+		setTimeout(() => {
+            this.goal = false;
+        }, ms);
+	}
+
 	endGame(stats: socket.statsPayload[], startTime: number | undefined, scoreLimit: number, gameId: string, pointsTime: pointsInterface[]) {
 		let time: number = 0;
 		if (startTime) time = Date.now() - startTime;
@@ -143,6 +156,8 @@ export class Game {
 			} as socket.dbPayload,
 			userIds: this.players.map(p => p.id)
 		};
+
+		
 
 		parentPort!.postMessage(message);
 	}
@@ -298,6 +313,8 @@ export class Game {
 
 	resetGame() {
 		this.ball = {
+			starting: false,
+			paddle: undefined,
 			x: 0,
 			y: 0,
 			vx: 0,
