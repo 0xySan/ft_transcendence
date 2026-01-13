@@ -106,3 +106,15 @@ export function getAllGames(): Game[] {
 	`);
 	return stmt.all() as Game[];
 }
+
+export function getRecentGamesByPlayer(playerId: string, limit: number = 10): Game[] {
+	const stmt = db.prepare(`
+		SELECT g.*
+		FROM games g
+		JOIN game_participants gp ON g.game_id = gp.game_id
+		WHERE gp.user_id = @playerId
+		ORDER BY g.created_at DESC
+		LIMIT @limit
+	`);
+	return stmt.all({ playerId, limit }) as Game[];
+}

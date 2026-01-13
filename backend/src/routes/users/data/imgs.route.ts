@@ -5,8 +5,8 @@
 
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middleware/auth.middleware.js';
-import { userImgsSchema, uploadAvatarUrlSchema, uploadAvatarFileSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
-import { saveAvatarFromUrl, saveAvatarFromFile } from '../../../utils/userData.js';
+import { userImgsSchema, uploadAvatarUrlSchema, uploadAvatarFileSchema, uploadBackgroundUrlSchema, uploadBackgroundFileSchema } from '../../../plugins/swagger/schemas/userImgs.schema.js';
+import { saveImageFromUrl, saveImageFromFile } from '../../../utils/userData.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -83,10 +83,10 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
 			const { url } = request.body as { url: string };
 			if (!url || typeof url !== 'string') return reply.status(400).send({ error: 'Missing or invalid url' });
-			const fileName = await saveAvatarFromUrl(userId, url);
+			const fileName = await saveImageFromUrl(userId, url, 'avatar');
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {
-			return reply.status(400).send({ error: err.message || 'Failed to upload avatar from URL' });
+			return reply.status(500).send({ error: err.message || 'Failed to upload avatar from URL' });
 		}
 	});
 
@@ -107,10 +107,53 @@ export function userDataImgsRoute(fastify: FastifyInstance) {
 			if (!file.mimetype || !allowedMimes.includes(file.mimetype)) {
 				return reply.status(400).send({ error: 'Invalid file type' });
 			}
-			const fileName = await saveAvatarFromFile(userId, file);
+			const fileName = await saveImageFromFile(userId, file, 'avatar');
 			return reply.status(200).send({ success: true, fileName });
 		} catch (err: any) {
-			return reply.status(400).send({ error: err.message || 'Failed to upload avatar' });
+			return reply.status(500).send({ error: err.message || 'Failed to upload avatar' });
+		}
+	});
+
+	// POST: upload background from URL
+	fastify.post('/data/imgs/background-url', {
+		schema: uploadBackgroundUrlSchema,
+		validatorCompiler: ({ schema }) => { return () => true; },
+		preHandler: requireAuth
+	}, async (request, reply) => {
+		try {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+			const { url } = request.body as { url: string };
+			if (!url || typeof url !== 'string') return reply.status(400).send({ error: 'Missing or invalid url' });
+			const fileName = await saveImageFromUrl(userId, url, 'background');
+			return reply.status(200).send({ success: true, fileName });
+		} catch (err: any) {
+			return reply.status(500).send({ error: err.message || 'Failed to upload background from URL' });
+		}
+	});
+
+	// POST: upload background from file (multipart/form-data)
+	fastify.post('/data/imgs/background', {
+		schema: uploadBackgroundFileSchema,
+		validatorCompiler: ({ schema }) => { return () => true; },
+		preHandler: requireAuth
+	}, async (request, reply) => {
+		try {
+			const session = (request as any).session;
+			const userId = session?.user_id;
+			if (!userId) return reply.status(401).send({ error: 'Unauthorized' });
+			const file = await request.file();
+			if (!file) return reply.status(400).send({ error: 'No file uploaded' });
+			// Early quick check on MIME type to reject non-image uploads before buffering
+			const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+			if (!file.mimetype || !allowedMimes.includes(file.mimetype)) {
+				return reply.status(400).send({ error: 'Invalid file type' });
+			}
+			const fileName = await saveImageFromFile(userId, file, 'background');
+			return reply.status(200).send({ success: true, fileName });
+		} catch (err: any) {
+			return reply.status(500).send({ error: err.message || 'Failed to upload background' });
 		}
 	});
 }

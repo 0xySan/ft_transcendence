@@ -30,6 +30,18 @@ CREATE TABLE users (
     role_id INTEGER NOT NULL REFERENCES user_roles(role_id)   -- Role/status reference
 );
 
+-- Table: friends
+-- Stores all request for add or reject a friend.
+CREATE TABLE friends (
+    sender_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,       -- Sender of request or first friend
+    target_user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,       -- Target of request or second friend
+    status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')),     -- Status of request
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,                                  -- Date of creation
+
+    PRIMARY KEY (sender_user_id, target_user_id),                                   -- Unique identifier
+    CHECK (sender_user_id <> target_user_id)                                        -- Check doublon
+);
+
 -- Table: user_profiles
 -- Stores additional optional profile information for each user.
 CREATE TABLE user_profiles (
@@ -44,6 +56,7 @@ CREATE TABLE user_profiles (
     ),                                                         -- Username validation (3-20 chars, no spaces/emails)
     display_name TEXT CHECK(length(display_name) <= 50),     -- Optional display name, max 50 chars
     profile_picture TEXT CHECK(length(profile_picture) <= 255), -- Path or URL, max 255 chars
+    background_picture TEXT CHECK(length(background_picture) <= 255), -- Path or URL, max 255 chars
     country_id INTEGER REFERENCES countries(country_id),     -- Country reference
     bio TEXT CHECK(length(bio) <= 500)                       -- Short biography, max 500 chars
 );

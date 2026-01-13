@@ -21,6 +21,18 @@ declare global {
 	}
 }
 
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translated strings used in this module
+const LOBBYSETTINGS_TXT_SAVED_OFFLINE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.savedOffline');
+const LOBBYSETTINGS_TXT_SAVED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saved');
+const LOBBYSETTINGS_TXT_SAVE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saveError');
+const LOBBYSETTINGS_TXT_LEFT_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leftQueue');
+const LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leaveQueueError');
+const LOBBYSETTINGS_TXT_ADDED_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addedQueue');
+const LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addQueueError');
+
 /* -------------------------------------------------------------------------- */
 /*                                    Utils                                    */
 /* -------------------------------------------------------------------------- */
@@ -364,7 +376,7 @@ function wire(): void {
 	addListener(ui.actions.save, "click", async () => {
 		if (window.isGameOffline) {
 			window.lobbySettings = structuredClone(currentSettings);
-			notify('Settings saved locally for offline game.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED_OFFLINE || 'Settings saved locally for offline game.', { type: "success" });
 			return;
 		}
 
@@ -381,12 +393,34 @@ function wire(): void {
 				const data = await res.json();
 				throw new Error(data.error || 'Failed to save settings.');
 			}
-
-			notify('Settings saved successfully.', { type: "success" });
-		} catch (err: any) {
-			notify(`Error saving settings: ${err?.message ?? String(err)}`, { type: "error" });
-		}
+		}).then(() => {
+			notify(LOBBYSETTINGS_TXT_SAVED || 'Settings saved successfully.', { type: "success" });
+		}).catch((error) => {
+			const msg = LOBBYSETTINGS_TXT_SAVE_ERROR ? LOBBYSETTINGS_TXT_SAVE_ERROR.replace('{error}', error.message) : `Error saving settings: ${error.message}`;
+			notify(msg, { type: "error" });
+		});
 	});
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                  Initialization                             */
+/* -------------------------------------------------------------------------- */
+
+/** ### initLobbySettings
+ * - initialize lobby settings with optional initial partial settings
+ * @param initial - optional initial partial settings
+ */
+export function initLobbySettings(initial?: Partial<Settings>): void {
+	currentSettings = window.lobbySettings ? window.lobbySettings : structuredClone(defaultSettings);
+	// TODO 
+	if (window.lobbySettings) {
+		selectLobbyMode("online");
+		setPartialLobbyConfig(window.lobbySettings);
+	}
+	if (initial) setPartialLobbyConfig(initial);
+	populateUi();
+	window.lobbySettings = structuredClone(currentSettings);
+	wire();
 }
 
 

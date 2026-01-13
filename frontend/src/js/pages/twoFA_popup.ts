@@ -8,6 +8,7 @@ declare function addListener(
 
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 
 /* ---------------------------------- */
 /* Constants */
@@ -129,13 +130,15 @@ async function verifyTwoFa(code: string): Promise<void> {
 	}
 
 	if (!res.ok) {
-		alert('Invalid code');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.invalidCode');
+		notify(txt || 'Invalid code', { type: 'warning' });
 		return;
 	}
 
 	const data = await res.json().catch(() => null);
 	if (!data?.token) {
-		alert('No token returned');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'twofa.noTokenReturned');
+		notify(txt || 'No token returned', { type: 'error' });
 		return;
 	}
 

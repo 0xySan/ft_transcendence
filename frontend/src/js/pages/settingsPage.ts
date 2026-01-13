@@ -18,6 +18,7 @@ K extends keyof EventMapFor<T>
 ): void;
 declare function translateElement(language: string, element: HTMLElement): void;
 declare function getUserLang(): string;
+declare function getTranslatedTextByKey(language: string, key: string): Promise<string | null>;
 declare function updateNavBar(userData: any): void;
 declare function loadPage(url: string): void;
 
@@ -98,6 +99,8 @@ menuItems.forEach((item) => {
 		const bioInput = document.querySelector<HTMLTextAreaElement>('#profile-form textarea[name="bio"]');
 		const currentAvatarContainer = document.getElementById('current-avatar-container');
 		const currentAvatarImage = document.querySelector<HTMLImageElement>('#current-avatar');
+		const currentBackgroundContainer = document.getElementById('current-background-container');
+		const currentBackgroundImage = document.querySelector<HTMLImageElement>('#current-background');
 
 		if (displayNameInput) displayNameInput.value = profile.displayName || '';
 		if (bioInput) bioInput.value = profile.bio || '';
@@ -107,6 +110,14 @@ menuItems.forEach((item) => {
 				currentAvatarContainer.style.display = '';
 			} else {
 				currentAvatarContainer.style.display = 'none';
+			}
+		}
+		if (currentBackgroundContainer && currentBackgroundImage) {
+			if (profile.backgroundPicture) {
+				currentBackgroundImage.src = `/api/users/data/imgs/${profile.backgroundPicture}`;
+				currentBackgroundContainer.style.display = '';
+			} else {
+				currentBackgroundContainer.style.display = 'none';
 			}
 		}
 		updateTwoFaButtons();
@@ -383,12 +394,19 @@ addListener(
 		const avatarFileInput = form.querySelector<HTMLInputElement>(
 			'input[name="avatar-file"]'
 		);
+		const backgroundUrlInput = form.querySelector<HTMLInputElement>(
+			'input[name="background"]'
+		);
+		const backgroundFileInput = form.querySelector<HTMLInputElement>(
+			'input[name="background-file"]'
+		);
 		
 		if (!displayNameInput || !bioInput || !avatarUrlInput) return;
 		
 		const displayName = displayNameInput.value.trim();
 		const bio = bioInput.value.trim();
 		const avatarUrl = avatarUrlInput.value.trim();
+		const backgroundUrl = backgroundUrlInput?.value.trim() || '';
 		
 		let body: any = {};
 		if (displayName) body.displayName = displayName;
@@ -406,7 +424,8 @@ addListener(
 				});
 				const upData = await upRes.json().catch(() => ({}));
 				if (!upRes.ok) {
-					alert(upData.error || 'Failed to upload avatar file.');
+					const txt = upData.error ?? await getTranslatedTextByKey(getUserLang(), 'settings.alert.avatarUploadFailed');
+					notify(txt || 'Failed to upload avatar file.', { type: 'error' });
 					return;
 				}
 				if (upData.fileName) body.profilePicture = upData.fileName;
@@ -423,7 +442,8 @@ addListener(
 					const urlData = await urlRes.json().catch(() => ({}));
 					
 					if (!urlRes.ok) {
-						alert(urlData.error || 'Failed to download avatar from URL.');
+						const txt = urlData.error ?? await getTranslatedTextByKey(getUserLang(), 'settings.alert.avatarDownloadFailed');
+						notify(txt || 'Failed to download avatar from URL.', { type: 'error' });
 						return;
 					}
 					if (urlData.fileName) body.profilePicture = urlData.fileName;
@@ -432,7 +452,50 @@ addListener(
 				}
 			}
 		} catch (err) {
-			alert('Avatar upload failed.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.avatarUploadGenericFailed');
+			notify(txt || 'Avatar upload failed.', { type: 'error' });
+			return;
+		}
+
+		// Handle background upload: file first, then URL
+		try {
+			if (backgroundFileInput && backgroundFileInput.files && backgroundFileInput.files.length > 0) {
+				const fd = new FormData();
+				fd.append('file', backgroundFileInput.files[0]);
+				const upRes = await fetch('/api/users/data/imgs/background', {
+					method: 'POST',
+					credentials: 'include',
+					body: fd,
+				});
+				const upData = await upRes.json().catch(() => ({}));
+				if (!upRes.ok) {
+					alert(upData.error || 'Failed to upload background file.');
+					return;
+				}
+				if (upData.fileName) body.backgroundPicture = upData.fileName;
+			} else if (backgroundUrl) {
+				// If background field looks like a remote URL, attempt server-side download
+				if (/^https?:\/\//i.test(backgroundUrl)) {
+					
+					const urlRes = await fetch('/api/users/data/imgs/background-url', {
+						method: 'POST',
+						credentials: 'include',
+						headers: { 'Content-Type': 'application/json', 'accept-language': getUserLang() },
+						body: JSON.stringify({ url: backgroundUrl })
+					});
+					const urlData = await urlRes.json().catch(() => ({}));
+					
+					if (!urlRes.ok) {
+						alert(urlData.error || 'Failed to download background from URL.');
+						return;
+					}
+					if (urlData.fileName) body.backgroundPicture = urlData.fileName;
+				} else {
+					body.backgroundPicture = backgroundUrl;
+				}
+			}
+		} catch (err) {
+			alert('Background upload failed.');
 			return;
 		}
 		
@@ -464,6 +527,18 @@ addListener(
 					const currentAvatarContainer = document.getElementById('current-avatar-container');
 					if (currentAvatarContainer) currentAvatarContainer.style.display = 'none';
 				}
+				// Update displayed background if server returned a fileName
+				if (body.backgroundPicture) {
+					const currentBackgroundContainer = document.getElementById('current-background-container');
+					const currentBackgroundImage = document.querySelector<HTMLImageElement>('#current-background');
+					if (currentBackgroundContainer && currentBackgroundImage) {
+						currentBackgroundImage.src = `/api/users/data/imgs/${body.backgroundPicture}`;
+						currentBackgroundContainer.style.display = '';
+					}
+				} else {
+					const currentBackgroundContainer = document.getElementById('current-background-container');
+					if (currentBackgroundContainer) currentBackgroundContainer.style.display = 'none';
+				}
 				// Fetch latest user data and update navbar
 				try {
 					const navRes = await fetch('/api/users/me', {
@@ -478,19 +553,23 @@ addListener(
 				} catch (err) {
 					console.error('Failed to update navbar after profile update:', err);
 				}
-				alert('Profile updated successfully.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.profileUpdated');
+				notify(txt || 'Profile updated successfully.', { type: 'success' });
 				return;
 			}
 			
 			const data = await res.json().catch(() => ({}));
 			if (data.message === 'Invalid displayName (must be string, ≤50 chars)') {
-				alert('Display name is invalid.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.displayNameInvalid');
+				notify(txt || 'Display name is invalid.', { type: 'warning' });
 				return;
 			}
-			alert('Failed to update profile.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.profileUpdateFailed');
+			notify(txt || 'Failed to update profile.', { type: 'error' });
 		} catch (err) {
 			console.error('Profile update error:', err);
-			alert('Failed to update profile.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.profileUpdateFailed');
+			notify(txt || 'Failed to update profile.', { type: 'error' });
 		}
 	}
 );
@@ -524,7 +603,8 @@ addListener(
 		const repeatPassword = repeatPasswordInput.value;
 		
 		if (newPassword !== repeatPassword) {
-			alert('New passwords do not match.');
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.newPasswordsMismatch');
+			notify(txt || 'New passwords do not match.', { type: 'warning' });
 			return;
 		}
 		
@@ -552,22 +632,26 @@ addListener(
 		})
 		.then(async (res) => {
 			if (res.ok) {
-				alert('Password updated successfully.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.passwordUpdated');
+				notify(txt || 'Password updated successfully.', { type: 'success' });
 				return;
 			}
 			
 			const data = await res.json();
 			if (data.message === 'Old password incorrect') {
-				alert('Current password is incorrect.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.currentPasswordIncorrect');
+				notify(txt || 'Current password is incorrect.', { type: 'warning' });
 				return;
 			}
-			
+
 			if (data.message === 'New password invalid') {
-				alert('New password is invalid.');
+				const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.newPasswordInvalid');
+				notify(txt || 'New password is invalid.', { type: 'warning' });
 				return;
 			}
-			
-			alert('Failed to update password.');
+
+			const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.passwordUpdateFailed');
+			notify(txt || 'Failed to update password.', { type: 'error' });
 		});
 	}
 );
@@ -778,11 +862,12 @@ addListener(window, "message", (e) => {
 });
 
 // Listen for TOTP/creation completion from popups to refresh UI
-addListener(window, 'message', (e) => {
+addListener(window, 'message', async (e) => {
 	if (e.origin !== window.location.origin) return;
 	if (!e.data || e.data.type !== 'TWOFA_CREATION_SUCCESS') return;
 	try {
-		alert('Two-factor authentication configured successfully.');
+		const txt = await getTranslatedTextByKey(getUserLang(), 'settings.alert.twofaConfigured');
+		notify(txt || 'Two-factor authentication configured successfully.', { type: 'success' });
 	} catch {}
 	try {
 		updateTwoFaButtons();
@@ -883,7 +968,10 @@ oauthButtons.forEach((button) => {
 // Avatar input toggle logic
 const avatarFileGroup = document.getElementById('avatar-file-group');
 const avatarUrlGroup = document.getElementById('avatar-url-group');
+const backgroundFileGroup = document.getElementById('background-file-group');
+const backgroundUrlGroup = document.getElementById('background-url-group');
 const avatarModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="avatar-mode"]');
+const backgroundModeRadios = document.querySelectorAll<HTMLInputElement>('input[name="background-mode"]');
 
 avatarModeRadios.forEach(radio => {
 	radio.addEventListener('change', () => {
@@ -898,6 +986,24 @@ avatarModeRadios.forEach(radio => {
 				if (avatarFileGroup) avatarFileGroup.style.display = 'none';
 				if (avatarUrlGroup) avatarUrlGroup.style.display = '';
 				if (avatarUrlInput) avatarUrlInput.value = '';
+			}
+		}
+	});
+});
+
+backgroundModeRadios.forEach(radio => {
+	radio.addEventListener('change', () => {
+		if (radio.checked) {
+			const backgroundFileInput = document.querySelector<HTMLInputElement>('input[name="background-file"]');
+			const backgroundUrlInput = document.querySelector<HTMLInputElement>('input[name="background"]');
+			if (radio.value === 'file') {
+				if (backgroundFileGroup) backgroundFileGroup.style.display = '';
+				if (backgroundUrlGroup) backgroundUrlGroup.style.display = 'none';
+				if (backgroundFileInput) backgroundFileInput.value = '';
+			} else {
+				if (backgroundFileGroup) backgroundFileGroup.style.display = 'none';
+				if (backgroundUrlGroup) backgroundUrlGroup.style.display = '';
+				if (backgroundUrlInput) backgroundUrlInput.value = '';
 			}
 		}
 	});

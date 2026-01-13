@@ -76,7 +76,14 @@
     "passwordLabel": "Password:",
     "registerHereLink": "Register here",
     "rememberMeLabel": "Remember me",
-    "usernameLabel": "Username or email:"
+    "usernameLabel": "Username or email:",
+    "error": {
+      "loginFailed": "Login failed. Please try again later",
+      "invalidForm": "Invalid form input. Please correct the errors and try again.",
+      "usernameRequirements": "Username must be 3-20 characters long and can only contain letters, numbers, and underscores.",
+      "invalidEmail": "Please enter a valid email address.",
+      "passwordRequirements": "Password must be between 8 and 64 characters long."
+    }
   },
   "mailverification": {
     "changeEmail": "Change email",
@@ -100,7 +107,15 @@
     "loginHereLink": "Login here",
     "passwordLabel": "Password:",
     "registerButton": "Register",
-    "usernameLabel": "Username:"
+    "usernameLabel": "Username:",
+    "error": {
+      "registerFailed": "Register failed. Please try again later.",
+      "formInvalid": "Form is invalid. Please correct the errors and try again.",
+      "usernameInvalid": "Username must be 3-20 characters long and can only contain letters, numbers, and underscores.",
+      "emailInvalid": "Please enter a valid email address.",
+      "passwordInvalid": "Password must be between 8 and 64 characters long.",
+      "passwordsMismatch": "Passwords do not match."
+    }
   },
   "resetPassword": {
     "backToLoginLink": "Back to Login",
@@ -126,7 +141,9 @@
         "url": "URL"
       },
       "currentAvatarLabel": "Current Avatar:",
-      "updateButton": "Update Profile"
+      "updateButton": "Update Profile",
+      "currentBackgroundLabel": "Current Background:",
+      "backgroundLabel": "Background:"
     },
     "securityTitle": "Security Settings",
     "security": {
@@ -165,6 +182,20 @@
       "Discordunlink": "Unlink Discord",
       "Googlelink": "Link Google",
       "Googleunlink": "Unlink Google"
+    },
+    "alert": {
+      "avatarUploadFailed": "Failed to upload avatar file.",
+      "avatarDownloadFailed": "Failed to download avatar from URL.",
+      "avatarUploadGenericFailed": "Avatar upload failed.",
+      "profileUpdated": "Profile updated successfully.",
+      "displayNameInvalid": "Display name is invalid.",
+      "profileUpdateFailed": "Failed to update profile.",
+      "newPasswordsMismatch": "New passwords do not match.",
+      "passwordUpdated": "Password updated successfully.",
+      "currentPasswordIncorrect": "Current password is incorrect.",
+      "newPasswordInvalid": "New password is invalid.",
+      "passwordUpdateFailed": "Failed to update password.",
+      "twofaConfigured": "Two-factor authentication configured successfully."
     }
   },
   "twofa": {
@@ -193,7 +224,12 @@
     "emailOtpError": "Invalid code. Please try again.",
     "backupCodesPopupTitle": "Backup Codes",
     "backupCodesInfo": "Please write these codes down and keep them safe. Each code can only be used once.",
-    "closeBackupCodesButton": "Close"
+    "closeBackupCodesButton": "Close",
+    "invalidCode": "Invalid code",
+    "noTokenReturned": "No token returned",
+    "verificationFailed": "Verification failed. Try again later.",
+    "networkError": "Network error. Try again.",
+    "failedToSendEmail": "Failed to send email. Try again later."
   },
   "chat": {
     "send": "Send",
@@ -214,9 +250,72 @@
       "blockedPlaceholder": "You have blocked @$user. Unblock to send messages.",
       "loadHint": "Scroll up to load previous messages"
     },
-	"loginPrompt": {
-		"text": "Please log in to access the chat feature.",
-		"loginButton": "Login"
-	}
+    "loginPrompt": {
+      "text": "Please log in to access the chat feature.",
+      "loginButton": "Login"
+    }
+  },
+  "notify": {
+    "failedToBlock": "Failed to block {user}",
+    "failedToUnblock": "Failed to unblock {user}",
+    "rateLimit": "Please slow down - wait a moment between messages",
+    "messageTooLong": "Message must be 4000 characters or less",
+    "conversationEnded": "You cannot send messages: this conversation has ended.",
+    "cannotSendToUser": "You cannot send messages to this user",
+    "invalidMessage": "Invalid message - please check your input",
+    "failedToSend": "Failed to send message - please try again",
+    "failedToNavigateLobby": "Failed to navigate to lobby",
+    "cannotInviteUser": "You cannot send invites to this user",
+    "failedToSendInvite": "Failed to send invite - please try again",
+    "failedToLoadConversation": "Failed to load conversation",
+    "connectionLost": "Connection lost. Please refresh the page."
+  },
+  "lobbySocket": {
+    "notify": {
+      "connected": "Connected to the game lobby.",
+      "gameStarting": "The game is starting!",
+      "settingsUpdated": "Game settings have been updated.",
+      "disconnected": "Disconnected from the game lobby.",
+      "invalidGame": "Invalid game",
+      "failedToJoinGame": "Failed to join game: {error}",
+      "failedToJoinGameStatus": "Failed to join game: {status} - {error}",
+      "playerJoined": "{name} has joined the lobby.",
+      "playerLeft": "{name} has left the lobby."
+    }
+  },
+  "pongBoard": {
+    "notify": {
+      "elementNotFound": "Element not found",
+      "lobbySettingsMissing": "Lobby settings are not available.",
+      "socketNotEstablished": "WebSocket connection is not established.",
+      "localPlayerIdNotSet": "Local player ID is not set.",
+      "pendingGameStartMissing": "No pending game start information found.",
+      "gameOver": "Game over! A player has reached the winning score.",
+      "gameEnded": "Game has ended.",
+      "connectionLost": "Connection lost.",
+      "playerJoined": "{name} joined the game.",
+      "playerLeft": "{name} left the game."
+    }
+  },
+  "profile": {
+    "notify": {
+      "gameItemTemplateNotFound": "Game item template not found",
+      "profileInfoNotFound": "Profile info div not found",
+      "noProfileData": "No profile data available",
+      "failedToLoadProfilePicture": "Failed to load profile picture",
+      "failedToLoadBackgroundImage": "Failed to load background image",
+      "failedToCreateChat": "Failed to create chat. Please try again."
+    }
+  },
+  "lobbySettings": {
+    "notify": {
+      "savedOffline": "Settings saved locally for offline game.",
+      "saved": "Settings saved successfully.",
+      "saveError": "Error saving settings: {error}",
+      "leftQueue": "You left the queue.",
+      "leaveQueueError": "Error leaving the queue.",
+      "addedQueue": "You are added in a queue.",
+      "addQueueError": "Error adding in queue."
+    }
   }
 }

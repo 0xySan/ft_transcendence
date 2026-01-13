@@ -27,6 +27,11 @@ export const uploadAvatarUrlSchema = {
 			description: "Unauthorized",
 			type: "object",
 			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
 		}
 	}
 };
@@ -61,9 +66,92 @@ export const uploadAvatarFileSchema = {
 			description: "Unauthorized",
 			type: "object",
 			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
 		}
 	}
 };
+
+export const uploadBackgroundUrlSchema = {
+	summary: "Upload user background from URL",
+	description: "Downloads and sets the user's background from a provided image URL (PNG, JPG, WEBP only).",
+	tags: ["Users: Data"],
+	body: {
+		type: "object",
+		required: ["url"],
+		properties: {
+			url: { type: "string", format: "uri", description: "Direct image URL (PNG, JPG, WEBP)" }
+		}
+	},
+	response: {
+		200: {
+			description: "Background uploaded successfully",
+			type: "object",
+			properties: {
+				success: { type: "boolean", example: true },
+				fileName: { type: "string", example: "background_123.png" }
+			}
+		},
+		400: {
+			description: "Invalid input or image",
+			type: "object",
+			properties: { error: { type: "string", example: "Downloaded file is not a valid PNG/JPG/WEBP image" } }
+		},
+		401: {
+			description: "Unauthorized",
+			type: "object",
+			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
+		}
+	}
+};
+
+export const uploadBackgroundFileSchema = {
+	summary: "Upload user background from file",
+	description: "Uploads and sets the user's background from a file (PNG, JPG, WEBP only, multipart/form-data).",
+	tags: ["Users: Data"],
+	consumes: ["multipart/form-data"],
+	body: {
+		type: "object",
+		properties: {
+			file: { type: "string", format: "binary", description: "Background image file (PNG, JPG, WEBP)" }
+		},
+		required: ["file"]
+	},
+	response: {
+		200: {
+			description: "Background uploaded successfully",
+			type: "object",
+			properties: {
+				success: { type: "boolean", example: true },
+				fileName: { type: "string", example: "background_123.png" }
+			}
+		},
+		400: {
+			description: "Invalid input or image",
+			type: "object",
+			properties: { error: { type: "string", example: "Uploaded file is not a valid PNG/JPG/WEBP image" } }
+		},
+		401: {
+			description: "Unauthorized",
+			type: "object",
+			properties: { error: { type: "string", example: "Unauthorized" } }
+		},
+		500: {
+			description: "Internal server error",
+			type: "object",
+			properties: { error: { type: "string", example: "Internal server error" } }
+		}
+	}
+};
+
 export const userImgsSchema = {
 	summary: "Get user images",
 	description: "Retrieves a user profile picture by its name.",

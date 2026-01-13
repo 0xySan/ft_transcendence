@@ -5,6 +5,7 @@ declare global {
         translateElement: typeof translateElement;
         getUserLang: typeof getUserLang;
         getTranslatedElementText: typeof getTranslatedElementText;
+        getTranslatedTextByKey: typeof getTranslatedTextByKey;
     }
 }
 
@@ -174,9 +175,19 @@ export function getTranslatedElementText(language: string, element: HTMLElement)
     });
 }
 
+// Make it return a string or null if not found
+export async function getTranslatedTextByKey(language: string, key: string) : Promise<string | null> {
+    const correlatedLanguage = correlateLangCode(language);
+    const json = await fetchTranslationJson(correlatedLanguage);
+    if (!json) return null;
+    const keys = key.split('.');
+    return getNestedJsonValue(json, keys);
+}
+
 window.translatePage = translatePage;
 window.translateElement = translateElement;
 window.getTranslatedElementText = getTranslatedElementText;
+window.getTranslatedTextByKey = getTranslatedTextByKey;
 window.getUserLang = getUserLang;
 
 translatePage(getUserLang());
