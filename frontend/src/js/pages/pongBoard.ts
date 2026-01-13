@@ -746,6 +746,12 @@ class PongBoard {
 		this.playerPaddle = this.paddleByPlayerId.get(window.localPlayerId!)!;
 		if (window.isGameOffline) this.player2Paddle = this.paddleByPlayerId.get("user2");
 
+		if (window.isGameOffline) {
+			this.player2Paddle = this.paddleByPlayerId.get("user2");
+			// Initialize scores for both players
+			this.scores.set("user1", 0);
+			this.scores.set("user2", 0);
+		}
 		this.ball = new Ball(context, window.lobbySettings!.ball);
 	}
 
@@ -817,29 +823,42 @@ class PongBoard {
 		
 		// Reset ball
 		this.ball.reset();
-		// check for win condition
+	
+		// Check for win condition: firstTo score + winBy margin
 		const winningScore = window.lobbySettings!.scoring.firstTo;
-		for (const [playerId, score] of this.scores) {
-			if (score >= winningScore) {
-				let message: string = "";
-				if (!window.socket) message = playerId + " has Win";
+		const winBy = window.lobbySettings!.scoring.winBy;
+	
+		// Get scores as array and ensure we have exactly 2 players
+		const scores = Array.from(this.scores.values());
+		
+		const maxScore = Math.max(...scores);
+		const minScore = Math.min(...scores);
+		const scoreDiff = maxScore - minScore;
+			
+			// Win if player reached firstTo AND has winBy margin
+			for (const [playerId, score] of this.scores) {
+				if (maxScore >= winningScore && scoreDiff >= winBy) {
+					notify("Game over! A player has won.", { type: "success" });
+					stopTimer();
+					let message: string = "";
+					if (!window.socket) message = playerId + " has Win";
 
-				countdownDiv.setAttribute('aria-hidden', 'false');
-				countdownDiv.textContent = "";
-				countdownDiv.style.display = "flex";
-				countdownDiv.textContent = String(message);
-
-				// Reset window for lobby
-				window.isGameOffline = false;
-				window.pendingGameStart = undefined;
-				window.localPlayerId = undefined;
-				window.lobbySettings = undefined;
-				// End game
-				endGame();
-				break;
+					countdownDiv.setAttribute('aria-hidden', 'false');
+					countdownDiv.textContent = "";
+					countdownDiv.style.display = "flex";
+					countdownDiv.textContent = String(message);
+					
+					// Reset window for lobby
+					window.isGameOffline = false;
+					window.pendingGameStart = undefined;
+					window.localPlayerId = undefined;
+					window.lobbySettings = undefined;
+					// End game
+					endGame();
+					break;
 				}
 			}
-		}
+	}
 	
 	/** ### draw
 	 * - draw the pong board and all paddles

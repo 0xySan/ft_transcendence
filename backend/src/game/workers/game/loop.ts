@@ -282,8 +282,11 @@ function stepGame(game: Game, dt: number): void {
 			}
 			lastHit = "";
 		}
-
-		if (scorer.score >= game.config.scoring.firstTo) {
+		// Check win conditions: firstTo score + winBy margin
+		const winBy = game.config.scoring.winBy;
+		const scoreDiff = Math.abs(orderedPlayers[0].score - orderedPlayers[1].score);
+	
+		if (scorer.score >= game.config.scoring.firstTo && scoreDiff >= winBy) {
 			gameStates.set(game.id, "stopped");
 
 			const message: msg.gamePayload = {
