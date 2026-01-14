@@ -17,9 +17,10 @@ declare function addListener(
 	event: string,
 	handler: any,
 ): void;
+declare function registerDynamicCleanup(cleanup: () => void): void;
 
-import type { PlayerPayload, Settings } from "../global";
-import { ConnectPayload, GamePayload, gameStartAckPayload, PlayerSyncPayload, SocketMessage } from "./lobbySocket";
+import type { Settings } from "../global";
+import { gameStartAckPayload } from "./lobbySocket";
 
 declare global {
 	interface Window {
@@ -34,74 +35,14 @@ declare global {
 		playerList?: tournamentPlayer[];
 		tournamentId?: string;
 		tournamentCode?: string;
+		pendingGameStart?: gameStartAckPayload;
+		localPlayerId?: string;
+		isGameOffline: boolean;
+		playerNames?: Record<string, string>;
 	}
 }
 
 export {};
-
-/** ### applyListener
- * Apply WebSocket event listeners for open, message, and close events.
- * Handles connection setup, incoming messages, and disconnection logic.
- * 
- * @param socket - The WebSocket instance to apply listeners to.
- * @param token - Optional authentication token for connecting to the lobby.
- */
-function applyListener(socket: WebSocket, token?: string) {
-	if (token) {
-		addListener(socket, "open", () => {
-			notify('Connected to the game lobby.', { type: 'success' });
-			const msg: SocketMessage<ConnectPayload> = {
-				type: "connect",
-				payload: { token: {token: token} },
-			};
-			socket.send(JSON.stringify(msg));
-
-			// start client keepalive: send a small "send" message every 20s
-			(window as any).socketPingInterval = window.setInterval(() => {
-				if (socket.readyState === WebSocket.OPEN)
-					socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
-			}, 20_000);
-		});
-	}
-
-	addListener(socket, "message", (event: MessageEvent) => {
-		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
-		switch (msg.type) {
-			case "game":
-				if ((msg.payload as GamePayload).action === "start") {
-					notify('The game is starting!', { type: 'success' });
-					window.pendingGameStart = msg.payload as gameStartAckPayload;
-					loadPage("/pong-board");
-				}
-				break;
-
-			default:
-				console.warn("Unknown socket message:", msg);
-		}
-	});
-
-	addListener(socket, "close", (event: CloseEvent) => {
-		if ((window as any).socketPingInterval) {
-			clearInterval((window as any).socketPingInterval);
-			(window as any).socketPingInterval = undefined;
-		}
-		notify('Disconnected from the game lobby.', { type: 'warning' });
-		window.socket = undefined;
-	});
-}
-
-function connectWebSocket(token: string): void {
-	if (window.socket) {
-		window.socket.close();
-	}
-
-	const protocol = location.protocol === "https:" ? "wss" : "ws";
-	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
-	window.socket = socket;
-
-	applyListener(socket, token);
-}
-
 
 /** ### loadPage
  * - Loads a new page by URL.
@@ -145,8 +86,6 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number): F {
 // Load tournament data from sessionStorage
 let tournamentId = sessionStorage.getItem('tournamentId');
 let tournamentCode = sessionStorage.getItem('tournamentCode');
-let tournamentMode = sessionStorage.getItem('tournamentMode') as "online" | "offline";
-const readyBtn = document.getElementById('tournament-ready-btn') as HTMLButtonElement | null;
 
 type CurrentMatchInfo = {
 	matchId: string;
@@ -156,7 +95,7 @@ type CurrentMatchInfo = {
 };
 
 let currentMatchInfo: CurrentMatchInfo | null = null;
-let readyInFlight = false;
+let waitingForOpponentPoll: number | null = null;
 
 // Determine if online or offline based on tournamentId existence
 const isOnlineTournament = !!tournamentId;
@@ -234,15 +173,18 @@ function displayTournamentCode(code: string | null): void {
 async function initializeTournament(): Promise<void> {
 	if (!tournamentId) return;
 
-	maybeReconnectToPendingGame();
-
 	// Display code if available
 	if (tournamentCode) {
 		displayTournamentCode(tournamentCode);
 	}
 
-	// Fetch tournament status
+	// Fetch tournament status (this will set lobby settings)
 	await refreshTournamentStatus();
+	
+	// Verify lobby settings were loaded
+	if (!window.lobbySettings) {
+		console.error("Failed to load lobby settings from tournament");
+	}
 	
 	// Check if returning from a tournament game
 	checkReturnFromGame();
@@ -276,16 +218,12 @@ async function refreshTournamentStatus(): Promise<void> {
 
 	const status = await fetchTournamentStatus(tournamentId);
 	if (status) {
-		// Track current match for ready UI
-		currentMatchInfo = status.yourCurrentMatch ? {
-			matchId: status.yourCurrentMatch.matchId,
-			gameId: status.yourCurrentMatch.gameId,
-			yourReady: status.yourCurrentMatch.yourReady,
-			opponentReady: status.yourCurrentMatch.opponentReady,
-		} : null;
-		if (!currentMatchInfo) clearPendingGame();
-		updateReadyButtonState();
-
+		// Extract and set lobby settings from tournament config
+		if (status.config) {
+			window.lobbySettings = status.config;
+			console.log('Loaded tournament lobby settings:', window.lobbySettings);
+		}
+		
 		// Use players from backend
 		const backendPlayers: tournamentPlayer[] = (status.players || []).map((p: any) => ({
 			id: p.id,
@@ -295,11 +233,104 @@ async function refreshTournamentStatus(): Promise<void> {
 		
 		updatePlayerList(backendPlayers);
 		
-		// Initialize bracket if status is in-progress
-		if (status.status === 'in-progress' && backendPlayers.length === status.maxPlayers) {
-			console.log('Tournament is full! Initializing bracket with', backendPlayers.length, 'players');
-			InitializeBracket(backendPlayers);
+		// Track current match for ready UI and store player names
+		if (status.yourCurrentMatch) {
+			currentMatchInfo = {
+				matchId: status.yourCurrentMatch.matchId,
+				gameId: status.yourCurrentMatch.gameId,
+				yourReady: status.yourCurrentMatch.yourReady,
+				opponentReady: status.yourCurrentMatch.opponentReady,
+			};
+			
+			// Extract player names from the bracket/match info
+			if (status.yourCurrentMatch.players) {
+				// Store player names for the game to use
+				window.playerNames = window.playerNames || {};
+				for (const player of status.yourCurrentMatch.players) {
+					window.playerNames[player.id] = player.name;
+				}
+			}
+		} else {
+			currentMatchInfo = null;
+			clearPendingGame();
 		}
+		
+		// Initialize bracket if status is in-progress
+		if (status.status === 'in-progress') {
+			console.log('Tournament is in-progress! Building bracket from backend data');
+			
+			// Organize bracket into rounds based on backend data
+			if (status.bracket && Array.isArray(status.bracket)) {
+				// Group matches by round
+				const matchesByRound: Record<number, any[]> = {};
+				let maxRound = 0;
+				
+				for (const match of status.bracket) {
+					const round = match.round || 0;
+					if (!matchesByRound[round]) matchesByRound[round] = [];
+					matchesByRound[round].push(match);
+					maxRound = Math.max(maxRound, round);
+				}
+				
+				// Build tournament state from backend bracket
+				const rounds: StoredMatch[][] = [];
+				for (let r = 0; r <= maxRound; r++) {
+					const roundMatches = matchesByRound[r] || [];
+					const storedMatches: StoredMatch[] = roundMatches.map((match: any) => {
+						const p1 = match.player1Id ? { id: match.player1Id, name: backendPlayers.find((p: any) => p.id === match.player1Id)?.name || 'Player', rank: 0 } : null;
+						const p2 = match.player2Id ? { id: match.player2Id, name: backendPlayers.find((p: any) => p.id === match.player2Id)?.name || 'Player', rank: 0 } : null;
+						
+						// Determine score based on winner
+						let score: { left: number; right: number } | undefined = undefined;
+						if (match.winner) {
+							// Winner gets 1 point, loser gets 0
+							if (match.winner === match.player1Id) {
+								score = { left: 1, right: 0 };
+							} else if (match.winner === match.player2Id) {
+								score = { left: 0, right: 1 };
+							}
+						}
+						
+						return {
+							p1,
+							p2,
+							number: match.matchId ? parseInt(match.matchId.split('-').pop() || '1') : r * 2,
+							globalId: match.matchId ? parseInt(match.matchId.slice(-2)) : (r * 8 + roundMatches.indexOf(match)),
+							played: !!match.winner,
+							score,
+						};
+					});
+					rounds.push(storedMatches);
+				}
+				
+				// Create tournament state and render
+				window.tournamentState = { rounds, currentMatch: null };
+				saveTournamentState();
+				renderBracketFromState(window.tournamentState);
+			}
+		}
+		
+		// Update ready button state
+		updateReadyButtonState();
+	}
+}
+
+/** ### updateReadyButtonState
+ * Update the ready button state based on current match info.
+ */
+function updateReadyButtonState(): void {
+	const readyBtn = document.getElementById("tournament-ready-btn") as HTMLButtonElement | null;
+	if (!readyBtn || window.tournamentMode !== 'online') return;
+	
+	if (!currentMatchInfo) {
+		readyBtn.disabled = true;
+		readyBtn.textContent = "No Match Available";
+	} else if (currentMatchInfo.yourReady) {
+		readyBtn.disabled = true;
+		readyBtn.textContent = "Waiting for opponent...";
+	} else {
+		readyBtn.disabled = false;
+		readyBtn.textContent = "Ready for Match";
 	}
 }
 
@@ -318,97 +349,49 @@ function clearPendingGame(): void {
 	sessionStorage.removeItem('tournamentReturnId');
 }
 
-function updateReadyButtonState(): void {
-	if (!readyBtn) return;
-	if (!isOnlineTournament || !currentMatchInfo) {
-		readyBtn.style.display = 'none';
-		return;
+/** ### readyForMatch
+ * Mark the current player as ready for a tournament match.
+ * @param tId - The tournament ID
+ * @param matchId - The match ID
+ * @returns Response with game info
+ */
+async function readyForMatch(tId: string, matchId: string): Promise<any> {
+	const res = await fetch(`/api/tournament/ready`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ tournamentId: tId, matchId: matchId }),
+	});
+
+	if (!res.ok) {
+		const error = await res.json();
+		throw new Error(error.error || "Failed to ready for match");
 	}
 
-	readyBtn.style.display = 'inline-block';
-	readyBtn.disabled = false;
-	readyBtn.textContent = 'Ready';
-
-	if (currentMatchInfo.yourReady && !currentMatchInfo.opponentReady) {
-		readyBtn.textContent = 'Waiting for opponent...';
-		readyBtn.disabled = true;
-	} else if (currentMatchInfo.yourReady && currentMatchInfo.opponentReady) {
-		readyBtn.textContent = 'Reconnect to lobby';
-	}
+	return await res.json();
 }
 
-async function sendTournamentReady(): Promise<void> {
-	if (!tournamentId || !currentMatchInfo || readyInFlight) return;
-	readyInFlight = true;
-	if (readyBtn) {
-		readyBtn.disabled = true;
-		readyBtn.textContent = 'Joining...';
+/** ### recordTournamentMatchResult
+ * Record the result of a tournament match (online mode).
+ * @param tId - The tournament ID
+ * @param matchId - The match ID
+ * @param winnerId - The winning player ID (userId)
+ * @returns Response from the server
+ */
+async function recordTournamentMatchResult(tId: string, matchId: string, winnerId: string): Promise<any> {
+	const res = await fetch(`/api/tournament/result`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ tournamentId: tId, matchId: matchId, winnerId: winnerId }),
+	});
+
+	if (!res.ok) {
+		const error = await res.json();
+		throw new Error(error.error || "Failed to record match result");
 	}
 
-	try {
-		const res = await fetch('/api/tournament/ready', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ tournamentId, matchId: currentMatchInfo.matchId }),
-		});
-
-		if (!res.ok) {
-			const err = await res.json().catch(() => ({}));
-			throw new Error(err.error || 'Failed to ready up');
-		}
-
-		const payload = await res.json();
-		
-		if (payload?.authToken && payload?.gameId) {
-			const shouldStart = payload.start === true;
-			persistPendingGame(payload.gameId, currentMatchInfo.matchId, payload.authToken, shouldStart);
-			
-			if (shouldStart) {
-				// Both players ready - connect immediately and start
-				notify('Both players ready! Starting game...', { type: 'success' });
-				connectWebSocket(payload.authToken);
-				
-				// Wait a moment for WebSocket to connect, then navigate
-				setTimeout(() => {
-					loadPage('lobby');
-				}, 500);
-			} else {
-				// Only this player is ready - just navigate to lobby to wait
-				notify('Ready! Waiting for opponent.', { type: 'info' });
-				loadPage('lobby');
-			}
-		}
-
-		await refreshTournamentStatus();
-	} catch (err) {
-		console.error(err);
-		notify((err as Error).message || 'Failed to ready up', { type: 'error' });
-	} finally {
-		readyInFlight = false;
-		updateReadyButtonState();
-	}
+	return await res.json();
 }
 
-// Also update the maybeReconnectToPendingGame function:
-function maybeReconnectToPendingGame(): void {
-	if (!isOnlineTournament) return;
-	const storedToken = sessionStorage.getItem('tournamentGameAuthToken');
-	const storedGameId = sessionStorage.getItem('tournamentGameId');
-	const storedMatchId = sessionStorage.getItem('tournamentMatchId');
-	const shouldStart = sessionStorage.getItem('tournamentShouldStart') === 'true';
-	
-	if (storedToken && storedGameId && storedMatchId) {
-		console.log('Reconnecting to pending tournament game...', { gameId: storedGameId, shouldStart });
-		
-		// Connect WebSocket first
-		connectWebSocket(storedToken);
-		
-		// Then navigate to lobby after a brief delay
-		setTimeout(() => {
-			loadPage('lobby');
-		}, 300);
-	}
-}
 /* ==================================================================
 								Interfaces
    ================================================================== */
@@ -1580,8 +1563,22 @@ function renderBracketFromState(state: TournamentState): void {
 				if (score2) score2.textContent = "-";
 			}
 
-			// mark played
-			if (slot.played) matchElem.classList.add("played-match");
+			// mark played and highlight winner
+			if (slot.played) {
+				matchElem.classList.add("played-match");
+				// Highlight the winner
+				if (slot.score) {
+					const player1Elem = matchElem.querySelector(".match-player1") as HTMLElement | null;
+					const player2Elem = matchElem.querySelector(".match-player2") as HTMLElement | null;
+					if (slot.score.left > slot.score.right && player1Elem) {
+						player1Elem.classList.add("winner");
+						if (player2Elem) player2Elem.classList.remove("winner");
+					} else if (slot.score.right > slot.score.left && player2Elem) {
+						player2Elem.classList.add("winner");
+						if (player1Elem) player1Elem.classList.remove("winner");
+					}
+				}
+			}
 			// attach data attrs for click handlers
 			(matchElem as HTMLElement).dataset.roundIndex = String(r);
 			(matchElem as HTMLElement).dataset.matchIndex = String(mi);
@@ -1614,6 +1611,135 @@ function setCurrentMatch(roundIndex: number, matchIndex: number | null): void {
 
 /* ========================= LAUNCH / RESULT FLOW ========================= */
 
+/** ### launchOnlineTournamentMatch
+ * Launch an online tournament match by calling the ready API.
+ */
+async function launchOnlineTournamentMatch(): Promise<void> {
+	if (!tournamentId || !currentMatchInfo) {
+		notify("No current match to launch", { type: "error" });
+		return;
+	}
+
+	// Ensure lobby settings are available before launching
+	if (!window.lobbySettings) {
+		console.log("Lobby settings not found, refreshing tournament status...");
+		await refreshTournamentStatus();
+		
+		if (!window.lobbySettings) {
+			notify("Failed to load tournament settings", { type: "error" });
+			return;
+		}
+	}
+
+	try {
+		// Clear any old pendingGameStart from previous rounds to avoid reusing stale data
+		window.pendingGameStart = undefined;
+		
+		// Call ready API
+		const response = await readyForMatch(tournamentId, currentMatchInfo.matchId);
+		
+		if (!response.gameId || !response.authToken) {
+			notify("Failed to get game info", { type: "error" });
+			return;
+		}
+
+		// Store game info for joining
+		persistPendingGame(
+			response.gameId,
+			response.matchId,
+			response.authToken,
+			response.start || false
+		);
+		
+		// Store player userIds for result recording later
+		if (currentMatchInfo.yourReady === false && currentMatchInfo.opponentReady === false) {
+			// Just marked ready, now should store player info from current status
+			// The player info should be in the tournament status we fetched earlier
+			if (window.playerNames) {
+				// playerNames maps userId to display name, but we need to get the actual userIds
+				// For now, we'll store them in session when the game starts
+			}
+		}
+
+		// Update current match info
+		currentMatchInfo.gameId = response.gameId;
+		currentMatchInfo.yourReady = true;
+
+		if (response.start) {
+			// Both players ready, navigate to game
+			notify("Both players ready! Starting match...", { type: "success" });
+			// Navigate to pong board (it will handle joining via stored auth token)
+			loadPage("pong-board");
+		} else {
+			// Waiting for opponent - start polling
+			notify("Ready! Waiting for opponent...", { type: "info" });
+			updateReadyButtonState();
+			startWaitingForOpponentPoll();
+		}
+	} catch (error) {
+		console.error("Failed to ready for match:", error);
+		notify((error as Error).message || "Failed to ready for match", { type: "error" });
+	}
+}
+
+/** ### startWaitingForOpponentPoll
+ * Start polling to check if opponent is ready.
+ */
+function startWaitingForOpponentPoll(): void {
+	if (waitingForOpponentPoll) {
+		clearInterval(waitingForOpponentPoll);
+	}
+
+	// Poll every 2 seconds to check if both players are ready
+	waitingForOpponentPoll = window.setInterval(async () => {
+		if (!tournamentId || !currentMatchInfo) {
+			stopWaitingForOpponentPoll();
+			return;
+		}
+
+		try {
+			// Check if we have a stored game that should start
+			const shouldStart = sessionStorage.getItem('tournamentShouldStart') === 'true';
+			if (shouldStart) {
+				notify("Opponent ready! Starting match...", { type: "success" });
+				stopWaitingForOpponentPoll();
+				loadPage("pong-board");
+				return;
+			}
+
+			// Call ready API again to check status
+			const response = await readyForMatch(tournamentId, currentMatchInfo.matchId);
+			
+			if (response.start) {
+				// Update stored auth token with start flag
+				persistPendingGame(
+					response.gameId,
+					response.matchId,
+					response.authToken,
+					true
+				);
+				
+				notify("Opponent ready! Starting match...", { type: "success" });
+				stopWaitingForOpponentPoll();
+				loadPage("pong-board");
+			}
+		} catch (error) {
+			console.error("Error polling for opponent:", error);
+			// Continue polling on error
+		}
+	}, 2000);
+}
+
+/** ### stopWaitingForOpponentPoll
+ * Stop polling for opponent.
+ */
+function stopWaitingForOpponentPoll(): void {
+	if (waitingForOpponentPoll) {
+		clearInterval(waitingForOpponentPoll);
+		waitingForOpponentPoll = null;
+	}
+}
+
 /**
  * Prepare window.pendingGameStart and other globals, then load the pong board.
  * - expects TournamentState.currentMatch to be set and valid.
@@ -1634,13 +1760,17 @@ function launchCurrentMatch(): void {
 
 	// Ensure lobby settings exist
 	if (!window.lobbySettings) {
-		window.notify?.("Lobby settings required to start offline match", { type: "error" });
+		notify("Lobby settings required to start offline match", { type: "error" });
 		return;
 	}
 
 	// Build pendingGameStart with simple mapping:
-	// user1 -> p1, user2 -> p2
-	window.isGameOffline = true;
+	// user1 -> p1 (left), user2 -> p2 (right)
+	(window as any).isGameOffline = true;
+	
+	// Clear any old pendingGameStart from previous rounds to ensure fresh state
+	window.pendingGameStart = undefined;
+	
 	window.pendingGameStart = {
 		action: "start",
 		playerSides: {
@@ -1650,10 +1780,7 @@ function launchCurrentMatch(): void {
 		startTime: Date.now() + 1200
 	};
 
-	// store mapping from userX to playerId so we know who scored later
-	// keep it in tournamentState for later resolution
-	// add a "meta" place inside tournamentState to remember mapping
-	// (we don't have a dedicated field in types, so we use window.gameResults for this run)
+	// Initialize gameResults for tracking
 	window.gameResults = {
 		scores: {
 			user1: 0,
@@ -1662,50 +1789,71 @@ function launchCurrentMatch(): void {
 		ended: false
 	};
 
-	// Save current match identity so pong can call back
-	(window as any)._currentTournamentMatch = { roundIndex, matchIndex, p1Id: match.p1.id, p2Id: match.p2.id };
+	// Save current match identity so we can map scores back to players
+	// Store player mapping: user1=left=p1, user2=right=p2
+	(window as any)._currentTournamentMatch = { 
+		roundIndex, 
+		matchIndex, 
+		p1Id: match.p1.id, 
+		p2Id: match.p2.id,
+		// Map userIds to players for score resolution
+		playerMapping: {
+			user1: match.p1,
+			user2: match.p2
+		}
+	};
 
-	// set simple player names mapping used by pong page UI (optional)
-	window.playerNames = window.playerNames || {};
-	window.playerNames["user1"] = match.p1.name;
-	window.playerNames["user2"] = match.p2.name;
+	// set player names mapping used by pong page UI
+	(window as any).playerNames = (window as any).playerNames || {};
+	(window as any).playerNames["user1"] = match.p1.name;
+	(window as any).playerNames["user2"] = match.p2.name;
 
-	// localPlayerId remains as user1 by default (player controlling left)
+	// localPlayerId for controlling player (defaults to user1 = left side)
 	window.localPlayerId = "user1";
 
 	// persist state (so if user goes back we still have it)
 	saveTournamentState();
 
-	// finally, load pong page (adapt name to your loader)
+	// finally, load pong page
 	loadPage("pong-board");
 }
 
 /**
  * Handler called when a match finishes.
- * Expected to be invoked by the pong page when it ends a match.
- * The pong page should dispatch a custom event on window:
- *   window.dispatchEvent(new CustomEvent('pong:matchResult', { detail: { left: number, right: number } }))
+ * Converts scores from user1/user2 format to left/right format and processes the result.
  */
-function handleMatchResult(detail: { left: number; right: number }): void {
+function handleMatchResult(scores: Record<string, number>): void {
 	// pull the active match info we stored prior to launch
-	const cur = (window as any)._currentTournamentMatch as { roundIndex: number; matchIndex: number; p1Id: number; p2Id: number } | undefined;
+	const cur = (window as any)._currentTournamentMatch as { 
+		roundIndex: number; 
+		matchIndex: number; 
+		p1Id: number; 
+		p2Id: number;
+		playerMapping?: Record<string, tournamentPlayer>;
+	} | undefined;
+	
 	if (!cur || !window.tournamentState) {
 		console.warn("No current tournament match stored");
 		return;
 	}
 
-	const { roundIndex, matchIndex, p1Id, p2Id } = cur;
+	const { roundIndex, matchIndex } = cur;
 	const state = window.tournamentState;
 	const match = state.rounds[roundIndex][matchIndex];
 
-	// mark played and set score (left corresponds to p1 / user1)
+	// Convert scores from user1/user2 to left/right
+	// user1 is on left (p1), user2 is on right (p2)
+	const leftScore = scores.user1 || scores.left || 0;
+	const rightScore = scores.user2 || scores.right || 0;
+
+	// mark played and set score
 	match.played = true;
-	match.score = { left: detail.left, right: detail.right };
+	match.score = { left: leftScore, right: rightScore };
 
 	// determine winner player object
 	let winnerPlayer: tournamentPlayer | null = null;
-	if (detail.left > detail.right) winnerPlayer = match.p1!;
-	else if (detail.right > detail.left) winnerPlayer = match.p2!;
+	if (leftScore > rightScore) winnerPlayer = match.p1!;
+	else if (rightScore > leftScore) winnerPlayer = match.p2!;
 	// tie -> none, treat as no propagation
 
 	// propagate winner to next round
@@ -1738,7 +1886,7 @@ function handleMatchResult(detail: { left: number; right: number }): void {
 	}
 
 	// optionally notify user
-	window.notify?.("Match result recorded", { type: "success" });
+	notify("Match result recorded. Next match ready.", { type: "success" });
 }
 
 /**
@@ -1774,11 +1922,12 @@ function bootstrapTournamentOffline(playersInput: tournamentPlayer[]): void {
 		saveTournamentState();
 	} else {
 		window.tournamentState = state;
-		//handle match resul if any
+		// handle match result if any (returning from a game)
 		if (window.gameResults && window.gameResults.ended) {
 			const cur = (window as any)._currentTournamentMatch as { roundIndex: number; matchIndex: number; p1Id: number; p2Id: number } | undefined;
-			if (cur)
-				handleMatchResult(window.gameResults.scores as { left: number; right: number });
+			if (cur && window.gameResults.scores) {
+				handleMatchResult(window.gameResults.scores);
+			}
 		}
 	}
 
@@ -1811,11 +1960,14 @@ function bootstrapTournamentOffline(playersInput: tournamentPlayer[]): void {
 		playerListElem!.appendChild(nextBtn);
 	}
 	addListener(nextBtn, "click", () => {
+		// Ensure game is offline
+		window.isGameOffline = true;
+		
 		// find next match to play
 		const state = window.tournamentState!;
 		const next = findNextMatch(state);
 		if (!next) {
-			window.notify?.("No next match available", { type: "info" });
+			notify("No next match available. Tournament complete!", { type: "info" });
 			return;
 		}
 		// set it as current and launch
@@ -1869,12 +2021,6 @@ if (isOnlineTournament) {
 			refreshTournamentStatus();
 		});
 	}
-
-	if (readyBtn) {
-		addListener(readyBtn, 'click', () => {
-			sendTournamentReady();
-		});
-	}
 	
 	// Add leave button listener
 	const leaveBtn = document.getElementById('tournament-leave-btn') as HTMLButtonElement | null;
@@ -1907,6 +2053,13 @@ if (isOnlineTournament) {
 	}
 }
 
+// Cleanup function to stop polling on page unload
+function cleanupTournamentPage(): void {
+	stopWaitingForOpponentPoll();
+}
+
+registerDynamicCleanup(cleanupTournamentPage);
+
 // Example usage (this will be replaced with actual data fetching logic)
 let players: tournamentPlayer[];
 
@@ -1921,36 +2074,48 @@ if (window.tournamentMode === "offline") {
 		{ id: 7, name: "PlayerSeven", rank: 7 },
 		{ id: 8, name: "PlayerEight", rank: 8 },
 	];
+	
+	// Bootstrap offline tournament (handles player list, bracket, and next match button)
+	bootstrapTournamentOffline(players);
 } else {
 	console.log("Initializing online tournament from backend.");
 	players = [];
 	updatePlayerList(players);
-	initializeTournament();
-}
-
-
-// Initialize player list (with example data)
-updatePlayerList(players);
-
-// Initialize bracket (with example data)
-InitializeBracket(players);
-
-if (window.tournamentMode === "offline") {
-	// If offline add a next match button at the end
-	const nextMatchBtn = document.createElement("button");
-	nextMatchBtn.id = "next-match-button";
-	nextMatchBtn.textContent = "Next Match";
-	const playerListElem = document.getElementById("tournament-player-list");
-	if (playerListElem)
-		playerListElem.appendChild(nextMatchBtn);
-	else
-		console.warn("Could not find player list element to append next match button");
-
-	addListener(nextMatchBtn, "click", () => {
-		window.isGameOffline = true;
-		launchCurrentMatch();
-	});
-
-	// bootstrap offline tournament
-	bootstrapTournamentOffline(players);
+	await initializeTournament();
+	
+	// Use existing ready button for online tournaments
+	const readyBtn = document.getElementById("tournament-ready-btn") as HTMLButtonElement | null;
+	if (readyBtn) {
+		readyBtn.style.display = 'block';
+		
+		// Set initial button state
+		updateReadyButtonState();
+		
+		addListener(readyBtn, "click", async () => {
+			if (!currentMatchInfo) {
+				notify("No current match available", { type: "info" });
+				return;
+			}
+			
+			if (currentMatchInfo.yourReady) {
+				notify("You are already ready. Waiting for opponent...", { type: "info" });
+				return;
+			}
+			
+			readyBtn.disabled = true;
+			readyBtn.textContent = "Readying...";
+			
+			try {
+				await launchOnlineTournamentMatch();
+			} finally {
+				// Update button state based on current status
+				updateReadyButtonState();
+			}
+			
+			// Refresh status after a short delay to see if opponent is ready
+			setTimeout(() => refreshTournamentStatus(), 1000);
+		});
+	} else {
+		console.warn("Ready button not found in online tournament mode");
+	}
 }

@@ -371,33 +371,32 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 				return;
 			}
 
-			if (gameStates.has(payload.gameId))
+		if (gameStates.has(payload.gameId))
+		{
+			console.log("CANT START GAME: game already in game state");
+			return;
+		}
+
+		if (payload.action === "start") {
+			if (game.players.length !== game.config.game.maxPlayers || (game.players.length !== 2 && game.players.length !== 4)) 
 			{
-				console.log("CANT START GAME: game already in game state");
+				console.log("CANT START GAME: Not enough players");
 				return;
 			}
+			game.resetGame();
+			const startTime = Date.now() + 3000;
+			gameStates.set(payload.gameId, "starting");
+			gameStartTimes.set(payload.gameId, startTime);
+			accumulators.set(payload.gameId, 0);
 
-			if (payload.action === "start") {
-				if (game.players.length === game.config.game.maxPlayers && (game.players.length == 2 || game.players.length === 4)) 
-				{
-					console.log("CANT START GAME: Not enough player");
-					return;
-				}
-				game.resetGame();
-				const startTime = Date.now() + 3000;
+			game.broadcast("game", {
+				action: "start",
+				playerSides: game.getPlayerSidesMap(),
+				startTime
+			} as msg.gameStartAckPayload);
 
-				gameStates.set(payload.gameId, "starting");
-				gameStartTimes.set(payload.gameId, startTime);
-				accumulators.set(payload.gameId, 0);
-
-				game.broadcast("game", {
-					action: "start",
-					playerSides: game.getPlayerSidesMap(),
-					startTime
-				} as msg.gameStartAckPayload);
-
-				return;
-			}
+			return;
+		}
 			else if (payload.action === "pause")
 				gameStates.set(payload.gameId, "paused");
 			else if (payload.action === "resume")

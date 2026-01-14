@@ -58,6 +58,7 @@ export function tournamentStatusRoute(fastify: FastifyInstance) {
 				maxPlayers: tournament.maxPlayers,
 				playersJoined: tournament.players.size,
 				players: players,
+				config: tournament.config,
 				currentRound: tournament.currentRound,
 				totalRounds: Math.ceil(Math.log2(tournament.maxPlayers)),
 				bracket: tournament.bracket.map(match => ({
@@ -78,6 +79,18 @@ export function tournamentStatusRoute(fastify: FastifyInstance) {
 							opponentReady:
 								userMatch.player1Id === userId ? userMatch.player2Ready : userMatch.player1Ready,
 							gameId: userMatch.gameId,
+							players: [
+								{
+									id: userMatch.player1Id,
+									name: players.find(p => p.userId === userMatch.player1Id)?.name || "Player 1",
+									userId: userMatch.player1Id
+								},
+								{
+									id: userMatch.player2Id,
+									name: players.find(p => p.userId === userMatch.player2Id)?.name || "Player 2",
+									userId: userMatch.player2Id
+								}
+							].filter(p => p.id !== null) as any[]
 						}
 					: null,
 			});

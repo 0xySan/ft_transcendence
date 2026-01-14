@@ -3977,6 +3977,13 @@ button:active {
 	text-overflow: ellipsis;
 }
 
+.match-player1.winner,
+.match-player2.winner {
+	font-weight: bold;
+	color: var(--c-green);
+	text-shadow: 0 0 4px rgba(0, 255, 0, 0.5);
+}
+
 .match-score1,
 .match-score2 {
 	width: 2rem;
