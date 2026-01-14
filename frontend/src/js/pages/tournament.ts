@@ -5,16 +5,21 @@
  * including panning and zooming features.
  */
 
-import { Settings } from "../global";
-
-
 /** ### addListener
  * Adds an event listener to a target element if the target is not null.
  * @param target - The target element to which the event listener will be added.
  * @param event - The event type to listen for.
  * @param handler - The event handler function.
  */
-declare function addListener(target: EventTarget | null, event: string, handler: EventListenerOrEventListenerObject): void;
+declare function loadPage(url: string): void;
+declare function addListener(
+	target: EventTarget | null,
+	event: string,
+	handler: any,
+): void;
+
+import type { PlayerPayload, Settings } from "../global";
+import { ConnectPayload, GamePayload, gameStartAckPayload, PlayerSyncPayload, SocketMessage } from "./lobbySocket";
 
 declare global {
 	interface Window {
@@ -27,10 +32,76 @@ declare global {
 			ended: boolean;
 		};
 		playerList?: tournamentPlayer[];
+		tournamentId?: string;
+		tournamentCode?: string;
 	}
 }
 
 export {};
+
+/** ### applyListener
+ * Apply WebSocket event listeners for open, message, and close events.
+ * Handles connection setup, incoming messages, and disconnection logic.
+ * 
+ * @param socket - The WebSocket instance to apply listeners to.
+ * @param token - Optional authentication token for connecting to the lobby.
+ */
+function applyListener(socket: WebSocket, token?: string) {
+	if (token) {
+		addListener(socket, "open", () => {
+			notify('Connected to the game lobby.', { type: 'success' });
+			const msg: SocketMessage<ConnectPayload> = {
+				type: "connect",
+				payload: { token: {token: token} },
+			};
+			socket.send(JSON.stringify(msg));
+
+			// start client keepalive: send a small "send" message every 20s
+			(window as any).socketPingInterval = window.setInterval(() => {
+				if (socket.readyState === WebSocket.OPEN)
+					socket.send(JSON.stringify({ type: "send", payload: { keepalive: true } }));
+			}, 20_000);
+		});
+	}
+
+	addListener(socket, "message", (event: MessageEvent) => {
+		const msg = JSON.parse(event.data) as SocketMessage<PlayerSyncPayload | PlayerPayload | GamePayload | Partial<Settings> | gameStartAckPayload>;
+		switch (msg.type) {
+			case "game":
+				if ((msg.payload as GamePayload).action === "start") {
+					notify('The game is starting!', { type: 'success' });
+					window.pendingGameStart = msg.payload as gameStartAckPayload;
+					loadPage("/pong-board");
+				}
+				break;
+
+			default:
+				console.warn("Unknown socket message:", msg);
+		}
+	});
+
+	addListener(socket, "close", (event: CloseEvent) => {
+		if ((window as any).socketPingInterval) {
+			clearInterval((window as any).socketPingInterval);
+			(window as any).socketPingInterval = undefined;
+		}
+		notify('Disconnected from the game lobby.', { type: 'warning' });
+		window.socket = undefined;
+	});
+}
+
+function connectWebSocket(token: string): void {
+	if (window.socket) {
+		window.socket.close();
+	}
+
+	const protocol = location.protocol === "https:" ? "wss" : "ws";
+	const socket = new WebSocket(`${protocol}://${location.host}/ws/`);
+	window.socket = socket;
+
+	applyListener(socket, token);
+}
+
 
 /** ### loadPage
  * - Loads a new page by URL.
@@ -65,6 +136,148 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number): F {
 		if (timeout !== null) clearTimeout(timeout);
 		timeout = window.setTimeout(() => fn.apply(this, args), delay);
 	} as F;
+}
+
+/* ==================================================================
+					Tournament Initialization
+   ================================================================== */
+
+// Load tournament data from sessionStorage
+let tournamentId = sessionStorage.getItem('tournamentId');
+let tournamentCode = sessionStorage.getItem('tournamentCode');
+let tournamentMode = sessionStorage.getItem('tournamentMode') as "online" | "offline";
+
+// Determine if online or offline based on tournamentId existence
+const isOnlineTournament = !!tournamentId;
+
+if (tournamentId) {
+	window.tournamentId = tournamentId;
+	window.tournamentCode = tournamentCode || undefined;
+	window.tournamentMode = 'online';
+} else {
+	window.tournamentMode = 'offline';
+}
+
+/* ==================================================================
+				Tournament API Functions
+   ================================================================== */
+
+/** ### fetchTournamentStatus
+ * Fetch the current tournament status including players and bracket.
+ * @param tId - The tournament ID
+ * @returns Tournament status data
+ */
+async function fetchTournamentStatus(tId: string): Promise<any> {
+	const res = await fetch(`/api/tournament/${tId}/status`, {
+		method: "GET",
+		headers: { "Content-Type": "application/json" },
+	});
+
+	if (!res.ok) {
+		console.error('Failed to fetch tournament status:', res.status);
+		return null;
+	}
+
+	return await res.json();
+}
+
+/** ### leaveTournament
+ * Leave the current tournament.
+ * @param tId - The tournament ID
+ * @returns Response indicating success or failure
+ */
+async function leaveTournament(tId: string): Promise<void> {
+	const res = await fetch(`/api/tournament/leave`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({"tournamentId": tId }),
+	});
+
+	if (!res.ok) {
+		const error = await res.json();
+		throw new Error(error.message || "Failed to leave tournament");
+	}
+}
+
+/** ### displayTournamentCode
+ * Display the tournament code in the player list section.
+ * @param code - The tournament code
+ */
+function displayTournamentCode(code: string | null): void {
+	const codeDisplay = document.getElementById('tournament-code-display') as HTMLDivElement | null;
+	const codeValue = document.getElementById('tournament-code-value') as HTMLSpanElement | null;
+
+	if (!codeDisplay || !codeValue) return;
+
+	if (code) {
+		codeValue.textContent = code;
+		codeDisplay.style.display = 'block';
+	} else {
+		codeDisplay.style.display = 'none';
+	}
+}
+
+/** ### initializeTournament
+ * Initialize the tournament by fetching data and setting up the UI.
+ */
+async function initializeTournament(): Promise<void> {
+	if (!tournamentId) return;
+
+	// Display code if available
+	if (tournamentCode) {
+		displayTournamentCode(tournamentCode);
+	}
+
+	// Fetch tournament status
+	await refreshTournamentStatus();
+	
+	// Check if returning from a tournament game
+	checkReturnFromGame();
+}
+
+/** ### checkReturnFromGame
+ * Check if returning from a tournament game and clean up session storage.
+ */
+function checkReturnFromGame(): void {
+	const gameId = sessionStorage.getItem('tournamentGameId');
+	const returnTournamentId = sessionStorage.getItem('tournamentReturnId');
+	
+	if (gameId && returnTournamentId === tournamentId) {
+		// Clear the session storage
+		sessionStorage.removeItem('tournamentGameId');
+		sessionStorage.removeItem('tournamentGameAuthToken');
+		sessionStorage.removeItem('tournamentReturnId');
+		
+		console.log('Returned from tournament game:', gameId);
+		
+		// Refresh tournament status to update results
+		refreshTournamentStatus();
+	}
+}
+
+/** ### refreshTournamentStatus
+ * Refresh the tournament status by fetching from backend.
+ */
+async function refreshTournamentStatus(): Promise<void> {
+	if (!tournamentId) return;
+
+	const status = await fetchTournamentStatus(tournamentId);
+	if (status) {
+		// Use players from backend
+		const backendPlayers: tournamentPlayer[] = (status.players || []).map((p: any) => ({
+			id: p.id,
+			name: p.name,
+			rank: p.rank,
+		}));
+		
+		updatePlayerList(backendPlayers);
+		
+		// Initialize bracket if status is in-progress
+		if (status.status === 'in-progress' && backendPlayers.length === status.maxPlayers) {
+			console.log('Tournament is full! Initializing bracket with', backendPlayers.length, 'players');
+			InitializeBracket(backendPlayers);
+		}
+	}
 }
 
 /* ==================================================================
@@ -528,7 +741,7 @@ function onTouchCancel(event: Event): void {
 /** ### playerListElem
  * The unordered list element for displaying tournament players.
  */
-const playerListElem: HTMLUListElement | null = document.getElementById("tournament-player-list") as HTMLUListElement | null;
+const playerListElem: HTMLUListElement | null = document.getElementById("player-list-ul") as HTMLUListElement | null;
 
 /** ### playerListTemplate
  * The HTML template element for a tournament player list item.
@@ -1519,6 +1732,45 @@ addListener(window, "resize", () => {
 	}, 200);
 });
 
+// Add refresh button listener for online tournaments
+if (isOnlineTournament) {
+	const refreshBtn = document.getElementById("tournament-refresh-btn") as HTMLButtonElement | null;
+	if (refreshBtn) {
+		addListener(refreshBtn, "click", () => {
+			refreshTournamentStatus();
+		});
+	}
+	
+	// Add leave button listener
+	const leaveBtn = document.getElementById('tournament-leave-btn') as HTMLButtonElement | null;
+	if (leaveBtn) {
+		let isLeaving = false;
+		addListener(leaveBtn, 'click', async () => {
+			if (!tournamentId || isLeaving) return;
+			isLeaving = true;
+			leaveBtn.disabled = true;
+			try {
+				await leaveTournament(tournamentId);
+				// Clear tournament data
+				sessionStorage.removeItem('tournamentId');
+				sessionStorage.removeItem('tournamentCode');
+				sessionStorage.removeItem('tournamentMode');
+				// Navigate back to lobby
+				window.loadPage('lobby');
+			} catch (error) {
+				console.error('Failed to leave tournament:', error);
+				isLeaving = false;
+				leaveBtn.disabled = false;
+			}
+		});
+	}
+	else {
+		// Hide leave button for offline tournaments
+		const leaveBtn = document.getElementById('tournament-leave-btn') as HTMLButtonElement | null;
+		if (leaveBtn) leaveBtn.style.display = 'none';
+	}
+}
+
 // Example usage (this will be replaced with actual data fetching logic)
 let players: tournamentPlayer[];
 
@@ -1533,8 +1785,12 @@ if (window.tournamentMode === "offline") {
 		{ id: 7, name: "PlayerSeven", rank: 7 },
 		{ id: 8, name: "PlayerEight", rank: 8 },
 	];
-} else
+} else {
+	console.log("Initializing online tournament from backend.");
 	players = [];
+	updatePlayerList(players);
+	initializeTournament();
+}
 
 
 // Initialize player list (with example data)

@@ -17,7 +17,7 @@ import { activeTournaments } from "../../globals.js";
 
 export function tournamentResultRoute(fastify: FastifyInstance) {
 	fastify.post(
-		'/tournament/result',
+		'/result',
 		{
 			preHandler: requireAuth,
 		},

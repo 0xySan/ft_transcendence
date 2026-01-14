@@ -16,6 +16,24 @@ import { tournamentResultRoute } from "./tournament-result.route.js";
 import { listPublicTournamentsRoute } from "./tournament-list.route.js";
 import { findingGameRoute } from "./finding.route.js";
 import { gameStatsRoutes } from "./stats.route.js";
+import { createTournamentRoute } from "./tournament-create.route.js";
+import { joinTournamentRoute } from "./tournament-join.route.js";
+import { leaveTournamentRoute } from "./tournament-leave.route.js";
+import { tournamentStatusRoute } from "./tournament-status.route.js";
+import { tournamentResultRoute } from "./tournament-result.route.js";
+import { listPublicTournamentsRoute } from "./tournament-list.route.js";
+import { tournamentReadyRoute } from "./tournament-ready.route.js";
+
+export function tournamentRoutes(fastify: FastifyInstance) {
+	// Tournament related routes
+	createTournamentRoute(fastify);
+	joinTournamentRoute(fastify);
+	leaveTournamentRoute(fastify);
+	tournamentStatusRoute(fastify);
+	tournamentResultRoute(fastify);
+	listPublicTournamentsRoute(fastify);
+	tournamentReadyRoute(fastify);
+}
 
 export function gameRoutes(fastify: FastifyInstance) {
 	// Standard game routes

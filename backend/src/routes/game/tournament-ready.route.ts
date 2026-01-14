@@ -18,10 +18,11 @@ import { generateRandomToken } from "../../utils/crypto.js";
 import { wsPendingConnections, activeTournaments } from "../../globals.js";
 import { assignGameToWorker } from "../../game/workers/init.js";
 import { config } from "../../game/workers/game/game.types.js";
+export const waitingUsers: string[] = [];
 
 export function tournamentReadyRoute(fastify: FastifyInstance) {
 	fastify.post(
-		'/tournament/ready',
+		'/ready',
 		{
 			preHandler: requireAuth,
 		},

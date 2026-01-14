@@ -8,10 +8,11 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 
 import { isPlayerInTournament } from "./utils.js";
 import { activeTournaments } from "../../globals.js";
+import { getProfileByUserId } from "../../db/wrappers/main/users/userProfiles.js";
 
 export function tournamentStatusRoute(fastify: FastifyInstance) {
 	fastify.get(
-		'/tournament/:tournamentId/status',
+		'/:tournamentId/status',
 		{
 			preHandler: requireAuth,
 		},
@@ -37,6 +38,18 @@ export function tournamentStatusRoute(fastify: FastifyInstance) {
 				m => m.player1Id === userId || m.player2Id === userId
 			);
 
+			// Get player list with names
+			const players = Array.from(tournament.players).map((playerId, index) => {
+				const profile = getProfileByUserId(playerId);
+				const displayName = profile?.display_name || profile?.username || `Player ${index + 1}`;
+				return {
+					id: index + 1,
+					userId: playerId,
+					name: displayName,
+					rank: index + 1,
+				};
+			});
+
 			return reply.status(200).send({
 				tournamentId,
 				code: tournament.code,
@@ -44,6 +57,7 @@ export function tournamentStatusRoute(fastify: FastifyInstance) {
 				status: tournament.status,
 				maxPlayers: tournament.maxPlayers,
 				playersJoined: tournament.players.size,
+				players: players,
 				currentRound: tournament.currentRound,
 				totalRounds: Math.ceil(Math.log2(tournament.maxPlayers)),
 				bracket: tournament.bracket.map(match => ({

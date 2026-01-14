@@ -1,9 +1,18 @@
 <div id="tournament-container">
 	<div id="tournament-player-list">
 		<h2>Players</h2>
+		<div class="tournament-actions">
+			<button id="tournament-refresh-btn" class="tournament-refresh-button">Refresh</button>
+			<button id="tournament-ready-btn" class="tournament-ready-button" style="display: none;">Ready</button>
+			<button id="tournament-leave-btn" class="tournament-leave-button">Leave</button>
+		</div>
 		<ul id="player-list-ul">
 			<!-- Player list items will be dynamically inserted here -->
 		</ul>
+		<div id="tournament-code-display" class="tournament-code-section" style="display: none;">
+			<p>Tournament Code:</p>
+			<span id="tournament-code-value" class="tournament-code"></span>
+		</div>
 	</div>
 	<div id="tournament-map-container">
 		<div id="tournament-map">

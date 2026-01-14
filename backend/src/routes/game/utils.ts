@@ -60,16 +60,6 @@ export function generateBracket(players: string[], round: number = 0): Tournamen
 }
 
 /**
- * Validates if a tournament can have a specific number of players.
- * Valid sizes: 2, 4, 8, 16, 32, 64, 128, etc. (power of 2)
- * @param count - Number of players
- * @returns true if valid tournament size, false otherwise
- */
-export function isValidTournamentSize(count: number): boolean {
-	return count >= 2 && (count & (count - 1)) === 0; // Check if power of 2
-}
-
-/**
  * Gets the next round matches after current round is completed.
  * @param completedMatches - Matches from current round with winners set
  * @param currentRound - Current round number

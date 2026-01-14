@@ -17,7 +17,7 @@ import { activeTournaments } from "../../globals.js";
 
 export function joinTournamentRoute(fastify: FastifyInstance) {
 	fastify.post(
-		'/tournament/join',
+		'/join',
 		{
 			preHandler: requireAuth,
 		},

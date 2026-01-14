@@ -94,20 +94,20 @@ const htmlSettings = {
 /* -------------------------------------------------------------------------- */
 /* WebSocket types															*/
 /* -------------------------------------------------------------------------- */
-type MsgType = "connect" | "player" | "playerSync" | "game" | "settings";
+export type MsgType = "connect" | "player" | "playerSync" | "game" | "settings";
 
-type SocketMessage<T> = {
+export type SocketMessage<T> = {
 	type: MsgType;
 	payload: T;
 };
 
-type ConnectPayload = {
+export type ConnectPayload = {
 	token: {
 		token: string;
 	}
 };
 
-type PlayerSyncPayload = {
+export type PlayerSyncPayload = {
 	ownerId: string;
 	players: Array<{
 		playerId: string;
@@ -118,7 +118,7 @@ type PlayerSyncPayload = {
 
 type gameAction = "start" | "pause" | "resume" | "abort";
 
-type GamePayload = {
+export type GamePayload = {
 	action:		gameAction;
 	gameId?:	string;
 };
@@ -406,18 +406,10 @@ export function updateLaunchVisibility(mode:string, maxPlayers:number): void {
 /* 							API – Game creation / join						  */
 /* -------------------------------------------------------------------------- */
 
-/** ### joinGame
- * Attempt to join a game using the provided code or game ID.
- * Validates the input and sends a request to the server to join the game.
- * On success, connects to the lobby WebSocket with the received auth token.
- * 
- * @param code - The game code or game ID to join.
- */
-async function joinGame(code: string): Promise<void> {
+async function joinGameWithCode(code: string): Promise<void> {
 	const payload = /^[A-Z0-9]{4}$/.test(code.toUpperCase())
 		? { code: code.toUpperCase() }
 		: { gameId: code };
-
 	const res = await fetch("/api/game/join", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -450,6 +442,61 @@ async function joinGame(code: string): Promise<void> {
 	if (!authToken) throw new Error("Missing auth token");
 	window.selectLobbyMode("join");
 	connectWebSocket(authToken);
+}
+
+async function joinTournamentWithCode(code: string): Promise<void> {
+	const payload = /^[A-Z0-9]{6}$/.test(code.toUpperCase())
+		? { code: code.toUpperCase() }
+		: { gameId: code };
+	const res = await fetch("/api/tournament/join", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ code: payload.code }),
+	});
+
+	const data = await res.json();
+	if (!res.ok)
+		return notify(`Failed to join tournament: ${data.error || 'Unknown error'}`, { type: 'error' });
+	if (res.status !== 200)
+		return notify(`Failed to join tournament: ${res.status} - ${data.error || 'Unknown error'}`, { type: 'error' });
+
+	if (!data.tournamentId) {
+		notify("Invalid tournament response", { type: "error" });
+		return;
+	}
+
+	// Store tournament info in sessionStorage for the tournament page
+	sessionStorage.setItem('tournamentId', data.tournamentId);
+	sessionStorage.setItem('tournamentCode', data.code || '');
+	sessionStorage.setItem('tournamentVisibility', data.visibility || 'private');
+
+	// Navigate to tournament page
+	loadPage("/tournament");
+	return;
+}
+
+/** ### joinGame
+ * Attempt to join a game using the provided code or game ID.
+ * Validates the input and sends a request to the server to join the game.
+ * On success, connects to the lobby WebSocket with the received auth token.
+ * 
+ * @param code - The game code or game ID to join.
+ */
+async function joinGame(code: string) : Promise<void> {
+	const codeLength = code.trim().length;
+
+	if (codeLength === 6)
+	{
+		joinTournamentWithCode(code).catch((err) => {
+			console.error("Error joining tournament:", err);
+			notify(`Error joining tournament: ${err.message || 'Unknown error'}`, { type: 'error' });
+		});
+		return ;
+	}
+	joinGameWithCode(code).catch((err) => {
+		console.error("Error joining game:", err);
+		notify(`Error joining game: ${err.message || 'Unknown error'}`, { type: 'error' });
+	});
 }
 
 // expose joinGame so other modules (e.g. lobbySettings) can programmatically reuse the same logic

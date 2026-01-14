@@ -677,9 +677,70 @@ const uiTournament = {
 	launchOfflineBtn: getEl<HTMLButtonElement>("lobby-tournament-offline"),
 };
 
+/** ### createTournament
+ * Create a new online tournament or rejoin if already in one.
+ * Sends a request to the server to create the tournament.
+ * On success, navigates to the tournament page with the tournament ID.
+ */
+async function createTournament(): Promise<void> {
+	// Check if user is already in a tournament
+	const existingTournamentId = sessionStorage.getItem('tournamentId');
+	if (existingTournamentId) {
+		// User already in a tournament, just navigate to it
+		const res = await fetch(`/api/tournament/${existingTournamentId}/status`, {
+			method: "GET",
+			headers: { "Content-Type": "application/json" },
+		});
+
+		const data = await res.json();
+		if (res.ok) {
+			notify("Rejoining existing tournament.", { type: "info" });
+			loadPage("/tournament");
+		} else {
+			notify(`Failed to rejoin tournament: ${data.error || 'Unknown error'}`, { type: 'error' });
+			// Clear invalid tournament ID
+			sessionStorage.removeItem('tournamentId');
+			sessionStorage.removeItem('tournamentCode');
+			sessionStorage.removeItem('tournamentVisibility');
+			return;
+		}
+		return;
+	}
+
+	const visibility = (document.getElementById("lobby-private-checkbox-custom-game") as any | null).checked;
+	console.log("Creating tournament with visibility:", visibility);
+	const res = await fetch("/api/tournament/create", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			visibility: visibility ? "private" : "public",
+			config: window.lobbySettings || {},
+		}),
+	});
+
+	const data = await res.json();
+	if (!res.ok) {
+		notify(`Failed to create tournament: ${data.error || 'Unknown error'}`, { type: 'error' });
+		return;
+	}
+
+	if (!data.tournamentId) {
+		notify("Invalid tournament response", { type: "error" });
+		return;
+	}
+
+	// Store tournament info in sessionStorage for the tournament page
+	sessionStorage.setItem('tournamentId', data.tournamentId);
+	sessionStorage.setItem('tournamentCode', data.code || '');
+	sessionStorage.setItem('tournamentVisibility', data.visibility || 'private');
+
+	// Navigate to tournament page
+	loadPage("/tournament");
+}
+
 addListener(uiTournament.launchOnlineBtn, "click", () => {
 	window.tournamentMode = "online";
-	loadPage("/tournament");
+	createTournament();
 });
 
 addListener(uiTournament.launchOfflineBtn, "click", () => {

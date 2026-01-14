@@ -9,7 +9,6 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 import { v7 as uuidv7 } from "uuid";
 
 import {
-	isValidTournamentSize,
 	isUserInTournament,
 	isUserInGame,
 } from "./utils.js";
@@ -18,7 +17,7 @@ import { activeTournaments, Tournament } from "../../globals.js";
 
 export function createTournamentRoute(fastify: FastifyInstance) {
 	fastify.post(
-		'/tournament/create',
+		'/create',
 		{
 			preHandler: requireAuth,
 		},
@@ -35,15 +34,8 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 			if (isUserInTournament(userId))
 				return reply.status(400).send({ error: 'User is already in a tournament.' });
 
-			const maxPlayers = body.maxPlayers || 4;
+			const maxPlayers = 8;
 			const visibility = body.visibility || "private";
-
-			// Validate tournament size (must be power of 2)
-			if (!isValidTournamentSize(maxPlayers)) {
-				return reply.status(400).send({
-					error: 'Tournament size must be a power of 2 (2, 4, 8, 16, 32, 64, 128, etc.)',
-				});
-			}
 
 			// Parse game configuration if provided
 			const [valid, config] = parseGameConfig(body.config || {});
@@ -53,7 +45,7 @@ export function createTournamentRoute(fastify: FastifyInstance) {
 
 			const tournamentId = uuidv7();
 			const code = visibility === "private" 
-				? Math.random().toString(36).substring(2, 6).toUpperCase()
+				? Math.random().toString(36).substring(2, 8).toUpperCase() // 6-character code
 				: null;
 
 			const tournament: Tournament = {

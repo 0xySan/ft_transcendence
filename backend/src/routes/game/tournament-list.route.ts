@@ -9,7 +9,7 @@ import { activeTournaments } from "../../globals.js";
 
 export function listPublicTournamentsRoute(fastify: FastifyInstance) {
 	fastify.get(
-		'/tournament/list',
+		'/list',
 		{
 			preHandler: requireAuth,
 		},
