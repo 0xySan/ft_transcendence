@@ -45,7 +45,7 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 			const userId = session?.user_id;
 			if (!userId) return reply.status(401).send({ message: "Unauthorized" });
 
-			const conversations: UserConversationSummary[] = listConversationsForUser(userId);
+			let conversations: UserConversationSummary[] = listConversationsForUser(userId);
 
 			const payload = conversations.map((conv: UserConversationSummary) => {
 				const members = listConversationMembers(conv.conversation_id).map((m: ChatConversationMember) => mapMember(m.user_id));
@@ -58,6 +58,29 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 					members,
 					lastMessageAt: conv.last_message_at,
 				};
+			});
+
+			payload.unshift({
+				id: 424242,
+				type: "direct" as const,
+				title: "Tournament Chat",
+				createdBy: "tournament_system",
+				updatedAt: Date.now().toString(),
+				lastMessageAt: null,
+				members: [
+					{
+						userId: "tournament_system",
+						username: "tournament_system",
+						displayName: "Tournament System",
+						profilePicture: null
+					},
+					{
+						userId: userId,
+						username: session.username || "user",
+						displayName: session.display_name || session.username || "User",
+						profilePicture: session.profile_picture || null
+					}
+				]
 			});
 
 			const blocked = listBlockedUsers(userId).map((b: ChatUserBlock) => b.blocked_id);
@@ -75,6 +98,34 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 			const conversationId = Number((request.params as any).id);
 			if (!Number.isFinite(conversationId)) return reply.status(400).send({ message: "Invalid conversation id" });
+
+			if (conversationId === 424242) {
+				// Special case for Tournament Chat
+				const members = [
+					{
+						userId: "tournament_system",
+						username: "tournament_system",
+						displayName: "Tournament System",
+						profilePicture: null
+					},
+					{
+						userId: userId,
+						username: session.username || "user",
+						displayName: session.display_name || session.username || "User",
+						profilePicture: session.profile_picture || null
+					}
+				];
+				const payload = {
+					id: 424242,
+					type: "direct" as const,
+					title: "Tournament Chat",
+					createdBy: "tournament_system",
+					updatedAt: Date.now().toString(),
+					members,
+					lastMessageAt: null,
+				};
+				return reply.send({ conversation: payload, currentUserId: userId });
+			}
 
 			const member = getConversationMember(conversationId, userId);
 			if (!member) return reply.status(403).send({ message: "Not a member of this conversation" });
@@ -108,6 +159,11 @@ export async function chatConversationRoutes(fastify: FastifyInstance)
 
 			const conversationId = Number((request.params as any).id);
 			if (!Number.isFinite(conversationId)) return reply.status(400).send({ message: "Invalid conversation id" });
+
+			if (conversationId === 424242) {
+				// Special case for Tournament Chat - no messages
+				return reply.send({ messages: [] });
+			}
 
 			const member = getConversationMember(conversationId, userId);
 			if (!member) return reply.status(403).send({ message: "Not a member of this conversation" });

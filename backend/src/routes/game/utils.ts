@@ -6,6 +6,7 @@
 import { activeGames, activeTournaments, TournamentMatch } from "../../globals.js";
 import * as game from "../../game/workers/game/game.types.js";
 import * as worker from '../../game/workers/worker.types.js';
+import { broadcastMessageToParticipants } from "../../utils/chatEvent.js";
 import { gameGetSettingsByGameId } from '../../game/workers/init.js';
 
 /* ======================== TOURNAMENT CLEANUP ======================== */
@@ -83,6 +84,11 @@ export function getNextRoundMatches(completedMatches: TournamentMatch[], current
 				winner: null,
 				round: currentRound + 1
 			});
+			broadcastMessageToParticipants(
+				'tournament_system',
+				[winner1, winner2].filter(id => id !== null) as string[],
+				{ conversationId: 424242, message: `Next round match scheduled between ${winner1 || 'TBD'} and ${winner2 || 'TBD'}.` }
+			);
 		}
 	}
 	
@@ -225,7 +231,7 @@ export function advanceToNextRound(tournamentId: string): boolean | string {
 	const nextMatches = getNextRoundMatches(currentRoundMatches, tournament.currentRound);
 	tournament.bracket.push(...nextMatches);
 	tournament.currentRound++;
-	
+
 	return true;
 }
 
@@ -350,6 +356,7 @@ function parseObject<T>(
 const parseGameSettings: Parser<game.GameSettings> = raw =>
 	parseObject<game.GameSettings>(raw, [
 		["mode", isMode, { required: true }],
+		
 		["maxPlayers", isNumber],
 		["spectatorsAllowed", isBoolean],
 		["code", (v): v is string => typeof v === "string" && /^[A-Za-z0-9]{4}$/.test(v)]
