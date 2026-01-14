@@ -273,12 +273,23 @@ async function refreshTournamentStatus(): Promise<void> {
 				}
 				
 				// Build tournament state from backend bracket
+				// Build lookup map for player display names (userId or id -> name)
+				const playerNameById: Record<string, string> = {};
+				for (const p of backendPlayers) {
+					if ((p as any).userId) playerNameById[(p as any).userId] = p.name;
+					if ((p as any).id) playerNameById[(p as any).id] = p.name;
+				}
+
 				const rounds: StoredMatch[][] = [];
 				for (let r = 0; r <= maxRound; r++) {
 					const roundMatches = matchesByRound[r] || [];
-					const storedMatches: StoredMatch[] = roundMatches.map((match: any) => {
-						const p1 = match.player1Id ? { id: match.player1Id, name: backendPlayers.find((p: any) => p.id === match.player1Id)?.name || 'Player', rank: 0 } : null;
-						const p2 = match.player2Id ? { id: match.player2Id, name: backendPlayers.find((p: any) => p.id === match.player2Id)?.name || 'Player', rank: 0 } : null;
+					const storedMatches: StoredMatch[] = roundMatches.map((match: any, idx: number) => {
+						const p1 = match.player1Id
+							? { id: match.player1Id, name: match.player1Name || playerNameById[match.player1Id] || 'Player', rank: 0 }
+							: null;
+						const p2 = match.player2Id
+							? { id: match.player2Id, name: match.player2Name || playerNameById[match.player2Id] || 'Player', rank: 0 }
+							: null;
 						
 						// Determine score based on winner
 						let score: { left: number; right: number } | undefined = undefined;
@@ -290,12 +301,16 @@ async function refreshTournamentStatus(): Promise<void> {
 								score = { left: 0, right: 1 };
 							}
 						}
+						// Safe numbering to avoid NaN if matchId format changes
+						const parsedMatchNumber = match.matchId ? Number(match.matchId.split('-').pop()) : NaN;
+						const number = Number.isFinite(parsedMatchNumber) ? parsedMatchNumber : idx + 1;
+						const globalId = r * 100 + idx; // stable unique id per slot
 						
 						return {
 							p1,
 							p2,
-							number: match.matchId ? parseInt(match.matchId.split('-').pop() || '1') : r * 2,
-							globalId: match.matchId ? parseInt(match.matchId.slice(-2)) : (r * 8 + roundMatches.indexOf(match)),
+							number,
+							globalId,
 							played: !!match.winner,
 							score,
 						};

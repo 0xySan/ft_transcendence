@@ -61,16 +61,22 @@ export function tournamentStatusRoute(fastify: FastifyInstance) {
 				config: tournament.config,
 				currentRound: tournament.currentRound,
 				totalRounds: Math.ceil(Math.log2(tournament.maxPlayers)),
-				bracket: tournament.bracket.map(match => ({
-					matchId: match.matchId,
-					round: match.round,
-					player1Id: match.player1Id,
-					player2Id: match.player2Id,
-					player1Ready: match.player1Ready,
-					player2Ready: match.player2Ready,
-					winner: match.winner,
-					gameId: match.gameId,
-				})),
+				bracket: tournament.bracket.map(match => {
+					const p1Name = players.find(p => p.userId === match.player1Id)?.name;
+					const p2Name = players.find(p => p.userId === match.player2Id)?.name;
+					return {
+						matchId: match.matchId,
+						round: match.round,
+						player1Id: match.player1Id,
+						player2Id: match.player2Id,
+						player1Name: p1Name,
+						player2Name: p2Name,
+						player1Ready: match.player1Ready,
+						player2Ready: match.player2Ready,
+						winner: match.winner,
+						gameId: match.gameId,
+					};
+				}),
 				yourCurrentMatch: userMatch
 					? {
 							matchId: userMatch.matchId,

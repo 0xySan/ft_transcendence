@@ -259,9 +259,9 @@ function endGame() {
 						if (side === 'right') rightUserId = userId;
 					}
 					
-					// Scores are user1/left -> score1, user2/right -> score2
-					const leftScore = scores.left || scores.user1 || 0;
-					const rightScore = scores.right || scores.user2 || 0;
+					// Scores are keyed by userId, so get them directly
+					const leftScore = leftUserId ? (scores[leftUserId] || 0) : 0;
+					const rightScore = rightUserId ? (scores[rightUserId] || 0) : 0;
 					
 					// Determine winner
 					let winnerId = '';
