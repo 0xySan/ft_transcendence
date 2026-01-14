@@ -4392,3 +4392,41 @@ footer {
 	margin-top: 0.8rem;
 }
 
+/* Privacy page styles */
+.content-card {
+	width: 100%;
+	max-width: 900px;
+	margin: 2rem auto;
+	background: rgb(var(--surface0));
+	border: 1px solid rgba(var(--overlay0), 0.12);
+	border-radius: 12px;
+	padding: 1.5rem;
+	box-sizing: border-box;
+}
+
+.privacy-title {
+	margin: 0 0 0.5rem 0;
+	font-size: 1.6rem;
+}
+
+.privacy-section {
+	margin-top: 1rem;
+}
+
+.privacy-section h2 {
+	margin: 0 0 0.5rem 0;
+	font-size: 1.05rem;
+}
+
+.privacy-section p,
+.privacy-section ul {
+	margin: 0 0 0.5rem 0;
+	line-height: 1.5;
+	color: rgb(var(--subtext0));
+}
+
+@media (max-width: 640px) {
+	.content-card { padding: 1rem; margin: 1rem; }
+	.privacy-title { font-size: 1.25rem; }
+}
+

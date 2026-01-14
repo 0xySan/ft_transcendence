@@ -332,4 +332,37 @@
       "players": "Players"
     }
   }
+  ,
+  "privacy": {
+    "title": "Privacy Policy",
+    "intro": "This policy explains what data we collect and how we use it for the Transcendence project.",
+    "whatWeCollect": {
+      "title": "What we collect",
+      "text": "We collect only the information necessary to operate the service:",
+      "account": "Account information: username, email (for authentication and account management).",
+      "profile": "Profile data: display name and optional avatar image you upload.",
+      "activity": "Game activity and leaderboards: scores and public lobby participation.",
+      "logs": "Technical logs: connection timestamps and IPs for diagnostics and security."
+    },
+    "howWeUse": {
+      "title": "How we use your data",
+      "text": "Data is used to provide the service, maintain accounts, show leaderboards, and for basic abuse prevention."
+    },
+    "sharing": {
+      "title": "Sharing and third parties",
+      "text": "We do not sell your personal data. We may share limited data with third-party services used for delivering email or OAuth providers; only the information required for those integrations is shared."
+    },
+    "cookies": {
+      "title": "Cookies and local storage",
+      "text": "The app uses cookies and session cookies for authentication and to keep users logged in. Some UI preferences may be stored in localStorage."
+    },
+    "rights": {
+      "title": "Your rights",
+      "text": "You can request access to, correction of, or deletion of your account data by contacting the project maintainers. For this school project, deletion will remove your account and related profile data; some logs may be retained for security or debugging for a short period."
+    },
+    "contact": {
+      "title": "Contact",
+      "text": "If you have privacy questions or want your data removed, contact the maintainers via the project repository or via the mail data@moutig.sh."
+    }
+  }
 }

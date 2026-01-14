@@ -332,4 +332,39 @@
       "addQueueError": "Erreur lors de l'ajout à la file d'attente."
     }
   }
+
+  ,
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "intro": "Cette politique explique les données que nous collectons et comment nous les utilisons pour le projet Transcendence.",
+    "whatWeCollect": {
+      "title": "Ce que nous collectons",
+      "text": "Nous collectons uniquement les informations nécessaires au fonctionnement du service :",
+      "account": "Informations de compte : nom d'utilisateur, email (pour l'authentification et la gestion du compte).",
+      "profile": "Données de profil : nom affiché et image d'avatar optionnelle que vous téléversez.",
+      "activity": "Activité de jeu et classements : scores et participation aux salles publiques.",
+      "logs": "Journaux techniques : horodatages de connexion et adresses IP pour le diagnostic et la sécurité."
+    },
+    "howWeUse": {
+      "title": "Comment nous utilisons vos données",
+      "text": "Les données sont utilisées pour fournir le service, maintenir les comptes, afficher les classements et pour la prévention des abus de base."
+    },
+    "sharing": {
+      "title": "Partage et tiers",
+      "text": "Nous ne vendons pas vos données personnelles. Nous pouvons partager des données limitées avec des services tiers utilisés pour l'envoi d'e-mails ou les fournisseurs OAuth ; seules les informations nécessaires à ces intégrations sont partagées."
+    },
+    "cookies": {
+      "title": "Cookies et stockage local",
+      "text": "L'application utilise des cookies et des cookies de session pour l'authentification et pour maintenir la connexion des utilisateurs. Certaines préférences d'interface peuvent être stockées dans le localStorage."
+    },
+    "rights": {
+      "title": "Vos droits",
+      "text": "Vous pouvez demander l'accès, la correction ou la suppression de vos données de compte en contactant les mainteneurs du projet. Pour ce projet scolaire, la suppression supprimera votre compte et les données de profil associées ; certains journaux peuvent être conservés pour la sécurité ou le débogage pendant une courte période."
+    },
+
+    "contact": {
+      "title": "Contact",
+      "text": "Si vous avez des questions sur la confidentialité ou souhaitez que vos données soient supprimées, contactez les mainteneurs via le dépôt du projet ou via l'email data@moutig.sh."
+    }
+  }
 }
