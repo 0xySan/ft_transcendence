@@ -2,7 +2,7 @@
   "about": {
     "built-by": "Built as a full-stack end-of-cursus project by:",
     "catchphrase": "Play, connect, and transcend the ordinary.",
-    "challenge": "Challenge your friends or test your skills against others in Pong and Tetris, reimagined for the web with smooth real-time gameplay, dynamic leaderboards, and sleek design.",
+    "challenge": "Challenge your friends or test your skills against others in Pong, reimagined for the web with smooth real-time gameplay, dynamic leaderboards, and sleek design.",
     "combination-text": "Transcendence 42 combines modern technologies with nostalgic gameplay to deliver an immersive and competitive online experience.",
     "description": "Transcendence is a modern web application where fun meets functionality, a social gaming platform designed to bring players together through timeless classics.",
     "title": "About Transcendence 42"
@@ -22,7 +22,7 @@
     "title": "Forgot your password?"
   },
   "home": {
-    "landingDescription": "Pong meets Tetris on a social platform created to let you enjoy your childhood's games!",
+    "landingDescription": "Pong on a social platform created to let you enjoy your childhood's games!",
     "playButton": "PLAY"
   },
   "lobby": {

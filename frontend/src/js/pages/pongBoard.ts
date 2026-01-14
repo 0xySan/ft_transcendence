@@ -830,6 +830,8 @@ interface GameStateUpdate {
  * - creates paddles for players and manages drawing / updates
  */
 class PongBoard {
+	/**	State of the game */
+	public state: "waiting" | "start" | "playing" = "waiting";
 	/** Goal state (true = yes | false = no) */
 	public goal: boolean = false;
 	/** The PongBoardCanvas used for rendering the pong board. */
@@ -1054,6 +1056,8 @@ class PongBoard {
 		if (update.scores) {
 			updateScores(update.scores);
 		}
+
+		this.state = "start";
 	}
 
 	public destroy() {
@@ -1397,6 +1401,10 @@ class PongGame {
 		this.lastTime = performance.now();
 
 		const loop = (timestamp: number) => {
+			if (this.board.state === "start") {
+				this.board.draw();
+				this.board.state = "playing";
+			}
 			if (!this.running) return;
 
 			let dt = (timestamp - this.lastTime) / 1000;
@@ -1434,7 +1442,7 @@ class PongGame {
 			}
 
 			// render
-			this.board.draw();
+			if (!window.socket || this.board.state == "playing") this.board.draw();
 			requestAnimationFrame(loop);
 		};
 		requestAnimationFrame(loop);

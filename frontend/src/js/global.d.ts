@@ -97,6 +97,7 @@ export interface GameSettings {
 	spectatorsAllowed: boolean;
 	maxPlayers: 2 | 4;
 	code?: string;
+	visibility: boolean;
 }
 
 /** ### Scoring Settings

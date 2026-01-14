@@ -56,9 +56,9 @@
 				<div id="lobby-custom-game-tab" class="lobby-setting-box unloaded">
 					<div class="lobby-setting-box-title">
 						<span data-translate-key="lobby.settingsTitle">Settings</span>
-						<div class="lobby-private-checkbox">
+						<div class="lobby-private-checkbox" id="lobby-private-checkbox-id">
 							<label for="lobby-private-checkbox-custom-game" data-translate-key="lobby.privateLabel">Private</label>
-							<input type="checkbox" checked name="private-checkbox" id="lobby-private-checkbox-custom-game">
+							<input type="checkbox" name="private-checkbox" id="lobby-private-checkbox-custom-game">
 						</div>
 					</div>
 					<div class="lobby-setting-type">
@@ -66,7 +66,7 @@
 						<button class="lobby-rocker-switch" id="lobby-custom-game-advanced-settings-button" data-translate-key="lobby.advancedSettingsButton">Advanced settings</button>
 					</div>
 					<div class="lobby-setting-list grayed" id="lobby-custom-game-basic-settings">
-						<div class="lobby-setting-container">
+						<div class="lobby-setting-container" id="lobby-game-code-div">
 							<label for="lobby-game-code" data-translate-key="lobby.gameCodeLabel">Custom Game Code</label>
 							<input type="text" id="lobby-game-code" class="lobby-textbox" maxlength="4" placeholder="Enter code">
 						</div>
@@ -92,7 +92,7 @@
 							<button id="lobby-save-settings-button" data-translate-key="lobby.saveSettingsButton">SAVE SETTINGS</button>
 						</div>
 					</div>
-					<div class="lobby-setting-list unloaded grayed" id="lobby-custom-game-advanced-settings">
+					<div class="lobby-setting-list unloaded" id="lobby-custom-game-advanced-settings">
 						<!-- ================= BALL SETTINGS ================= -->
 						<div class="lobby-setting-category">
 							<h3>Ball</h3>
@@ -112,7 +112,7 @@
 								<label for="ball-speed-increment" data-translate-key="lobby.incrementBall">Speed Increment</label>
 								<input type="number" id="ball-speed-increment" min="0" max="100" step="1" value="20">
 							</div>
-							<div class="lobby-setting-container">
+							<!-- <div class="lobby-setting-container">
 								<label for="ball-initial-angle-range" data-translate-key="lobby.rangeAngle">Initial Angle Range</label>
 								<span id="ball-initial-angle-range-value">20</span>°
 								<input type="range" id="ball-initial-angle-range" min="0" max="90" step="1" value="20">
@@ -133,7 +133,7 @@
 							<div class="lobby-setting-container">
 								<label for="ball-reset-on-score" data-translate-key="lobby.resetScore">Reset On Score</label>
 								<input type="checkbox" id="ball-reset-on-score" checked>
-							</div>
+							</div> -->
 						</div>
 
 					<!-- ================= PADDLE SETTINGS ================= -->
@@ -214,7 +214,7 @@
 			</div>
 		</div>
 	</div>
-	<div id="lobby-action-buttons" class="unloaded">
+	<div id="lobby-action-buttons" class="">
 		<div id="lobby-join-box">
 			<input type="text" placeholder="Enter code" id="lobby-input" class="font-poppins-semibold" />
 			<button data-translate-key="lobby.joinButton" id="lobby-btn-join">JOIN</button>

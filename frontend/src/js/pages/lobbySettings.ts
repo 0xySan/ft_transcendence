@@ -106,7 +106,8 @@ const defaultSettings: Settings = {
 		mode: "online",
 		spectatorsAllowed: true,
 		maxPlayers: 2,
-		code: ''
+		code: '',
+		visibility: true
 	},
 	scoring: {
 		firstTo: 5,
@@ -152,20 +153,21 @@ const ui = {
 		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
 		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
 		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
-		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code")
+		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code"),
+		visibility: getEl<HTMLInputElement>("lobby-private-checkbox-custom-game"),
 	},
 	ball: {
 		radius: getEl<HTMLInputElement>("ball-radius"),
 		initialSpeed: getEl<HTMLInputElement>("ball-initial-speed"),
 		maxSpeed: getEl<HTMLInputElement>("ball-max-speed"),
 		speedIncrement: getEl<HTMLInputElement>("ball-speed-increment"),
-		initialAngleRange: getEl<HTMLInputElement>("ball-initial-angle-range"),
-		initialAngleRangeSpan: getEl<HTMLSpanElement>("ball-initial-angle-range-value"),
-		maxBounceAngle: getEl<HTMLInputElement>("ball-max-bounce-angle"),
-		maxBounceAngleSpan: getEl<HTMLSpanElement>("ball-max-bounce-angle-value"),
-		allowSpin: getEl<HTMLInputElement>("ball-allow-spin"),
-		spinFactor: getEl<HTMLInputElement>("ball-spin-factor"),
-		resetOnScore: getEl<HTMLInputElement>("ball-reset-on-score"),
+		// initialAngleRange: getEl<HTMLInputElement>("ball-initial-angle-range"),
+		// initialAngleRangeSpan: getEl<HTMLSpanElement>("ball-initial-angle-range-value"),
+		// maxBounceAngle: getEl<HTMLInputElement>("ball-max-bounce-angle"),
+		// maxBounceAngleSpan: getEl<HTMLSpanElement>("ball-max-bounce-angle-value"),
+		// allowSpin: getEl<HTMLInputElement>("ball-allow-spin"),
+		// spinFactor: getEl<HTMLInputElement>("ball-spin-factor"),
+		// resetOnScore: getEl<HTMLInputElement>("ball-reset-on-score"),
 	},
 	paddles: {
 		width: getEl<HTMLInputElement>("paddle-width"),
@@ -216,18 +218,20 @@ function populateUi(): void {
 	ui.lobby.numPlayersSelect.value = String(s.game.maxPlayers);
 	setSpan(ui.lobby.maxPlayersSpan, s.game.maxPlayers);
 
+
+
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
 	setInput(ui.ball.initialSpeed, s.ball.initialSpeed);
 	setInput(ui.ball.maxSpeed, s.ball.maxSpeed);
 	setInput(ui.ball.speedIncrement, s.ball.speedIncrement);
-	setInput(ui.ball.initialAngleRange, s.ball.initialAngleRange);
-	setSpan(ui.ball.initialAngleRangeSpan, s.ball.initialAngleRange);
-	setInput(ui.ball.maxBounceAngle, s.ball.maxBounceAngle);
-	setSpan(ui.ball.maxBounceAngleSpan, s.ball.maxBounceAngle);
-	setInput(ui.ball.allowSpin, s.ball.allowSpin);
-	setInput(ui.ball.spinFactor, s.ball.spinFactor);
-	setInput(ui.ball.resetOnScore, s.ball.resetOnScore);
+	// setInput(ui.ball.initialAngleRange, s.ball.initialAngleRange);
+	// setSpan(ui.ball.initialAngleRangeSpan, s.ball.initialAngleRange);
+	// setInput(ui.ball.maxBounceAngle, s.ball.maxBounceAngle);
+	// setSpan(ui.ball.maxBounceAngleSpan, s.ball.maxBounceAngle);
+	// setInput(ui.ball.allowSpin, s.ball.allowSpin);
+	// setInput(ui.ball.spinFactor, s.ball.spinFactor);
+	// setInput(ui.ball.resetOnScore, s.ball.resetOnScore);
 
 	// paddles
 	setInput(ui.paddles.width, s.paddles.width);
@@ -263,6 +267,9 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 			maxPlayers:
 				partial.game?.maxPlayers ??
 				currentSettings.game.maxPlayers,
+			visibility:
+				partial.game?.visibility ??
+				currentSettings.game.visibility
 		},
 		scoring: {
 			firstTo:
@@ -338,30 +345,33 @@ function wire(): void {
 		currentSettings.game.code = v;
 	});
 
+	// visibility 
+	bindCheckbox(ui.base.visibility, (v) => (currentSettings.game.visibility = !v));
+
 	// ball
 	bindNumber(ui.ball.radius, (v) => (currentSettings.ball.radius = v));
 	bindNumber(ui.ball.initialSpeed, (v) => (currentSettings.ball.initialSpeed = v));
 	bindNumber(ui.ball.maxSpeed, (v) => (currentSettings.ball.maxSpeed = v));
 	bindNumber(ui.ball.speedIncrement, (v) => (currentSettings.ball.speedIncrement = v));
 
-	addListener(ui.ball.initialAngleRange, "input", () => {
-		let v = readNumber(ui.ball.initialAngleRange, defaultSettings.ball.initialAngleRange);
-		if (v < 0) v = 0;
-		if (v > 90) v = 90;
-		currentSettings.ball.initialAngleRange = v;
-		setSpan(ui.ball.initialAngleRangeSpan, v);
-	});
-	addListener(ui.ball.maxBounceAngle, "input", () => {
-		let v = readNumber(ui.ball.maxBounceAngle, defaultSettings.ball.maxBounceAngle);
-		if (v < 0) v = 0;
-		if (v > 90) v = 90;
-		currentSettings.ball.maxBounceAngle = v;
-		setSpan(ui.ball.maxBounceAngleSpan, v);
-	});
+	// addListener(ui.ball.initialAngleRange, "input", () => {
+	// 	let v = readNumber(ui.ball.initialAngleRange, defaultSettings.ball.initialAngleRange);
+	// 	if (v < 0) v = 0;
+	// 	if (v > 90) v = 90;
+	// 	currentSettings.ball.initialAngleRange = v;
+	// 	setSpan(ui.ball.initialAngleRangeSpan, v);
+	// });
+	// addListener(ui.ball.maxBounceAngle, "input", () => {
+	// 	let v = readNumber(ui.ball.maxBounceAngle, defaultSettings.ball.maxBounceAngle);
+	// 	if (v < 0) v = 0;
+	// 	if (v > 90) v = 90;
+	// 	currentSettings.ball.maxBounceAngle = v;
+	// 	setSpan(ui.ball.maxBounceAngleSpan, v);
+	// });
 
-	bindCheckbox(ui.ball.allowSpin, (v) => (currentSettings.ball.allowSpin = v));
-	bindNumber(ui.ball.spinFactor, (v) => (currentSettings.ball.spinFactor = v));
-	bindCheckbox(ui.ball.resetOnScore, (v) => (currentSettings.ball.resetOnScore = v));
+	// bindCheckbox(ui.ball.allowSpin, (v) => (currentSettings.ball.allowSpin = v));
+	// bindNumber(ui.ball.spinFactor, (v) => (currentSettings.ball.spinFactor = v));
+	// bindCheckbox(ui.ball.resetOnScore, (v) => (currentSettings.ball.resetOnScore = v));
 
 	// paddles
 	bindNumber(ui.paddles.width, (v) => (currentSettings.paddles.width = v));
@@ -390,7 +400,7 @@ function wire(): void {
 		}
 
 		// avoid sending an empty `code` field (server will reject with "Invalid code")
-		const payloadSettings: any = structuredClone(currentSettings);
+		const payloadSettings: Settings = structuredClone(currentSettings);
 		if (payloadSettings?.game && typeof payloadSettings.game.code === 'string' && payloadSettings.game.code.trim() === '') {
 			delete payloadSettings.game.code;
 		}
@@ -606,6 +616,8 @@ function setupSubTabs(): void {
 	// Setup game finding on multiplayer tab
 	addListener(subTabsMultiplayer.multiplayer.findBtn, "click", async () => {
 		try {
+			if (window.socket) window.socket.close();
+
 			const response = await fetch("/api/game/finding", {
 				method: "POST",
 				headers: {
@@ -731,29 +743,39 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	updateCustomGameUi();
 
 	// update action buttons / join box
-	const lobbyActionButtons = getElQS<HTMLDivElement>("#lobby-action-buttons");
 	const joinBtn = ui.actionButtons.joinBtn;
+	const launchBtn = ui.actionButtons.launchBtn;
 	const leaveBtn = ui.actionButtons.leaveBtn;
 	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
 	const tabMode = document.querySelector("#lobby-mode-buttons");
+	const privateCheckBox = getElQS<HTMLDivElement>(".lobby-private-checkbox");
+	const lobbyGameCode = getElQS<HTMLDivElement>("#lobby-game-code-div");
 
 	// ensure actions visible when appropriate
 	if (customGameSelection === "offline") {
-		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.add("unloaded");
 		leaveBtn.classList.remove("unloaded");
 		joinBox.classList.add("unloaded");
 		tabMode?.classList.add("grayed");
+		launchBtn.classList.remove("unloaded");
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
+		privateCheckBox.classList.add("unloaded");
+		lobbyGameCode.classList.add("unloaded");
 	} else if (customGameSelection === "online") {
-		lobbyActionButtons.classList.remove("unloaded");
 		joinBtn.classList.remove("unloaded");
 		leaveBtn.classList.remove("unloaded");
 		joinBox.classList.remove("unloaded");
 		tabMode?.classList.remove("grayed");
+		leaveBtn.classList.remove("unloaded");
+		launchBtn.classList.remove("unloaded");
+		privateCheckBox.classList.remove("unloaded");
+		lobbyGameCode.classList.remove("unloaded");
 	} else {
 		// reset state
-		lobbyActionButtons.classList.add("unloaded");
+		leaveBtn.classList.add("unloaded");
+		launchBtn.classList.add("unloaded");
+		joinBox.classList.remove("unloaded");
+		joinBtn.classList.remove("unloaded");
 		tabMode?.classList.remove("grayed");
 	}
 }
@@ -787,7 +809,7 @@ async function setupLobbyModeHandlers(): Promise<void> {
 	} else {
 		userConnected.classList.add("unclickable");
 		lobbyJoin.classList.add("unclickable");
-		getElQS<HTMLDivElement>("#lobby-join-box")?.classList.add("unloaded");
+		getElQS<HTMLDivElement>("#lobby-join-box")?.classList.add("grayed");
 	}
 
 	addListener(offlineBtn, "click", () => {

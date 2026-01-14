@@ -276,8 +276,6 @@ export function getGameByCode(code: string) {
 	return null;
 }
 
-
-
 /**
  * Retrieves a public game.
  * @returns list of game is public.
@@ -359,6 +357,7 @@ const parseGameSettings: Parser<game.GameSettings> = raw =>
 		
 		["maxPlayers", isNumber],
 		["spectatorsAllowed", isBoolean],
+		["visibility", isBoolean],
 		["code", (v): v is string => typeof v === "string" && /^[A-Za-z0-9]{4}$/.test(v)]
 	]);
 

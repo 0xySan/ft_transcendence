@@ -83,6 +83,7 @@ const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
 const lobbyTournamentTab = getEl<HTMLSpanElement>("lobby-tournament-tab");
 
 const htmlSettings = {
+	privateCheckBox: getEl<HTMLDivElement>("lobby-private-checkbox-id"),
 	basic: {
 		div: getEl<HTMLDivElement>("lobby-custom-game-basic-settings"),
 	},
@@ -298,7 +299,9 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 	{
 		htmlSettings.basic.div.classList.remove("grayed");
 		htmlSettings.advanced.div.classList.remove("grayed");
+		htmlSettings.privateCheckBox.classList.remove("grayed");
 	} else if (window.socket) {
+		htmlSettings.privateCheckBox.classList.add("grayed");
 		htmlSettings.basic.div.classList.add("grayed");
 		htmlSettings.advanced.div.classList.add("grayed");
 	}
@@ -443,6 +446,9 @@ async function joinGameWithCode(code: string): Promise<void> {
 	const payload = /^[A-Z0-9]{4}$/.test(code.toUpperCase())
 		? { code: code.toUpperCase() }
 		: { gameId: code };
+
+	if (window.socket) window.socket.close();
+
 	const res = await fetch("/api/game/join", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -468,6 +474,7 @@ async function joinGameWithCode(code: string): Promise<void> {
 		notify(LOBBYSOCKET_TXT_INVALID_GAME || "invalid game", { type: "error" });
 		return;
 	}
+
 	gameId = data.gameId;
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
@@ -541,6 +548,7 @@ window.joinGame = joinGame;
  * On success, connects to the lobby WebSocket with the received auth token.
  */
 async function createGame(): Promise<void> {
+	console.log("DEBUG: test here !");
 	const res = await fetch("/api/game/new", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -575,7 +583,7 @@ addListener(joinBtn, "click", () => joinGame(joinInput.value));
 addListener(createBtn, "click", () => createGame());
 
 addListener(leaveBtn, "click", () => {
-	window.socket?.close();
+	if (window.socket) window.socket.close();
 	lobbyTournamentTab.classList.add("unloaded");
 	lobbyTournamentBtn.classList.remove("current-mode");
 	multiplayerBtn.classList.remove("current-mode");
@@ -622,6 +630,10 @@ function clearTournamentContext(): void {
  * and resetting UI elements to their default state.
  */
 function resetLobbyState(): void {
+	// Reset UI player list and counts
+	playerListEl.innerHTML = "";
+	updateCounts(0);
+
 	// Prevent resetting if the multiplayer tab exists
 	const elem = document.getElementById("lobby-multiplayer-tab");
 	if (elem) return;
@@ -633,13 +645,7 @@ function resetLobbyState(): void {
 	}
 
 	// Close WebSocket if exists
-	if (window.socket) {
-		window.socket.close();
-	}
-
-	// Reset UI player list and counts
-	playerListEl.innerHTML = "";
-	updateCounts(0);
+	if (window.socket) window.socket.close();
 
 	// Reset game state variables
 	gameId = null;

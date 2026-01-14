@@ -1,7 +1,7 @@
-# 🕹️ ft_transcendence – Web-Based Pong & Tetris Experience 🚀
+# 🕹️ ft_transcendence – Web-Based Pong Experience 🚀
 
 **ft_transcendence** is a full-stack web application developed as part of the **42 cursus**.
-It brings together **retro gaming (Pong & Tetris)** with modern web technologies — enabling players to compete, chat, and challenge each other in real-time, directly in the browser.
+It brings together **retro gaming (Pong)** with modern web technologies — enabling players to compete, chat, and challenge each other in real-time, directly in the browser.
 
 Built entirely from scratch with a focus on **clean architecture**, **security**, and **scalability**, this project goes beyond gameplay to explore authentication, WebSockets, REST APIs, and responsive design.
 

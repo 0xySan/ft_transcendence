@@ -377,17 +377,19 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 			return;
 		}
 
-		if (payload.action === "start") {
-			if (game.players.length !== game.config.game.maxPlayers || (game.players.length !== 2 && game.players.length !== 4)) 
-			{
-				console.log("CANT START GAME: Not enough players");
-				return;
-			}
-			game.resetGame();
-			const startTime = Date.now() + 3000;
-			gameStates.set(payload.gameId, "starting");
-			gameStartTimes.set(payload.gameId, startTime);
-			accumulators.set(payload.gameId, 0);
+			if (payload.action === "start") {
+				console.log("DEBUG: game.players.length = " + game.players.length + " | game.config.game.maxPlayers" + game.config.game.maxPlayers + " | game.players.length = " + game.players.length);
+				if (!(game.players.length === game.config.game.maxPlayers && (game.players.length == 2 || game.players.length === 4))) 
+				{
+					console.log("CANT START GAME: Not enough player");
+					return;
+				}
+				game.resetGame();
+				const startTime = Date.now() + 3000;
+
+				gameStates.set(payload.gameId, "starting");
+				gameStartTimes.set(payload.gameId, startTime);
+				accumulators.set(payload.gameId, 0);
 
 			game.broadcast("game", {
 				action: "start",
