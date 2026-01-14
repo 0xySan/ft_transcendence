@@ -1,7 +1,7 @@
-# 🕹️ ft_transcendence – Web-Based Pong & Tetris Experience 🚀
+# 🕹️ ft_transcendence – Web-Based Pong Experience 🚀
 
 **ft_transcendence** is a full-stack web application developed as part of the **42 cursus**.
-It brings together **retro gaming (Pong & Tetris)** with modern web technologies — enabling players to compete, chat, and challenge each other in real-time, directly in the browser.
+It brings together **retro gaming (Pong)** with modern web technologies — enabling players to compete, chat, and challenge each other in real-time, directly in the browser.
 
 Built entirely from scratch with a focus on **clean architecture**, **security**, and **scalability**, this project goes beyond gameplay to explore authentication, WebSockets, REST APIs, and responsive design.
 
@@ -44,7 +44,6 @@ Built entirely from scratch with a focus on **clean architecture**, **security**
 
 * **Docker / Docker Compose** – full-stack orchestration
 * **Vitest** – testing framework
-* **Redis** – in-memory data store for caching and real-time features
 * **Nginx** – reverse proxy
 * **GitHub Actions** – automated CI/CD workflows
 
@@ -151,160 +150,6 @@ npm run start
   ```bash
   npm run test
   ```
-### 2.1 API Setup
-**If wanted you can integrate Swagger and a sample /api/users/:id endpoint directly into this setup, step by step.**
-- ✅ 1. Install the Needed Dependencies
-    - Run this inside your ```backend``` folder:
-```bash
-npm install @fastify/swagger @fastify/swagger-ui fastify-plugin
-```
-- ✅ 2. Create ```backend/src/plugins/swagger.ts```
-    - Add a Swagger plugin file that sets up documentation automatically.
-```ts
-// backend/src/plugins/swagger.ts
-import fp from "fastify-plugin";
-import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
-
-export default fp(async (fastify) => {
-  await fastify.register(swagger, {
-    openapi: {
-      info: {
-        title: "ft_transcendence API",
-        version: "1.0.0",
-        description: "API documentation for ft_transcendence project",
-      },
-      servers: [{ url: "http://localhost:3000", description: "Local server" }],
-    },
-  });
-
-  await fastify.register(swaggerUi, {
-    routePrefix: "/api/docs",
-    uiConfig: {
-      docExpansion: "list",
-      deepLinking: false,
-    },
-  });
-});
-```
-- ✅ 3. Create ```backend/src/routes/users.ts```
-    - This defines the ```/api/users/:id``` endpoint and OpenAPI schema.
-```ts
-// backend/src/routes/users.ts
-import { FastifyInstance } from "fastify";
-
-export default async function usersRoutes(app: FastifyInstance) {
-  app.get("/:id", {
-    schema: {
-      description: "Fetch public information about a user by their ID",
-      tags: ["Users"],
-      params: {
-        type: "object",
-        properties: {
-          id: { type: "integer" },
-        },
-        required: ["id"],
-      },
-      response: {
-        200: {
-          type: "object",
-          properties: {
-            id: { type: "integer" },
-            username: { type: "string" },
-            avatar: { type: "string" },
-            wins: { type: "integer" },
-            losses: { type: "integer" },
-          },
-        },
-        404: {
-          type: "object",
-          properties: { error: { type: "string" } },
-        },
-      },
-    },
-  }, async (request, reply) => {
-    const { id } = request.params as { id: number };
-
-    // Mock data (replace with db query later)
-    if (id === 1) {
-      return {
-        id: 1,
-        username: "playerOne",
-        avatar: "/avatars/playerOne.png",
-        wins: 12,
-        losses: 8,
-      };
-    }
-
-    reply.code(404).send({ error: "User not found" });
-  });
-}
-```
-- ✅ 4. Update ```backend/src/server.ts```
-    - Integrate Swagger and the users route.
-```ts
-import Fastify from "fastify";
-import swaggerPlugin from "./plugins/swagger.js";
-import usersRoutes from "./routes/users.js";
-import { db } from "./db/index.js";
-
-const SERVER_PORT = Number(process.env.PORT || 3000);
-const HOST = process.env.HOST || "0.0.0.0";
-
-async function buildServer() {
-  const app = Fastify({ logger: true });
-
-  // Register Swagger plugin
-  await app.register(swaggerPlugin);
-
-  // Register routes
-  await app.register(usersRoutes, { prefix: "/api/users" });
-
-  // Health check
-  app.get("/health", async () => ({ status: "ok" }));
-
-  return app;
-}
-
-async function start() {
-  const app = await buildServer();
-
-  try {
-    await app.listen({ port: SERVER_PORT, host: HOST });
-    app.log.info(`🚀 Backend listening on http://${HOST}:${SERVER_PORT}`);
-    app.log.info(`📘 API docs available at http://${HOST}:${SERVER_PORT}/api/docs`);
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
-}
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  console.log("SIGINT received, shutting down");
-  try {
-    const app = await buildServer();
-    await app.close();
-    process.exit(0);
-  } catch {
-    process.exit(1);
-  }
-});
-
-start();
-
-export default buildServer;
-```
-- ✅ 5. Run and Test
-```bash
-npm run build
-npm run start
-```
-Then you can open
-- Swagger UI: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- User Endpoint: [http://localhost:3000/api/users/1](http://localhost:3000/api/users/1)
-- Health Check: [http://localhost:3000/health](http://localhost:3000/health)
----
 
 ### 3. Frontend Setup
 
@@ -334,6 +179,14 @@ This will:
 * Build and start both services
 * Initialize SQLite
 * Expose the app at **[http://localhost:8080](http://localhost:8080)**
+
+You can also run the full stack with a self-signed certificate to enable https:
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.https.yml up --build
+```
+
+To create the certificate, you can check the [LOCAL_HTTPS.md](./docs/LOCAL_HTTPS.md) doc 
 
 ---
 
@@ -394,13 +247,6 @@ Accept: application/json
   "error": "User not found"
 }
 ```
-
----
-
-## 🎨 Design Assets
-
-Figma layout and component guides are available here:
-👉 [Figma – ft_transcendence UI/UX](https://www.figma.com/file/)
 
 ---
 

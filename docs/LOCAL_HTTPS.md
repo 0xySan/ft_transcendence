@@ -3,8 +3,19 @@ Local HTTPS (self-signed)
 
 1) Generate certs (creates `./certs/localhost.crt` and `./certs/localhost.key`):
 
+Default (127.0.0.1):
 ```bash
 ./scripts/generate_local_certs.sh
+```
+
+Use a 10.x IP (shorthand):
+```bash
+./scripts/generate_local_certs.sh 10
+```
+
+Use a specific IP:
+```bash
+./scripts/generate_local_certs.sh 10.1.2.3
 ```
 
 2) Start Docker with the HTTPS override (this is optional — the normal compose stays HTTP):
