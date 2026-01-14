@@ -9,16 +9,16 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 import { v7 as uuidv7 } from "uuid";
 
 import {
+	areBothPlayersReady,
 	isPlayerInTournament,
 	markPlayerReady,
-	areBothPlayersReady,
+	addUserToGame,
+	getGameByCode,
 } from "./utils.js";
-import { addUserToGame } from "./utils.js";
 import { generateRandomToken } from "../../utils/crypto.js";
-import { wsPendingConnections, activeTournaments } from "../../globals.js";
+import { wsPendingConnections, activeTournaments, activeGames } from "../../globals.js";
 import { assignGameToWorker } from "../../game/workers/init.js";
 import { config } from "../../game/workers/game/game.types.js";
-export const waitingUsers: string[] = [];
 
 export function tournamentReadyRoute(fastify: FastifyInstance) {
 	fastify.post(
@@ -43,68 +43,86 @@ export function tournamentReadyRoute(fastify: FastifyInstance) {
 			if (!tournament)
 				return reply.status(404).send({ error: 'Tournament not found.' });
 
+			const match = tournament.bracket.find(m => m.matchId === body.matchId);
+			if (!match)
+				return reply.status(400).send({ error: 'Match not found.' });
+
+			if (!match.player1Id || !match.player2Id)
+				return reply.status(400).send({ error: 'Match is not ready yet.' });
+
 			if (!isPlayerInTournament(userId, body.tournamentId))
 				return reply.status(403).send({ error: 'You are not in this tournament.' });
 
-			// Mark player as ready
+			if (match.player1Id !== userId && match.player2Id !== userId)
+				return reply.status(403).send({ error: 'You are not in this match.' });
+
 			const readyResult = markPlayerReady(body.tournamentId, body.matchId, userId);
 			if (readyResult !== true)
 				return reply.status(400).send({ error: readyResult });
 
-			// Check if both players are ready
-			if (!areBothPlayersReady(body.tournamentId, body.matchId)) {
+			const bothReady = areBothPlayersReady(body.tournamentId, body.matchId);
+
+			const gameId = match.gameId ?? uuidv7();
+			match.gameId = gameId;
+
+			for (const [token, pending] of wsPendingConnections.entries()) {
+				if (pending.userId === userId && pending.gameId === gameId)
+					wsPendingConnections.delete(token);
+			}
+
+			const gameOwner = match.player1Id ?? match.player2Id ?? userId;
+			let gameCode = '';
+
+			if (!activeGames.has(gameId)) {
+				const baseConfig = tournament.config as config;
+				const newGameConfig: config = {
+					...baseConfig,
+					game: {
+						...(baseConfig.game ?? {}),
+						mode: 'tournament',
+						code: (baseConfig.game?.code ?? '').toUpperCase(),
+					},
+				};
+
+				gameCode = newGameConfig.game.code;
+				while (gameCode === '' || getGameByCode(gameCode) !== null)
+					gameCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+				newGameConfig.game.code = gameCode;
+
+				addUserToGame(userId, gameId, gameCode);
+				assignGameToWorker(gameId, gameOwner, newGameConfig);
+			} else {
+				gameCode = activeGames.get(gameId)?.code || '';
+				addUserToGame(userId, gameId);
+			}
+
+			const authToken = { token: generateRandomToken(32) } as { token: string; start?: boolean };
+			if (bothReady) authToken.start = true;
+
+			wsPendingConnections.set(authToken, {
+				userId: userId,
+				gameId: gameId,
+				expiresAt: Date.now() + 5 * 60 * 1000,
+			});
+
+			if (!bothReady) {
 				return reply.status(202).send({
 					message: 'Player marked as ready. Waiting for opponent.',
 					matchId: body.matchId,
+					gameId: gameId,
+					authToken: authToken.token,
 				});
 			}
-
-			// Both players are ready - create and launch the game
-			const match = tournament.bracket.find(m => m.matchId === body.matchId);
-			if (!match || !match.player1Id || !match.player2Id) {
-				return reply.status(400).send({ error: 'Invalid match state.' });
-			}
-
-			const gameId = uuidv7();
-			const authToken1 = generateRandomToken(32);
-			const authToken2 = generateRandomToken(32);
-
-			// Store pending connections for both players
-			wsPendingConnections.set({token: authToken1}, {
-				userId: match.player1Id,
-				gameId: gameId,
-				expiresAt: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes
-			});
-
-			wsPendingConnections.set({token: authToken2}, {
-				userId: match.player2Id,
-				gameId: gameId,
-				expiresAt: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes
-			});
-
-			// Generate game code
-			let gameCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-			// Add users to game
-			addUserToGame(match.player1Id, gameId, gameCode);
-			addUserToGame(match.player2Id, gameId);
-
-			// Store game ID in match
-			match.gameId = gameId;
-
-			// Assign game to worker with tournament config
-			assignGameToWorker(gameId, match.player1Id, tournament.config as config);
 
 			return reply.status(201).send({
 				message: 'Match started! Both players ready.',
 				gameId: gameId,
 				matchId: body.matchId,
 				code: gameCode,
-				authTokens: {
-					[match.player1Id]: authToken1,
-					[match.player2Id]: authToken2,
-				},
+				authToken: authToken.token,
+				start: true,
 			});
 		}
-	);
+		);
 }

@@ -58,7 +58,7 @@ function generateCode(): string {
 /* -------------------------------------------------------------------------- */
 /* State																	  */
 /* -------------------------------------------------------------------------- */
-let gameId: string | null = null;
+let gameId: string | null = sessionStorage.getItem('tournamentGameId') || null;
 let authToken: string | null = null;
 let myPlayerId: string | null = null;
 let ownerId: string | null = null;
@@ -94,7 +94,7 @@ const htmlSettings = {
 /* -------------------------------------------------------------------------- */
 /* WebSocket types															*/
 /* -------------------------------------------------------------------------- */
-export type MsgType = "connect" | "player" | "playerSync" | "game" | "settings";
+export type MsgType = "connect" | "player" | "playerSync" | "game" | "settings" | "error";
 
 export type SocketMessage<T> = {
 	type: MsgType;
@@ -176,6 +176,28 @@ function applyListener(socket: WebSocket, token?: string) {
 			};
 			socket.send(JSON.stringify(msg));
 
+			// Auto-start game if this is a tournament match where both players are ready
+			const shouldStart = sessionStorage.getItem('tournamentShouldStart') === 'true';
+			const tournamentGameId = sessionStorage.getItem('tournamentGameId');
+			
+			console.log('[Tournament Auto-start] shouldStart:', shouldStart, 'gameId:', tournamentGameId || gameId);
+			
+			if (shouldStart && (tournamentGameId || gameId)) {
+				const targetGameId = tournamentGameId || gameId;
+				console.log('[Tournament Auto-start] Sending game:start for gameId:', targetGameId);
+				setTimeout(() => {
+					if (socket.readyState === WebSocket.OPEN && targetGameId) {
+						const startMsg: SocketMessage<GamePayload> = {
+							type: "game",
+							payload: { action: "start", gameId: targetGameId }
+						};
+						socket.send(JSON.stringify(startMsg));
+						console.log('[Tournament Auto-start] game:start message sent!');
+						sessionStorage.removeItem('tournamentShouldStart');
+					}
+				}, 100);
+			}
+
 			// start client keepalive: send a small "send" message every 20s
 			(window as any).socketPingInterval = window.setInterval(() => {
 				if (socket.readyState === WebSocket.OPEN)
@@ -208,6 +230,16 @@ function applyListener(socket: WebSocket, token?: string) {
 				notify(LOBBYSOCKET_TXT_SETTINGS_UPDATED || 'Game settings have been updated.', { type: 'info' });
 				break;
 
+			case "error":
+				notify(`Connection error: ${msg.payload}`, { type: 'error' });
+				// If it's an invalid token error from tournament context, clear the tokens
+				if (typeof msg.payload === 'string' && (msg.payload as string).includes('Invalid token')) {
+					sessionStorage.removeItem('tournamentGameAuthToken');
+					sessionStorage.removeItem('tournamentGameId');
+					sessionStorage.removeItem('tournamentMatchId');
+				}
+				break;
+
 			default:
 				console.warn("Unknown socket message:", msg);
 		}
@@ -220,6 +252,7 @@ function applyListener(socket: WebSocket, token?: string) {
 		}
 		notify(LOBBYSOCKET_TXT_DISCONNECTED || 'Disconnected from the game lobby.', { type: 'warning' });
 		window.socket = undefined;
+		clearTournamentContext();
 		resetLobbyState();
 	});
 }
@@ -573,6 +606,17 @@ addListener(launchBtn, "click", () => {
 /* Reset																	  */
 /* -------------------------------------------------------------------------- */
 
+/** ### clearTournamentContext
+ * Clear tournament-related sessionStorage entries when tournament match is no longer active.
+ */
+function clearTournamentContext(): void {
+	sessionStorage.removeItem('tournamentGameAuthToken');
+	sessionStorage.removeItem('tournamentGameId');
+	sessionStorage.removeItem('tournamentMatchId');
+	sessionStorage.removeItem('tournamentShouldStart');
+	sessionStorage.removeItem('tournamentReturnId');
+}
+
 /** ### resetLobbyState
  * Reset the lobby state by clearing player lists, closing WebSocket connections,
  * and resetting UI elements to their default state.
@@ -632,14 +676,27 @@ function resetLobbyState(): void {
 launchBtn.classList.add("unloaded");
 leaveBtn.classList.add("unloaded");
 
+// Check if coming from tournament and need to connect to pending game
+// Only auto-connect if we have BOTH token and gameId (indicating active tournament match)
+const tournamentAuthToken = sessionStorage.getItem('tournamentGameAuthToken');
+const tournamentGameId = sessionStorage.getItem('tournamentGameId');
+if (tournamentAuthToken && tournamentGameId && !window.socket) {
+	connectWebSocket(tournamentAuthToken);
+}
+
 if (window.socket) {
 	applyListener(window.socket)
-	if (!window.playerSyncData) throw new Error("Missing player sync data on reload");
-	handlePlayerSync(window.playerSyncData);
-	if (window.localPlayerId == window.playerSyncData.ownerId) {
-		launchBtn.classList.remove("unloaded");
-		gameId = window.lobbyGameId || null;
-		htmlSettings.basic.div.classList.remove("grayed");
+	if (window.playerSyncData) {
+		handlePlayerSync(window.playerSyncData);
+		if (window.localPlayerId == window.playerSyncData.ownerId) {
+			launchBtn.classList.remove("unloaded");
+			gameId = gameId || window.lobbyGameId || null;
+			window.lobbyGameId = gameId || undefined;
+			htmlSettings.basic.div.classList.remove("grayed");
+		}
+	} else if (gameId) {
+		// Coming from tournament context; set lobbyGameId until playerSync arrives
+		window.lobbyGameId = gameId;
 	}
 }
 

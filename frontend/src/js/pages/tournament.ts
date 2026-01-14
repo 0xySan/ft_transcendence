@@ -146,6 +146,17 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number): F {
 let tournamentId = sessionStorage.getItem('tournamentId');
 let tournamentCode = sessionStorage.getItem('tournamentCode');
 let tournamentMode = sessionStorage.getItem('tournamentMode') as "online" | "offline";
+const readyBtn = document.getElementById('tournament-ready-btn') as HTMLButtonElement | null;
+
+type CurrentMatchInfo = {
+	matchId: string;
+	gameId: string | null;
+	yourReady: boolean;
+	opponentReady: boolean;
+};
+
+let currentMatchInfo: CurrentMatchInfo | null = null;
+let readyInFlight = false;
 
 // Determine if online or offline based on tournamentId existence
 const isOnlineTournament = !!tournamentId;
@@ -223,6 +234,8 @@ function displayTournamentCode(code: string | null): void {
 async function initializeTournament(): Promise<void> {
 	if (!tournamentId) return;
 
+	maybeReconnectToPendingGame();
+
 	// Display code if available
 	if (tournamentCode) {
 		displayTournamentCode(tournamentCode);
@@ -263,6 +276,16 @@ async function refreshTournamentStatus(): Promise<void> {
 
 	const status = await fetchTournamentStatus(tournamentId);
 	if (status) {
+		// Track current match for ready UI
+		currentMatchInfo = status.yourCurrentMatch ? {
+			matchId: status.yourCurrentMatch.matchId,
+			gameId: status.yourCurrentMatch.gameId,
+			yourReady: status.yourCurrentMatch.yourReady,
+			opponentReady: status.yourCurrentMatch.opponentReady,
+		} : null;
+		if (!currentMatchInfo) clearPendingGame();
+		updateReadyButtonState();
+
 		// Use players from backend
 		const backendPlayers: tournamentPlayer[] = (status.players || []).map((p: any) => ({
 			id: p.id,
@@ -280,6 +303,112 @@ async function refreshTournamentStatus(): Promise<void> {
 	}
 }
 
+function persistPendingGame(gameId: string, matchId: string, authToken: string, shouldStart: boolean = false): void {
+	sessionStorage.setItem('tournamentGameId', gameId);
+	sessionStorage.setItem('tournamentMatchId', matchId);
+	sessionStorage.setItem('tournamentGameAuthToken', authToken);
+	sessionStorage.setItem('tournamentShouldStart', String(shouldStart));
+	sessionStorage.setItem('tournamentReturnId', tournamentId || '');
+}
+
+function clearPendingGame(): void {
+	sessionStorage.removeItem('tournamentGameId');
+	sessionStorage.removeItem('tournamentMatchId');
+	sessionStorage.removeItem('tournamentGameAuthToken');
+	sessionStorage.removeItem('tournamentReturnId');
+}
+
+function updateReadyButtonState(): void {
+	if (!readyBtn) return;
+	if (!isOnlineTournament || !currentMatchInfo) {
+		readyBtn.style.display = 'none';
+		return;
+	}
+
+	readyBtn.style.display = 'inline-block';
+	readyBtn.disabled = false;
+	readyBtn.textContent = 'Ready';
+
+	if (currentMatchInfo.yourReady && !currentMatchInfo.opponentReady) {
+		readyBtn.textContent = 'Waiting for opponent...';
+		readyBtn.disabled = true;
+	} else if (currentMatchInfo.yourReady && currentMatchInfo.opponentReady) {
+		readyBtn.textContent = 'Reconnect to lobby';
+	}
+}
+
+async function sendTournamentReady(): Promise<void> {
+	if (!tournamentId || !currentMatchInfo || readyInFlight) return;
+	readyInFlight = true;
+	if (readyBtn) {
+		readyBtn.disabled = true;
+		readyBtn.textContent = 'Joining...';
+	}
+
+	try {
+		const res = await fetch('/api/tournament/ready', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ tournamentId, matchId: currentMatchInfo.matchId }),
+		});
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			throw new Error(err.error || 'Failed to ready up');
+		}
+
+		const payload = await res.json();
+		
+		if (payload?.authToken && payload?.gameId) {
+			const shouldStart = payload.start === true;
+			persistPendingGame(payload.gameId, currentMatchInfo.matchId, payload.authToken, shouldStart);
+			
+			if (shouldStart) {
+				// Both players ready - connect immediately and start
+				notify('Both players ready! Starting game...', { type: 'success' });
+				connectWebSocket(payload.authToken);
+				
+				// Wait a moment for WebSocket to connect, then navigate
+				setTimeout(() => {
+					loadPage('lobby');
+				}, 500);
+			} else {
+				// Only this player is ready - just navigate to lobby to wait
+				notify('Ready! Waiting for opponent.', { type: 'info' });
+				loadPage('lobby');
+			}
+		}
+
+		await refreshTournamentStatus();
+	} catch (err) {
+		console.error(err);
+		notify((err as Error).message || 'Failed to ready up', { type: 'error' });
+	} finally {
+		readyInFlight = false;
+		updateReadyButtonState();
+	}
+}
+
+// Also update the maybeReconnectToPendingGame function:
+function maybeReconnectToPendingGame(): void {
+	if (!isOnlineTournament) return;
+	const storedToken = sessionStorage.getItem('tournamentGameAuthToken');
+	const storedGameId = sessionStorage.getItem('tournamentGameId');
+	const storedMatchId = sessionStorage.getItem('tournamentMatchId');
+	const shouldStart = sessionStorage.getItem('tournamentShouldStart') === 'true';
+	
+	if (storedToken && storedGameId && storedMatchId) {
+		console.log('Reconnecting to pending tournament game...', { gameId: storedGameId, shouldStart });
+		
+		// Connect WebSocket first
+		connectWebSocket(storedToken);
+		
+		// Then navigate to lobby after a brief delay
+		setTimeout(() => {
+			loadPage('lobby');
+		}, 300);
+	}
+}
 /* ==================================================================
 								Interfaces
    ================================================================== */
@@ -1740,6 +1869,12 @@ if (isOnlineTournament) {
 			refreshTournamentStatus();
 		});
 	}
+
+	if (readyBtn) {
+		addListener(readyBtn, 'click', () => {
+			sendTournamentReady();
+		});
+	}
 	
 	// Add leave button listener
 	const leaveBtn = document.getElementById('tournament-leave-btn') as HTMLButtonElement | null;
@@ -1751,6 +1886,7 @@ if (isOnlineTournament) {
 			leaveBtn.disabled = true;
 			try {
 				await leaveTournament(tournamentId);
+				clearPendingGame();
 				// Clear tournament data
 				sessionStorage.removeItem('tournamentId');
 				sessionStorage.removeItem('tournamentCode');
