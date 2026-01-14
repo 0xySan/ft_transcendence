@@ -11,6 +11,7 @@ declare function addListener(
 ): void;
 declare function getUserLang(): string;
 declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+declare function resetLobbyState(): void;
 
 // Translated strings used in this module
 const LOBBYSETTINGS_TXT_SAVED_OFFLINE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.savedOffline');
@@ -732,6 +733,25 @@ else if (window.isGameOffline && window.lobbySettings) {
 	window.lobbySettings = structuredClone(currentSettings);
 	setupLobbyModeHandlers();
 }
+
+addListener(subTabsMultiplayer.multiplayer.leaveBtn, "click", async () => {
+	if (!window.socket) return;
+	fetch("/api/game/leave", {
+		method: "POST",
+		credentials: "include"
+	}).then((res) => {
+		if (!res.ok) {
+			notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || 'Error leaving the queue.', { type: "error" });
+			return;
+		}
+		window?.socket?.close();
+		notify(LOBBYSETTINGS_TXT_LEFT_QUEUE || 'You have left the queue.', { type: "success" });
+		resetLobbyState();
+	}).catch(() => {
+		notify(LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR || 'Error leaving the queue.', { type: "error" });
+		return;
+	});
+});
 
 // Auto-join by code present in URL (query `?code=ABCD`, `?gameCode=ABCD`, path ending with `/ABCD`, or hash `#ABCD`).
 // Reuses the same logic as the `JOIN` button by setting the input value and dispatching a click event.

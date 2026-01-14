@@ -67,9 +67,10 @@
 						dropdown.classList.add("unloaded");
 					});
 
-
+					console.log("Added nav dropdown listener");
 					// Logout
 					const logoutBtn = document.getElementById("nav-logout-btn");
+					console.log("Logout btn:", logoutBtn);
 					if (logoutBtn) {
 						logoutBtn.addEventListener("click", () => {
 							fetch("/api/users/accounts/logout", { method: "POST", credentials: "include" })

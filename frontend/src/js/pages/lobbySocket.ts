@@ -15,6 +15,7 @@ declare global {
 		currentUserReady: Promise<void>;
 
 		joinGame?: (code: string) => Promise<void>;
+		resetLobbyState: () => void;
 
 		lobbySettings?: Settings;
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
@@ -532,7 +533,7 @@ addListener(launchBtn, "click", () => {
  * Reset the lobby state by clearing player lists, closing WebSocket connections,
  * and resetting UI elements to their default state.
  */
-function resetLobbyState(): void {
+export function resetLobbyState(): void {
 	// Prevent resetting if the multiplayer tab exists
 	const elem = document.getElementById("lobby-multiplayer-tab");
 	if (elem) return;
@@ -578,6 +579,8 @@ function resetLobbyState(): void {
 	htmlSettings.basic.div.classList.add("grayed");
 	htmlSettings.advanced.div.classList.add("grayed");
 }
+
+window.resetLobbyState = resetLobbyState;
 
 
 /* -------------------------------------------------------------------------- */

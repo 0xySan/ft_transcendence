@@ -15,6 +15,7 @@
  * - Reconnection with exponential backoff
  */
 
+import { loadPage } from "../dynamicLoader";
 import { UserData } from "../global";
 
 declare function translateElement(language: string, element: HTMLElement): void;
