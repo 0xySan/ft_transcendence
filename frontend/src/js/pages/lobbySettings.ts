@@ -159,13 +159,13 @@ const ui = {
 		initialSpeed: getEl<HTMLInputElement>("ball-initial-speed"),
 		maxSpeed: getEl<HTMLInputElement>("ball-max-speed"),
 		speedIncrement: getEl<HTMLInputElement>("ball-speed-increment"),
-		initialAngleRange: getEl<HTMLInputElement>("ball-initial-angle-range"),
-		initialAngleRangeSpan: getEl<HTMLSpanElement>("ball-initial-angle-range-value"),
-		maxBounceAngle: getEl<HTMLInputElement>("ball-max-bounce-angle"),
-		maxBounceAngleSpan: getEl<HTMLSpanElement>("ball-max-bounce-angle-value"),
-		allowSpin: getEl<HTMLInputElement>("ball-allow-spin"),
-		spinFactor: getEl<HTMLInputElement>("ball-spin-factor"),
-		resetOnScore: getEl<HTMLInputElement>("ball-reset-on-score"),
+		// initialAngleRange: getEl<HTMLInputElement>("ball-initial-angle-range"),
+		// initialAngleRangeSpan: getEl<HTMLSpanElement>("ball-initial-angle-range-value"),
+		// maxBounceAngle: getEl<HTMLInputElement>("ball-max-bounce-angle"),
+		// maxBounceAngleSpan: getEl<HTMLSpanElement>("ball-max-bounce-angle-value"),
+		// allowSpin: getEl<HTMLInputElement>("ball-allow-spin"),
+		// spinFactor: getEl<HTMLInputElement>("ball-spin-factor"),
+		// resetOnScore: getEl<HTMLInputElement>("ball-reset-on-score"),
 	},
 	paddles: {
 		width: getEl<HTMLInputElement>("paddle-width"),
@@ -221,13 +221,13 @@ function populateUi(): void {
 	setInput(ui.ball.initialSpeed, s.ball.initialSpeed);
 	setInput(ui.ball.maxSpeed, s.ball.maxSpeed);
 	setInput(ui.ball.speedIncrement, s.ball.speedIncrement);
-	setInput(ui.ball.initialAngleRange, s.ball.initialAngleRange);
-	setSpan(ui.ball.initialAngleRangeSpan, s.ball.initialAngleRange);
-	setInput(ui.ball.maxBounceAngle, s.ball.maxBounceAngle);
-	setSpan(ui.ball.maxBounceAngleSpan, s.ball.maxBounceAngle);
-	setInput(ui.ball.allowSpin, s.ball.allowSpin);
-	setInput(ui.ball.spinFactor, s.ball.spinFactor);
-	setInput(ui.ball.resetOnScore, s.ball.resetOnScore);
+	// setInput(ui.ball.initialAngleRange, s.ball.initialAngleRange);
+	// setSpan(ui.ball.initialAngleRangeSpan, s.ball.initialAngleRange);
+	// setInput(ui.ball.maxBounceAngle, s.ball.maxBounceAngle);
+	// setSpan(ui.ball.maxBounceAngleSpan, s.ball.maxBounceAngle);
+	// setInput(ui.ball.allowSpin, s.ball.allowSpin);
+	// setInput(ui.ball.spinFactor, s.ball.spinFactor);
+	// setInput(ui.ball.resetOnScore, s.ball.resetOnScore);
 
 	// paddles
 	setInput(ui.paddles.width, s.paddles.width);
@@ -344,24 +344,24 @@ function wire(): void {
 	bindNumber(ui.ball.maxSpeed, (v) => (currentSettings.ball.maxSpeed = v));
 	bindNumber(ui.ball.speedIncrement, (v) => (currentSettings.ball.speedIncrement = v));
 
-	addListener(ui.ball.initialAngleRange, "input", () => {
-		let v = readNumber(ui.ball.initialAngleRange, defaultSettings.ball.initialAngleRange);
-		if (v < 0) v = 0;
-		if (v > 90) v = 90;
-		currentSettings.ball.initialAngleRange = v;
-		setSpan(ui.ball.initialAngleRangeSpan, v);
-	});
-	addListener(ui.ball.maxBounceAngle, "input", () => {
-		let v = readNumber(ui.ball.maxBounceAngle, defaultSettings.ball.maxBounceAngle);
-		if (v < 0) v = 0;
-		if (v > 90) v = 90;
-		currentSettings.ball.maxBounceAngle = v;
-		setSpan(ui.ball.maxBounceAngleSpan, v);
-	});
+	// addListener(ui.ball.initialAngleRange, "input", () => {
+	// 	let v = readNumber(ui.ball.initialAngleRange, defaultSettings.ball.initialAngleRange);
+	// 	if (v < 0) v = 0;
+	// 	if (v > 90) v = 90;
+	// 	currentSettings.ball.initialAngleRange = v;
+	// 	setSpan(ui.ball.initialAngleRangeSpan, v);
+	// });
+	// addListener(ui.ball.maxBounceAngle, "input", () => {
+	// 	let v = readNumber(ui.ball.maxBounceAngle, defaultSettings.ball.maxBounceAngle);
+	// 	if (v < 0) v = 0;
+	// 	if (v > 90) v = 90;
+	// 	currentSettings.ball.maxBounceAngle = v;
+	// 	setSpan(ui.ball.maxBounceAngleSpan, v);
+	// });
 
-	bindCheckbox(ui.ball.allowSpin, (v) => (currentSettings.ball.allowSpin = v));
-	bindNumber(ui.ball.spinFactor, (v) => (currentSettings.ball.spinFactor = v));
-	bindCheckbox(ui.ball.resetOnScore, (v) => (currentSettings.ball.resetOnScore = v));
+	// bindCheckbox(ui.ball.allowSpin, (v) => (currentSettings.ball.allowSpin = v));
+	// bindNumber(ui.ball.spinFactor, (v) => (currentSettings.ball.spinFactor = v));
+	// bindCheckbox(ui.ball.resetOnScore, (v) => (currentSettings.ball.resetOnScore = v));
 
 	// paddles
 	bindNumber(ui.paddles.width, (v) => (currentSettings.paddles.width = v));
@@ -738,6 +738,8 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	const leaveBtn = ui.actionButtons.leaveBtn;
 	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
 	const tabMode = document.querySelector("#lobby-mode-buttons");
+	const privateCheckBox = getElQS<HTMLDivElement>(".lobby-private-checkbox");
+	const lobbyGameCode = getElQS<HTMLDivElement>("#lobby-game-code");
 
 	// ensure actions visible when appropriate
 	if (customGameSelection === "offline") {
@@ -747,6 +749,8 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 		tabMode?.classList.add("grayed");
 		launchBtn.classList.remove("unloaded");
 		document.querySelector(".lobby-setting-box")?.classList.remove("grayed");
+		privateCheckBox.classList.add("unloaded");
+		lobbyGameCode.classList.add("unloaded");
 	} else if (customGameSelection === "online") {
 		joinBtn.classList.remove("unloaded");
 		leaveBtn.classList.remove("unloaded");
@@ -754,6 +758,8 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 		tabMode?.classList.remove("grayed");
 		leaveBtn.classList.remove("unloaded");
 		launchBtn.classList.remove("unloaded");
+		privateCheckBox.classList.remove("unloaded");
+		lobbyGameCode.classList.remove("unloaded");
 	} else {
 		// reset state
 		leaveBtn.classList.add("unloaded");

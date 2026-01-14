@@ -378,6 +378,7 @@ parentPort!.on("message", (message: msg.message<msg.payload>) => {
 		}
 
 			if (payload.action === "start") {
+				console.log("DEBUG: game.players.length = " + game.players.length + " | game.config.game.maxPlayers" + game.config.game.maxPlayers + " | game.players.length = " + game.players.length);
 				if (!(game.players.length === game.config.game.maxPlayers && (game.players.length == 2 || game.players.length === 4))) 
 				{
 					console.log("CANT START GAME: Not enough player");

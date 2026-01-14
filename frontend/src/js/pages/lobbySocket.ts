@@ -579,7 +579,7 @@ addListener(joinBtn, "click", () => joinGame(joinInput.value));
 addListener(createBtn, "click", () => createGame());
 
 addListener(leaveBtn, "click", () => {
-	window.socket?.close();
+	if (window.socket) window.socket.close();
 	lobbyTournamentTab.classList.add("unloaded");
 	lobbyTournamentBtn.classList.remove("current-mode");
 	multiplayerBtn.classList.remove("current-mode");
