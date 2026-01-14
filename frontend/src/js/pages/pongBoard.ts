@@ -2,6 +2,7 @@
 import type { BallSettings, PlayerPayload, Settings } from "../global";
 import type { gameStartAckPayload } from "./lobbySocket";
 import { PongTimer } from "./pongBoardUtils";
+import { TournamentState } from "./tournament";
 
 /* -------------------------------------------------------------------------- */
 /*							   GLOBAL DECLARATIONS						  */
@@ -16,7 +17,23 @@ declare global {
 		pendingGameStart?: gameStartAckPayload;
 		lobbySettings?: Settings;
 		pongTimer: PongTimer;
+
+		gameResults?: {
+			scores: Record<string, number>;
+			winner?: string;
+			ended: boolean;
+		};
+
+		tournamentState?: TournamentState;
 	}
+}
+
+if (!window.gameResults) {
+	window.gameResults = {
+		scores: {},
+		winner: undefined,
+		ended: false,
+	};
 }
 
 /** ### addListener
@@ -86,7 +103,7 @@ interface ClientInputPayload {
  */
 function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement | null, message?: string): T {
 	if (!element) {
-		window.notify(message || "Element not found", { type: "error" });
+		notify(message || "Element not found", { type: "error" });
 		throw new Error(message || "Element not found");
 	}
 	return (element as T);
@@ -99,7 +116,7 @@ function assertElement<T extends HTMLElement | SVGElement>(element: HTMLElement 
  */
 function cancelLoading(message: string): void {
 	board.innerHTML = `<div class="loading-error">${message}</div>`;
-	window.notify(message, { type: "error" });
+	notify(message, { type: "error" });
 	throw new Error(message);
 }
 
@@ -116,7 +133,13 @@ const countdownDiv = assertElement<HTMLDivElement>(document.querySelector(".coun
 // check required globals for game operation
 if (!window.lobbySettings) cancelLoading("Lobby settings are not available.");
 
-if (window.isGameOffline) // If we play online
+// Check if this is an online tournament game
+const tournamentGameId = sessionStorage.getItem('tournamentGameId');
+const tournamentAuthToken = sessionStorage.getItem('tournamentGameAuthToken');
+const tournamentShouldStart = sessionStorage.getItem('tournamentShouldStart') === 'true';
+let waitingForGameStart = false;
+
+if (window.isGameOffline) // If we play offline
 {
 	window.pendingGameStart = {
 		action: "start",
@@ -127,6 +150,54 @@ if (window.isGameOffline) // If we play online
 		startTime: Date.now() + 3000
 	};
 	window.localPlayerId = "user1";
+} else if (tournamentGameId && tournamentAuthToken) {
+	// Online tournament game - connect using auth token
+	console.log('=== TOURNAMENT GAME INIT ===');
+	console.log('Connecting to tournament game:', tournamentGameId);
+	console.log('Auth token:', tournamentAuthToken);
+	console.log('Should start immediately:', tournamentShouldStart);
+	
+	// Clear any old pendingGameStart from previous rounds to avoid using stale data
+	window.pendingGameStart = undefined;
+
+	// If a previous WebSocket is still open from an earlier match, close it to force a fresh connection
+	if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+		try { window.socket.close(); } catch (_) { /* ignore */ }
+		window.socket = undefined;
+	}
+	
+	if (!window.socket || window.socket.readyState !== WebSocket.OPEN) {
+		// Create WebSocket connection for tournament game
+		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+		const wsUrl = `${protocol}//${window.location.host}/ws/game/${tournamentGameId}?token=${tournamentAuthToken}`;
+		console.log('WebSocket URL:', wsUrl);
+		window.socket = new WebSocket(wsUrl);
+		
+		window.socket.addEventListener('open', () => {
+			console.log('✓ WebSocket connected to tournament game');
+			// Send connect message immediately after opening
+			console.log('📤 Sending connect message with auth token');
+			window.socket!.send(JSON.stringify({
+				type: "connect",
+				payload: {
+					token: { token: tournamentAuthToken }
+				}
+			}));
+		});
+		
+		window.socket.addEventListener('error', (error) => {
+			console.error('✗ WebSocket error:', error);
+			cancelLoading("Failed to connect to tournament game.");
+		});
+	}
+	
+	// If game is ready to start, we should wait for pendingGameStart from server
+	if (!window.pendingGameStart) {
+		console.log("⏳ Waiting for game start message from server...");
+		waitingForGameStart = true;
+		countdownDiv.textContent = tournamentShouldStart ? "Starting soon..." : "Waiting for opponent...";
+		countdownDiv.style.display = "flex";
+	}
 } else {
 	if (!window.socket || window.socket.readyState !== WebSocket.OPEN) cancelLoading("WebSocket connection is not established.");
 	if (!window.localPlayerId) cancelLoading("Local player ID is not set.");
@@ -164,10 +235,70 @@ function endGame() {
 	const navBar = document.getElementById("nav-bar");
 	if (navBar) navBar.classList.remove("unloaded");
 
-	setTimeout(() => { 
+	setTimeout(async () => { 
 		pongGame.destroy();
 		window.pongTimer.stopTimer();
-		loadPage("lobby"); 
+		
+		// If online tournament game, record result before leaving
+		if (!window.isGameOffline && window.pendingGameStart?.playerSides) {
+			try {
+				const tournamentId = sessionStorage.getItem('tournamentId');
+				const matchId = sessionStorage.getItem('tournamentMatchId');
+				const scores = window.gameResults?.scores || {};
+				
+				if (tournamentId && matchId && Object.keys(scores).length > 0) {
+					console.log("Determining tournament winner from scores:", scores);
+					
+					// Get player sides mapping: userId -> side
+					const playerSides = window.pendingGameStart.playerSides;
+					
+					// Find userIds on left and right
+					let leftUserId = '', rightUserId = '';
+					for (const [userId, side] of Object.entries(playerSides)) {
+						if (side === 'left') leftUserId = userId;
+						if (side === 'right') rightUserId = userId;
+					}
+					
+					// Scores are keyed by userId, so get them directly
+					const leftScore = leftUserId ? (scores[leftUserId] || 0) : 0;
+					const rightScore = rightUserId ? (scores[rightUserId] || 0) : 0;
+					
+					// Determine winner
+					let winnerId = '';
+					if (leftScore > rightScore && leftUserId) winnerId = leftUserId;
+					else if (rightScore > leftScore && rightUserId) winnerId = rightUserId;
+					
+					if (winnerId) {
+						console.log(`Recording win for ${winnerId} (${leftScore > rightScore ? 'left' : 'right'}: ${Math.max(leftScore, rightScore)})`);
+						// Call the tournament result API
+						const res = await fetch('/api/tournament/result', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({
+								tournamentId,
+								matchId,
+								winnerId
+							})
+						});
+						
+						if (res.ok) {
+							console.log("Match result recorded successfully");
+						} else {
+							const error = await res.json();
+							console.error("Failed to record match result:", error);
+						}
+					}
+				}
+			} catch (error) {
+				console.error("Error recording tournament result:", error);
+				// Still go back to tournament even if recording fails
+			}
+		}
+		
+		if (window.tournamentState)
+			loadPage("tournament");
+		else
+			loadPage("lobby"); 
 	}, 1000);
 }
 
@@ -210,7 +341,7 @@ class PongBoardCanvas {
 		}
 
 		this.resize();
-		addListener(window, "resize", () => this.resize());
+		window.addEventListener("resize", () => this.resize());
 	}
 
 	private resize() {
@@ -233,7 +364,9 @@ class PongBoardCanvas {
 			this.canvas.style.zIndex = "9999";
 		} else {
 			// desktop: scale relative to parent
-			const parent = this.canvas.parentElement!;
+			const parent = this.canvas.parentElement;
+			if (!parent) return; // Parent removed, don't resize
+			
 			const availW = parent.clientWidth;
 			const availH = parent.clientHeight;
 			const scale = Math.min(availW / this.worldWidth, availH / this.worldHeight);
@@ -513,6 +646,11 @@ class Paddle {
 		this.y += this.vy * dt;
 
 		// clamp to field
+
+		// console.log("--- PADDLE UPDATE ---");
+		// console.log(this.y);
+		// console.log(this.height);
+		// console.log(this.x)
 		const field = window.lobbySettings!.field;
 		const top = field.wallThickness;
 		const bottom = window.lobbySettings!.world.height - field.wallThickness - this.height;
@@ -816,6 +954,7 @@ class PongBoard {
 			else if (side === "right" && isLeftPlayer) {
 				this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
 			}
+			window.gameResults!.scores[playerId] = this.scores.get(playerId) || 0;
 		}
 		
 		// Update UI
@@ -851,12 +990,23 @@ class PongBoard {
 					countdownDiv.textContent = "";
 					countdownDiv.style.display = "flex";
 					countdownDiv.textContent = String(message);
+
+					// mark tournament result
+					window.gameResults!.ended = true;
+					window.gameResults!.scores = Object.fromEntries(this.scores);
+
+					// determine winner
+					let winnerId: string | undefined;
+					for (const [playerId, score] of this.scores) {
+						if (score === maxScore)
+							winnerId = playerId;
+					}
+					window.gameResults!.winner = winnerId;
+
 					
 					// Reset window for lobby
-					window.isGameOffline = false;
 					window.pendingGameStart = undefined;
 					window.localPlayerId = undefined;
-					window.lobbySettings = undefined;
 					// End game
 					endGame();
 					break;
@@ -871,7 +1021,7 @@ class PongBoard {
 		const ctx = (this.canvas as any).context as CanvasRenderingContext2D;
 		ctx.fillStyle = currentThemeColors["--crust"] || 'black';
 		ctx.fillRect(0, 0, (this.canvas as any).canvas.width, (this.canvas as any).canvas.height);
-		if (this.ball) this.ball.draw();
+		this.ball.draw();
 		for (const p of this.paddles) p.draw();
 	}
 
@@ -1002,7 +1152,17 @@ function handlePlayer(payload: PlayerPayload) {
 if (!window.isGameOffline) {
 	addListener(window.socket!, "message", (event: MessageEvent) => {
 		const msg = JSON.parse(event.data);
-		if (msg.type === "input") {
+		if (msg.type === "connect") {
+			console.log("Connected to game server:", msg.payload);
+			// Set local player ID from connect message
+			if (msg.payload.userId) {
+				window.localPlayerId = msg.payload.userId;
+				console.log("Local player ID set to:", window.localPlayerId);
+			}
+		} else if (msg.type === "error") {
+			console.error("Game server error:", msg.payload);
+			cancelLoading("Game error: " + msg.payload);
+		} else if (msg.type === "input") {
 			const payload = msg.payload as ClientInputPayload;
 			const paddle = pongBoard.getPaddleByPlayerId(payload.userId);
 			if (!paddle) return;
@@ -1014,7 +1174,21 @@ if (!window.isGameOffline) {
 			const last = payload.inputs[payload.inputs.length - 1];
 			if (last) paddle.applyInputs(last.inputs);
 		} else if (msg.type === "game") {
-			if (msg.payload.action === "stopped") {
+			// Check if this is a game start message
+			if (msg.payload.action === "start") {
+				console.log("Received game start message:", msg.payload);
+				// Set pendingGameStart to trigger game initialization
+				window.pendingGameStart = {
+					action: "start",
+					playerSides: msg.payload.playerSides,
+					startTime: msg.payload.startTime
+				};
+				// Initialize the game if the polling interval is waiting
+				if (waitingForGameStart) {
+					console.log("Initializing game from start message...");
+					// The polling interval will pick this up and call initializeGame()
+				}
+			} else if (msg.payload.action === "stopped") {
 				countdownDiv.setAttribute('aria-hidden', 'false');
 				countdownDiv.textContent = "";
 				countdownDiv.style.display = "flex";
@@ -1275,14 +1449,58 @@ class PongGame {
 /*								   BOOTSTRAP								*/
 /* -------------------------------------------------------------------------- */
 
-const pongBoard = new PongBoard(board);
-const pongGame = new PongGame(pongBoard);
+let pongBoard: PongBoard;
+let pongGame: PongGame;
 
-updatePlayerNames();
+// Function to initialize and start the game
+function initializeGame() {
+	if (!window.pendingGameStart) {
+		console.error("Cannot initialize game without pendingGameStart");
+		return;
+	}
+	
+	pongBoard = new PongBoard(board);
+	pongGame = new PongGame(pongBoard);
+	
+	updatePlayerNames();
+	
+	window.pongTimer.updateDisplayFromSeconds(window.pongTimer.seconds);
+	countdownDiv.style.fontSize = "12vh";
+	
+	// start the game using the server-provided startTime
+	pongGame.startAt(window.pendingGameStart.startTime);
+}
 
-window.pongTimer.updateDisplayFromSeconds(window.pongTimer.seconds);
-countdownDiv.style.fontSize = "12vh";
+// Start the game if we have pendingGameStart, otherwise wait for it
+if (window.pendingGameStart) {
+	// Immediately initialize if already available
+	console.log("✓ pendingGameStart available, initializing game immediately");
+	initializeGame();
+} else if (waitingForGameStart) {
+	// For tournament games, we need to wait for the game start message
+	console.log("⏳ Polling for pendingGameStart from server...");
+	
+	// Set up a listener for when pendingGameStart becomes available
+	const checkInterval = setInterval(() => {
+		console.log("  Checking for pendingGameStart...");
+		if (window.pendingGameStart) {
+			clearInterval(checkInterval);
+			console.log("✓ pendingGameStart received, initializing game");
+			initializeGame();
+			countdownDiv.textContent = "";
+		}
+	}, 100);
+	
+	// Timeout after 30 seconds
+	setTimeout(() => {
+		if (!window.pendingGameStart) {
+			clearInterval(checkInterval);
+			console.error("✗ Timeout - never received pendingGameStart");
+			cancelLoading("Timeout waiting for game to start");
+		}
+	}, 30000);
+} else {
+	cancelLoading("No pending game start information found.");
+}
 
-// start the game using the server-provided startTime
-pongGame.startAt(window.pendingGameStart!.startTime);
 registerDynamicCleanup(endGame);

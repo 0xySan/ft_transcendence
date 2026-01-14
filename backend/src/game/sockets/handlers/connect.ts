@@ -129,23 +129,39 @@ export function handleConnectMessage(
 			gameObj.players.set(pending.userId, ws);
 		}
 	}
-	// Send acknowledgment to client
-	ws.send(JSON.stringify({ type: "connect", payload: "Connection established" }));
+	// Send acknowledgment to client with their userId
+	ws.send(JSON.stringify({ type: "connect", payload: { userId: pending.userId } }));
 
 	if (authToken.start)
 	{
-		const workerEntry = workers.find(w => w.activeGames.includes(ws.gameId));
-		if (!workerEntry) return;
+		// Check if all players are now connected
+		const game = activeGames.get(ws.gameId);
+		if (!game) {
+			console.error("Game not found in activeGames for start");
+			return;
+		}
+		
+		// Only start if we have all expected players connected
+		if (game.players.size >= (game.ownerId ? 2 : 1)) {
+			const workerEntry = workers.find(w => w.activeGames.includes(ws.gameId));
+			if (!workerEntry) {
+				console.error("Worker not found for game start");
+				return;
+			}
 
-		// Notify the worker to start the game
-		workerEntry.worker.postMessage({
-			type: "game",
-			payload: {
-				userId: ws.id,
-				gameId: ws.gameId,
-				action: "start",
-				noOwnerCheck: true
-			} as socket.workerGamePayload
-		} as socket.message<socket.workerGamePayload>);
+			// Notify the worker to start the game
+			console.log(`Starting game ${ws.gameId} with ${game.players.size} players connected`);
+			workerEntry.worker.postMessage({
+				type: "game",
+				payload: {
+					userId: ws.id,
+					gameId: ws.gameId,
+					action: "start",
+					noOwnerCheck: true
+				} as socket.workerGamePayload
+			} as socket.message<socket.workerGamePayload>);
+		} else {
+			console.log(`Waiting for more players. Current: ${game.players.size}`);
+		}
 	}
 }

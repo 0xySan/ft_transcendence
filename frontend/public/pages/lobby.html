@@ -70,7 +70,7 @@
 							<label for="lobby-game-code" data-translate-key="lobby.gameCodeLabel">Custom Game Code</label>
 							<input type="text" id="lobby-game-code" class="lobby-textbox" maxlength="4" placeholder="Enter code">
 						</div>
-						<div class="lobby-setting-container">
+						<div class="lobby-setting-container" id="galunga">
 							<label for="lobby-num-players" data-translate-key="lobby.numPlayersLabel">Number of Players</label>
 							<select id="lobby-num-players" class="lobby-select">
 								<option value="2">2</option>
@@ -221,6 +221,8 @@
 		</div>
 		<button id="lobby-btn-leave" data-translate-key="lobby.leaveButton">LEAVE</button>
 		<button id="lobby-btn-launch" data-translate-key="lobby.launchButton">LAUNCH</button>
+		<button id="lobby-tournament-online" class="unloaded" data-translate-key="lobby.tournamentOnlineButton">LAUNCH ONLINE</button>
+		<button id="lobby-tournament-offline" class="unloaded" data-translate-key="lobby.tournamentOfflineButton">LAUNCH OFFLINE</button>
 	</div>
 </div>
 <script src="/js/pages/lobbySocket.js" type="module" defer></script>

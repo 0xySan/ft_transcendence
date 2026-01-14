@@ -31,8 +31,11 @@ declare global {
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
 		changeLobbyCodeInput: (newCode: string) => void;
 		isGameOffline: boolean;
+		tournamentMode: "online" | "offline";
 	}
 }
+
+declare function loadPage(url: string): void;
 
 /* -------------------------------------------------------------------------- */
 /*                                    Utils                                    */
@@ -450,7 +453,7 @@ const modes: Record<string, Mode> = {
 	},
 	tournament: {
 		button: getEl("lobby-tournament-button"),
-		tab: getEl("lobby-tournament-tab"),
+		tab: getEl("lobby-custom-game-tab"),
 	},
 };
 
@@ -477,6 +480,83 @@ type SubTabsMultiplayer = {
 	leaveBtn: HTMLButtonElement;
 };
 
+const uiTournament = {
+	launchOnlineBtn: getEl<HTMLButtonElement>("lobby-tournament-online"),
+	launchOfflineBtn: getEl<HTMLButtonElement>("lobby-tournament-offline"),
+};
+
+/** ### createTournament
+ * Create a new online tournament or rejoin if already in one.
+ * Sends a request to the server to create the tournament.
+ * On success, navigates to the tournament page with the tournament ID.
+ */
+async function createTournament(): Promise<void> {
+	// Check if user is already in a tournament
+	const existingTournamentId = sessionStorage.getItem('tournamentId');
+	if (existingTournamentId) {
+		// User already in a tournament, just navigate to it
+		const res = await fetch(`/api/tournament/${existingTournamentId}/status`, {
+			method: "GET",
+			headers: { "Content-Type": "application/json" },
+		});
+
+		const data = await res.json();
+		if (res.ok) {
+			notify("Rejoining existing tournament.", { type: "info" });
+			loadPage("/tournament");
+		} else {
+			notify(`Failed to rejoin tournament: ${data.error || 'Unknown error'}`, { type: 'error' });
+			// Clear invalid tournament ID
+			sessionStorage.removeItem('tournamentId');
+			sessionStorage.removeItem('tournamentCode');
+			sessionStorage.removeItem('tournamentVisibility');
+			return;
+		}
+		return;
+	}
+
+	const visibility = (document.getElementById("lobby-private-checkbox-custom-game") as any | null).checked;
+	console.log("Creating tournament with visibility:", visibility);
+	const res = await fetch("/api/tournament/create", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			visibility: visibility ? "private" : "public",
+			config: window.lobbySettings || {},
+		}),
+	});
+
+	const data = await res.json();
+	if (!res.ok) {
+		notify(`Failed to create tournament: ${data.error || 'Unknown error'}`, { type: 'error' });
+		return;
+	}
+
+	if (!data.tournamentId) {
+		notify("Invalid tournament response", { type: "error" });
+		return;
+	}
+
+	// Store tournament info in sessionStorage for the tournament page
+	sessionStorage.setItem('tournamentId', data.tournamentId);
+	sessionStorage.setItem('tournamentCode', data.code || '');
+	sessionStorage.setItem('tournamentVisibility', data.visibility || 'private');
+
+	// Navigate to tournament page
+	loadPage("/tournament");
+}
+
+addListener(uiTournament.launchOnlineBtn, "click", () => {
+	window.tournamentMode = "online";
+	createTournament();
+});
+
+addListener(uiTournament.launchOfflineBtn, "click", () => {
+	window.tournamentMode = "offline";
+	setPartialLobbyConfig(currentSettings);
+	loadPage("/tournament");
+});
+
 /** ### subTabs
  * - record of sub-tabs for custom and tournament modes
  */
@@ -495,10 +575,10 @@ const subTabs: Record<string, SubTabs> = {
 		advTab: getEl("lobby-custom-game-advanced-settings"),
 	},
 	tournament: {
-		basicBtn: getEl("lobby-tournament-basic-settings-button"),
-		advBtn: getEl("lobby-tournament-advanced-settings-button"),
-		basicTab: getEl("lobby-tournament-basic-settings"),
-		advTab: getEl("lobby-tournament-advanced-settings"),
+		basicBtn: getEl("lobby-custom-game-basic-settings-button"),
+		advBtn: getEl("lobby-custom-game-advanced-settings-button"),
+		basicTab: getEl("lobby-custom-game-basic-settings"),
+		advTab: getEl("lobby-custom-game-advanced-settings"),
 	}
 };
 
@@ -598,15 +678,27 @@ function setupModeSelection(): void {
 				m.button.classList.toggle("current-mode", isActive);
 				m.tab.classList.toggle("unloaded", !isActive);
 				m.tab.classList.toggle("current-mode", isActive);
+				customGameSelection = "offline";
 			});
 
+			const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
+
 			// when switching to custom tab, decide what to show based on state
-			if (mode === modes.custom) {
+			if (mode === modes.custom)
 				updateCustomGameUi();
+			if(mode === modes.tournament) {
+				const galungaDiv = getElQS<HTMLDivElement>("#galunga");
+				galungaDiv.classList.add("unloaded");
+				uiTournament.launchOnlineBtn.classList.remove("unloaded");
+				uiTournament.launchOfflineBtn.classList.remove("unloaded");
+				lobbySelectMode.classList.add("unloaded");
+				subTabs.custom.basicTab.classList.remove("grayed");
 			} else {
 				// hide the online/offline selector if we're not on custom
 				const lobbySelectMode = getEl<HTMLDivElement>("lobby-select-mode");
 				lobbySelectMode.classList.add("unloaded");
+				uiTournament.launchOnlineBtn.classList.add("unloaded");
+				uiTournament.launchOfflineBtn.classList.add("unloaded");
 			}
 		});
 	});
@@ -619,6 +711,7 @@ function setupModeSelection(): void {
  * @param modeKey - 'online' | 'offline' | 'join' | 'reset'
  */
 function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void {
+	const galungaDiv = getElQS<HTMLDivElement>("#galunga");
 	// update internal state
 	if (modeKey === "reset")
 		customGameSelection = "none";
@@ -626,10 +719,12 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 		customGameSelection = "offline";
 		window.isGameOffline = true;
 		subTabs.custom.basicTab.classList.remove("grayed");
+		galungaDiv.classList.add("unloaded");
 	} else {
 		// online or join
 		customGameSelection = "online";
 		window.isGameOffline = false;
+		galungaDiv.classList.remove("unloaded");
 	}
 
 	// update UI for custom game area
@@ -732,6 +827,9 @@ else if (window.isGameOffline && window.lobbySettings) {
 	window.lobbySettings = structuredClone(currentSettings);
 	setupLobbyModeHandlers();
 }
+
+const TOURNAMENT_STORAGE_KEY = "ft_tournament_offline_state_v1";
+localStorage.removeItem(TOURNAMENT_STORAGE_KEY);
 
 // Auto-join by code present in URL (query `?code=ABCD`, `?gameCode=ABCD`, path ending with `/ABCD`, or hash `#ABCD`).
 // Reuses the same logic as the `JOIN` button by setting the input value and dispatching a click event.

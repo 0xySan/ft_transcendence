@@ -16,7 +16,8 @@ import { v7 as uuidv7 } from "uuid";
 import type * as msg from "../sockets/socket.types.js";
 import * as game from "../workers/game/game.types.js";
 
-import{ activeGames, workers } from "../../globals.js";
+import{ activeGames, workers, activeTournaments } from "../../globals.js";
+import { recordMatchWinner, isCurrentRoundCompleted, advanceToNextRound } from "../../routes/game/utils.js";
 import WebSocket from "ws";
 import { workerMessage } from "./worker.types.js";
 import { getGameByCode } from "../../routes/game/utils.js";
@@ -69,6 +70,33 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				if (stat.state == "null") stat.state = "draw";
 				else if (stat.state == "lose") stat.state = "loss";
 				addParticipant(newGameId, stat.userId, stat.score, stat.state, msg.payload.users.length > 2 ? 2 : 1);
+			}
+
+			// Check if this game is part of a tournament
+			if (msg.payload.gameId && winner_id !== "null") {
+				for (const [tournamentId, tournament] of activeTournaments.entries()) {
+					const match = tournament.bracket.find(m => m.gameId === msg.payload.gameId);
+					if (match) {
+						console.log(`Tournament game completed: ${msg.payload.gameId}, Winner: ${winner_id}`);
+						
+						// Record the match winner
+						const result = recordMatchWinner(tournamentId, match.matchId, winner_id);
+						if (result === true) {
+							console.log(`Tournament match ${match.matchId} result recorded.`);
+							
+							// Check if round is completed and advance if needed
+							if (isCurrentRoundCompleted(tournamentId)) {
+								const advanceResult = advanceToNextRound(tournamentId);
+								if (advanceResult === 'Tournament completed') {
+									console.log(`Tournament ${tournamentId} completed!`);
+								} else if (advanceResult === true) {
+									console.log(`Tournament ${tournamentId} advanced to round ${tournament.currentRound}`);
+								}
+							}
+						}
+						break;
+					}
+				}
 			}
 
 			return;
