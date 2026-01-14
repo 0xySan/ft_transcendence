@@ -9,6 +9,18 @@ declare function addListener(
 	event: string,
 	handler: EventListener
 ): void;
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translated strings used in this module
+const LOBBYSETTINGS_TXT_SAVED_OFFLINE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.savedOffline');
+const LOBBYSETTINGS_TXT_SAVED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saved');
+const LOBBYSETTINGS_TXT_SAVE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.saveError');
+const LOBBYSETTINGS_TXT_LEFT_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leftQueue');
+const LOBBYSETTINGS_TXT_LEAVE_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.leaveQueueError');
+const LOBBYSETTINGS_TXT_ADDED_QUEUE = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addedQueue');
+const LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.addQueueError');
+const LOBBYSETTINGS_TXT_LOGIN_REQUIRED = await getTranslatedTextByKey(getUserLang(), 'lobbySettings.notify.loginRequired');
 
 declare global {
 	interface Window {
@@ -17,6 +29,7 @@ declare global {
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
+		changeLobbyCodeInput: (newCode: string) => void;
 		isGameOffline: boolean;
 	}
 }
@@ -89,7 +102,8 @@ const defaultSettings: Settings = {
 	game: {
 		mode: "online",
 		spectatorsAllowed: true,
-		playerCount: 2,
+		maxPlayers: 2,
+		code: ''
 	},
 	scoring: {
 		firstTo: 5,
@@ -135,6 +149,7 @@ const ui = {
 		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
 		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
 		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
+		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code")
 	},
 	ball: {
 		radius: getEl<HTMLInputElement>("ball-radius"),
@@ -195,8 +210,8 @@ function populateUi(): void {
 	ui.base.winByInput.value = String(s.scoring.winBy);
 	setSpan(ui.base.winBySpan, s.scoring.winBy);
 	// lobby player count
-	ui.lobby.numPlayersSelect.value = String(s.game.playerCount);
-	setSpan(ui.lobby.maxPlayersSpan, s.game.playerCount);
+	ui.lobby.numPlayersSelect.value = String(s.game.maxPlayers);
+	setSpan(ui.lobby.maxPlayersSpan, s.game.maxPlayers);
 
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
@@ -242,9 +257,9 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 			spectatorsAllowed:
 				partial.game?.spectatorsAllowed ??
 				currentSettings.game.spectatorsAllowed,
-			playerCount:
-				partial.game?.playerCount ??
-				currentSettings.game.playerCount,
+			maxPlayers:
+				partial.game?.maxPlayers ??
+				currentSettings.game.maxPlayers,
 		},
 		scoring: {
 			firstTo:
@@ -308,10 +323,16 @@ function wire(): void {
 
 	// lobby player count
 	addListener(ui.lobby.numPlayersSelect, "change", () => {
-		const v = parseInt(ui.lobby.numPlayersSelect.value, 10) || defaultSettings.game.playerCount;
+		const v = parseInt(ui.lobby.numPlayersSelect.value, 10) || defaultSettings.game.maxPlayers;
 		if (v !== 2 && v !== 4) return; // invalid value
-		currentSettings.game.playerCount = v;
+		currentSettings.game.maxPlayers = v;
 		setSpan(ui.lobby.maxPlayersSpan, v);
+	});
+
+	// custom game code
+	addListener(ui.base.customGameCodeInput, "input", () => {
+		const v = ui.base.customGameCodeInput.value.trim();
+		currentSettings.game.code = v;
 	});
 
 	// ball
@@ -361,8 +382,14 @@ function wire(): void {
 	addListener(ui.actions.save, "click", async () => {
 		if (window.isGameOffline) {
 			window.lobbySettings = structuredClone(currentSettings);
-			notify('Settings saved locally for offline game.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED_OFFLINE || 'Settings saved locally for offline game.', { type: "success" });
 			return;
+		}
+
+		// avoid sending an empty `code` field (server will reject with "Invalid code")
+		const payloadSettings: any = structuredClone(currentSettings);
+		if (payloadSettings?.game && typeof payloadSettings.game.code === 'string' && payloadSettings.game.code.trim() === '') {
+			delete payloadSettings.game.code;
 		}
 
 		try {
@@ -371,7 +398,7 @@ function wire(): void {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ settings: currentSettings }),
+				body: JSON.stringify({ settings: payloadSettings }),
 			});
 
 			if (!res.ok) {
@@ -379,14 +406,20 @@ function wire(): void {
 				throw new Error(data.error || 'Failed to save settings.');
 			}
 
-			notify('Settings saved successfully.', { type: "success" });
+			notify(LOBBYSETTINGS_TXT_SAVED || 'Settings saved successfully.', { type: "success" });
 		} catch (err: any) {
-			notify(`Error saving settings: ${err?.message ?? String(err)}`, { type: "error" });
+			const msg = LOBBYSETTINGS_TXT_SAVE_ERROR ? LOBBYSETTINGS_TXT_SAVE_ERROR.replace('{error}', err.message) : `Error saving settings: ${err.message}`;
+			notify(msg, { type: "error" });
 		}
 	});
 }
 
+export function changeLobbyCodeInput(newCode: string): void {
+	ui.base.customGameCodeInput.value = newCode;
+	currentSettings.game.code = newCode;
+}
 
+window.changeLobbyCodeInput = changeLobbyCodeInput;
 
 /* -------------------------------------------------------------------------- */
 /*                                 UI – Modes                                  */
@@ -508,9 +541,9 @@ function setupSubTabs(): void {
 			const data = await response.json();
 			window.dispatchEvent(new CustomEvent("joinQueue", { detail: { socketToken: data.authToken } }));
 
-			notify("You are added in a queue.", { type: "success" });
+			notify(LOBBYSETTINGS_TXT_ADDED_QUEUE || "You are added in a queue.", { type: "success" });
 		} catch (error) {
-			notify("Error adding in queue.", { type: "error" });
+			notify(LOBBYSETTINGS_TXT_ADD_QUEUE_ERROR || "Error adding in queue.", { type: "error" });
 		}
 	});
 }
@@ -699,3 +732,44 @@ else if (window.isGameOffline && window.lobbySettings) {
 	window.lobbySettings = structuredClone(currentSettings);
 	setupLobbyModeHandlers();
 }
+
+// Auto-join by code present in URL (query `?code=ABCD`, `?gameCode=ABCD`, path ending with `/ABCD`, or hash `#ABCD`).
+// Reuses the same logic as the `JOIN` button by setting the input value and dispatching a click event.
+(async () => {
+	try {
+		const params = new URLSearchParams(location.search);
+		let code: string | null = params.get('code') || params.get('gameCode') || null;
+
+		if (!code) {
+			const parts = location.pathname.split('/').filter(Boolean);
+			const last = parts.length ? parts[parts.length - 1] : null;
+			if (last && /^[A-Z0-9]{4}$/i.test(last)) code = last;
+		}
+
+		if (!code && location.hash) {
+			const h = location.hash.replace(/^#/, '');
+			if (/^[A-Z0-9]{4}$/i.test(h)) code = h;
+		}
+
+		if (!code) return; // no code present
+
+		code = String(code).toUpperCase();
+		if (!/^[A-Z0-9]{4}$/.test(code)) return; // invalid -> do nothing
+
+		const isLogged = await window.currentUserReady.then(() => Boolean(window.currentUser)).catch(() => false);
+		if (!isLogged) {
+			notify(LOBBYSETTINGS_TXT_LOGIN_REQUIRED || 'Please log in to join a lobby from a link.', { type: 'warning' });
+			return;
+		}
+
+		// reuse the same join logic directly when available
+		if (typeof window.joinGame === 'function') {
+			await window.joinGame(code);
+		} else {
+			const btn = document.getElementById('lobby-btn-join') as HTMLButtonElement | null;
+			if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		}
+	} catch (err) {
+		console.error('Auto-join processing failed', err);
+	}
+})();

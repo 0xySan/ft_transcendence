@@ -29,6 +29,7 @@
     "offlineMode": "Mode hors ligne",
     "onlineMode": "Mode en ligne",
     "customGameButton": "PARTIE PERSONNALISÉE",
+    "findPlayerButton": "Trouver un joueur",
     "multiplayerButton": "MULTIJOUEUR",
     "players": "Joueurs",
     "tournamentButton": "TOURNOI",
@@ -93,6 +94,7 @@
     "playText": "Jouer",
     "leaderboardText": "Classement",
     "profileText": "Profil",
+    "publicLobbies": "Liste des salles disponibles",
     "loginButton": "Connexion",
     "registerButton": "Inscription"
   },
@@ -137,6 +139,17 @@
     "otherMethodLabel": "Autre méthode d’authentification à deux facteurs",
     "methodSelect": "",
     "resendButton": "Renvoyer le code de vérification"
+  },
+  "publicLobbies": {
+    "title": "Salles publiques",
+    "summary": "Résumé",
+    "selectHint": "Sélectionnez une salle pour voir les détails.",
+    "updateButton": "Mettre à jour",
+    "columns": {
+      "code": "Code",
+      "owner": "Propriétaire",
+      "players": "Joueurs"
+    }
   },
   "settings": {
     "section": {
@@ -265,7 +278,10 @@
     "cannotInviteUser": "Vous ne pouvez pas envoyer d'invitations à cet utilisateur",
     "failedToSendInvite": "Échec de l'envoi de l'invitation : veuillez réessayer",
     "failedToLoadConversation": "Impossible de charger la conversation",
-    "connectionLost": "Connexion perdue. Veuillez actualiser la page."
+    "connectionLost": "Connexion perdue. Veuillez actualiser la page.",
+    "mustBeInLobby": "Invitation impossible : vous devez être dans un lobby pour envoyer des invitations de jeu",
+    "inviteNoCode": "L'invitation ne contient pas de code de jeu valide",
+    "inviteSent": "Invitation envoyée !"
   },
   "lobbySocket": {
     "notify": {
@@ -277,7 +293,8 @@
       "failedToJoinGame": "Échec de la jonction à la partie : {error}",
       "failedToJoinGameStatus": "Échec de la jonction à la partie : {status} - {error}",
       "playerJoined": "{name} a rejoint le lobby.",
-      "playerLeft": "{name} a quitté le lobby."
+      "playerLeft": "{name} a quitté le lobby.",
+      "loginRequired": "Veuillez vous connecter pour rejoindre un lobby via un lien."
     }
   },
   "pongBoard": {
@@ -313,6 +330,41 @@
       "leaveQueueError": "Erreur lors de la sortie de la file d'attente.",
       "addedQueue": "Vous avez été ajouté à la file d'attente.",
       "addQueueError": "Erreur lors de l'ajout à la file d'attente."
+    }
+  }
+
+  ,
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "intro": "Cette politique explique les données que nous collectons et comment nous les utilisons pour le projet Transcendence.",
+    "whatWeCollect": {
+      "title": "Ce que nous collectons",
+      "text": "Nous collectons uniquement les informations nécessaires au fonctionnement du service :",
+      "account": "Informations de compte : nom d'utilisateur, email (pour l'authentification et la gestion du compte).",
+      "profile": "Données de profil : nom affiché et image d'avatar optionnelle que vous téléversez.",
+      "activity": "Activité de jeu et classements : scores et participation aux salles publiques.",
+      "logs": "Journaux techniques : horodatages de connexion et adresses IP pour le diagnostic et la sécurité."
+    },
+    "howWeUse": {
+      "title": "Comment nous utilisons vos données",
+      "text": "Les données sont utilisées pour fournir le service, maintenir les comptes, afficher les classements et pour la prévention des abus de base."
+    },
+    "sharing": {
+      "title": "Partage et tiers",
+      "text": "Nous ne vendons pas vos données personnelles. Nous pouvons partager des données limitées avec des services tiers utilisés pour l'envoi d'e-mails ou les fournisseurs OAuth ; seules les informations nécessaires à ces intégrations sont partagées."
+    },
+    "cookies": {
+      "title": "Cookies et stockage local",
+      "text": "L'application utilise des cookies et des cookies de session pour l'authentification et pour maintenir la connexion des utilisateurs. Certaines préférences d'interface peuvent être stockées dans le localStorage."
+    },
+    "rights": {
+      "title": "Vos droits",
+      "text": "Vous pouvez demander l'accès, la correction ou la suppression de vos données de compte en contactant les mainteneurs du projet. Pour ce projet scolaire, la suppression supprimera votre compte et les données de profil associées ; certains journaux peuvent être conservés pour la sécurité ou le débogage pendant une courte période."
+    },
+
+    "contact": {
+      "title": "Contact",
+      "text": "Si vous avez des questions sur la confidentialité ou souhaitez que vos données soient supprimées, contactez les mainteneurs via le dépôt du projet ou via l'email data@moutig.sh."
     }
   }
 }

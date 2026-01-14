@@ -42,6 +42,7 @@ interface Message {
 	hidden?: boolean;
 	type: 'text' | 'invite' | 'system';
 	inviteState?: 'pending' | 'accepted' | 'declined' | 'cancelled';
+	gameCode?: string;
 	id?: number;
 	conversationId?: number;
 }
@@ -323,12 +324,19 @@ function mapApiMessage(
 	membersById: Record<string, string>
 ): Message {
 	const senderName = msg.sender_id === currentUserId ? 'me' : membersById[msg.sender_id] || msg.sender_id;
+	// Extract game code from invite messages (format: "invited X to a pong game CODE:ABCD")
+	let gameCode: string | undefined;
+	if (msg.message_type === 'invite') {
+		const codeMatch = msg.content.match(/CODE:([A-Z0-9]{4})/);
+		gameCode = codeMatch ? codeMatch[1] : undefined;
+	}
 	return {
 		sender: senderName,
 		text: msg.content,
 		timestamp: parseApiDate(msg.created_at),
 		type: msg.message_type,
 		inviteState: msg.invite_state || undefined,
+		gameCode,
 		id: msg.message_id,
 		conversationId: msg.conversation_id,
 	};
@@ -1014,7 +1022,8 @@ async function submitMessage(
 
 /**
  * Sends a game invite (Pong) to the specified user
- * Creates an invite message and navigates to lobby on success
+ * Only works when user is already in a lobby
+ * Includes the game code in the invite message
  * @param {string} user - Username to send invite to
  * @returns {Promise<void>}
  */
@@ -1024,10 +1033,18 @@ async function sendInvite(user: string): Promise<void> {
 	const meta = conversationMeta[user];
 	if (!meta) return;
 
+	// Check if user is currently in a lobby
+	const lobbyCode = (document.querySelector<HTMLInputElement>('#lobby-game-code') as HTMLInputElement)?.value;
+	if (!window.lobbyGameId || !lobbyCode || !/^[A-Z0-9]{4}$/.test(lobbyCode)) {
+		const mNotInLobby = await getTranslatedTextByKey(LANG, 'notify.mustBeInLobby');
+		notify(mNotInLobby ?? 'Cannot invite: must be in a lobby to send game invites', { type: 'warning' });
+		return;
+	}
+
 	try {
 		const res = await apiFetch<{ message: any }>(`${API_BASE}/conversations/${meta.conversationId}/messages`, {
 			method: 'POST',
-			body: JSON.stringify({ content: `invited ${user} to a pong game`, messageType: 'invite', inviteState: 'pending' }),
+			body: JSON.stringify({ content: `invited ${user} to a pong game CODE:${lobbyCode}`, messageType: 'invite', inviteState: 'pending' }),
 		});
 
 		const inviteMsg = mapApiMessage(res.message, meta.membersById);
@@ -1036,14 +1053,9 @@ async function sendInvite(user: string): Promise<void> {
 		const msgIndex = conversations[user].length - 1;
 		reorderUserList(user);
 		appendMessageToDOM(inviteMsg, msgIndex);
-		setTimeout(async () => {
-			if (window.loadPage)
-				window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
-			else {
-				const mNav = await getTranslatedTextByKey(LANG, 'notify.failedToNavigateLobby');
-				notify(mNav ?? 'Failed to navigate to lobby', { type: 'error' });
-			}
-		}, NAVIGATION_DELAY);
+		// No navigation needed - user is already in the lobby
+		const mInviteSent = await getTranslatedTextByKey(LANG, 'notify.inviteSent');
+		notify(mInviteSent ?? 'Invite sent!', { type: 'success' });
 	} catch (err) {
 		if (err instanceof Error) {
 			if (err.message.includes('403')) {
@@ -1750,7 +1762,7 @@ function renderChat(): void {
 		}
 	});
 
-	messagesDiv.addEventListener('click', (e) => {
+	messagesDiv.addEventListener('click', async (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
 		if (target.classList.contains('show-blocked-btn')) {
@@ -1784,12 +1796,18 @@ function renderChat(): void {
 
 			if (inviteBtn.classList.contains('invite-accept')) {
 				updateInviteState(container as HTMLElement, msg, 'accepted', idx);
-				setTimeout(() => {
-					if (window.loadPage)
-						window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
-					else
-						return ; // error popup should happen here
-				}, NAVIGATION_DELAY);
+				const gameCode = msg.gameCode;
+				if (gameCode) {
+					setTimeout(() => {
+						if (window.loadPage)
+							window.loadPage(`/lobby?code=${gameCode}`);
+						else
+							return ; // error popup should happen here
+					}, NAVIGATION_DELAY);
+				} else {
+					const mNoCode = await getTranslatedTextByKey(LANG, 'notify.inviteNoCode');
+					notify(mNoCode || 'Invite does not have a valid game code', { type: 'error' });
+				}
 				return;
 			}
 			if (inviteBtn.classList.contains('invite-decline')) {
@@ -1801,12 +1819,18 @@ function renderChat(): void {
 				return;
 			}
 			if (inviteBtn.classList.contains('invite-go')) {
-				setTimeout(() => {
-					if (window.loadPage)
-						window.loadPage(`/lobby?code=TEMP_PONG_CODE`);
-					else
-						return ; // error popup should happen here
-				}, NAVIGATION_DELAY);
+				const gameCode = msg.gameCode;
+				if (gameCode) {
+					setTimeout(() => {
+						if (window.loadPage)
+							window.loadPage(`/lobby?code=${gameCode}`);
+						else
+							return ; // error popup should happen here
+					}, NAVIGATION_DELAY);
+				} else {
+					const mNoCode = await getTranslatedTextByKey(LANG, 'notify.inviteNoCode');
+					notify(mNoCode || 'Invite does not have a valid game code', { type: 'error' });
+				}
 				return;
 			}
 		}

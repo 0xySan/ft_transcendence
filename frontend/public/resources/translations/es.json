@@ -141,6 +141,9 @@
     "cannotInviteUser": "No puede enviar invitaciones a este usuario",
     "failedToSendInvite": "No se pudo enviar la invitación: por favor inténtelo de nuevo",
     "failedToLoadConversation": "Error al cargar la conversación",
-    "connectionLost": "Conexión perdida. Por favor actualice la página."
+    "connectionLost": "Conexión perdida. Por favor actualice la página.",
+    "mustBeInLobby": "No se puede invitar: debe estar en un lobby para enviar invitaciones de juego",
+    "inviteNoCode": "La invitación no tiene un código de juego válido",
+    "inviteSent": "¡Invitación enviada!"
   }
 }

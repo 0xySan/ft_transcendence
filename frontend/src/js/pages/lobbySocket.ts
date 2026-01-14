@@ -14,6 +14,8 @@ declare global {
 		currentUser: UserData | null;
 		currentUserReady: Promise<void>;
 
+		joinGame?: (code: string) => Promise<void>;
+
 		lobbySettings?: Settings;
 		setPartialLobbyConfig: (partial: Partial<Settings>) => void;
 		selectLobbyMode: (modeKey: "reset" | "online" | "offline" | "join") => void;
@@ -26,6 +28,18 @@ declare function addListener(
 	event: string,
 	handler: any,
 ): void;
+declare function changeLobbyCodeInput(newCode: string): void;
+declare function getUserLang(): string;
+declare function getTranslatedTextByKey(lang: string, key: string): Promise<string | null>;
+
+// Translations (top-level await allowed in modules)
+const LOBBYSOCKET_TXT_CONNECTED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.connected');
+const LOBBYSOCKET_TXT_GAME_STARTING = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.gameStarting');
+const LOBBYSOCKET_TXT_SETTINGS_UPDATED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.settingsUpdated');
+const LOBBYSOCKET_TXT_DISCONNECTED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.disconnected');
+const LOBBYSOCKET_TXT_INVALID_GAME = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.invalidGame');
+const LOBBYSOCKET_TXT_PLAYER_JOINED = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.playerJoined');
+const LOBBYSOCKET_TXT_PLAYER_LEFT = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.playerLeft');
 
 window.playerNames = {};
 
@@ -156,7 +170,7 @@ addListener(window, "joinQueue", (event: CustomEvent) => {
 function applyListener(socket: WebSocket, token?: string) {
 	if (token) {
 		addListener(socket, "open", () => {
-			notify('Connected to the game lobby.', { type: 'success' });
+			notify(LOBBYSOCKET_TXT_CONNECTED || 'Connected to the game lobby.', { type: 'success' });
 			const msg: SocketMessage<ConnectPayload> = {
 				type: "connect",
 				payload: { token: {token: token} },
@@ -185,14 +199,14 @@ function applyListener(socket: WebSocket, token?: string) {
 
 			case "game":
 				if ((msg.payload as GamePayload).action === "start") {
-					notify('The game is starting!', { type: 'success' });
+					notify(LOBBYSOCKET_TXT_GAME_STARTING || 'The game is starting!', { type: 'success' });
 					window.pendingGameStart = msg.payload as gameStartAckPayload;
 					loadPage("/pong-board");
 				}
 				break;
 			case "settings":
 				window.setPartialLobbyConfig(msg.payload as Partial<Settings>);
-				notify('Game settings have been updated.', { type: 'info' });
+				notify(LOBBYSOCKET_TXT_SETTINGS_UPDATED || 'Game settings have been updated.', { type: 'info' });
 				break;
 
 			default:
@@ -205,7 +219,7 @@ function applyListener(socket: WebSocket, token?: string) {
 			clearInterval((window as any).socketPingInterval);
 			(window as any).socketPingInterval = undefined;
 		}
-		notify('Disconnected from the game lobby.', { type: 'warning' });
+		notify(LOBBYSOCKET_TXT_DISCONNECTED || 'Disconnected from the game lobby.', { type: 'warning' });
 		window.socket = undefined;
 		resetLobbyState();
 	});
@@ -283,7 +297,8 @@ function handlePlayer(payload: PlayerPayload): void {
 			payload.playerId === ownerId
 		);
 		window.playerNames![payload.playerId] = payload.displayName;
-		notify(`${payload.displayName} has joined the lobby.`, { type: 'info' });
+		const tpl = LOBBYSOCKET_TXT_PLAYER_JOINED || '{name} has joined the lobby.';
+		notify(tpl.replace('{name}', payload.displayName), { type: 'info' });
 		updateLaunchVisibility("lobby-online", playerListEl.children.length);
 	}
 
@@ -292,7 +307,8 @@ function handlePlayer(payload: PlayerPayload): void {
 		window.playerSyncData.players.splice(index, 1);
 		delete window.playerNames![payload.playerId];
 		removePlayer(payload.playerId);
-		notify(`${payload.displayName} has left the lobby.`, { type: 'info' });
+		const tpl = LOBBYSOCKET_TXT_PLAYER_LEFT || '{name} has left the lobby.';
+		notify(tpl.replace('{name}', payload.displayName), { type: 'info' });
 		updateLaunchVisibility("", playerListEl.children.length);
 	}
 }
@@ -351,7 +367,7 @@ function removePlayer(id: string): void {
 function updateCounts(current: number): void {
 	playerCurrentCountEl.textContent = String(current);
 	if (window.lobbySettings && window.lobbySettings.game) {
-		playerMaxCountEl.textContent = String(window.lobbySettings.game.playerCount) || '?';
+		playerMaxCountEl.textContent = String(window.lobbySettings.game.maxPlayers) || '?';
 	}
 }
 
@@ -363,9 +379,9 @@ function updateCounts(current: number): void {
  * Update the visibility and state of the launch button based on the lobby mode and player count.
  * 
  * @param mode - The current lobby mode ("lobby-online" or "lobby-offline").
- * @param playerCount - The current number of players in the lobby.
+ * @param maxPlayers - The current number of players in the lobby.
  */
-export function updateLaunchVisibility(mode:string, playerCount:number): void {
+export function updateLaunchVisibility(mode:string, maxPlayers:number): void {
 
 	const isOwner =
 		myPlayerId !== null &&
@@ -378,14 +394,14 @@ export function updateLaunchVisibility(mode:string, playerCount:number): void {
 	{
 		if (!isOwner)
 			launchBtn.classList.add("unloaded");
-		else if (playerCount === (window.lobbySettings?.game?.playerCount || 2))
+		else if (maxPlayers === (window.lobbySettings?.game?.maxPlayers || 2))
 		{
 			launchBtn.classList.remove("unclickable");
 			launchBtn.style.opacity = "1";
 		}
 		else if (isOwner)
 			launchBtn.style.opacity = "0.4";
-	} else if (mode === "lobby-offline" && playerCount == 0) launchBtn.classList.add("unloaded");
+	} else if (mode === "lobby-offline" && maxPlayers == 0) launchBtn.classList.add("unloaded");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -411,14 +427,22 @@ async function joinGame(code: string): Promise<void> {
 	});
 
 	const data = await res.json();
-	if (!res.ok)
-		return notify(`Failed to join game: ${data.error || 'Unknown error'}`, { type: 'error' });
+	if (!res.ok) {
+		const tpl = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.failedToJoinGame');
+		const msg = tpl ? tpl.replace('{error}', data.error || 'Unknown error') : `Failed to join game: ${data.error || 'Unknown error'}`;
+		return notify(msg, { type: 'error' });
+	}
 
-	if (res.status !== 200)
-		return notify(`Failed to join game: ${res.status} - ${data.error || 'Unknown error'}`, { type: 'error' });
+	if (res.status !== 200) {
+		const tpl = await getTranslatedTextByKey(getUserLang(), 'lobbySocket.notify.failedToJoinGameStatus');
+		const msg = tpl
+			? tpl.replace('{status}', String(res.status)).replace('{error}', data.error || 'Unknown error')
+			: `Failed to join game: ${res.status} - ${data.error || 'Unknown error'}`;
+		return notify(msg, { type: 'error' });
+	}
 
 	if (!data.gameId) {
-		notify("invalid game", { type: "error" });
+		notify(LOBBYSOCKET_TXT_INVALID_GAME || "invalid game", { type: "error" });
 		return;
 	}
 	gameId = data.gameId;
@@ -429,6 +453,9 @@ async function joinGame(code: string): Promise<void> {
 	window.selectLobbyMode("join");
 	connectWebSocket(authToken);
 }
+
+// expose joinGame so other modules (e.g. lobbySettings) can programmatically reuse the same logic
+window.joinGame = joinGame;
 
 /** ### createGame
  * Create a new online game with default settings.
@@ -443,7 +470,7 @@ async function createGame(): Promise<void> {
 			game: {
 				mode: "online",
 				code: generateCode(),
-				maxPlayers: 4,
+				maxPlayers: 2,
 				spectatorsAllowed: true,
 			},
 		}),
@@ -455,6 +482,7 @@ async function createGame(): Promise<void> {
 	window.lobbyGameId = data.gameId;
 	authToken = data.authToken;
 	joinInput.value = data.code;
+	changeLobbyCodeInput(data.code);
 
 	if (!authToken) throw new Error("Missing auth token");
 	connectWebSocket(authToken);

@@ -19,8 +19,13 @@ import * as game from "../workers/game/game.types.js";
 import{ activeGames, workers } from "../../globals.js";
 import WebSocket from "ws";
 import { workerMessage } from "./worker.types.js";
+import { getGameByCode } from "../../routes/game/utils.js";
 
 const NUM_WORKERS = os.cpus().length;
+
+// Map gameId -> settings payload. Using gameId as key avoids using Worker instances
+// as map keys which are harder to query when looking up by game id.
+const gameSettings = new Map<string, msg.settingsPayload>();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,6 +84,20 @@ for (let i = 0; i < NUM_WORKERS; i++) {
 				}
 			}
 		}
+		if (msg.type === "settings") {
+			// Worker sends settings messages with shape: { type: 'settings', payload: newSettings, gameId, userIds }
+			const newSettings = msg.payload as game.config;
+			const gid = (msg as any).gameId as string | undefined;
+			if (gid && typeof gid === 'string') {
+				const ownerId = activeGames.get(gid)?.ownerId ?? '';
+				const payload: msg.settingsPayload = {
+					gameId: gid,
+					userId: ownerId,
+					newSettings: newSettings || {}
+				} as msg.settingsPayload;
+				gameSettings.set(gid, payload);
+			}
+		}
 	});
 
 	worker.on("error", (err) => {
@@ -112,6 +131,19 @@ export function assignGameToWorker(uuid: string, ownerId: string, gameConfig: ga
 			gameConfig: gameConfig
 		} as msg.createPayload
 	} as msg.message<msg.createPayload>);
+	// Store the initial game settings so vanilla games are recorded even
+	// before the worker emits a settings message.
+	try {
+		const owner = ownerId ?? '';
+		const initialPayload: msg.settingsPayload = {
+			gameId: uuid,
+			userId: owner,
+			newSettings: gameConfig as any
+		};
+		gameSettings.set(uuid, initialPayload);
+	} catch (e) {
+		console.warn('Failed to initialize gameSettings for', uuid, e);
+	}
 	return true;
 }
 
@@ -189,6 +221,12 @@ export function gameUpdateSettings(uuid: string, newSettings: Partial<game.confi
 	if (activeGame.ownerId == uuid)
 		activeGame.visibility = newSettings.game?.visibility ?? activeGame.visibility;
 
+	if (newSettings.game?.code) {
+		while (getGameByCode(newSettings.game.code) !== null || newSettings.game.code === '')
+			newSettings.game.code = Math.random().toString(36).substring(2, 6).toUpperCase();
+		activeGame.code = newSettings.game.code;
+	}
+
 	// Notify the worker to update the game settings
 	workerEntry.worker.postMessage({
 		type: "settings",
@@ -198,4 +236,30 @@ export function gameUpdateSettings(uuid: string, newSettings: Partial<game.confi
 			newSettings: newSettings
 		} as msg.settingsPayload
 	} as msg.message<msg.settingsPayload>);
+}
+
+export function gameGetSettings(uuid: string): msg.settingsPayload | null {
+	const gameId = getGameIdByUser(uuid);
+	if (!gameId) return null;
+	// Find the worker responsible for this game
+	const workerEntry = workers.find(w => w.activeGames.includes(gameId));
+	if (!workerEntry) return null;
+
+	const settings = gameSettings.get(gameId);
+	if (!settings) return null;
+
+	return settings;
+}
+
+/**
+ * Get game settings by game ID (allows callers who are not in the game).
+ * @param gameId - game id to lookup
+ */
+export function gameGetSettingsByGameId(gameId: string): msg.settingsPayload | null {
+	if (!gameId) return null;
+
+	const settings = gameSettings.get(gameId);
+	if (!settings) return null;
+
+	return settings;
 }
