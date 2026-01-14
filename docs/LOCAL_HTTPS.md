@@ -5,17 +5,17 @@ Local HTTPS (self-signed)
 
 Default (127.0.0.1):
 ```bash
-./scripts/generate_local_certs.sh
+./scripts/generate_local_certs.sh 127.0.0.1 transcendence42.com
 ```
 
 Use a 10.x IP (shorthand):
 ```bash
-./scripts/generate_local_certs.sh 10
+./scripts/generate_local_certs.sh 10 transcendence42.com
 ```
 
 Use a specific IP:
 ```bash
-./scripts/generate_local_certs.sh 10.1.2.3
+./scripts/generate_local_certs.sh 10.1.2.3 transcendence42.com
 ```
 
 2) Start Docker with the HTTPS override (this is optional — the normal compose stays HTTP):

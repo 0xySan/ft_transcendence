@@ -12,7 +12,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_DIR="$ROOT_DIR/certs"
 mkdir -p "$OUT_DIR"
 
-# Determine SAN IP: argument > SAN_PREFIX env var > default 127.0.0.1
+# Determine SAN IP: arg1 > SAN_PREFIX env var > default 127.0.0.1
 if [ "$#" -ge 1 ]; then
   if [ "$1" = "10" ]; then
     SAN_IP="10.0.0.1"
@@ -27,6 +27,15 @@ elif [ -n "${SAN_PREFIX:-}" ]; then
   fi
 else
   SAN_IP="127.0.0.1"
+fi
+
+# Optional: allow a domain name as the second argument or via SAN_DOMAIN env var
+if [ "$#" -ge 2 ]; then
+  SAN_DOMAIN="$2"
+elif [ -n "${SAN_DOMAIN:-}" ]; then
+  SAN_DOMAIN="${SAN_DOMAIN}"
+else
+  SAN_DOMAIN=""
 fi
 
 CFG="$OUT_DIR/localhost.cnf"
@@ -46,6 +55,12 @@ subjectAltName = @alt_names
 DNS.1 = localhost
 IP.1 = ${SAN_IP}
 EOF
+if [ -n "$SAN_DOMAIN" ]; then
+  # Append the domain as DNS.2
+  cat >> "$CFG" <<EOF
+DNS.2 = ${SAN_DOMAIN}
+EOF
+fi
 
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout "$OUT_DIR/localhost.key" \
@@ -56,4 +71,8 @@ chmod 644 "$OUT_DIR/localhost.crt"
 chmod 600 "$OUT_DIR/localhost.key"
 rm -f "$CFG"
 
-echo "Certificates written to $OUT_DIR"
+if [ -n "$SAN_DOMAIN" ]; then
+  echo "Certificates written to $OUT_DIR (includes SAN: ${SAN_DOMAIN})"
+else
+  echo "Certificates written to $OUT_DIR"
+fi
