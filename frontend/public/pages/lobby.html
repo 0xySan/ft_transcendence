@@ -17,7 +17,7 @@
 				<button id="lobby-tournament-button" data-translate-key="lobby.tournamentButton">TOURNAMENT</button>
 			</div>
 				<div id="lobby-select-mode" class="current-mode">
-					<div id="lobby-online">
+					<div id="lobby-online" class="grayed unclickable">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -10 20 20" width="100" height="50">
 								<path 
 									d="M -3 4 
@@ -79,8 +79,8 @@
 						</div>
 						<div class="lobby-setting-container">
 							<label for="lobby-first-to" data-translate-key="lobby.firstToLabel">First To</label>
-							<span id="lobby-first-to-value">5</span>
-							<input type="range" id="lobby-first-to" class="lobby-slider" min="1" max="10" value="5">
+							<span id="lobby-first-to-value">1</span>
+							<input type="range" id="lobby-first-to" class="lobby-slider" min="1" max="10" value="1">
 						</div>
 						<div class="lobby-setting-container">
 							<label for="lobby-win-by" data-translate-key="lobby.winByLabel">Win By</label>
@@ -219,8 +219,8 @@
 			<input type="text" placeholder="Enter code" id="lobby-input" class="font-poppins-semibold" />
 			<button data-translate-key="lobby.joinButton" id="lobby-btn-join">JOIN</button>
 		</div>
-		<button id="lobby-btn-leave" data-translate-key="lobby.leaveButton">LEAVE</button>
-		<button id="lobby-btn-launch" data-translate-key="lobby.launchButton">LAUNCH</button>
+		<button id="lobby-btn-leave" class="unloaded" data-translate-key="lobby.leaveButton">LEAVE</button>
+		<button id="lobby-btn-launch" class="unloaded" data-translate-key="lobby.launchButton">LAUNCH</button>
 		<button id="lobby-tournament-online" class="unloaded" data-translate-key="lobby.tournamentOnlineButton">LAUNCH ONLINE</button>
 		<button id="lobby-tournament-offline" class="unloaded" data-translate-key="lobby.tournamentOfflineButton">LAUNCH OFFLINE</button>
 	</div>

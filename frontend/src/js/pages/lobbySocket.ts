@@ -634,10 +634,6 @@ function resetLobbyState(): void {
 	playerListEl.innerHTML = "";
 	updateCounts(0);
 
-	// Prevent resetting if the multiplayer tab exists
-	const elem = document.getElementById("lobby-multiplayer-tab");
-	if (elem) return;
-
 	// Clear socket keepalive interval
 	if ((window as any).socketPingInterval) {
 		clearInterval((window as any).socketPingInterval);
@@ -661,10 +657,6 @@ function resetLobbyState(): void {
 
 	// Reset lobby mode
 	window.selectLobbyMode("reset");
-
-	// Gray out lobby mode buttons tab
-	const tabMode = document.querySelector("#lobby-mode-buttons");
-	tabMode?.classList.add("grayed");
 
 	// Clear join input
 	joinInput.value = "";

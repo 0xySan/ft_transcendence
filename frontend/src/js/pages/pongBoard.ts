@@ -229,7 +229,11 @@ addListener(window, 'themeChange', (event: CustomEvent) => {
 	currentThemeColors = getThemeColors();
 });
 
+let gameEnded = false;
+
 function endGame() {
+	if (gameEnded) return;
+	gameEnded = true;
 	notify("Game has ended.", { type: "info" });
 	window.pongTimer.stopTimer();
 	const navBar = document.getElementById("nav-bar");
@@ -1300,9 +1304,19 @@ function handleTouch(event: TouchEvent) {
 		if (y < height / 2) direction = "up";
 		else direction = "down";
 
-		// determine frame
 		const frameId = pongGame.getCurrentFrame();
-		buffer.setKeyAndBuildFrame(direction, true, frameId);
+		const frame = buffer.setKeyAndBuildFrame(direction, true, frameId);
+		if (!frame) continue;
+
+		if (!window.isGameOffline) {
+			window.socket!.send(JSON.stringify({
+				type: "input",
+				payload: {
+					userId: window.localPlayerId!,
+					inputs: [frame],
+				}
+			}));
+		}
 	}
 }
 
@@ -1311,17 +1325,30 @@ function handleTouch(event: TouchEvent) {
  */
 function handleTouchEnd(event: TouchEvent) {
 	event.preventDefault();
+
 	const buffers = [pongBoard.playerPaddle.buffer];
 	if (window.isGameOffline && pongBoard.player2Paddle)
 		buffers.push(pongBoard.player2Paddle.buffer);
 
 	for (const buffer of buffers) {
 		const frameId = pongGame.getCurrentFrame();
-		buffer.setKeyAndBuildFrame("up", false, frameId);
-		buffer.setKeyAndBuildFrame("down", false, frameId);
+
+		const frameUp = buffer.setKeyAndBuildFrame("up", false, frameId);
+		const frameDown = buffer.setKeyAndBuildFrame("down", false, frameId);
+
+		const frames = [frameUp, frameDown].filter(Boolean);
+
+		if (!window.isGameOffline && frames.length > 0) {
+			window.socket!.send(JSON.stringify({
+				type: "input",
+				payload: {
+					userId: window.localPlayerId!,
+					inputs: frames,
+				}
+			}));
+		}
 	}
 }
-
 
 /* -------------------------------------------------------------------------- */
 /*								  GAME LOOP								 */

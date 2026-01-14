@@ -110,7 +110,7 @@ const defaultSettings: Settings = {
 		visibility: true
 	},
 	scoring: {
-		firstTo: 5,
+		firstTo: 1,
 		winBy: 1,
 	},
 	ball: {
@@ -774,8 +774,10 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 		// reset state
 		leaveBtn.classList.add("unloaded");
 		launchBtn.classList.add("unloaded");
-		joinBox.classList.remove("unloaded");
-		joinBtn.classList.remove("unloaded");
+		if (window.currentUser) {
+			joinBox.classList.remove("unloaded");
+			joinBtn.classList.remove("unloaded");
+		}
 		tabMode?.classList.remove("grayed");
 	}
 }
@@ -803,13 +805,11 @@ async function setupLobbyModeHandlers(): Promise<void> {
 
 	// enable/disable join area depending on login presence
 	if (isUserLogged) {
-		getElQS<HTMLDivElement>("#lobby-action-buttons").classList.remove("unloaded");
+		const joinSvg = getElQS<HTMLDivElement>("#lobby-online");
+		joinSvg.classList.remove("unclickable");
+		joinSvg.classList.remove("grayed");
 		userConnected.classList.remove("unclickable");
 		lobbyJoin.classList.remove("unclickable");
-	} else {
-		userConnected.classList.add("unclickable");
-		lobbyJoin.classList.add("unclickable");
-		getElQS<HTMLDivElement>("#lobby-join-box")?.classList.add("grayed");
 	}
 
 	addListener(offlineBtn, "click", () => {
