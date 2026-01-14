@@ -28,6 +28,8 @@
   "lobby": {
     "offlineMode": "Mode hors ligne",
     "onlineMode": "Mode en ligne",
+    "tournamentOnlineButton": "LANCER EN LIGNE",
+    "tournamentOfflineButton": "LANCER HORS LIGNE",
     "customGameButton": "PARTIE PERSONNALISÉE",
     "findPlayerButton": "Trouver un joueur",
     "multiplayerButton": "MULTIJOUEUR",

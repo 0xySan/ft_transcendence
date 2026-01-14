@@ -28,6 +28,8 @@
   "lobby": {
     "offlineMode": "Jugar sin conexión",
     "onlineMode": "Jugar en línea",
+    "tournamentOnlineButton": "INICIAR EN LÍNEA",
+    "tournamentOfflineButton": "INICIAR SIN CONEXIÓN",
     "customGameButton": "JUEGO PERSONALIZADO",
     "findPlayerButton": "Buscar Jugador",
     "multiplayerButton": "MULTIJUGADOR",

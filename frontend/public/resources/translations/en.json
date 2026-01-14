@@ -29,6 +29,8 @@
     "offlineMode": "Play offline",
     "onlineMode": "Play online",
     "customGameButton": "CUSTOM GAME",
+    "tournamentOnlineButton": "LAUNCH ONLINE",
+    "tournamentOfflineButton": "LAUNCH OFFLINE",
     "findPlayerButton": "Find Player",
     "multiplayerButton": "MULTIPLAYER",
     "players": "Players",
