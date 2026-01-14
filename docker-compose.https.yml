@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  nginx:
+    ports:
+      - "8443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - ./nginx/ssl.conf:/etc/nginx/conf.d/ssl.conf:ro
