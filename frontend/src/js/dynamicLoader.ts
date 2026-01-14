@@ -153,7 +153,7 @@ async function updatePage(url: string, html: string, mode: 'push' | 'replace'): 
 	currentUrl = document.getElementById('currentUrl')?.textContent || url;
 
 	const targetUrl = window.location.pathname;
-	if ((targetUrl == '/lobby' || targetUrl == '/pong-board') && (!currentUrl.includes('lobby') && !currentUrl.includes('pong-board'))) {
+	if ((targetUrl == '/lobby' || targetUrl == '/pong-board' || targetUrl == '/tournament') && (!currentUrl.includes('lobby') && !currentUrl.includes('pong-board') && !currentUrl.includes('tournament'))) {
 		resetLobby();
 	}
 

@@ -684,6 +684,7 @@ addListener(uiTournament.launchOnlineBtn, "click", () => {
 
 addListener(uiTournament.launchOfflineBtn, "click", () => {
 	window.tournamentMode = "offline";
+	setPartialLobbyConfig(currentSettings);
 	loadPage("/tournament");
 });
 
@@ -1011,6 +1012,8 @@ else if (window.isGameOffline && window.lobbySettings) {
 	window.lobbySettings = structuredClone(currentSettings);
 	setupLobbyModeHandlers();
 }
+const TOURNAMENT_STORAGE_KEY = "ft_tournament_offline_state_v1";
+localStorage.removeItem(TOURNAMENT_STORAGE_KEY);
 
 // Auto-join by code present in URL (query `?code=ABCD`, `?gameCode=ABCD`, path ending with `/ABCD`, or hash `#ABCD`).
 // Reuses the same logic as the `JOIN` button by setting the input value and dispatching a click event.

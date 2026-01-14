@@ -5,6 +5,8 @@
  * including panning and zooming features.
  */
 
+import { Settings } from "../global";
+
 
 /** ### addListener
  * Adds an event listener to a target element if the target is not null.
@@ -16,11 +18,26 @@ declare function addListener(target: EventTarget | null, event: string, handler:
 
 declare global {
 	interface Window {
+		lobbySettings?: Settings;
 		tournamentMode: "online" | "offline";
+		tournamentState?: TournamentState;
+		gameResults?: {
+			scores: Record<string, number>;
+			winner?: string;
+			ended: boolean;
+		};
+		playerList?: tournamentPlayer[];
 	}
 }
 
 export {};
+
+/** ### loadPage
+ * - Loads a new page by URL.
+ * - Use the dynamic page loader to ensure proper cleanup.
+ * @param url - The URL of the page to load.
+ */
+declare function loadPage(url: string): void;
 
 /**
  * ### Element Selection
@@ -179,6 +196,21 @@ interface PlayerDragState {
 	ghostElem: HTMLLIElement | null;
 	placeholderElem: HTMLLIElement | null;
 }
+
+// ----------------------- Tournament state --------------------------------
+
+
+type StoredMatch = MatchSlot & {
+	played?: boolean;
+	score?: { left: number; right: number } | null;
+	// p1/p2 keep tournamentPlayer or null
+};
+
+export interface TournamentState {
+	rounds: StoredMatch[][];
+	currentMatch?: { roundIndex: number; matchIndex: number } | null;
+}
+
 
 /* ==================================================================
 							PAN & ZOOM FUNCTIONS
@@ -514,6 +546,8 @@ const updatePlayerName = debounce((index: number, newName: string) => {
 
 	// Re-render bracket with updated names
 	InitializeBracket(playersState);
+	window.playerList = playersState;
+	saveTournamentState();
 }, 200);
 
 /** ### updatePlayerList
@@ -567,6 +601,7 @@ function updatePlayerList(players: tournamentPlayer[]): void {
 
 		playerListElem!.appendChild(li);
 	});
+	window.playerList = playersState;
 }
 
 /* ==================================================================
@@ -1065,6 +1100,390 @@ function resetPlayerDrag(): void {
 }
 
 
+
+/* ========================= TOURNAMENT STATE HELPERS ========================= */
+
+/**
+ * Key used in localStorage to persist offline tournament state
+ */
+const TOURNAMENT_STORAGE_KEY = "ft_tournament_offline_state_v1";
+
+/**
+ * Save tournament state to localStorage (only in offline mode).
+ */
+function saveTournamentState(): void {
+	if (window.tournamentMode !== "offline" || !window.tournamentState) return;
+	try {
+		localStorage.setItem(TOURNAMENT_STORAGE_KEY, JSON.stringify(window.tournamentState));
+	} catch (err) {
+		console.warn("Could not save tournament state:", err);
+	}
+}
+
+
+/**
+ * Load tournament state from localStorage.
+ * Returns null if none or invalid.
+ */
+function loadTournamentState(): TournamentState | null {
+	try {
+		const raw = localStorage.getItem(TOURNAMENT_STORAGE_KEY);
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as TournamentState;
+		// basic validation
+		if (!parsed || !Array.isArray(parsed.rounds)) return null;
+		return parsed;
+	} catch (err) {
+		console.warn("Could not read tournament state:", err);
+		return null;
+	}
+}
+
+/**
+ * Build initial TournamentState from a flat player list.
+ * Players must be ordered by seed/rank (players[i].rank should be set).
+ */
+function buildInitialTournamentState(players: tournamentPlayer[]): TournamentState {
+	const count = players.length;
+	const bracketSize = nextPowerOfTwo(Math.max(1, count));
+
+	// pad players array with nulls
+	const padded: (tournamentPlayer | null)[] = players.slice();
+	for (let i = count; i < bracketSize; i++) padded.push(null);
+
+	// create first round matches
+	let globalCounter = 1;
+	const rounds: StoredMatch[][] = [];
+	const firstRound: StoredMatch[] = [];
+	for (let i = 0; i < padded.length; i += 2) {
+		firstRound.push({
+			p1: padded[i],
+			p2: padded[i + 1],
+			number: (i / 2) + 1,
+			globalId: globalCounter++,
+			played: false,
+			score: null
+		});
+	}
+	rounds.push(firstRound);
+
+	// subsequent rounds placeholders
+	let prevMatches = firstRound.length;
+	while (prevMatches > 1) {
+		const cur: StoredMatch[] = [];
+		for (let i = 0; i < prevMatches; i += 2) {
+			cur.push({
+				p1: null,
+				p2: null,
+				number: (i / 2) + 1,
+				globalId: globalCounter++,
+				played: false,
+				score: null
+			});
+		}
+		rounds.push(cur);
+		prevMatches = cur.length;
+	}
+
+	// find first unplayed match (first round first match)
+	const firstCurrent = { roundIndex: 0, matchIndex: 0 };
+
+	return {
+		rounds,
+		currentMatch: firstCurrent
+	};
+}
+
+/**
+ * Find next match to play in the TournamentState.
+ * Strategy: scan rounds from round 0 upwards, match 0..n and return first
+ * match that is not played AND which has two participants (p1 && p2).
+ */
+function findNextMatch(state: TournamentState): { roundIndex: number; matchIndex: number } | null {
+	for (let r = 0; r < state.rounds.length; r++) {
+		for (let m = 0; m < state.rounds[r].length; m++) {
+			const match = state.rounds[r][m];
+			if (!match.played && match.p1 && match.p2) {
+				return { roundIndex: r, matchIndex: m };
+			}
+		}
+	}
+	return null;
+}
+
+/**
+ * Render bracket from TournamentState (replaces InitializeBracket usage
+ * when a stored state exists).
+ */
+function renderBracketFromState(state: TournamentState): void {
+	roundsWrapper!.innerHTML = "";
+
+	for (let r = 0; r < state.rounds.length; r++) {
+		const roundMatches = state.rounds[r];
+		const roundElem = createRoundElement(r, r === 0 ? "Round 1" : `Round ${r + 1}`);
+		const matchesContainer = roundElem.querySelector(".round-matches") as HTMLElement;
+
+		for (let mi = 0; mi < roundMatches.length; mi++) {
+			const slot = roundMatches[mi];
+			const matchElem = createBracketMatch(slot, undefined, undefined);
+
+			// show score if played
+			const score1 = matchElem.querySelector<HTMLElement>(".match-score1");
+			const score2 = matchElem.querySelector<HTMLElement>(".match-score2");
+			if (slot.score) {
+				if (score1) score1.textContent = String(slot.score.left);
+				if (score2) score2.textContent = String(slot.score.right);
+			} else {
+				if (score1) score1.textContent = "-";
+				if (score2) score2.textContent = "-";
+			}
+
+			// mark played
+			if (slot.played) matchElem.classList.add("played-match");
+			// attach data attrs for click handlers
+			(matchElem as HTMLElement).dataset.roundIndex = String(r);
+			(matchElem as HTMLElement).dataset.matchIndex = String(mi);
+
+			const wrapper = document.createElement("div");
+			wrapper.className = "match-wrapper";
+			wrapper.style.display = "flex";
+			wrapper.style.justifyContent = "center";
+			wrapper.appendChild(matchElem);
+			matchesContainer.appendChild(wrapper);
+		}
+
+		roundsWrapper!.appendChild(roundElem);
+	}
+
+	// draw connectors after layout
+	ensureConnectorSvg();
+	setTimeout(drawConnectors, 0);
+}
+
+/**
+ * Helper: set current match in state and save.
+ */
+function setCurrentMatch(roundIndex: number, matchIndex: number | null): void {
+	if (!window.tournamentState) return;
+	if (matchIndex === null) window.tournamentState.currentMatch = null;
+	else window.tournamentState.currentMatch = { roundIndex, matchIndex };
+	saveTournamentState();
+}
+
+/* ========================= LAUNCH / RESULT FLOW ========================= */
+
+/**
+ * Prepare window.pendingGameStart and other globals, then load the pong board.
+ * - expects TournamentState.currentMatch to be set and valid.
+ * - maps players to user1 / user2 and sets sides (left/right).
+ */
+function launchCurrentMatch(): void {
+	if (!window.tournamentState || !window.tournamentState.currentMatch) {
+		console.warn("No current match selected");
+		return;
+	}
+
+	const { roundIndex, matchIndex } = window.tournamentState.currentMatch;
+	const match = window.tournamentState.rounds[roundIndex][matchIndex];
+	if (!match || !match.p1 || !match.p2) {
+		console.warn("Current match has missing players");
+		return;
+	}
+
+	// Ensure lobby settings exist
+	if (!window.lobbySettings) {
+		window.notify?.("Lobby settings required to start offline match", { type: "error" });
+		return;
+	}
+
+	// Build pendingGameStart with simple mapping:
+	// user1 -> p1, user2 -> p2
+	window.isGameOffline = true;
+	window.pendingGameStart = {
+		action: "start",
+		playerSides: {
+			user1: "left",
+			user2: "right"
+		},
+		startTime: Date.now() + 1200
+	};
+
+	// store mapping from userX to playerId so we know who scored later
+	// keep it in tournamentState for later resolution
+	// add a "meta" place inside tournamentState to remember mapping
+	// (we don't have a dedicated field in types, so we use window.gameResults for this run)
+	window.gameResults = {
+		scores: {
+			user1: 0,
+			user2: 0
+		},
+		ended: false
+	};
+
+	// Save current match identity so pong can call back
+	(window as any)._currentTournamentMatch = { roundIndex, matchIndex, p1Id: match.p1.id, p2Id: match.p2.id };
+
+	// set simple player names mapping used by pong page UI (optional)
+	window.playerNames = window.playerNames || {};
+	window.playerNames["user1"] = match.p1.name;
+	window.playerNames["user2"] = match.p2.name;
+
+	// localPlayerId remains as user1 by default (player controlling left)
+	window.localPlayerId = "user1";
+
+	// persist state (so if user goes back we still have it)
+	saveTournamentState();
+
+	// finally, load pong page (adapt name to your loader)
+	loadPage("pong-board");
+}
+
+/**
+ * Handler called when a match finishes.
+ * Expected to be invoked by the pong page when it ends a match.
+ * The pong page should dispatch a custom event on window:
+ *   window.dispatchEvent(new CustomEvent('pong:matchResult', { detail: { left: number, right: number } }))
+ */
+function handleMatchResult(detail: { left: number; right: number }): void {
+	// pull the active match info we stored prior to launch
+	const cur = (window as any)._currentTournamentMatch as { roundIndex: number; matchIndex: number; p1Id: number; p2Id: number } | undefined;
+	if (!cur || !window.tournamentState) {
+		console.warn("No current tournament match stored");
+		return;
+	}
+
+	const { roundIndex, matchIndex, p1Id, p2Id } = cur;
+	const state = window.tournamentState;
+	const match = state.rounds[roundIndex][matchIndex];
+
+	// mark played and set score (left corresponds to p1 / user1)
+	match.played = true;
+	match.score = { left: detail.left, right: detail.right };
+
+	// determine winner player object
+	let winnerPlayer: tournamentPlayer | null = null;
+	if (detail.left > detail.right) winnerPlayer = match.p1!;
+	else if (detail.right > detail.left) winnerPlayer = match.p2!;
+	// tie -> none, treat as no propagation
+
+	// propagate winner to next round
+	const nextRoundIndex = roundIndex + 1;
+	if (winnerPlayer && state.rounds[nextRoundIndex]) {
+		const nextMatchIndex = Math.floor(matchIndex / 2);
+		const nextMatch = state.rounds[nextRoundIndex][nextMatchIndex];
+		if (nextMatch) {
+			// place in p1 if this matchIndex is even, else p2
+			if (matchIndex % 2 === 0) nextMatch.p1 = winnerPlayer;
+			else nextMatch.p2 = winnerPlayer;
+		}
+	}
+
+	// clear running metadata
+	delete (window as any)._currentTournamentMatch;
+	window.gameResults = { scores: {}, ended: true };
+
+	// save & re-render
+	saveTournamentState();
+	renderBracketFromState(state);
+
+	// set next current match automatically if any
+	const next = findNextMatch(state);
+	if (next) {
+		setCurrentMatch(next.roundIndex, next.matchIndex);
+		highlightCurrentMatchInDOM(next.roundIndex, next.matchIndex);
+	} else {
+		setCurrentMatch(0, null); // none left
+	}
+
+	// optionally notify user
+	window.notify?.("Match result recorded", { type: "success" });
+}
+
+/**
+ * Highlight currently selected match in DOM (adds `current-match` class).
+ */
+function highlightCurrentMatchInDOM(roundIndex: number, matchIndex: number): void {
+	// remove previous
+	Array.from(document.querySelectorAll(".match-bracket.current-match")).forEach(el => el.classList.remove("current-match"));
+
+	const target = roundsWrapper!.querySelector<HTMLElement>(`.tournament-round[data-round-index="${roundIndex}"] .match-bracket`);
+	// more robust lookup:
+	const roundElem = roundsWrapper!.querySelector<HTMLElement>(`.tournament-round[data-round-index="${roundIndex}"]`);
+	if (!roundElem) return;
+	const matchWrappers = Array.from(roundElem.querySelectorAll<HTMLElement>(".match-wrapper"));
+	const wrapper = matchWrappers[matchIndex];
+	if (!wrapper) return;
+	const matchBracket = wrapper.querySelector<HTMLElement>(".match-bracket");
+	if (matchBracket) matchBracket.classList.add("current-match");
+}
+
+/* ========================= BOOTSTRAP: wire up next-match ========================= */
+
+/**
+ * Build or load tournament state and render.
+ * Call this once on page init (instead of calling InitializeBracket(players) when offline).
+ */
+function bootstrapTournamentOffline(playersInput: tournamentPlayer[]): void {
+	// restore saved state or create new
+	let state = loadTournamentState();
+	if (!state) {
+		state = buildInitialTournamentState(playersInput);
+		window.tournamentState = state;
+		saveTournamentState();
+	} else {
+		window.tournamentState = state;
+		//handle match resul if any
+		if (window.gameResults && window.gameResults.ended) {
+			const cur = (window as any)._currentTournamentMatch as { roundIndex: number; matchIndex: number; p1Id: number; p2Id: number } | undefined;
+			if (cur)
+				handleMatchResult(window.gameResults.scores as { left: number; right: number });
+		}
+	}
+
+	// ensure window.playerList reflects players
+	window.playerList = playersInput.slice();
+
+	// render UI
+	updatePlayerList(playersInput);
+	renderBracketFromState(window.tournamentState);
+
+	// set current match (if null, find one)
+	if (!window.tournamentState.currentMatch) {
+		const next = findNextMatch(window.tournamentState);
+		if (next) setCurrentMatch(next.roundIndex, next.matchIndex);
+		else setCurrentMatch(0, null);
+	}
+
+	// highlight
+	if (window.tournamentState.currentMatch) {
+		const c = window.tournamentState.currentMatch;
+		highlightCurrentMatchInDOM(c.roundIndex, c.matchIndex);
+	}
+
+	// Add / bind next match button
+	let nextBtn = document.getElementById("next-match-button") as HTMLButtonElement | null;
+	if (!nextBtn) {
+		nextBtn = document.createElement("button");
+		nextBtn.id = "next-match-button";
+		nextBtn.textContent = "Play next match";
+		playerListElem!.appendChild(nextBtn);
+	}
+	addListener(nextBtn, "click", () => {
+		// find next match to play
+		const state = window.tournamentState!;
+		const next = findNextMatch(state);
+		if (!next) {
+			window.notify?.("No next match available", { type: "info" });
+			return;
+		}
+		// set it as current and launch
+		setCurrentMatch(next.roundIndex, next.matchIndex);
+		highlightCurrentMatchInDOM(next.roundIndex, next.matchIndex);
+		launchCurrentMatch();
+	});
+}
+
+
 /* ==================================================================
 						INITIALIZATION
    ================================================================== */
@@ -1104,7 +1523,6 @@ addListener(window, "resize", () => {
 let players: tournamentPlayer[];
 
 if (window.tournamentMode === "offline") {
-	console.log("Initializing offline tournament with example players.");
 	players = [
 		{ id: 1, name: "PlayerOne", rank: 1 },
 		{ id: 2, name: "PlayerTwo", rank: 2 },
@@ -1124,3 +1542,23 @@ updatePlayerList(players);
 
 // Initialize bracket (with example data)
 InitializeBracket(players);
+
+if (window.tournamentMode === "offline") {
+	// If offline add a next match button at the end
+	const nextMatchBtn = document.createElement("button");
+	nextMatchBtn.id = "next-match-button";
+	nextMatchBtn.textContent = "Next Match";
+	const playerListElem = document.getElementById("tournament-player-list");
+	if (playerListElem)
+		playerListElem.appendChild(nextMatchBtn);
+	else
+		console.warn("Could not find player list element to append next match button");
+
+	addListener(nextMatchBtn, "click", () => {
+		window.isGameOffline = true;
+		launchCurrentMatch();
+	});
+
+	// bootstrap offline tournament
+	bootstrapTournamentOffline(players);
+}

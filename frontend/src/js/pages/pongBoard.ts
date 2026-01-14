@@ -2,6 +2,7 @@
 import type { BallSettings, PlayerPayload, Settings } from "../global";
 import type { gameStartAckPayload } from "./lobbySocket";
 import { PongTimer } from "./pongBoardUtils";
+import { TournamentState } from "./tournament";
 
 /* -------------------------------------------------------------------------- */
 /*							   GLOBAL DECLARATIONS						  */
@@ -16,7 +17,23 @@ declare global {
 		pendingGameStart?: gameStartAckPayload;
 		lobbySettings?: Settings;
 		pongTimer: PongTimer;
+
+		gameResults?: {
+			scores: Record<string, number>;
+			winner?: string;
+			ended: boolean;
+		};
+
+		tournamentState?: TournamentState;
 	}
+}
+
+if (!window.gameResults) {
+	window.gameResults = {
+		scores: {},
+		winner: undefined,
+		ended: false,
+	};
 }
 
 /** ### addListener
@@ -167,7 +184,10 @@ function endGame() {
 	setTimeout(() => { 
 		pongGame.destroy();
 		window.pongTimer.stopTimer();
-		loadPage("lobby"); 
+		if (window.tournamentState)
+			loadPage("tournament");
+		else
+			loadPage("lobby"); 
 	}, 1000);
 }
 
@@ -821,6 +841,7 @@ class PongBoard {
 			else if (side === "right" && isLeftPlayer) {
 				this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
 			}
+			window.gameResults!.scores[playerId] = this.scores.get(playerId) || 0;
 		}
 		
 		// Update UI
@@ -856,12 +877,23 @@ class PongBoard {
 					countdownDiv.textContent = "";
 					countdownDiv.style.display = "flex";
 					countdownDiv.textContent = String(message);
+
+					// mark tournament result
+					window.gameResults!.ended = true;
+					window.gameResults!.scores = Object.fromEntries(this.scores);
+
+					// determine winner
+					let winnerId: string | undefined;
+					for (const [playerId, score] of this.scores) {
+						if (score === maxScore)
+							winnerId = playerId;
+					}
+					window.gameResults!.winner = winnerId;
+
 					
 					// Reset window for lobby
-					window.isGameOffline = false;
 					window.pendingGameStart = undefined;
 					window.localPlayerId = undefined;
-					window.lobbySettings = undefined;
 					// End game
 					endGame();
 					break;
