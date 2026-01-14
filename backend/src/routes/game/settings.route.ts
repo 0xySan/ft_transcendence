@@ -23,7 +23,9 @@ export function gameSettingsRoute(fastify: FastifyInstance) {
 			if (!userId)
 				return reply.status(400).send({ error: 'User ID is required to update settings.' });
 			let game = null;
+			console.log("DEBUG: games = ", activeGames);
 			for (const [, g] of activeGames.entries()) {
+				console.log("DEBUG: userId = " + userId + " | g.players = " + g.players);
 				if (g.players.has(userId)) {
 					game = g;
 					break;

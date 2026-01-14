@@ -83,6 +83,7 @@ const playerMaxCountEl = getEl<HTMLSpanElement>("player-max-count");
 const lobbyTournamentTab = getEl<HTMLSpanElement>("lobby-tournament-tab");
 
 const htmlSettings = {
+	privateCheckBox: getEl<HTMLDivElement>("lobby-private-checkbox-id"),
 	basic: {
 		div: getEl<HTMLDivElement>("lobby-custom-game-basic-settings"),
 	},
@@ -298,7 +299,9 @@ function handlePlayerSync(payload: PlayerSyncPayload): void {
 	{
 		htmlSettings.basic.div.classList.remove("grayed");
 		htmlSettings.advanced.div.classList.remove("grayed");
+		htmlSettings.privateCheckBox.classList.remove("grayed");
 	} else if (window.socket) {
+		htmlSettings.privateCheckBox.classList.add("grayed");
 		htmlSettings.basic.div.classList.add("grayed");
 		htmlSettings.advanced.div.classList.add("grayed");
 	}
@@ -545,6 +548,7 @@ window.joinGame = joinGame;
  * On success, connects to the lobby WebSocket with the received auth token.
  */
 async function createGame(): Promise<void> {
+	console.log("DEBUG: test here !");
 	const res = await fetch("/api/game/new", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
