@@ -1,34 +1,35 @@
 {
   "about": {
-    "built-by": "Built as a full-stack end-of-cursus project by:",
-    "catchphrase": "Play, connect, and transcend the ordinary.",
-    "challenge": "Challenge your friends or test your skills against others in Pong and Tetris, reimagined for the web with smooth real-time gameplay, dynamic leaderboards, and sleek design.",
-    "combination-text": "Transcendence 42 combines modern technologies with nostalgic gameplay to deliver an immersive and competitive online experience.",
-    "description": "Transcendence is a modern web application where fun meets functionality, a social gaming platform designed to bring players together through timeless classics.",
-    "title": "About Transcendence 42"
+    "built-by": "Construido como un proyecto de fin de curso de pila completa por:",
+    "catchphrase": "Juega, conecta y trasciende lo ordinario.",
+    "challenge": "Desafía a tus amigos o pon a prueba tus habilidades contra otros en Pong, reinventado para la web con un juego en tiempo real fluido, tablas de clasificación dinámicas y un diseño elegante.",
+    "combination-text": "Transcendence 42 combina tecnologías modernas con una jugabilidad nostálgica para ofrecer una experiencia en línea inmersiva y competitiva.",
+    "description": "Transcendence es una aplicación web moderna donde la diversión se encuentra con la funcionalidad, una plataforma de juegos sociales diseñada para reunir a los jugadores a través de los clásicos atemporales.",
+    "title": "Acerca de Transcendence 42"
   },
   "footer": {
-    "aboutLink": "About",
-    "copyrightText": "© 2024 Transcendence 42. All rights reserved.",
+    "aboutLink": "Acerca de",
+    "copyrightText": "© 2025 Transcendence 42. Todos los derechos reservados.",
     "githubLink": "GitHub",
-    "homeLink": "Home",
-    "privacyPolicyLink": "Privacy Policy"
+    "homeLink": "Inicio",
+    "privacyPolicyLink": "Política de privacidad"
   },
   "forgotPassword": {
-    "backToLogin": "Back to Login",
-    "emailLabel": "Email:",
-    "instructions": "Enter your email address below to receive a password reset link.",
-    "resetPassword": "Reset Password",
-    "title": "Forgot your password?"
+    "backToLogin": "Volver al inicio de sesión",
+    "emailLabel": "Correo electrónico:",
+    "instructions": "Ingresa tu dirección de correo electrónico a continuación para recibir un enlace para restablecer tu contraseña.",
+    "resetPassword": "Restablecer contraseña",
+    "title": "¿Olvidaste tu contraseña?"
   },
   "home": {
-    "landingDescription": "Pong meets Tetris on a social platform created to let you enjoy your childhood's games!",
-    "playButton": "PLAY"
+    "landingDescription": "¡Pong en una plataforma social creada para que disfrutes los juegos de tu infancia!",
+    "playButton": "JUGAR"
   },
   "lobby": {
     "offlineMode": "Jugar sin conexión",
     "onlineMode": "Jugar en línea",
     "customGameButton": "JUEGO PERSONALIZADO",
+    "findPlayerButton": "Buscar Jugador",
     "multiplayerButton": "MULTIJUGADOR",
     "players": "Jugadores",
     "tournamentButton": "TORNEO",
@@ -62,88 +63,306 @@
     "paddleFriction": "Fricción de la paleta",
     "worldWidth": "Ancho del mundo",
     "worldHeight": "Alto del mundo",
-    "waitingTitle": "Attento juevos",
+    "waitingTitle": "Buscando oponente",
     "fieldWallThickness": "Grosor de las paredes del campo"
   },
+  "login": {
+    "forgotPasswordText": "¿Olvidaste tu contraseña? <a href=\"/forgot-password\">Restablécela aquí</a>",
+    "loginButton": "Iniciar sesión",
+    "loginTitle": "Inicio de sesión",
+    "noAccountText": "¿No tienes cuenta? <a href=\"/register\">Regístrate aquí</a>",
+    "passwordLabel": "Contraseña:",
+    "registerHereLink": "Regístrate aquí",
+    "rememberMeLabel": "Recuérdame",
+    "usernameLabel": "Nombre de usuario o correo electrónico:",
+    "error": {
+      "loginFailed": "Error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.",
+      "invalidForm": "Entrada del formulario inválida. Corrige los errores e inténtalo de nuevo.",
+      "usernameRequirements": "El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras, números y guiones bajos.",
+      "invalidEmail": "Por favor, ingresa una dirección de correo electrónico válida.",
+      "passwordRequirements": "La contraseña debe tener entre 8 y 64 caracteres."
+    }
+  },
   "mailverification": {
-    "changeEmail": "Change email",
-    "message": "We've sent an email to <span class=\"font-poppins-semibold\" id=\"verification-email\">[ADDRESS]</span>. Check your inbox and click the verification link to confirm your email address.",
-    "resendEmail": "Resend Email",
-    "title": "Check your mailbox"
+    "changeEmail": "Cambiar correo electrónico",
+    "message": "Hemos enviado un correo a <span class=\"font-poppins-semibold\" id=\"verification-email\">[DIRECCIÓN]</span>. Revisa tu bandeja de entrada y haz clic en el enlace de verificación para confirmar tu dirección de correo electrónico.",
+    "resendEmail": "Reenviar correo",
+    "title": "Revisa tu bandeja de entrada"
+  },
+  "navbar": {
+    "homeText": "Inicio",
+    "playText": "Jugar",
+    "leaderboardText": "Tabla de clasificación",
+    "profileText": "Perfil",
+    "publicLobbies": "Lista de salas disponibles",
+    "loginButton": "Iniciar sesión",
+    "registerButton": "Registrarse"
   },
   "register": {
-    "alreadyHaveAccount": "Already have an account? <a href=\"/login\" class=\"link-peach-to-maroon\" data-translate-key=\"register.loginHereLink\">Login here</a>",
-    "confirmPasswordLabel": "Confirm Password:",
-    "emailLabel": "Email:",
-    "loginHereLink": "Login here",
-    "passwordLabel": "Password:",
-    "registerButton": "Register",
-    "usernameLabel": "Username:",
+    "alreadyHaveAccount": "¿Ya tienes cuenta? <a href=\"/login\" class=\"link-peach-to-maroon\" data-translate-key=\"register.loginHereLink\">Inicia sesión aquí</a>",
+    "confirmPasswordLabel": "Confirmar contraseña:",
+    "createAccount": "Crear una cuenta",
+    "emailLabel": "Correo electrónico:",
+    "loginHereLink": "Iniciar sesión aquí",
+    "passwordLabel": "Contraseña:",
+    "registerButton": "Registrarse",
+    "usernameLabel": "Nombre de usuario:",
     "error": {
-      "registerFailed": "Registro fallido. Por favor, inténtelo de nuevo más tarde.",
-      "formInvalid": "El formulario es inválido. Corregir los errores e inténtelo de nuevo.",
+      "registerFailed": "Registro fallido. Por favor, inténtalo de nuevo más tarde.",
+      "formInvalid": "El formulario es inválido. Corrige los errores e inténtalo de nuevo.",
       "usernameInvalid": "El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras, números y guiones bajos.",
-      "emailInvalid": "Por favor, introduzca una dirección de correo electrónico válida.",
+      "emailInvalid": "Por favor, ingresa una dirección de correo electrónico válida.",
       "passwordInvalid": "La contraseña debe tener entre 8 y 64 caracteres.",
       "passwordsMismatch": "Las contraseñas no coinciden."
     }
   },
-  "login": {
-    "error": {
-      "loginFailed": "Error de inicio de sesión. Por favor, inténtelo de nuevo más tarde",
-      "invalidForm": "Entrada de formulario inválida. Corrija los errores e inténtelo de nuevo.",
-      "usernameRequirements": "El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras, números y guiones bajos.",
-      "invalidEmail": "Por favor, introduzca una dirección de correo electrónico válida.",
-      "passwordRequirements": "La contraseña debe tener entre 8 y 64 caracteres."
+  "resetPassword": {
+    "backToLoginLink": "Volver al inicio de sesión",
+    "confirmPasswordLabel": "Confirmar contraseña:",
+    "passwordLabel": "Contraseña:",
+    "resetButton": "Restablecer contraseña",
+    "title": "Restablecer contraseña"
+  },
+  "settings": {
+    "section": {
+      "profile": "Perfil",
+      "security": "Seguridad",
+      "twofa": "Autenticación de dos factores",
+      "oauth": "OAuth"
+    },
+    "profileTitle": "Configuraciones de perfil",
+    "profile": {
+      "displayNameLabel": "Nombre para mostrar:",
+      "bioLabel": "Biografía:",
+      "avatarLabel": "Avatar:",
+      "avatarMode": {
+        "file": "Archivo",
+        "url": "URL"
+      },
+      "currentAvatarLabel": "Avatar actual:",
+      "updateButton": "Actualizar perfil",
+      "currentBackgroundLabel": "Fondo actual:",
+      "backgroundLabel": "Fondo:"
+    },
+    "securityTitle": "Configuraciones de seguridad",
+    "security": {
+      "currentPasswordLabel": "Contraseña actual:",
+      "newPasswordLabel": "Nueva contraseña:",
+      "repeatPasswordLabel": "Repetir nueva contraseña:",
+      "updatePasswordButton": "Actualizar contraseña"
+    },
+    "authMethods": {
+      "emailOtpPopupTitle": "Configuración de OTP por correo electrónico",
+      "emailAddressLabel": "Ingresa la dirección de correo electrónico para usar la autenticación de dos factores:",
+      "sendEmailOtpButton": "Enviar correo",
+      "emailSentMsg": "Correo enviado. Revisa tu bandeja de entrada.",
+      "emailOtpLabel": "Ingresa el código enviado a tu correo:",
+      "validateEmailOtpButton": "Validar",
+      "emailOtpError": "Código inválido. Por favor, inténtalo de nuevo."
+    },
+    "twofa": {
+      "title": "Autenticación de dos factores",
+      "instructions": "Administra tus métodos de 2FA: TOTP (autenticador), OTP por correo electrónico y códigos de respaldo.",
+      "enableEmailOtpButton": "Habilitar OTP por correo electrónico",
+      "enableTotpButton": "Habilitar TOTP (Autenticador)",
+      "generateBackupCodesButton": "Generar códigos de respaldo",
+      "disableEmailOtpButton": "Deshabilitar OTP por correo electrónico",
+      "disableTotpButton": "Deshabilitar TOTP (Autenticador)",
+      "deleteBackupCodesButton": "Eliminar códigos de respaldo"
+    },
+    "oauth": {
+      "title": "Cuentas OAuth",
+      "instructions": "Conecta o desconecta proveedores de OAuth para inicio de sesión rápido.",
+      "42link": "Vincular 42",
+      "42unlink": "Desvincular 42",
+      "GitHublink": "Vincular GitHub",
+      "GitHubunlink": "Desvincular GitHub",
+      "Discordlink": "Vincular Discord",
+      "Discordunlink": "Desvincular Discord",
+      "Googlelink": "Vincular Google",
+      "Googleunlink": "Desvincular Google"
+    },
+    "alert": {
+      "avatarUploadFailed": "Error al cargar el archivo del avatar.",
+      "avatarDownloadFailed": "Error al descargar el avatar desde la URL.",
+      "avatarUploadGenericFailed": "Error al cargar el avatar.",
+      "profileUpdated": "Perfil actualizado con éxito.",
+      "displayNameInvalid": "El nombre para mostrar es inválido.",
+      "profileUpdateFailed": "Error al actualizar el perfil.",
+      "newPasswordsMismatch": "Las nuevas contraseñas no coinciden.",
+      "passwordUpdated": "Contraseña actualizada con éxito.",
+      "currentPasswordIncorrect": "La contraseña actual es incorrecta.",
+      "newPasswordInvalid": "La nueva contraseña es inválida.",
+      "passwordUpdateFailed": "Error al actualizar la contraseña.",
+      "twofaConfigured": "La autenticación de dos factores se configuró con éxito."
     }
   },
-  "resetPassword": {
-    "backToLoginLink": "Back to Login",
-    "confirmPasswordLabel": "Confirm Password:",
-    "passwordLabel": "Password:",
-    "resetButton": "Reset Password",
-    "title": "Reset Password"
+  "twofa": {
+    "title": {
+      "totp": "Revisa tu aplicación TOTP",
+      "emailTotp": "Revisa tu correo para el código",
+      "backupCodes": "Ingresa uno de tus códigos de respaldo"
+    },
+    "instructions": {
+      "totp": "Abre tu aplicación TOTP e ingresa el código de verificación de 6 dígitos que aparece allí.",
+      "emailTotp": "Ingresa el código de 6 dígitos enviado a tu correo <span class=\"font-poppins-semibold\" id=\"verification-email\" data-address=\"[ADDRESS]\">[ADDRESS]</span>.",
+      "backupCodes": "Ingresa uno de tus códigos de respaldo. Al ingresar un código de respaldo, este quedará invalidado."
+    },
+    "methodText": "Selecciona otro método de verificación si es necesario.",
+    "otpContainer": "",
+    "otherMethodLabel": "Otro método de autenticación de dos factores",
+    "methodSelect": "",
+    "resendButton": "Reenviar código de verificación",
+    "totpPopupTitle": "Configuración del autenticador",
+    "totpCodeLabel": "Ingresa el código de tu aplicación:",
+    "validateTotpButton": "Validar",
+    "totpError": "Código inválido. Por favor, inténtalo de nuevo.",
+    "emailOtpPopupTitle": "Configuración de OTP por correo electrónico",
+    "emailOtpLabel": "Ingresa el código enviado a tu correo:",
+    "validateEmailOtpButton": "Validar",
+    "emailOtpError": "Código inválido. Por favor, inténtalo de nuevo.",
+    "backupCodesPopupTitle": "Códigos de respaldo",
+    "backupCodesInfo": "Por favor, escribe estos códigos y guárdalos en un lugar seguro. Cada código solo se puede usar una vez.",
+    "closeBackupCodesButton": "Cerrar",
+    "invalidCode": "Código inválido",
+    "noTokenReturned": "No se devolvió token",
+    "verificationFailed": "Verificación fallida. Inténtalo de nuevo más tarde.",
+    "networkError": "Error de red. Inténtalo de nuevo.",
+    "failedToSendEmail": "Error al enviar el correo. Inténtalo de nuevo más tarde."
   },
   "chat": {
     "send": "Enviar",
     "sending": "Enviando...",
     "invite": {
-      "send": "Invitar a jugar a Pong",
+      "send": "Invitar a jugar Pong",
       "accept": "Aceptar",
       "decline": "Rechazar",
       "cancel": "Cancelar",
       "play": "Jugar",
-      "receivedmsg": "@$user te ha invitado a jugar al Pong.",
-      "sentmsg": "Has invitado a @$user a jugar al Pong."
+      "receivedmsg": "@$user te invitó a jugar Pong.",
+      "sentmsg": "Invitaste a @$user a jugar Pong."
     },
     "block": {
       "blockbtn": "Bloquear",
       "unblockbtn": "Desbloquear",
-      "placeholder": "Enviar un mensaje a @$user",
-      "blockedPlaceholder": "Has bloqueado a @$user. Desbloquéalo para poder enviarle mensajes.",
-      "loadHint": "Desplácese hacia arriba para cargar los mensajes anteriores"
+      "placeholder": "Escribe un mensaje a @$user",
+      "blockedPlaceholder": "Has bloqueado a @$user. Desbloquéalo para enviarle mensajes.",
+      "loadHint": "Desplázate hacia arriba para cargar mensajes anteriores"
     },
-	  "loginPrompt": {
-      "text": "Por favor, inicie sesión para acceder a la función de chat.",
+    "loginPrompt": {
+      "text": "Por favor, inicia sesión para acceder a la función de chat.",
       "loginButton": "Iniciar sesión"
     }
   },
   "notify": {
     "failedToBlock": "No se pudo bloquear a {user}",
     "failedToUnblock": "No se pudo desbloquear a {user}",
-    "rateLimit": "Por favor, espere un momento entre mensajes",
+    "rateLimit": "Por favor, espera un momento entre mensajes",
     "messageTooLong": "El mensaje debe tener 4000 caracteres o menos",
-    "conversationEnded": "No puede enviar mensajes: esta conversación ha terminado.",
-    "cannotSendToUser": "No puede enviar mensajes a este usuario",
-    "invalidMessage": "Mensaje inválido: por favor verifique su entrada",
-    "failedToSend": "No se pudo enviar el mensaje: por favor inténtelo de nuevo",
+    "conversationEnded": "No puedes enviar mensajes: esta conversación ha terminado.",
+    "cannotSendToUser": "No puedes enviar mensajes a este usuario",
+    "invalidMessage": "Mensaje inválido - por favor verifica tu entrada",
+    "failedToSend": "No se pudo enviar el mensaje - por favor, inténtalo de nuevo",
     "failedToNavigateLobby": "No se pudo navegar al lobby",
-    "cannotInviteUser": "No puede enviar invitaciones a este usuario",
-    "failedToSendInvite": "No se pudo enviar la invitación: por favor inténtelo de nuevo",
-    "failedToLoadConversation": "Error al cargar la conversación",
-    "connectionLost": "Conexión perdida. Por favor actualice la página.",
-    "mustBeInLobby": "No se puede invitar: debe estar en un lobby para enviar invitaciones de juego",
+    "cannotInviteUser": "No puedes enviar invitaciones a este usuario",
+    "failedToSendInvite": "No se pudo enviar la invitación - por favor, inténtalo de nuevo",
+    "failedToLoadConversation": "No se pudo cargar la conversación",
+    "connectionLost": "Conexión perdida. Por favor, actualiza la página.",
+    "mustBeInLobby": "No se puede invitar: debes estar en un lobby para enviar invitaciones de juego",
     "inviteNoCode": "La invitación no tiene un código de juego válido",
     "inviteSent": "¡Invitación enviada!"
+  },
+  "lobbySocket": {
+    "notify": {
+      "connected": "Conectado al lobby del juego.",
+      "gameStarting": "¡El juego está comenzando!",
+      "settingsUpdated": "Las configuraciones del juego han sido actualizadas.",
+      "disconnected": "Desconectado del lobby del juego.",
+      "invalidGame": "Juego inválido",
+      "failedToJoinGame": "Error al unirse al juego: {error}",
+      "failedToJoinGameStatus": "Error al unirse al juego: {status} - {error}",
+      "playerJoined": "{name} se ha unido al lobby.",
+      "playerLeft": "{name} ha dejado el lobby."
+    }
+  },
+  "pongBoard": {
+    "notify": {
+      "elementNotFound": "Elemento no encontrado",
+      "lobbySettingsMissing": "Configuraciones del lobby no disponibles.",
+      "socketNotEstablished": "Conexión WebSocket no establecida.",
+      "localPlayerIdNotSet": "ID del jugador local no establecida.",
+      "pendingGameStartMissing": "No se encontró información de inicio de juego pendiente.",
+      "gameOver": "¡Juego terminado! Un jugador ha alcanzado el puntaje ganador.",
+      "gameEnded": "El juego ha terminado.",
+      "connectionLost": "Conexión perdida.",
+      "playerJoined": "{name} se unió al juego.",
+      "playerLeft": "{name} dejó el juego."
+    }
+  },
+  "profile": {
+    "notify": {
+      "gameItemTemplateNotFound": "Plantilla de ítem de juego no encontrada",
+      "profileInfoNotFound": "Div de información de perfil no encontrada",
+      "noProfileData": "No hay datos de perfil disponibles",
+      "failedToLoadProfilePicture": "Error al cargar la foto de perfil",
+      "failedToLoadBackgroundImage": "Error al cargar la imagen de fondo",
+      "failedToCreateChat": "Error al crear el chat. Por favor, inténtalo de nuevo."
+    }
+  },
+  "lobbySettings": {
+    "notify": {
+      "savedOffline": "Configuraciones guardadas localmente para el juego sin conexión.",
+      "saved": "Configuraciones guardadas con éxito.",
+      "saveError": "Error al guardar configuraciones: {error}",
+      "leftQueue": "Has dejado la cola.",
+      "leaveQueueError": "Error al salir de la cola.",
+      "addedQueue": "Estás añadido en una cola.",
+      "addQueueError": "Error al agregar en la cola.",
+      "loginRequired": "Por favor, inicia sesión para unirte a un lobby desde un enlace."
+    }
+  },
+  "publicLobbies": {
+    "title": "Salas públicas",
+    "summary": "Resumen",
+    "selectHint": "Selecciona una sala para ver los detalles.",
+    "updateButton": "Actualizar",
+    "columns": {
+      "code": "Código",
+      "owner": "Propietario",
+      "players": "Jugadores"
+    }
+  }
+  ,
+  "privacy": {
+    "title": "Política de privacidad",
+    "intro": "Esta política explica qué datos recopilamos y cómo los usamos para el proyecto Transcendence.",
+    "whatWeCollect": {
+      "title": "Qué recopilamos",
+      "text": "Recopilamos solo la información necesaria para operar el servicio:",
+      "account": "Información de la cuenta: nombre de usuario, correo electrónico (para autenticación y gestión de cuentas).",
+      "profile": "Datos del perfil: nombre para mostrar e imagen de avatar opcional que subas.",
+      "activity": "Actividad del juego y tablas de clasificación: puntuaciones y participación en salas públicas.",
+      "logs": "Registros técnicos: marcas de tiempo de conexión e IPs para diagnóstico y seguridad."
+    },
+    "howWeUse": {
+      "title": "Cómo usamos tus datos",
+      "text": "Los datos se usan para proporcionar el servicio, mantener cuentas, mostrar tablas de clasificación y para prevención básica de abusos."
+    },
+    "sharing": {
+      "title": "Compartir y terceros",
+      "text": "No vendemos tus datos personales. Podemos compartir datos limitados con servicios de terceros utilizados para enviar correos electrónicos o proveedores de OAuth; solo la información requerida para esas integraciones es compartida."
+    },
+    "cookies": {
+      "title": "Cookies y almacenamiento local",
+      "text": "La aplicación utiliza cookies y cookies de sesión para la autenticación y para mantener a los usuarios conectados. Algunas preferencias de la interfaz de usuario pueden almacenarse en localStorage."
+    },
+    "rights": {
+      "title": "Tus derechos",
+      "text": "Puedes solicitar acceso, corrección o eliminación de los datos de tu cuenta contactando a los mantenedores del proyecto. Para este proyecto escolar, la eliminación eliminará tu cuenta y los datos relacionados con el perfil; algunos registros pueden mantenerse por motivos de seguridad o depuración durante un corto período."
+    },
+    "contact": {
+      "title": "Contacto",
+      "text": "Si tienes preguntas de privacidad o deseas que se eliminen tus datos, contacta a los mantenedores a través del repositorio del proyecto o al correo electrónico data@moutig.sh."
+    }
   }
 }
