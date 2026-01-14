@@ -884,6 +884,16 @@ if (!playerListElem || !playerListTemplate)
 const updatePlayerName = debounce((index: number, newName: string) => {
 	playersState[index].name = newName;
 
+	// If offline and no match has been played yet, keep the "original" snapshot
+	// up-to-date with the most-recent user edits so it can be restored later.
+	if (window.tournamentMode === 'offline' && !anyMatchPlayed(window.tournamentState || loadTournamentState())) {
+		try {
+			saveOriginalPlayerNames(playersState.map(p => p.name));
+		} catch (e) {
+			// ignore save errors
+		}
+	}
+
 	// Re-render bracket with updated names
 	InitializeBracket(playersState);
 	window.playerList = playersState;
@@ -901,17 +911,42 @@ function updatePlayerList(players: tournamentPlayer[]): void {
 	playersState = players.slice();
 	playerListElem!.innerHTML = "";
 
+	// compute whether inputs should be disabled (used to avoid attaching drag listeners)
+	const inputsDisabled = window.tournamentMode === 'offline' && anyMatchPlayed(window.tournamentState || loadTournamentState());
+
+	// If no match has been played and we don't have a snapshot yet, keep a snapshot
+	// of the current entered names so they can be restored after the first match.
+	if (window.tournamentMode === 'offline' && !inputsDisabled) {
+		// snapshot if missing
+		snapshotEnteredPlayerNamesIfMissing();
+	} else if (window.tournamentMode === 'offline' && inputsDisabled) {
+		// match played: try to restore original names
+		try {
+			const originalNames = loadOriginalPlayerNames();
+			if (originalNames && originalNames.length === playersState.length) {
+				playersState.forEach((p, idx) => {
+					p.name = originalNames[idx];
+				});
+			}
+		} catch (e) {
+			console.warn("Failed to restore original player names after match played:", e);
+		}
+	}
+
 	playersState.forEach((player, index) => {
 		const li = document.createElement("li");
 		li.className = "player-list-item";
 		li.dataset.index = String(index);
 
-		if (window.tournamentMode === "offline") {
+		if (window.tournamentMode === "offline" && !inputsDisabled) { // even in offline, disable if match played
 			// Offline: editable input
 			const input = document.createElement("input");
 			input.type = "text";
 			input.className = "player-name-input";
 			input.value = player.name;
+
+			// reflect disabled state immediately so the input isn't editable
+			input.disabled = inputsDisabled;
 
 			// debounce name updates
 			input.addEventListener("input", () => {
@@ -920,8 +955,8 @@ function updatePlayerList(players: tournamentPlayer[]): void {
 
 			li.appendChild(input);
 
-			// optional: allow drag even in offline
-			addListener(li, "pointerdown", onPlayerPointerDown);
+			// optional: allow drag even in offline unless inputs are disabled (match played)
+			if (!inputsDisabled) addListener(li, "pointerdown", onPlayerPointerDown);
 		} else {
 			// Online: plain span
 			const nameSpan = document.createElement("span");
@@ -941,6 +976,7 @@ function updatePlayerList(players: tournamentPlayer[]): void {
 
 		playerListElem!.appendChild(li);
 	});
+
 	window.playerList = playersState;
 }
 
@@ -1259,6 +1295,8 @@ function getPlayerListItems(): HTMLLIElement[] {
  * @param event - Pointer event triggered on a list item.
  */
 function onPlayerPointerDown(event: Event): void {
+    // If inputs are disabled due to played matches, ignore drag attempts
+    if (window.tournamentMode === 'offline' && anyMatchPlayed(window.tournamentState || loadTournamentState())) return;
 	const e = event as PointerEvent;
 	const target = e.currentTarget as HTMLLIElement;
 	const isInput = (event.target as HTMLElement).tagName === "INPUT";
@@ -1448,6 +1486,9 @@ function resetPlayerDrag(): void {
  */
 const TOURNAMENT_STORAGE_KEY = "ft_tournament_offline_state_v1";
 
+/** Key to persist the snapshot of player names entered before the first match */
+const ORIGINAL_NAMES_KEY = "ft_tournament_offline_original_names_v1";
+
 /**
  * Save tournament state to localStorage (only in offline mode).
  */
@@ -1476,6 +1517,88 @@ function loadTournamentState(): TournamentState | null {
 	} catch (err) {
 		console.warn("Could not read tournament state:", err);
 		return null;
+	}
+}
+
+/**
+ * Check whether at least one match in the given state has been played.
+ * Returns true if any match has `played === true` or a non-null `score`.
+ */
+function anyMatchPlayed(state?: TournamentState | null): boolean {
+	if (!state || !Array.isArray(state.rounds)) return false;
+	for (const round of state.rounds) {
+		for (const match of round) {
+			if (match && (match.played === true)) return true;
+			if (match && match.score && (typeof match.score.left === 'number' || typeof match.score.right === 'number')) return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Enable or disable player name input elements in the player list UI.
+ */
+function setPlayerInputsDisabled(disabled: boolean): void {
+	if (!playerListElem) return;
+	const inputs = Array.from(playerListElem.querySelectorAll<HTMLInputElement>('span.player-name'));
+
+	if (disabled) {
+		// Restore snapshot of entered names (if available) before locking
+		const snap = loadOriginalPlayerNames();
+		if (snap && snap.length) {
+			inputs.forEach((inp, idx) => {
+				if (typeof snap[idx] === 'string') inp.value = snap[idx];
+				inp.disabled = true;
+			});
+			return;
+		}
+	}
+
+	// default behavior
+	inputs.forEach(i => i.disabled = disabled);
+}
+
+function saveOriginalPlayerNames(names: string[]): void {
+	try {
+		localStorage.setItem(ORIGINAL_NAMES_KEY, JSON.stringify(names));
+		(window as any).__originalTournamentPlayerNames = names.slice();
+	} catch (e) {
+		console.warn('Could not save original player names', e);
+	}
+}
+
+function loadOriginalPlayerNames(): string[] | null {
+	try {
+		const win = (window as any).__originalTournamentPlayerNames as string[] | undefined;
+		if (win) return win.slice();
+		const raw = localStorage.getItem(ORIGINAL_NAMES_KEY);
+		if (!raw) return null;
+		return JSON.parse(raw) as string[];
+	} catch (e) {
+		console.warn('Could not load original player names', e);
+		return null;
+	}
+}
+
+/**
+ * Snapshot the current (user-entered) player names so we can restore them
+ * after the first match. Only saves if not already present.
+ */
+function snapshotEnteredPlayerNamesIfMissing(): void {
+	const existing = loadOriginalPlayerNames();
+	if (existing && existing.length) return;
+	// prefer playersState (keeps edits), fallback to DOM inputs
+	try {
+		if (playersState && playersState.length) {
+			saveOriginalPlayerNames(playersState.map(p => p.name));
+			return;
+		}
+		const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input.player-name-input'));
+		if (inputs && inputs.length) {
+			saveOriginalPlayerNames(inputs.map(i => i.value));
+		}
+	} catch (e) {
+		// ignore
 	}
 }
 
@@ -1782,6 +1905,9 @@ function launchCurrentMatch(): void {
 	// Build pendingGameStart with simple mapping:
 	// user1 -> p1 (left), user2 -> p2 (right)
 	(window as any).isGameOffline = true;
+
+	// Snapshot entered names before first match so we can restore them later
+	snapshotEnteredPlayerNamesIfMissing();
 	
 	// Clear any old pendingGameStart from previous rounds to ensure fresh state
 	window.pendingGameStart = undefined;
@@ -1890,6 +2016,9 @@ function handleMatchResult(scores: Record<string, number>): void {
 	// save & re-render
 	saveTournamentState();
 	renderBracketFromState(state);
+
+	// ensure player name inputs are disabled after a match result is recorded
+	setPlayerInputsDisabled(true);
 
 	// set next current match automatically if any
 	const next = findNextMatch(state);
