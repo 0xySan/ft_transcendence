@@ -106,7 +106,8 @@ const defaultSettings: Settings = {
 		mode: "online",
 		spectatorsAllowed: true,
 		maxPlayers: 2,
-		code: ''
+		code: '',
+		visibility: true
 	},
 	scoring: {
 		firstTo: 5,
@@ -152,7 +153,8 @@ const ui = {
 		firstToSpan: getEl<HTMLSpanElement>("lobby-first-to-value"),
 		winByInput: getEl<HTMLInputElement>("lobby-win-by"),
 		winBySpan: getEl<HTMLSpanElement>("lobby-win-by-value"),
-		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code")
+		customGameCodeInput: getEl<HTMLInputElement>("lobby-game-code"),
+		visibility: getEl<HTMLInputElement>("lobby-private-checkbox-custom-game"),
 	},
 	ball: {
 		radius: getEl<HTMLInputElement>("ball-radius"),
@@ -216,6 +218,8 @@ function populateUi(): void {
 	ui.lobby.numPlayersSelect.value = String(s.game.maxPlayers);
 	setSpan(ui.lobby.maxPlayersSpan, s.game.maxPlayers);
 
+
+
 	// ball
 	setInput(ui.ball.radius, s.ball.radius);
 	setInput(ui.ball.initialSpeed, s.ball.initialSpeed);
@@ -263,6 +267,9 @@ export function setPartialLobbyConfig(partial: Partial<Settings>): void {
 			maxPlayers:
 				partial.game?.maxPlayers ??
 				currentSettings.game.maxPlayers,
+			visibility:
+				partial.game?.visibility ??
+				currentSettings.game.visibility
 		},
 		scoring: {
 			firstTo:
@@ -338,6 +345,9 @@ function wire(): void {
 		currentSettings.game.code = v;
 	});
 
+	// visibility 
+	bindCheckbox(ui.base.visibility, (v) => (currentSettings.game.visibility = !v));
+
 	// ball
 	bindNumber(ui.ball.radius, (v) => (currentSettings.ball.radius = v));
 	bindNumber(ui.ball.initialSpeed, (v) => (currentSettings.ball.initialSpeed = v));
@@ -390,7 +400,7 @@ function wire(): void {
 		}
 
 		// avoid sending an empty `code` field (server will reject with "Invalid code")
-		const payloadSettings: any = structuredClone(currentSettings);
+		const payloadSettings: Settings = structuredClone(currentSettings);
 		if (payloadSettings?.game && typeof payloadSettings.game.code === 'string' && payloadSettings.game.code.trim() === '') {
 			delete payloadSettings.game.code;
 		}
@@ -739,7 +749,7 @@ function selectLobbyMode(modeKey: "reset" | "online" | "offline" | "join"): void
 	const joinBox = getElQS<HTMLDivElement>("#lobby-join-box");
 	const tabMode = document.querySelector("#lobby-mode-buttons");
 	const privateCheckBox = getElQS<HTMLDivElement>(".lobby-private-checkbox");
-	const lobbyGameCode = getElQS<HTMLDivElement>("#lobby-game-code");
+	const lobbyGameCode = getElQS<HTMLDivElement>("#lobby-game-code-div");
 
 	// ensure actions visible when appropriate
 	if (customGameSelection === "offline") {
